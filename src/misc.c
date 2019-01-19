@@ -91,19 +91,6 @@ la_log(int priority, char *fmt, ...)
 }
 
 void
-die_syntax(void)
-{
-	snprintf(message_buffer, 999, "%s:%d - %s\n",
-			config_error_file(&la_config->config_file),
-			config_error_line(&la_config->config_file),
-			config_error_text(&la_config->config_file));
-	stderr_or_syslog(LOG_ERR, message_buffer);
-
-	unload_la_config();
-	exit(EXIT_FAILURE);
-}
-
-void
 die_semantic(char *fmt, ...)
 {
 	va_list myargs;

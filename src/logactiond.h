@@ -256,8 +256,6 @@ void la_log_errno(int priority, char *fmt, ...);
 
 void la_log(int priority, char *fmt, ...);
 
-void die_syntax(void);
-
 void die_semantic(char *fmt, ...);
 
 void die_hard(char *fmt, ...);
@@ -271,6 +269,10 @@ char *xstrdup(const char *s);
 char *xstrndup(const char *s, size_t n);
 
 /* libconfigadapter.c */
+
+void init_libconfig(char *filename);
+
+void destroy_libconfig(void);
 
 const char* config_get_string_or_null(
 		const config_setting_t *setting, const char *name);

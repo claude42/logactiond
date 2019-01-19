@@ -32,7 +32,7 @@
 
 #include "logactiond.h"
 
-char *config_filename = NULL;
+char *cfg_filename = NULL;
 char *pid_file = NULL;
 bool run_in_foreground = false;
 unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
@@ -151,7 +151,7 @@ read_options(int argc, char *argv[])
                                 run_in_foreground = true;
                                 break;
                         case 'c':
-                                config_filename = optarg;
+                                cfg_filename = optarg;
                                 break;
                         case 'd': 
                                 log_level++;
@@ -191,7 +191,7 @@ main(int argc, char *argv[])
 
         init_end_queue();
 
-        load_la_config(config_filename);
+        load_la_config(cfg_filename);
 
         watch_forever();
 
