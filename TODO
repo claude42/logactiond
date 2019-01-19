@@ -1,0 +1,83 @@
+- execute shutdown action on shutdown		DONE
+- threshold					DONE
+- defaults					DONE
+- commands von vorn nach hinten			DONE
+- #define string constants			DONE
+- handle action-properties			DONE
+- fix LA_TOKEN_REPL_LEN				DONE
+- merge property + token			DONE
+- really exec()					DONE
+- inotify for other cases			DONE
+- getops					DONE
+- properties					DONE
+- old style + new style daemon			DONE
+- logging
+- create pidfile
+- include wildcard
+- freeing of commands
+- really need separate end/shutdown commands? why not integrate fully into command
+- no endqueue polling (http://www.yolinux.com/TUTORIALS/LinuxTutorialPosixThreads.html#SYNCHRONIZATION)
+
+- documentation
+- check action
+- Ignore IPs
+
+- Max one instance per regex token
+- Polling backend
+- git version control
+- Match time stamp? Better not
+- Tool to manually test patterns
+- External program to analyze pre-matched log line
+- dirname module really needed (we're calling dir_name & base_name)
+
+
+
+
+
+
+
+Thresholds
+- if threshold = 1 trigger immediately
+- if period = 0 trigger immediately
+- if threshold = n > 1, period = 0: trigger after n occurances, no matter which period
+
+if threshold > 1:
+- 1st trigger
+  - search for existing trigger object with IP address
+  - create "trigger" object linked to rule and put into queue
+    - trigger_count = 1
+    - threshold = rule_threshold
+    - start_time = now
+    - duration = rule_duration
+    - IP address
+- subsequent triggers
+  - search for existing trigger object with IP address
+  - if now-start_time < duration
+    - trigger_count++
+    - if trigger_count >= threshold
+      - trigger
+      - delete trigger object
+  - else if now-start_time >= duration
+    - start_time = now
+    - trigger_count = 1
+
+
+----------------
+
+aus config datei werden command templates gemacht
+
+begin
+- bei trigger_action wird das template gedupt
+  - end commando wird auch gedupt angehängt
+  - Informationen werden angehängt
+    - Host, rule, pattern
+    - n_trigger, start_time wird gesetzt
+  - in trigger liste gesetzt
+  - wenn bereit rausgenommen, ausgeführt (trigger_command als einziger Parameter übergeben)
+  - command->end_command in end_queue gesetzt
+  - Rest gefree()t
+
+
+
+initialize:
+-
