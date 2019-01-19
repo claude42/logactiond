@@ -16,7 +16,10 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+
 #include <config.h>
+
+#if HAVE_INOTIFY
 
 //#include <stdio.h>
 #include <stdlib.h>
@@ -35,7 +38,6 @@
 
 #include "logactiond.h"
 
-#if HAVE_INOTIFY
 /* Buffer for reading inotify events */
 #define EVENT_SIZE  ( sizeof (struct inotify_event) )
 #define BUF_LEN     ( 1024 * ( EVENT_SIZE + 16 ) )

@@ -22,7 +22,6 @@
 
 #include <config.h>
 
-#include <sys/inotify.h>
 #include <sys/select.h>
 #include <regex.h>
 #include <stdbool.h>

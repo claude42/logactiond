@@ -21,7 +21,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <sys/inotify.h>
 #include <sys/select.h>
 #include <signal.h>
 #include <sys/types.h>
@@ -32,9 +31,6 @@
 #include <getopt.h>
 
 #include "logactiond.h"
-
-#define EVENT_SIZE  ( sizeof (struct inotify_event) )
-#define BUF_LEN     ( 1024 * ( EVENT_SIZE + 16 ) )
 
 char *config_filename = NULL;
 char *pid_file = NULL;
