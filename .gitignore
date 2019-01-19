@@ -94,3 +94,31 @@ m4/ltsugar.m4
 m4/ltversion.m4
 m4/lt~obsolete.m4
 autom4te.cache
+
+# gettext
+
+*.Po
+
+# local
+
+src/logactiond
+
+config.log
+config.status
+
+libconfig/.gitignore
+libconfig/ac_config.h.in
+libconfig/aclocal.m4
+libconfig/aux-build
+libconfig/configure
+libconfig/lib/grammar.c
+libconfig/lib/grammar.h
+libconfig/lib/libconfig++.pc
+libconfig/lib/libconfig++Config.cmake
+libconfig/lib/libconfig.pc
+libconfig/lib/libconfigConfig.cmake
+libconfig/lib/scanner.c
+libconfig/lib/scanner.h
+libconfig/libconfig.spec
+libconfig/libtool
+libconfig/m4
