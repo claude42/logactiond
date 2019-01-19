@@ -268,34 +268,6 @@ char *xstrdup(const char *s);
 
 char *xstrndup(const char *s, size_t n);
 
-/* libconfigadapter.c */
-
-void init_libconfig(char *filename);
-
-void destroy_libconfig(void);
-
-const char* config_get_string_or_null(
-		const config_setting_t *setting, const char *name);
-
-int config_get_unsigned_int_or_negative(const config_setting_t *setting,
-		const char *name);
-
-const char* config_get_string_or_die(
-		const config_setting_t *setting, const char *name);
-
-const config_setting_t *config_setting_lookup_or_die(const config_setting_t *setting,
-		const char *path);
-
-const config_setting_t *get_action(const char *action_name);
-
-const config_setting_t *get_pattern(const char *pattern_name);
-
-const char *get_source_name(const config_setting_t *rule);
-
-const char *get_source_location(const config_setting_t *rule);
-
-la_sourcetype_t get_source_type(const config_setting_t *rule);
-
 /* configfile.c */
 
 int *load_la_config(char *filename);
