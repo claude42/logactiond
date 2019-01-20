@@ -224,7 +224,7 @@ list_length(kw_list_t *list)
  * Don't use mylist->head / mylist->tail
  */
 
-void testerli(void)
+/*void testerli(void)
 {
 	kw_list_t *mylist = create_list();
 	printf("mylist=%u\n", mylist);
@@ -281,7 +281,7 @@ void testerli(void)
 
 	free_list(mylist);
 	printf("Still there\n");
-}
+}*/
 
 
 /* vim: set autowrite expandtab: */

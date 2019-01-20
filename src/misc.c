@@ -49,7 +49,7 @@ stderr_or_syslog(int priority, char *message)
 	if (run_in_foreground)
 		fprintf(stderr, "<%u>%s", priority, message);
 	else
-		syslog(priority, message);
+		syslog(priority, "%s", message);
 }
 
 void
