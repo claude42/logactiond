@@ -500,6 +500,10 @@ unload_la_config(void)
         config_destroy(&la_config->config_file);
 }
 
+/*
+ * Copied from example4.c from the libconfig distribution
+ */
+
 const char **
 include_func(config_t *config, const char *include_dir, const char *path, const char **error)
 {
@@ -574,7 +578,7 @@ include_func(config_t *config, const char *include_dir, const char *path, const 
 			++result_next;
 			++result_count;
 
-			printf("file: %s\n", file_path);
+                        la_log(LOG_DEBUG, "file: %s\n", file_path);
 		}
 		closedir(dp);
 	}
