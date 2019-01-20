@@ -72,11 +72,12 @@
 
 #define LA_LOCATION "location"
 
-//#define LA_TOKEN "<HOST>"
-//#define LA_TOKEN_LEN 6
-//#define LA_TOKEN_REPL "([.:[:xdigit:]]+)"
 #define LA_TOKEN_REPL "(.+)"
 #define LA_TOKEN_REPL_LEN 4
+
+#define LA_HOST_TOKEN "HOST"
+#define LA_HOST_TOKEN_REPL "([.:[:xdigit:]]+)"
+#define LA_HOST_TOKEN_REPL_LEN 17
 
 // maximum number of tokens that can be matched
 
@@ -113,6 +114,8 @@ typedef struct la_property_s
 	kw_node_t node;
 	/* name of the property (for matched tokens: without '<' and '>') */
 	char *name;
+        /* HOST token */
+        bool is_host_token;
 	/* Different uses:
 	 * - when used for config file properties, this is simply the value
 	 *   assigned to the property in the config file

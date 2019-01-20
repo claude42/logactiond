@@ -44,7 +44,7 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
 	size_t len = strlen(string);
 	/* definitely an upper bound */
 	char *result = (char *) xmalloc(len +
-			n_properties * LA_TOKEN_REPL_LEN + 1);
+			n_properties * LA_HOST_TOKEN_REPL_LEN + 1);
 	char *result_ptr = result;
 	const char *string_ptr = string;
 
@@ -55,8 +55,12 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
 	{
 		/* copy string before next token */
 		result_ptr = stpncpy(result_ptr, string_ptr, property->pos - start_pos);
-		/* copy RE for token */
-		result_ptr = stpncpy(result_ptr, LA_TOKEN_REPL, LA_TOKEN_REPL_LEN);
+		/* copy corresponding regular expression for token */
+                if (property->is_host_token)
+                        result_ptr = stpncpy(result_ptr, LA_HOST_TOKEN_REPL,
+                                        LA_HOST_TOKEN_REPL_LEN);
+                else
+                        result_ptr = stpncpy(result_ptr, LA_TOKEN_REPL, LA_TOKEN_REPL_LEN);
 
 		start_pos = property->pos + property->length;
 		string_ptr = string + start_pos;

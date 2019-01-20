@@ -73,6 +73,7 @@ create_property_from_token(const char *name, size_t length, unsigned int pos,
 		xmalloc(sizeof(la_property_t));
 
 	result->name = xstrndup(name+1, length-2);
+        result->is_host_token = !strcmp(result->name, LA_HOST_TOKEN);
 	result->length = length;
 	result->pos = pos;
 	result->subexpression = subexpression;
@@ -88,6 +89,7 @@ create_property_from_config(const char *name, const char *value)
 	la_property_t *result = (la_property_t *) xmalloc(sizeof(la_property_t));
 
 	result->name = xstrdup(name);
+        result->is_host_token = !strcmp(result->name, LA_HOST_TOKEN);
 	result->value = xstrdup(value);
 	
 	return result;
