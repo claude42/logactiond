@@ -102,12 +102,11 @@ find_trigger(la_rule_t *rule, const char *command_string, const char *host)
 static void
 handle_action_on_trigger_list(la_command_t *command)
 {
-	const char *host = get_host_property_value(command->pattern->properties);
 	/* new commands not on the trigger_list yet have n_triggers == 0 */
 	if (command->n_triggers == 0)
 	{	
 		add_trigger(command);
-		la_log(LOG_INFO, "Host: %s, trigger 1 for %s\n", host,
+		la_log(LOG_INFO, "Host: %s, trigger 1 for %s\n", command->host,
 				command->rule->name);
 	}
 	else
@@ -122,14 +121,16 @@ handle_action_on_trigger_list(la_command_t *command)
 				 * trigger if necessary */
 				command->n_triggers++;
 				la_log(LOG_INFO, "Host: %s, trigger %u for %s\n",
-						host, command->n_triggers,
-						command->rule->name);
+                                                command->host,
+                                                command->n_triggers,
+                                                command->rule->name);
 				if (command->n_triggers >= command->rule->threshold)
 				{
 					//remove_node((kw_node_t *) command);
 					command->fire_time=time(NULL);
 					la_log(LOG_INFO, "Host: %s, command fired for  %s\n",
-						host, command->rule->name);
+                                                command->host,
+                                                command->rule->name);
 					trigger_command(command);
 				}
 			}
@@ -139,7 +140,8 @@ handle_action_on_trigger_list(la_command_t *command)
 				command->start_time = time(NULL);
 				command->n_triggers = 1;
 				la_log(LOG_INFO, "Host: %s, trigger 1 for %s\n",
-						host, command->rule->name);
+                                                command->host,
+                                                command->rule->name);
 			}
 		}
 		else
@@ -150,7 +152,8 @@ handle_action_on_trigger_list(la_command_t *command)
 			{
 				/* still active, ignore new incoming triggers */
 				la_log(LOG_INFO, "Host: %s ignored, command active for %s\n",
-						host, command->rule->name);
+                                                command->host,
+                                                command->rule->name);
 			}
 			else
 			{
@@ -160,7 +163,8 @@ handle_action_on_trigger_list(la_command_t *command)
 				command->start_time = time(NULL);
 				command->n_triggers = 1;
 				la_log(LOG_INFO, "Host: %s, trigger 1 for %s\n",
-						host, command->rule->name);
+                                                command->host,
+                                                command->rule->name);
 			}
 		}
 	}
@@ -177,19 +181,19 @@ handle_action_on_trigger_list(la_command_t *command)
 static void
 trigger_single_action(la_command_t *command)
 {
-	const char *host = get_host_property_value(command->pattern->properties);
 	/* FIXME: even when threshold == 1 should check in advance if similar
 	 * command has already been trigger */
-	if (command->rule->threshold == 1 || ! host)
+	if (command->rule->threshold == 1 || !command->host)
 	{
 		trigger_command(command);
 	}
 	else
 	{
-		if (!address_on_ignore_list(host))
+		if (!address_on_ignore_list(command->host))
 			handle_action_on_trigger_list(command);
 		else
-			la_log(LOG_INFO, "Host: %s, always ignored\n", host);
+                        la_log(LOG_INFO, "Host: %s, always ignored\n",
+                                        command->host);
 	}
 }
 
@@ -247,6 +251,23 @@ assign_value_to_properties(kw_list_t *property_list, char *line,
 	}
 }
 
+/*
+ * Clear value of all properties in list
+ */
+
+static void
+clear_property_values(kw_list_t *property_list)
+{
+        for (la_property_t *property = (la_property_t *) property_list->head.succ;
+                        property->node.succ;
+                        property = (la_property_t *) property->node.succ)
+        {
+                if (property->value)
+                        free(property->value);
+                property->value = NULL;
+        }
+}
+
 
 /*
  * Matches line to all patterns assigned to rule.
@@ -267,6 +288,7 @@ handle_log_line_for_rule(la_rule_t *rule, char *line)
 			assign_value_to_properties(pattern->properties, line,
 					pmatch);
 			trigger_all_actions(rule, pattern);
+                        clear_property_values(pattern->properties);
 			return;
 		}
 	}

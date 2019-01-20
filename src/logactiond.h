@@ -190,7 +190,7 @@ typedef struct la_command_s
 	unsigned int n_properties;/* number of detected tokens */
 	la_rule_t *rule;	/* related rule */
 	la_pattern_t *pattern;	/* related pattern*/
-	const char *host;	/* IP address */
+	char *host;	        /* IP address */
 	la_command_t *end_command;/* end_command - if any */
 	int duration;		/* duration how long command shall stay active,
 				   -1 if none */

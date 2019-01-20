@@ -91,6 +91,7 @@ create_property_from_token(const char *name, size_t length, unsigned int pos,
 		xmalloc(sizeof(la_property_t));
 
 	result->name = xstrndup(name+1, length-2);
+        result->value = NULL;
         result->is_host_property = !strcmp(result->name, LA_HOST_TOKEN);
 	result->length = length;
 	result->pos = pos;

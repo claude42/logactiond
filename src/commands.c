@@ -251,12 +251,12 @@ dup_command(la_command_t *command)
 {
 	la_command_t *result = (la_command_t *) xmalloc(sizeof(la_command_t));
 
-	result->string = command->string;
-	result->properties = command->properties;
+        result->string = command->string ? xstrdup(command->string) : NULL;
+	result->properties = command->properties; // FIXME: need to duplicate as well?
 	result->n_properties = command->n_properties;
 	result->rule = command->rule;
 	result->pattern = command->pattern;
-	result->host = command->host;
+        result->host = command->host ? xstrdup(command->host) : NULL;
 	result->end_command = command->end_command ?
 		dup_command(command->end_command) : NULL;
 	result->duration = command->duration;
@@ -282,7 +282,9 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
         result = dup_command(template);
         result->rule = rule;
         result->pattern = pattern;
-        result->host = get_host_property_value(pattern->properties);
+        if (result->host)
+                free(result->host);
+        result->host = xstrdup(get_host_property_value(pattern->properties));
         if (result->end_command)
         {
                 result->end_command->rule = result->rule;
@@ -309,13 +311,10 @@ create_command(const char *string, int duration)
 	la_debug("create_command(%s, %d)\n", string, duration);
 	la_command_t *result = (la_command_t *) xmalloc(sizeof(la_command_t));
 
-	result->string = string;
+        result->string = string ? xstrdup(string) : NULL;
 	result->properties = create_list();
-	if (string)
-		result->n_properties = scan_action_tokens(result->properties,
-				string);
-	else
-		result->n_properties = 0;
+        result->n_properties = string ?
+                scan_action_tokens(result->properties, string) : 0;
 
 	result->rule = NULL;
 	result->pattern = NULL;
