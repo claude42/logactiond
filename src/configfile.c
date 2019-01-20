@@ -185,7 +185,7 @@ get_source_type(const config_setting_t *rule)
 	if (!source_def)
 		die_semantic("Source not found");
 
-	type = config_get_string_or_die(rule, LA_RULE_TYPE_LABEL);
+	type = config_get_string_or_die(source_def, LA_RULE_TYPE_LABEL);
 
 	if (!strcmp(type, LA_RULE_TYPE_FILE_OPTION))
 		return LA_RULE_TYPE_FILE;
