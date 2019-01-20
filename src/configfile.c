@@ -28,6 +28,7 @@
 #include <fnmatch.h>
 #include <limits.h>
 #include <sys/stat.h>
+#include <syslog.h>
 
 #include <libconfig.h>
 
