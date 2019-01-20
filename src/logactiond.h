@@ -190,7 +190,7 @@ typedef struct la_command_s
 	unsigned int n_properties;/* number of detected tokens */
 	la_rule_t *rule;	/* related rule */
 	la_pattern_t *pattern;	/* related pattern*/
-	char *host;		/* IP address */
+	const char *host;	/* IP address */
 	la_command_t *end_command;/* end_command - if any */
 	int duration;		/* duration how long command shall stay active,
 				   -1 if none */
@@ -297,6 +297,9 @@ void trigger_command(la_command_t *command);
 
 la_command_t * dup_command(la_command_t *command);
 
+la_command_t * create_command_from_template(la_command_t *template,
+                la_rule_t *rule, la_pattern_t *pattern);
+
 la_command_t *create_command(const char *string, int duration);
 
 /* actions.c */
@@ -307,6 +310,8 @@ la_action_t *create_action(const char *name, la_rule_t *rule,
 
 
 /* properties.c */
+
+const char *get_host_property_value(kw_list_t *property_list);
 
 const char *get_value_from_property_list(kw_list_t *property_list,
 		la_property_t *property);

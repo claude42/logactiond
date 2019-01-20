@@ -71,7 +71,7 @@ add_trigger(la_command_t *command)
  */
 
 static la_command_t *
-find_trigger(la_rule_t *rule, const char *command_string, char *host)
+find_trigger(la_rule_t *rule, const char *command_string, const char *host)
 {
 	if (!host || !command_string)
 		die_hard("No host / command_string specified\n");
@@ -93,24 +93,6 @@ find_trigger(la_rule_t *rule, const char *command_string, char *host)
 }
 
 /*
- * Return value assigned to <HOST> property, NULL if not found.
- */
-
-static char *
-get_host_property_value(kw_list_t *property_list)
-{
-	for (la_property_t *property = (la_property_t *) property_list->head.succ;
-			property->node.succ;
-			property = (la_property_t *) property->node.succ)
-	{
-                if (property->is_host_property)
-                        return property->value;
-	}
-
-	return NULL;
-}
-
-/*
  * - Add command to trigger list if not in there yet.
  * - Increase counter by one.
  * - If counter > threshold, trigger command
@@ -120,7 +102,7 @@ get_host_property_value(kw_list_t *property_list)
 static void
 handle_action_on_trigger_list(la_command_t *command)
 {
-	char *host = get_host_property_value(command->pattern->properties);
+	const char *host = get_host_property_value(command->pattern->properties);
 	/* new commands not on the trigger_list yet have n_triggers == 0 */
 	if (command->n_triggers == 0)
 	{	
@@ -195,7 +177,7 @@ handle_action_on_trigger_list(la_command_t *command)
 static void
 trigger_single_action(la_command_t *command)
 {
-	char *host = get_host_property_value(command->pattern->properties);
+	const char *host = get_host_property_value(command->pattern->properties);
 	/* FIXME: even when threshold == 1 should check in advance if similar
 	 * command has already been trigger */
 	if (command->rule->threshold == 1 || ! host)
@@ -227,7 +209,7 @@ trigger_all_actions(la_rule_t *rule, la_pattern_t *pattern)
 			action->node.succ;
 			action = (la_action_t *) action->node.succ)
 	{
-		char *host = get_host_property_value(pattern->properties);
+		const char *host = get_host_property_value(pattern->properties);
 		la_command_t *command;
 
 		/* first look whether the same action has been triggered by the
@@ -236,17 +218,7 @@ trigger_all_actions(la_rule_t *rule, la_pattern_t *pattern)
 
 		/* if not create a copy of the command template */
 		if (!command)
-		{
-			command = dup_command(action->begin);
-			command->rule = rule;
-			command->pattern = pattern;
-			command->host = get_host_property_value(pattern->properties);
-			if (command->end_command) {
-				command->end_command->rule = rule;
-				command->end_command->pattern = pattern;
-				command->host = get_host_property_value(pattern->properties);
-			}
-		}
+                        command = create_command_from_template(action->begin, rule, pattern);
 
 		trigger_single_action(command);
 	}

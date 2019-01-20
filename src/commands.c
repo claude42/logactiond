@@ -224,7 +224,8 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
 	if (!property_list || !string)
 		die_hard("No property list or no string submitted");
 
-	while (*ptr) {
+	while (*ptr)
+        {
 		if (*ptr == '\\')
 		{
 			ptr++;
@@ -241,9 +242,10 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
 	return n_tokens;
 }
 
+
 /*
  * Clones command except for command.node. Must be freed after use. Shallow
- * copy only.
+ * copy only - except for end_command which is dup_command()ed as well.
  */
 
 la_command_t *
@@ -266,6 +268,31 @@ dup_command(la_command_t *command)
 	result->fire_time = command->fire_time;
 
 	return result;
+}
+
+
+/*
+ * Create command from template. Duplicate template and add add'l information
+ */
+
+la_command_t *
+create_command_from_template(la_command_t *template, la_rule_t *rule,
+                la_pattern_t *pattern)
+{
+        la_command_t *result;
+
+        result = dup_command(template);
+        result->rule = rule;
+        result->pattern = pattern;
+        result->host = get_host_property_value(pattern->properties);
+        if (result->end_command)
+        {
+                result->end_command->rule = result->rule;
+                result->end_command->pattern = result->pattern;
+                result->end_command->host = result->host;
+        }
+
+        return result;
 }
 
 /*
@@ -306,6 +333,7 @@ create_command(const char *string, int duration)
 
 	return result;
 }
+
 
 
 /* vim: set autowrite expandtab: */

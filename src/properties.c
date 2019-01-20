@@ -28,6 +28,24 @@
 #include "logactiond.h"
 #include "nodelist.h"
 
+/*
+ * Return value assigned to <HOST> property, NULL if not found.
+ */
+
+const char *
+get_host_property_value(kw_list_t *property_list)
+{
+	for (la_property_t *property = (la_property_t *) property_list->head.succ;
+			property->node.succ;
+			property = (la_property_t *) property->node.succ)
+	{
+                if (property->is_host_property)
+                        return property->value;
+	}
+
+	return NULL;
+}
+
 const char *
 get_value_from_property_list(kw_list_t *property_list, la_property_t *property)
 {
