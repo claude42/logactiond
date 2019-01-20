@@ -97,6 +97,8 @@ token_length(const char *string)
 	}
 
 	die_semantic("Closing '>' of token missing\n");
+
+	return 0; //avoid warning
 }
 
 static size_t

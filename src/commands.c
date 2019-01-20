@@ -44,10 +44,10 @@ exec_command(const char *command_string)
 }
 
 /* TODO, refactor */
-static char*
+/*static char*
 check_for_special_names(la_property_t *action_property)
 {
-}
+}*/
 
 static const char *
 get_value_for_action_property(la_property_t *action_property,
@@ -187,6 +187,8 @@ token_length(const char *string)
 	}
 
 	die_semantic("Closing '>' of token missing\n");
+
+	return 0; // avoid warning
 }
 
 

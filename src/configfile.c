@@ -193,6 +193,8 @@ get_source_type(const config_setting_t *rule)
 		return LA_RULE_TYPE_SYSTEMD;
 	else
 		die_semantic("Wrong source type \"%s\" specified\n.", type);
+
+	return 0; // avoid warning
 }
 
 /*
