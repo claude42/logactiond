@@ -286,7 +286,7 @@ handle_log_line_for_rule(la_rule_t *rule, char *line)
 	kw_node_t *i = get_pattern_iterator_for_rule(rule);
 	la_pattern_t *pattern;
 
-	while (pattern = get_next_pattern_for_rule(&i))
+	while ((pattern = get_next_pattern_for_rule(&i)))
 	{
 		/* TODO: make this dynamic based on detected tokens */
 		regmatch_t pmatch[MAX_NMATCH];

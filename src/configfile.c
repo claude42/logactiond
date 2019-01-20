@@ -464,6 +464,8 @@ load_defaults(void)
 	}
 }
 
+const char ** include_func(config_t *config, const char *include_dir, const
+                char *path, const char **error);
 
 int *
 load_la_config(char *filename)
@@ -472,7 +474,7 @@ load_la_config(char *filename)
 
         config_init(&la_config->config_file);
 
-        /*config_set_include_func(&la_config->config_file, include_func);*/
+        config_set_include_func(&la_config->config_file, include_func);
 
         if (!config_read_file(&la_config->config_file,
                                 filename ? filename : CONFIG_FILE))

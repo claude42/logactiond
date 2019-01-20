@@ -24,7 +24,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#if HAVE_INOTIFY
 #include <sys/inotify.h>
+#endif /* HAVE_INOTIFY */
 #include <sys/select.h>
 
 #include <libconfig.h>
