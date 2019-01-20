@@ -17,6 +17,7 @@
 - freeing of commands
 - really need separate end/shutdown commands? why not integrate fully into command
 - no endqueue polling (http://www.yolinux.com/TUTORIALS/LinuxTutorialPosixThreads.html#SYNCHRONIZATION)
+- make install
 
 - documentation
 - check action

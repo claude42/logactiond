@@ -101,10 +101,11 @@ autom4te.cache
 
 # local
 
-src/logactiond
-
+config.h
 config.log
 config.status
+
+src/logactiond
 
 libconfig/.gitignore
 libconfig/ac_config.h.in
