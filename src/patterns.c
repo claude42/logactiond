@@ -56,7 +56,7 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
 		/* copy string before next token */
 		result_ptr = stpncpy(result_ptr, string_ptr, property->pos - start_pos);
 		/* copy corresponding regular expression for token */
-                if (property->is_host_token)
+                if (property->is_host_property)
                         result_ptr = stpncpy(result_ptr, LA_HOST_TOKEN_REPL,
                                         LA_HOST_TOKEN_REPL_LEN);
                 else

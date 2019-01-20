@@ -114,8 +114,8 @@ typedef struct la_property_s
 	kw_node_t node;
 	/* name of the property (for matched tokens: without '<' and '>') */
 	char *name;
-        /* HOST token */
-        bool is_host_token;
+        /* Property created from HOST token */
+        bool is_host_property;
 	/* Different uses:
 	 * - when used for config file properties, this is simply the value
 	 *   assigned to the property in the config file

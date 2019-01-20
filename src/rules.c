@@ -103,8 +103,8 @@ get_host_property_value(kw_list_t *property_list)
 			property->node.succ;
 			property = (la_property_t *) property->node.succ)
 	{
-		if (!strncmp("HOST", property->name, 4))
-			return property->value;
+                if (property->is_host_property)
+                        return property->value;
 	}
 
 	return NULL;

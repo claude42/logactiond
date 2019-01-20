@@ -1,0 +1,139 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+BUF_LEN	inotify.c	43;"	d	file:
+DEFAULT_LINEBUFFER_SIZE	sources.c	32;"	d	file:
+EVENT_SIZE	inotify.c	42;"	d	file:
+add_head	nodelist.c	/^add_head(kw_list_t *list, kw_node_t *node)$/;"	f
+add_tail	nodelist.c	/^add_tail(kw_list_t *list, kw_node_t *node)$/;"	f
+add_trigger	rules.c	/^add_trigger(la_command_t *command)$/;"	f	file:
+address_on_ignore_list	addresses.c	/^address_on_ignore_list(const char *ip)$/;"	f
+assign_value_to_properties	rules.c	/^assign_value_to_properties(kw_list_t *property_list, char *line,$/;"	f	file:
+cfg_filename	logactiond.c	/^char *cfg_filename = NULL;$/;"	v
+compile_actions	configfile.c	/^compile_actions(la_rule_t *rule, const config_setting_t *action_def)$/;"	f	file:
+compile_list_of_actions	configfile.c	/^compile_list_of_actions(la_rule_t *rule,$/;"	f	file:
+compile_list_of_matches	configfile.c	/^compile_list_of_matches(la_rule_t *rule,$/;"	f	file:
+compile_matches	configfile.c	/^compile_matches(la_rule_t *rule,$/;"	f	file:
+config_get_string_or_die	configfile.c	/^config_get_string_or_die( const config_setting_t *setting, const char *name)$/;"	f
+config_get_string_or_null	configfile.c	/^config_get_string_or_null(const config_setting_t *setting, const char *name)$/;"	f
+config_get_unsigned_int_or_negative	configfile.c	/^config_get_unsigned_int_or_negative(const config_setting_t *setting,$/;"	f
+config_setting_lookup_or_die	configfile.c	/^*config_setting_lookup_or_die( const config_setting_t *setting,$/;"	f
+consume_end_queue	endqueue.c	/^consume_end_queue(void *ptr)$/;"	f	file:
+convert_command	commands.c	/^convert_command(la_command_t *command)$/;"	f	file:
+convert_regex	patterns.c	/^convert_regex(const char *string, kw_list_t *property_list, unsigned int n_properties)$/;"	f	file:
+create_action	actions.c	/^create_action(const char *name, la_rule_t *rule, const char *initialize,$/;"	f
+create_address	addresses.c	/^create_address(const char *ip)$/;"	f
+create_begin_command	actions.c	/^create_begin_command(la_rule_t *rule, const char *begin, const char *end)$/;"	f
+create_command	commands.c	/^create_command(const char *string, int duration)$/;"	f
+create_initialize_command	actions.c	/^create_initialize_command(la_rule_t *rule, const char *initialize, const char *shutdown)$/;"	f
+create_list	nodelist.c	/^create_list(void)$/;"	f
+create_pattern	patterns.c	/^create_pattern(const char *string_from_configfile, la_rule_t *rule)$/;"	f
+create_property_from_action_token	properties.c	/^create_property_from_action_token(const char *name, size_t length,$/;"	f
+create_property_from_config	properties.c	/^create_property_from_config(const char *name, const char *value)$/;"	f
+create_property_from_token	properties.c	/^create_property_from_token(const char *name, size_t length, unsigned int pos,$/;"	f
+create_rule	rules.c	/^create_rule(char *name, la_source_t *source, int threshold, int period, int$/;"	f
+create_source	sources.c	/^create_source(const char *name, la_sourcetype_t type, const char *location)$/;"	f
+cut_newline	sources.c	/^cut_newline(char *line)$/;"	f	file:
+die_err	misc.c	/^die_err(char *fmt, ...)$/;"	f
+die_hard	misc.c	/^die_hard(char *fmt, ...)$/;"	f
+die_semantic	misc.c	/^die_semantic(char *fmt, ...)$/;"	f
+dup_command	commands.c	/^dup_command(la_command_t *command)$/;"	f
+empty_end_queue	endqueue.c	/^empty_end_queue(void)$/;"	f
+end_queue	endqueue.c	/^static kw_list_t *end_queue = NULL;$/;"	v	file:
+end_queue_mutex	endqueue.c	/^pthread_mutex_t end_queue_mutex = PTHREAD_MUTEX_INITIALIZER;$/;"	v
+enqueue_end_command	endqueue.c	/^enqueue_end_command(la_command_t *end_command, int duration)$/;"	f
+exec_command	commands.c	/^exec_command(const char *command_string)$/;"	f	file:
+find_source_by_file_wd	inotify.c	/^find_source_by_file_wd(int file_wd)$/;"	f	file:
+find_source_by_location	sources.c	/^*find_source_by_location(const char *location)$/;"	f
+find_source_by_parent_wd	inotify.c	/^find_source_by_parent_wd(int parent_wd, char *file_name)$/;"	f	file:
+find_trigger	rules.c	/^find_trigger(la_rule_t *rule, const char *command_string, char *host)$/;"	f	file:
+foo_s	nodelist.c	/^typedef struct foo_s {$/;"	s	file:
+foo_t	nodelist.c	/^} foo_t;$/;"	t	typeref:struct:foo_s	file:
+free_list	nodelist.c	/^free_list(kw_list_t *list)$/;"	f
+get_action	configfile.c	/^get_action(const char *action_name)$/;"	f
+get_head	nodelist.c	/^get_head(kw_list_t *list)$/;"	f
+get_host_property_value	rules.c	/^get_host_property_value(kw_list_t *property_list)$/;"	f	file:
+get_list_iterator	nodelist.c	/^get_list_iterator(kw_list_t *list)$/;"	f
+get_next_node	nodelist.c	/^get_next_node(kw_node_t **iterator)$/;"	f
+get_next_pattern_for_rule	rules.c	/^get_next_pattern_for_rule(kw_node_t **iterator)$/;"	f	file:
+get_pattern	configfile.c	/^get_pattern(const char *pattern_name)$/;"	f
+get_pattern_iterator_for_rule	rules.c	/^get_pattern_iterator_for_rule(la_rule_t *rule)$/;"	f	file:
+get_source	configfile.c	/^get_source(const char *source)$/;"	f	file:
+get_source_location	configfile.c	/^*get_source_location(const config_setting_t *rule)$/;"	f
+get_source_name	configfile.c	/^*get_source_name(const config_setting_t *rule)$/;"	f
+get_source_type	configfile.c	/^get_source_type(const config_setting_t *rule)$/;"	f
+get_tail	nodelist.c	/^get_tail(kw_list_t *list)$/;"	f
+get_value_for_action_property	commands.c	/^get_value_for_action_property(la_property_t *action_property,$/;"	f	file:
+get_value_from_property_list	properties.c	/^get_value_from_property_list(kw_list_t *property_list, la_property_t *property)$/;"	f
+handle_action_on_trigger_list	rules.c	/^handle_action_on_trigger_list(la_command_t *command)$/;"	f	file:
+handle_inotify_directory_event	inotify.c	/^handle_inotify_directory_event(struct inotify_event *event)$/;"	f	file:
+handle_inotify_event	inotify.c	/^handle_inotify_event(struct inotify_event *event)$/;"	f	file:
+handle_inotify_file_event	inotify.c	/^handle_inotify_file_event(struct inotify_event *event)$/;"	f	file:
+handle_log_line	sources.c	/^handle_log_line(la_source_t *source, char *line)$/;"	f	file:
+handle_log_line_for_rule	rules.c	/^handle_log_line_for_rule(la_rule_t *rule, char *line)$/;"	f
+handle_new_content	sources.c	/^handle_new_content(la_source_t *source)$/;"	f
+handle_signal	logactiond.c	/^handle_signal(int signal)$/;"	f	file:
+include_func	configfile.c	/^include_func(config_t *config, const char *include_dir, const char *path, const char **error)$/;"	f
+init_end_queue	endqueue.c	/^init_end_queue(void)$/;"	f
+init_watching	watch.c	/^init_watching(void)$/;"	f
+init_watching_inotify	inotify.c	/^init_watching_inotify(void)$/;"	f
+inotify_fd	inotify.c	/^static int inotify_fd;$/;"	v	file:
+insert_node_after	nodelist.c	/^insert_node_after(kw_node_t *ex_node, kw_node_t *new_node)$/;"	f
+insert_node_before	nodelist.c	/^insert_node_before(kw_node_t *ex_node, kw_node_t *new_node)$/;"	f
+la_config	configfile.c	/^la_config_t *la_config;$/;"	v
+la_debug	misc.c	/^la_debug(char *fmt, ...)$/;"	f
+la_debug_inotify_event	inotify.c	/^la_debug_inotify_event(struct inotify_event *event, uint32_t monitored)$/;"	f	file:
+la_log	misc.c	/^la_log(int priority, char *fmt, ...)$/;"	f
+la_log_errno	misc.c	/^la_log_errno(int priority, char *fmt, ...)$/;"	f
+linebuffer	sources.c	/^static char *linebuffer = NULL;$/;"	v	file:
+linebuffer_size	sources.c	/^size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE;$/;"	v
+list_length	nodelist.c	/^list_length(kw_list_t *list)$/;"	f
+load_actions	configfile.c	/^load_actions(la_rule_t *rule, const config_setting_t *rule_def)$/;"	f	file:
+load_defaults	configfile.c	/^load_defaults(void)$/;"	f	file:
+load_ignore_addresses	configfile.c	/^load_ignore_addresses(const config_setting_t *section)$/;"	f	file:
+load_la_config	configfile.c	/^load_la_config(char *filename)$/;"	f
+load_patterns	configfile.c	/^load_patterns(la_rule_t *rule, const config_setting_t *rule_def)$/;"	f	file:
+load_properties	configfile.c	/^load_properties(const config_setting_t *section)$/;"	f	file:
+load_rules	configfile.c	/^load_rules(void)$/;"	f	file:
+load_single_rule	configfile.c	/^load_single_rule(const config_setting_t *rule_def)$/;"	f	file:
+log_level	logactiond.c	/^unsigned int log_level = LOG_DEBUG; \/* by default log only stuff < log_level *\/$/;"	v
+main	logactiond.c	/^main(int argc, char *argv[])$/;"	f
+message_buffer	misc.c	/^static char message_buffer[1000];$/;"	v	file:
+node	nodelist.c	/^	kw_node_t node;$/;"	m	struct:foo_s	file:
+pid_file	logactiond.c	/^char *pid_file = NULL;$/;"	v
+read_options	logactiond.c	/^read_options(int argc, char *argv[])$/;"	f	file:
+register_signal_handler	logactiond.c	/^register_signal_handler(void)$/;"	f	file:
+rem_head	nodelist.c	/^rem_head(kw_list_t *list)$/;"	f
+rem_tail	nodelist.c	/^rem_tail(kw_list_t *list)$/;"	f
+remove_node	nodelist.c	/^remove_node(kw_node_t *node)$/;"	f
+run_in_foreground	logactiond.c	/^bool run_in_foreground = false;$/;"	v
+scan_action_tokens	commands.c	/^scan_action_tokens(kw_list_t *property_list, const char *string)$/;"	f	file:
+scan_single_action_token	commands.c	/^scan_single_action_token(kw_list_t *property_list, const char *string, unsigned$/;"	f	file:
+scan_single_token	patterns.c	/^scan_single_token(kw_list_t *property_list, const char *string, unsigned int pos,$/;"	f	file:
+scan_tokens	patterns.c	/^scan_tokens(kw_list_t *property_list, const char *string)$/;"	f	file:
+set_end_time	endqueue.c	/^set_end_time(la_command_t *command, int duration)$/;"	f	file:
+skeleton_daemon	logactiond.c	/^skeleton_daemon()$/;"	f	file:
+stderr_or_syslog	misc.c	/^stderr_or_syslog(int priority, char *message)$/;"	f	file:
+text	nodelist.c	/^	char *text;$/;"	m	struct:foo_s	file:
+token_length	commands.c	/^token_length(const char *string)$/;"	f	file:
+token_length	patterns.c	/^token_length(const char *string)$/;"	f	file:
+trigger_all_actions	rules.c	/^trigger_all_actions(la_rule_t *rule, la_pattern_t *pattern)$/;"	f	file:
+trigger_command	commands.c	/^trigger_command(la_command_t *command)$/;"	f
+trigger_single_action	rules.c	/^trigger_single_action(la_command_t *command)$/;"	f	file:
+unload_la_config	configfile.c	/^unload_la_config(void)$/;"	f
+unwatch_source	sources.c	/^unwatch_source(la_source_t *source)$/;"	f
+unwatch_source_inotify	inotify.c	/^unwatch_source_inotify(la_source_t *source)$/;"	f
+watch_forever	watch.c	/^watch_forever(void)$/;"	f
+watch_forever_inotify	inotify.c	/^watch_forever_inotify(void)$/;"	f
+watch_source	sources.c	/^watch_source(la_source_t *source, int whence)$/;"	f
+watch_source_inotify	inotify.c	/^watch_source_inotify(la_source_t *source)$/;"	f
+watched_file_created	inotify.c	/^watched_file_created(la_source_t *source)$/;"	f	file:
+watched_file_deleted	inotify.c	/^watched_file_deleted(la_source_t *source)$/;"	f	file:
+watched_file_moved_to	inotify.c	/^watched_file_moved_to(la_source_t *source)$/;"	f	file:
+xfree	misc.c	/^void xfree(void *ptr)$/;"	f
+xmalloc	misc.c	/^xmalloc(size_t n)$/;"	f
+xstrdup	misc.c	/^xstrdup(const char *s)$/;"	f
+xstrndup	misc.c	/^xstrndup(const char *s, size_t n)$/;"	f
