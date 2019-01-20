@@ -124,11 +124,9 @@ convert_command(la_command_t *command)
 		if (repl)
 			result_ptr = stpncpy(result_ptr, repl, strlen(repl));
 		else
-			/* in case there's no value found, simply copy verbatimly
-			 * from action */
-			result_ptr = stpncpy(result_ptr,
-					command->string+action_property->pos,
-					action_property->length);
+			/* in case there's no value found, we now copy nothing
+                         * - still TBD whether this is a good idea */
+                        ;
 
 
 		start_pos = action_property->pos + action_property->length;
