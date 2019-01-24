@@ -18,8 +18,6 @@
 
 #include <config.h>
 
-//#include <stdio.h>
-//#include <stdlib.h>
 #include <string.h>
 #include <sys/select.h>
 #include <syslog.h>
@@ -34,6 +32,10 @@
 static char *linebuffer = NULL;
 size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE;
 
+/*
+ * If string ends with a newline, replace this by \0
+ */
+
 static void
 cut_newline(char *line)
 {
@@ -43,20 +45,27 @@ cut_newline(char *line)
 		line[len-1] = '\0';
 }
 
+/*
+ * Call handle_log_line_for_rule() for each of the sources rules
+ */
+
 static void
 handle_log_line(la_source_t *source, char *line)
 {
 	la_debug("handle_log_line(%s)\n", line);
 	cut_newline(line);
 
-	la_rule_t *rule = (la_rule_t *) source->rules->head.succ;
-
-	while (rule->node.succ)
+        for (la_rule_t *rule = (la_rule_t *) source->rules->head.succ;
+                        rule->node.succ;
+                        rule = (la_rule_t *) rule->node.succ)
 	{
 		handle_log_line_for_rule(rule, line);
-		rule = (la_rule_t *) rule->node.succ;
 	}
 }
+
+/*
+ * Read new content from file and hand over to handle_log_line()
+ */
 
 void
 handle_new_content(la_source_t *source)
@@ -64,21 +73,6 @@ handle_new_content(la_source_t *source)
 	/* TODO: less random number? */
 	if (!linebuffer)
 		linebuffer = (char *) xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
-
-	//if (feof(source->file))
-	//{
-		/* if we're directly EOF after a IN_MODIFY event, someone has
-		 * done something weird to the log file - maybe truncatet it or
-		 * written to the beginning. We have nore real chance of
-		 * knowing. Before we risk piping the whole contents of a huge
-		 * logfile through our daemon, we're playing it safe and rather
-		 * skip everything. And wait for the next line.
-		 */
-		//if (fseek(source->file, 0, SEEK_END))
-			//die_err("fseek failed");
-		//la_debug("handle_new_content() - something weird happened\n");
-		//return;
-	//}
 
 	ssize_t num_read = getline(&linebuffer, &linebuffer_size, source->file);
 	if (num_read==-1)
@@ -89,7 +83,7 @@ handle_new_content(la_source_t *source)
 			return;
 		}
 		else
-			die_err("Error while reading fromlogfile");
+			die_err("Error while reading from logfile");
 	}
 	handle_log_line(source, linebuffer);
 
@@ -131,6 +125,10 @@ watch_source(la_source_t *source, int whence)
 
 }
 
+/*
+ * Unwatch a previously watched file
+ */
+
 void
 unwatch_source(la_source_t *source)
 {
@@ -155,8 +153,8 @@ create_source(const char *name, la_sourcetype_t type, const char *location)
 	la_source_t *result;
 
 	result = (la_source_t *) xmalloc(sizeof(la_source_t));
-	result->name = name;
-	result->location = location;
+	result->name = xstrdup(name);
+	result->location = xstrdup(location);
 	result->type = type;
 	result->rules = create_list();
 

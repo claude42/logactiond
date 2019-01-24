@@ -100,8 +100,6 @@ create_property_from_token(const char *name, size_t length, unsigned int pos,
 	return result;
 }
 
-/* FIXME: take care of strdup strings when necessary */
-
 la_property_t *
 create_property_from_config(const char *name, const char *value)
 {

@@ -161,8 +161,6 @@ trigger_command(la_command_t *command)
 
 	if (command->end_command && command->duration > 0)
 		enqueue_end_command(command->end_command, command->duration);
-
-	//xfree(command);
 }
 
 /*
@@ -303,6 +301,7 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
  * FIXME: use another value than INT_MAX
  * TODO: clarify meaning of begin_command struct members vs. end_command (same?
  * end_command always ignored?
+ * TODO: maybe get rid of separate end_command at all
  */
 
 la_command_t *

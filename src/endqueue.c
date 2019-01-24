@@ -18,10 +18,6 @@
 
 #include <config.h>
 
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include <string.h>
-//#include <sys/select.h>
 #include <time.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -33,6 +29,10 @@
 
 static kw_list_t *end_queue = NULL;
 pthread_mutex_t end_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/*
+ * Remove and trigger all remaining end and shutdown commands in the queue
+ */
 
 void
 empty_end_queue(void)

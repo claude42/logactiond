@@ -25,6 +25,8 @@
  * Can be freed with free()
  */
 
+/* TODO: we need a xcreate_list() as well */
+
 kw_list_t *
 create_list(void)
 {

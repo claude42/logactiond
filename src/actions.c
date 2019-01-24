@@ -18,10 +18,7 @@
 
 #include <config.h>
 
-//#include <stdio.h>
-//#include <stdlib.h>
 #include <string.h>
-//#include <sys/select.h>
 #include <time.h>
 #include <assert.h>
 #include <limits.h>
@@ -31,6 +28,9 @@
 #include "logactiond.h"
 #include "nodelist.h"
 
+/* TODO: combine next two functions into one, why are these in actions.c
+ * anyway */
+
 la_command_t *
 create_begin_command(la_rule_t *rule, const char *begin, const char *end)
 {
@@ -38,11 +38,22 @@ create_begin_command(la_rule_t *rule, const char *begin, const char *end)
 
 	assert(begin);
 
+        result = create_command(begin, rule->duration);
+        result->rule = rule;
+        if (end)
+        {
+                result->end_command = create_command(end, -1);
+                result->end_command->rule = rule;
+        }
+        
+
+        /* Huh: that looked broken, why did that work at all - or was there
+         * some meaning behind that?!?
 	{
 		result = create_command(begin, rule->duration);
 		if (end)
 			result->end_command = create_command(end, -1);
-	}
+	} */
 
 	return result;
 }
@@ -58,7 +69,7 @@ create_initialize_command(la_rule_t *rule, const char *initialize, const char *s
 	result->rule = rule;
 	if (shutdown)
 	{
-		result-> end_command = create_command(shutdown, -1);
+		result->end_command = create_command(shutdown, -1);
 		result->end_command->rule = rule;
 	}
 
@@ -77,7 +88,7 @@ create_action(const char *name, la_rule_t *rule, const char *initialize,
 
 	la_action_t *result = (la_action_t *) xmalloc(sizeof(la_action_t));
 
-	result->name = name;
+	result->name = xstrdup(name);
 	result->rule = rule;
 
 	if (initialize)
@@ -93,7 +104,7 @@ create_action(const char *name, la_rule_t *rule, const char *initialize,
 	if (begin)
 		result->begin = create_begin_command(rule, begin, end);
 	else
-		result->begin = NULL;
+                die_semantic("Begin action always required!\n");
 
 	return result;
 }

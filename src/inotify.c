@@ -21,11 +21,9 @@
 
 #if HAVE_INOTIFY
 
-//#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/inotify.h>
-//#include <sys/select.h>
 #include <unistd.h>
 #include <syslog.h>
 #include <assert.h>
@@ -33,8 +31,6 @@
 #include <libgen.h>
 
 #include <libconfig.h>
-
-//#include "dirname.h"
 
 #include "logactiond.h"
 
@@ -112,8 +108,9 @@ find_source_by_parent_wd(int parent_wd, char *file_name)
 	{
 		if (source->parent_wd == parent_wd)
 		{
-			/* all praise basename/dirname */
-			char *tmp = strdup(source->location);
+			/* all praise basename/dirname which may or may not
+                         * modify the original string... */
+			char *tmp = xstrdup(source->location);
 			char *base_name = basename(tmp);
 			free(tmp);
 			if (!strcmp(file_name, base_name))

@@ -19,10 +19,7 @@
 #include <config.h>
 
 #include <regex.h>
-//#include <stdio.h>
-//#include <stdlib.h>
 #include <string.h>
-//#include <sys/select.h>
 #include <syslog.h>
 
 #include <libconfig.h>
@@ -31,11 +28,13 @@
 #include "nodelist.h"
 
 
+/* TODO: refactor */
 
 /*
- * Replace first occurance of "<HOST>" in string by "([.:[:xdigit:]]+)"
+ * Replaces first occurance of "<HOST>" in string by "([.:[:xdigit:]]+)".
+ * Replaces all other "<SOMETHING>" tokens by "(.+)".
  *
- * Returns new string, doesn't modify original.
+ * Returns newly allocated string, doesn't modify original.
  */
 
 static char *
@@ -49,6 +48,8 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
 	const char *string_ptr = string;
 
 	unsigned int start_pos = 0; /* position after last token */
+        unsigned int num_host_tokens = 0;
+
 	la_property_t *property = (la_property_t *) property_list->head.succ;
 
 	while (property->node.succ)
@@ -57,10 +58,17 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
 		result_ptr = stpncpy(result_ptr, string_ptr, property->pos - start_pos);
 		/* copy corresponding regular expression for token */
                 if (property->is_host_property)
+                {
+                        num_host_tokens++;
+                        if (num_host_tokens>1)
+                                die_hard("Only one <HOST> token allowed per pattern\n");
                         result_ptr = stpncpy(result_ptr, LA_HOST_TOKEN_REPL,
                                         LA_HOST_TOKEN_REPL_LEN);
+                }
                 else
+                {
                         result_ptr = stpncpy(result_ptr, LA_TOKEN_REPL, LA_TOKEN_REPL_LEN);
+                }
 
 		start_pos = property->pos + property->length;
 		string_ptr = string + start_pos;
@@ -105,6 +113,11 @@ token_length(const char *string)
 	return 0; //avoid warning
 }
 
+/*
+ * Creates a new property from token at *string with pos and subexpression.
+ * Adds property to property list.
+ */
+
 static size_t
 scan_single_token(kw_list_t *property_list, const char *string, unsigned int pos,
 		unsigned int subexpression)
@@ -123,7 +136,10 @@ scan_single_token(kw_list_t *property_list, const char *string, unsigned int pos
 }
 
 /*
- * Scans pattern string for tokens. Adds found tokens to property_list.
+ * Scans pattern string for tokens. Tokens have the form <NAME> (as of now).
+ * Adds each found token to property_list (incl. # of subexpression).
+ *
+ * If string contains \, next character is ignored.
  *
  * Return number of found tokens.
  */

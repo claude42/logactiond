@@ -37,6 +37,11 @@
 
 la_config_t *la_config;
 
+/*
+ * Return string for path relative to setting. Return NULL if element does not
+ * exist.
+ */
+
 const char*
 config_get_string_or_null(const config_setting_t *setting, const char *name)
 {
@@ -46,6 +51,11 @@ config_get_string_or_null(const config_setting_t *setting, const char *name)
 
 	return result;
 }
+
+/*
+ * Return unsigned int for path relative to setting. Return -1 if element does
+ * not exist.
+ */
 
 int
 config_get_unsigned_int_or_negative(const config_setting_t *setting,
@@ -58,8 +68,12 @@ config_get_unsigned_int_or_negative(const config_setting_t *setting,
 	return result;
 }
 
+/*
+ * Return string for path relative to setting. Die if element does not exist
+ */
+
 const char*
-config_get_string_or_die( const config_setting_t *setting, const char *name)
+config_get_string_or_die(const config_setting_t *setting, const char *name)
 {
 	const char* result = config_get_string_or_null(setting, name);
 
@@ -68,6 +82,11 @@ config_get_string_or_die( const config_setting_t *setting, const char *name)
 
 	return result;
 }
+
+/*
+ * Return config_setting_t for path relative to setting. Die if element does
+ * not exist
+ */
 
 const config_setting_t
 *config_setting_lookup_or_die( const config_setting_t *setting,
@@ -142,9 +161,17 @@ get_source(const char *source)
 	return  result;
 }
 
-const char
-*get_source_name(const config_setting_t *rule)
+/*
+ * Returns name of source - i.e. label reference by "source" item in a rule
+ * section.
+ */
+
+const char *
+get_source_name(const config_setting_t *rule)
 {
+        return config_get_string_or_die(rule, LA_RULE_SOURCE_LABEL);
+
+        /* What on earth was I thinking?!?
 	config_setting_t *source_def;
 	const char *result;
 
@@ -156,11 +183,11 @@ const char
 	if (!result)
 		die_semantic("Source name missing\n");
 
-	return result;
+	return result;*/
 }
 
-const char
-*get_source_location(const config_setting_t *rule)
+const char *
+get_source_location(const config_setting_t *rule)
 {
 	config_setting_t *source_def;
 	const char *result;
@@ -175,7 +202,7 @@ const char
 	return result;
 }
 
-la_sourcetype_t
+static la_sourcetype_t
 get_source_type(const config_setting_t *rule)
 {
 	config_setting_t *source_def;
@@ -229,8 +256,7 @@ compile_list_of_actions(la_rule_t *rule,
 	{
 		config_setting_t *list_item =
 			config_setting_get_elem(action_def, i);
-		compile_actions(rule,
-				get_action(config_setting_get_string(
+		compile_actions(rule, get_action(config_setting_get_string(
 						list_item)));
 	}
 }
@@ -257,7 +283,7 @@ load_actions(la_rule_t *rule, const config_setting_t *rule_def)
 }
 
 static void
-compile_matches(la_rule_t *rule,
+compile_pattern(la_rule_t *rule,
 		const config_setting_t *pattern_section)
 {
 	if (!pattern_section)
@@ -280,7 +306,7 @@ compile_matches(la_rule_t *rule,
 }
 
 static void
-compile_list_of_matches(la_rule_t *rule,
+compile_list_of_patterns(la_rule_t *rule,
 		const config_setting_t *pattern_reference)
 {
 	int n_items = config_setting_length(pattern_reference);
@@ -289,15 +315,16 @@ compile_list_of_matches(la_rule_t *rule,
 	{
 		config_setting_t *list_item =
 			config_setting_get_elem(pattern_reference, i);
-		compile_matches(rule,
-				get_pattern(config_setting_get_string(
-						list_item)));
+                compile_pattern(rule, get_pattern(config_setting_get_string(
+                                                list_item)));
 	}
 }
 
 
 /*
- * Return a list of all patterns (i.e. regex strings) assigned to a rule
+ * Return a list of all patterns (i.e. regex strings) assigned to a rule.
+ * Calls compile_patterns() or compile_list_of_patterns() depending on whether
+ * its a string or a list of strings.
  */
 
 static void
@@ -308,11 +335,11 @@ load_patterns(la_rule_t *rule, const config_setting_t *rule_def)
 	int type = config_setting_type(pattern_reference);
 
 	if (type == CONFIG_TYPE_STRING)
-		compile_matches(rule, get_pattern(
+		compile_pattern(rule, get_pattern(
 					config_setting_get_string(
 						pattern_reference)));
 	else if (type == CONFIG_TYPE_LIST)
-		compile_list_of_matches(rule, pattern_reference);
+		compile_list_of_patterns(rule, pattern_reference);
 	else
 		die_semantic("Element neither string nor list");
 }
@@ -348,17 +375,16 @@ load_ignore_addresses(const config_setting_t *section)
 }
 
 
-static kw_list_t *
-load_properties(const config_setting_t *section)
+static void
+load_properties(kw_list_t *properties, const config_setting_t *section)
 {
 	la_debug("load_properties(%s)\n", config_setting_name(section));
-	kw_list_t *result = create_list();
 
 	config_setting_t *properties_section =
 		config_setting_get_member(section, LA_PROPERTIES_LABEL);
 
 	if (!properties_section)
-		return result;
+		return;
 
 	int n = config_setting_length(properties_section);
 	for (int i=0; i<n; i++)
@@ -375,10 +401,8 @@ load_properties(const config_setting_t *section)
 		la_property_t *property = create_property_from_config(name, value);
 
 		la_debug("Loaded prop %s from section %s\n", name, config_setting_name(section));
-		add_tail(result, (kw_node_t *) property);
+		add_tail(properties, (kw_node_t *) property);
 	}
-
-	return result;
 }
 
 
@@ -412,7 +436,7 @@ load_single_rule(const config_setting_t *rule_def)
 				LA_PERIOD_LABEL),
 			config_get_unsigned_int_or_negative(rule_def,
 				LA_DURATION_LABEL));
-	new_rule->properties = load_properties(rule_def);
+        load_properties(new_rule->properties, rule_def);
 	load_patterns(new_rule, rule_def);
 	load_actions(new_rule, rule_def);
 	add_tail(source->rules, (kw_node_t *) new_rule);
@@ -454,7 +478,8 @@ load_defaults(void)
 			config_get_unsigned_int_or_negative(defaults_section,
 					LA_DURATION_LABEL);
 
-		la_config->default_properties = load_properties(defaults_section);
+                la_config->default_properties = create_list();
+                load_properties(la_config->default_properties, defaults_section);
 		la_config->ignore_addresses = load_ignore_addresses(defaults_section);
 	}
 	else

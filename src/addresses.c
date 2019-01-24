@@ -36,11 +36,7 @@
 
 #include <config.h>
 
-//#include <regex.h>
-//#include <stdio.h>
-//#include <stdlib.h>
 #include <string.h>
-//#include <sys/select.h>
 #include <assert.h>
 
 #include "logactiond.h"
@@ -68,7 +64,7 @@ create_address(const char *ip)
 {
 	la_address_t *result = (la_address_t *) xmalloc(sizeof(la_address_t));
 
-	result->ip = ip;
+	result->ip = xstrdup(ip);
 
 	return result;
 }

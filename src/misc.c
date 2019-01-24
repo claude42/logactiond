@@ -26,8 +26,6 @@
 #include <errno.h>
 #include <stdarg.h>
 
-//#include "xalloc.h"
-
 #include "logactiond.h"
 
 extern bool run_in_foreground;

@@ -93,14 +93,22 @@ typedef struct la_command_s la_command_t;
 // TODO: add default type
 typedef enum la_sourcetype_s { LA_RULE_TYPE_FILE, LA_RULE_TYPE_SYSTEMD } la_sourcetype_t;
 
+/*
+ * bla
+ */
+
 typedef struct la_address_s
 {
 	kw_node_t node;
-	const char *ip;
+        /* IP address as string, strdup()d */
+	const char *ip; 
 } la_address_t;
 
 /*
  * bla
+ *
+ * name - name of property: strdup()d
+ * value - value of property: strdup()d
  *
  * Note: both name and value must be assigned strdup()ed strings
  *
@@ -214,17 +222,28 @@ typedef struct la_action_s
 	la_command_t *begin;
 } la_action_t;
 
+/*
+ * Represents a source
+ */
+
 typedef struct la_source_s
 {
 	kw_node_t node;
+        /* Name of source in config file - strdup()d */
 	const char *name;
 	la_sourcetype_t type;
+        /* Filename (or equivalent) - strdup()d */
 	const char *location;
+        /* Parent dir of log file - currently only used for inotify */
 	const char *parent_dir;
+        /* Rules assigned to log file */
 	kw_list_t *rules;
+        /* File handle for log file */
 	FILE *file;
 #if HAVE_INOTIFY
+        /* Watch descriptor for log file itself */
         int wd;
+        /* Watch descriptor for parent directory */
 	int parent_wd;
 #endif /* HAVE_INOTIFY */
 

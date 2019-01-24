@@ -18,10 +18,8 @@
 
 #include <config.h>
 
-//#include <stdio.h>
-//#include <stdlib.h>
+#include <stdlib.h>
 #include <string.h>
-//#include <sys/select.h>
 #include <stdbool.h>
 #include <syslog.h>
 
@@ -91,6 +89,8 @@ find_trigger(la_rule_t *rule, const char *command_string, const char *host)
 
 	return NULL;
 }
+
+/* TODO: definitely should refactor */
 
 /*
  * - Add command to trigger list if not in there yet.
@@ -270,7 +270,8 @@ clear_property_values(kw_list_t *property_list)
 
 
 /*
- * Matches line to all patterns assigned to rule.
+ * Matches line to all patterns assigned to rule. Does regexec() with all
+ * patterns. Does trigger_all_actions() for those that match.
  */
 
 void
@@ -314,7 +315,7 @@ create_rule(char *name, la_source_t *source, int threshold, int period, int
 {
 	la_rule_t *result = (la_rule_t *) xmalloc(sizeof(la_rule_t));
 
-	result->name = name;
+	result->name = xstrdup(name);
 	result->source = source;
 
 	if (threshold >= 0)
@@ -330,6 +331,7 @@ create_rule(char *name, la_source_t *source, int threshold, int period, int
 	result->patterns = create_list();
 	result->actions = create_list();
 	result->trigger_list = create_list();
+        result->properties = create_list();
 
 	return result;
 }
