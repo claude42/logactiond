@@ -46,7 +46,8 @@
 bool
 address_on_ignore_list(const char *ip)
 {
-	assert(ip);
+        if (!ip)
+                return false;
 
 	for (la_address_t *address = (la_address_t *) la_config->ignore_addresses->head.succ;
 			address->node.succ;
