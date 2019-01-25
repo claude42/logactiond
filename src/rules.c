@@ -100,7 +100,7 @@ find_trigger(la_rule_t *rule, const char *command_string, const char *host)
  */
 
 static void
-handle_action_on_trigger_list(la_command_t *command)
+handle_command_on_trigger_list(la_command_t *command)
 {
 	/* new commands not on the trigger_list yet have n_triggers == 0 */
 	if (command->n_triggers == 0)
@@ -179,7 +179,7 @@ handle_action_on_trigger_list(la_command_t *command)
  */
 
 static void
-trigger_single_action(la_command_t *command)
+trigger_single_command(la_command_t *command)
 {
 	/* FIXME: even when threshold == 1 should check in advance if similar
 	 * command has already been trigger */
@@ -190,7 +190,7 @@ trigger_single_action(la_command_t *command)
 	else
 	{
 		if (!address_on_ignore_list(command->host))
-			handle_action_on_trigger_list(command);
+			handle_command_on_trigger_list(command);
 		else
                         la_log(LOG_INFO, "Host: %s, always ignored\n",
                                         command->host);
@@ -198,7 +198,7 @@ trigger_single_action(la_command_t *command)
 }
 
 /*
- * Trigger all actions assigned to a rule
+ * Trigger all commands assigned to a rule
  *
  * Inputs
  * rule - 
@@ -206,25 +206,26 @@ trigger_single_action(la_command_t *command)
  */
 
 static void
-trigger_all_actions(la_rule_t *rule, la_pattern_t *pattern)
+trigger_all_commands(la_rule_t *rule, la_pattern_t *pattern)
 {
-	la_debug("trigger_all_actions()\n");
-	for (la_action_t *action = (la_action_t *) rule->actions->head.succ;
-			action->node.succ;
-			action = (la_action_t *) action->node.succ)
-	{
-		const char *host = get_host_property_value(pattern->properties);
-		la_command_t *command;
+	la_debug("trigger_all_commands()\n");
+        const char *host = get_host_property_value(pattern->properties);
 
-		/* first look whether the same action has been triggered by the
+        for (la_command_t *template = (la_command_t *) rule->begin_commands->head.succ;
+                        template->node.succ;
+                        template = (la_command_t *) template->node.succ)
+	{
+                la_command_t *command;
+
+		/* first look whether the same command has been triggered by the
 		 * same host before */
-		command = find_trigger(rule, action->begin->begin_string, host);
+		command = find_trigger(rule, template->begin_string, host);
 
 		/* if not create a copy of the command template */
 		if (!command)
-                        command = create_command_from_template(action->begin, rule, pattern);
+                        command = create_command_from_template(template, rule, pattern);
 
-		trigger_single_action(command);
+		trigger_single_command(command);
 	}
 }
 
@@ -271,7 +272,7 @@ clear_property_values(kw_list_t *property_list)
 
 /*
  * Matches line to all patterns assigned to rule. Does regexec() with all
- * patterns. Does trigger_all_actions() for those that match.
+ * patterns. Does trigger_all_commands() for those that match.
  */
 
 void
@@ -288,7 +289,7 @@ handle_log_line_for_rule(la_rule_t *rule, char *line)
 		{
 			assign_value_to_properties(pattern->properties, line,
 					pmatch);
-			trigger_all_actions(rule, pattern);
+			trigger_all_commands(rule, pattern);
                         clear_property_values(pattern->properties);
 			return;
 		}
@@ -301,7 +302,7 @@ handle_log_line_for_rule(la_rule_t *rule, char *line)
  * Inputs
  * source - source file this rule applies to
  * threshold - how many time a rule must match in the given period before an
- * action is triggered
+ * command is triggered
  * period - period (in seconds) for the threshold
  * duration - duration (in seconds) after which end command is activated
  *
@@ -329,7 +330,7 @@ create_rule(char *name, la_source_t *source, int threshold, int period, int
 	result->period = period!=-1 ? period : la_config->default_period;
 
 	result->patterns = create_list();
-	result->actions = create_list();
+	result->begin_commands = create_list();
 	result->trigger_list = create_list();
         result->properties = create_list();
 

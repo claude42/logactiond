@@ -150,7 +150,7 @@ convert_command(la_command_t *command, la_commandtype_t type)
 	else
 		*result_ptr = '\0';
 
-	la_debug("convert_command(%s)=%s\n", command->string, result);
+	la_debug("convert_command(%s)=%s\n", command->begin_string, result);
 	return result;
 }
 
@@ -309,7 +309,7 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
 }
 
 /*
- * Creates a new command
+ * Creates a new command template
  *
  * Duration = -1 prevents any end command
  * Duration = INT_MAX will result that the end command will only be fired on shutdown
@@ -320,7 +320,8 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
  */
 
 la_command_t *
-create_command(const char *begin_string, const char *end_string, int duration)
+create_template(la_rule_t *rule, const char *begin_string,
+                const char *end_string, int duration)
 {
         assert(begin_string);
 
@@ -332,16 +333,12 @@ create_command(const char *begin_string, const char *end_string, int duration)
         result->n_begin_properties = begin_string ?
                 scan_action_tokens(result->begin_properties, begin_string) : 0;
 
-        if (end_string)
-        {
-                result->end_string = end_string ? xstrdup(end_string) : NULL;
-                result->end_properties = create_list();
-                result->n_end_properties = end_string ?
-                        scan_action_tokens(
-                                        result->end_properties, end_string) : 0;
-        }
+        result->end_string = end_string ? xstrdup(end_string) : NULL;
+        result->end_properties = create_list();
+        result->n_end_properties = end_string ?
+                scan_action_tokens(result->end_properties, end_string) : 0;
 
-	result->rule = NULL;
+	result->rule = rule;
 	result->pattern = NULL;
 	result->host = NULL;
 

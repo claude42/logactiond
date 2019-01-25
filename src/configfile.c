@@ -225,25 +225,34 @@ get_source_type(const config_setting_t *rule)
 }
 
 /*
- * Add struct la_action_s to existing actions
+ * Add command for each action's begin command to the begin_commands of
+ * the corresponding rule.
  */
 
 static void
 compile_actions(la_rule_t *rule, const config_setting_t *action_def)
 {
-	la_action_t *la_action = create_action(
-			config_setting_name(action_def),
-			rule,
-			config_get_string_or_null(action_def,
-				LA_ACTION_INITIALIZE_LABEL),
-			config_get_string_or_null(action_def,
-				LA_ACTION_SHUTDOWN_LABEL),
-			config_get_string_or_die(action_def,
-				LA_ACTION_BEGIN_LABEL),
-			config_get_string_or_null(action_def,
-				LA_ACTION_END_LABEL));
+        la_command_t *command;
+        const char *initialize = config_get_string_or_null(action_def,
+                        LA_ACTION_INITIALIZE_LABEL);
+        const char *shutdown = config_get_string_or_null(action_def,
+                        LA_ACTION_SHUTDOWN_LABEL);
+        const char *begin = config_get_string_or_die(action_def,
+                        LA_ACTION_BEGIN_LABEL);
+        const char *end = config_get_string_or_null(action_def,
+                        LA_ACTION_END_LABEL);
 
-	add_tail(rule->actions, (kw_node_t *) la_action);
+        if (initialize)
+                trigger_command(create_template(rule, initialize, shutdown,
+                                        INT_MAX));
+
+        if (begin)
+                add_tail(rule->begin_commands, (kw_node_t *)
+                                create_template(rule, begin, end,
+                                        rule->duration));
+        else
+                die_semantic("Begin action always required!\n");
+
 }
 
 static void

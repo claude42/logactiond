@@ -174,7 +174,7 @@ typedef struct la_rule_s
 	char *name;
 	la_source_t *source;
 	kw_list_t *patterns;
-	kw_list_t *actions;
+	kw_list_t *begin_commands;
 	unsigned int threshold;
 	unsigned int period;
 	unsigned int duration;
@@ -216,15 +216,6 @@ typedef struct la_command_s
 	time_t fire_time;	/* time when command was fired */
 
 } la_command_t;
-
-typedef struct la_action_s
-{
-	kw_node_t node;
-	const char *name;
-	la_rule_t *rule;
-	la_command_t *initialize;
-	la_command_t *begin;
-} la_action_t;
 
 /*
  * Represents a source
@@ -325,15 +316,8 @@ la_command_t * dup_command(la_command_t *command);
 la_command_t * create_command_from_template(la_command_t *template,
                 la_rule_t *rule, la_pattern_t *pattern);
 
-la_command_t *create_command(const char *begin_string, const char *end_string,
-                int duration);
-
-/* actions.c */
-
-la_action_t *create_action(const char *name, la_rule_t *rule,
-		const char *initialize, const char *shutdown,
-		const char *begin, const char *end);
-
+la_command_t *create_template(la_rule_t *rule, const char *begin_string,
+                const char *end_string, int duration);
 
 /* properties.c */
 
