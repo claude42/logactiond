@@ -195,7 +195,7 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
                                         pattern);
         }
 
-        trigger_command(command);
+        handle_command_on_trigger_list(command);
 }
 
 /*
