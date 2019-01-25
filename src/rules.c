@@ -56,7 +56,7 @@ get_next_pattern_for_rule(kw_node_t **iterator)
 static void
 add_trigger(la_command_t *command)
 {
-	command->n_triggers = 1;
+	command->n_triggers = 0;
 	command->start_time = time(NULL);
 	command->fire_time = 0;
 
@@ -104,70 +104,64 @@ handle_command_on_trigger_list(la_command_t *command)
 {
 	/* new commands not on the trigger_list yet have n_triggers == 0 */
 	if (command->n_triggers == 0)
-	{	
 		add_trigger(command);
-		la_log(LOG_INFO, "Host: %s, trigger 1 for %s\n", command->host,
-				command->rule->name);
-	}
-	else
-	{
-		if (!command->fire_time)
-		{
-			/* not yet fired, still accumulating triggers */
 
-			if (time(NULL) - command->start_time < command->rule->period)
-			{
-				/* still within current period - increase counter,
-				 * trigger if necessary */
-				command->n_triggers++;
-				la_log(LOG_INFO, "Host: %s, trigger %u for %s\n",
-                                                command->host,
-                                                command->n_triggers,
-                                                command->rule->name);
-				if (command->n_triggers >= command->rule->threshold)
-				{
-					//remove_node((kw_node_t *) command);
-					command->fire_time=time(NULL);
-					la_log(LOG_INFO, "Host: %s, command fired for  %s\n",
-                                                command->host,
-                                                command->rule->name);
-					trigger_command(command);
-				}
-			}
-			else
-			{
-				/* if not, reset counter and period */
-				command->start_time = time(NULL);
-				command->n_triggers = 1;
-				la_log(LOG_INFO, "Host: %s, trigger 1 for %s\n",
-                                                command->host,
-                                                command->rule->name);
-			}
-		}
-		else
-		{
-			/* already fired but still active */
+        if (!command->fire_time)
+        {
+                /* not yet fired, still accumulating triggers */
 
-			if (time(NULL) - command->fire_time < command->duration)
-			{
-				/* still active, ignore new incoming triggers */
-				la_log(LOG_INFO, "Host: %s ignored, command active for %s\n",
-                                                command->host,
-                                                command->rule->name);
-			}
-			else
-			{
-				/* not active any more, end command has run
-				 * already. */
-				command->fire_time = 0;
-				command->start_time = time(NULL);
-				command->n_triggers = 1;
-				la_log(LOG_INFO, "Host: %s, trigger 1 for %s\n",
-                                                command->host,
-                                                command->rule->name);
-			}
-		}
-	}
+                if (time(NULL) - command->start_time < command->rule->period)
+                {
+                        /* still within current period - increase counter,
+                         * trigger if necessary */
+                        command->n_triggers++;
+                        la_log(LOG_INFO, "Host: %s, trigger %u for %s\n",
+                                        command->host,
+                                        command->n_triggers,
+                                        command->rule->name);
+                        if (command->n_triggers >= command->rule->threshold)
+                        {
+                                //remove_node((kw_node_t *) command);
+                                command->fire_time=time(NULL);
+                                la_log(LOG_INFO, "Host: %s, command fired for  %s\n",
+                                        command->host,
+                                        command->rule->name);
+                                trigger_command(command);
+                        }
+                }
+                else
+                {
+                        /* if not, reset counter and period */
+                        command->start_time = time(NULL);
+                        command->n_triggers = 1;
+                        la_log(LOG_INFO, "Host: %s, trigger 1 for %s\n",
+                                        command->host,
+                                        command->rule->name);
+                }
+        }
+        else
+        {
+                /* already fired but still active */
+
+                if (time(NULL) - command->fire_time < command->duration)
+                {
+                        /* still active, ignore new incoming triggers */
+                        la_log(LOG_INFO, "Host: %s ignored, command active for %s\n",
+                                        command->host,
+                                        command->rule->name);
+                }
+                else
+                {
+                        /* not active any more, end command has run
+                         * already. */
+                        command->fire_time = 0;
+                        command->start_time = time(NULL);
+                        command->n_triggers = 1;
+                        la_log(LOG_INFO, "Host: %s, trigger 1 for %s\n",
+                                        command->host,
+                                        command->rule->name);
+                }
+        }
 }
 
 /*
@@ -179,22 +173,29 @@ handle_command_on_trigger_list(la_command_t *command)
  */
 
 static void
-trigger_single_command(la_command_t *command)
+trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
+                const char *host, la_command_t *template)
 {
-	/* FIXME: even when threshold == 1 should check in advance if similar
-	 * command has already been trigger */
-	if (command->rule->threshold == 1 || !command->host)
-	{
-		trigger_command(command);
-	}
-	else
-	{
-		if (!address_on_ignore_list(command->host))
-			handle_command_on_trigger_list(command);
-		else
-                        la_log(LOG_INFO, "Host: %s, always ignored\n",
-                                        command->host);
-	}
+        la_command_t *command;
+
+        /* Always trigger directly if no host found */
+        if (!host)
+        {
+                command = create_command_from_template(template, rule, pattern);
+        }
+        else
+        {
+                /* first look whether the same command has been triggered by the
+                 * same host before */
+                command = find_trigger(rule, template->begin_string, host);
+
+                /* if not create a copy of the command template */
+                if (!command)
+                        command = create_command_from_template(template, rule,
+                                        pattern);
+        }
+
+        trigger_command(command);
 }
 
 /*
@@ -211,21 +212,18 @@ trigger_all_commands(la_rule_t *rule, la_pattern_t *pattern)
 	la_debug("trigger_all_commands()\n");
         const char *host = get_host_property_value(pattern->properties);
 
+        /* Do nothing if on ignore list */
+        if (address_on_ignore_list(host))
+        {
+                la_log(LOG_INFO, "Host: %s, always ignored\n", host);
+                return;
+        }
+
         for (la_command_t *template = (la_command_t *) rule->begin_commands->head.succ;
                         template->node.succ;
                         template = (la_command_t *) template->node.succ)
 	{
-                la_command_t *command;
-
-		/* first look whether the same command has been triggered by the
-		 * same host before */
-		command = find_trigger(rule, template->begin_string, host);
-
-		/* if not create a copy of the command template */
-		if (!command)
-                        command = create_command_from_template(template, rule, pattern);
-
-		trigger_single_command(command);
+                trigger_single_command(rule, pattern, host, template);
 	}
 }
 
