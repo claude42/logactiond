@@ -38,23 +38,9 @@ create_begin_command(la_rule_t *rule, const char *begin, const char *end)
 
 	assert(begin);
 
-        result = create_command(begin, rule->duration);
+        result = create_command(begin, end, rule->duration);
         result->rule = rule;
-        if (end)
-        {
-                result->end_command = create_command(end, -1);
-                result->end_command->rule = rule;
-        }
         
-
-        /* Huh: that looked broken, why did that work at all - or was there
-         * some meaning behind that?!?
-	{
-		result = create_command(begin, rule->duration);
-		if (end)
-			result->end_command = create_command(end, -1);
-	} */
-
 	return result;
 }
 
@@ -65,13 +51,8 @@ create_initialize_command(la_rule_t *rule, const char *initialize, const char *s
 
 	assert(initialize);
 
-	result = create_command(initialize, INT_MAX);
+	result = create_command(initialize, shutdown, INT_MAX);
 	result->rule = rule;
-	if (shutdown)
-	{
-		result->end_command = create_command(shutdown, -1);
-		result->end_command->rule = rule;
-	}
 
 	return result;
 }

@@ -93,6 +93,8 @@ typedef struct la_command_s la_command_t;
 // TODO: add default type
 typedef enum la_sourcetype_s { LA_RULE_TYPE_FILE, LA_RULE_TYPE_SYSTEMD } la_sourcetype_t;
 
+typedef enum la_commandtype_s { LA_COMMANDTYPE_BEGIN, LA_COMMANDTYPE_END } la_commandtype_t;
+
 /*
  * bla
  */
@@ -193,13 +195,15 @@ typedef struct la_trigger_s
 typedef struct la_command_s
 {
 	kw_node_t node;
-	const char *string;	/* string with tokens */
-	kw_list_t *properties;	/* detected tokens */
-	unsigned int n_properties;/* number of detected tokens */
+	const char *begin_string;	/* string with tokens */
+	kw_list_t *begin_properties;	/* detected tokens */
+	unsigned int n_begin_properties;/* number of detected tokens */
+	const char *end_string;	/* string with tokens */
+	kw_list_t *end_properties;	/* detected tokens */
+	unsigned int n_end_properties;/* number of detected tokens */
 	la_rule_t *rule;	/* related rule */
 	la_pattern_t *pattern;	/* related pattern*/
 	char *host;	        /* IP address */
-	la_command_t *end_command;/* end_command - if any */
 	int duration;		/* duration how long command shall stay active,
 				   -1 if none */
 
@@ -306,7 +310,7 @@ la_address_t *create_address(const char *ip);
 
 void empty_end_queue(void);
 
-void enqueue_end_command(la_command_t *end_command, int duration);
+void enqueue_end_command(la_command_t *end_command);
 
 void init_end_queue(void);
 
@@ -314,12 +318,15 @@ void init_end_queue(void);
 
 void trigger_command(la_command_t *command);
 
+void trigger_end_command(la_command_t *command);
+
 la_command_t * dup_command(la_command_t *command);
 
 la_command_t * create_command_from_template(la_command_t *template,
                 la_rule_t *rule, la_pattern_t *pattern);
 
-la_command_t *create_command(const char *string, int duration);
+la_command_t *create_command(const char *begin_string, const char *end_string,
+                int duration);
 
 /* actions.c */
 
@@ -342,6 +349,8 @@ la_property_t *create_property_from_action_token(const char *name, size_t length
 
 la_property_t *create_property_from_token(const char *name, size_t length, unsigned
 		int pos, unsigned int subexpression);
+
+kw_list_t *dup_property_list(kw_list_t *list);
 
 /* patterns.c */
 

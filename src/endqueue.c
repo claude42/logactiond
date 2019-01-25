@@ -46,11 +46,11 @@ empty_end_queue(void)
 
 	while (command->node.succ)
 	{
-		la_debug("empty_queue(), removing %s\n", command->string);
+		la_debug("empty_queue(), removing %s\n", command->end_string);
 		la_command_t *tmp = command;
 		command = (la_command_t *) command->node.succ;
 		remove_node((kw_node_t *) tmp);
-		trigger_command(tmp);
+		trigger_end_command(tmp);
 	}
 
 	pthread_mutex_unlock(&end_queue_mutex);
@@ -69,7 +69,7 @@ consume_end_queue(void *ptr)
 		{
 			la_command_t *command = (la_command_t *) end_queue->head.succ;
 			la_debug("consume_end_queue(), next=%s, time=%u, end_time=%u\n",
-					command->string, time(NULL), command->end_time);
+					command->end_string, time(NULL), command->end_time);
 
 			/* TODO: error handling */
 			time_t now = time(NULL);
@@ -78,7 +78,7 @@ consume_end_queue(void *ptr)
 			if (now > command->end_time)
 			{
 				remove_node((kw_node_t *) command);
-				trigger_command(command);
+				trigger_end_command(command);
 				pthread_mutex_unlock(&end_queue_mutex);
 				continue; /* don't sleep, check for more list content first */
 			}
@@ -112,23 +112,24 @@ init_end_queue(void)
 }
 
 static void
-set_end_time(la_command_t *command, int duration)
+set_end_time(la_command_t *command)
 {
-	command->duration = duration;
 	command->end_time = time(NULL);
 	if (command->end_time == -1)
 		die_hard("Can't get current time\n");
-	command->end_time += duration;
+	command->end_time += command->duration;
 }
 
 void
-enqueue_end_command(la_command_t *end_command, int duration)
+enqueue_end_command(la_command_t *end_command)
 {
-	la_debug("enqueue_end_command(%s, %u\n", end_command->string, duration);
-	if (duration <= 0)
+        la_debug("enqueue_end_command(%s, %u\n", end_command->end_string,
+                        end_command->duration);
+
+	if (end_command->duration <= 0)
 		return;
 
-	set_end_time(end_command, duration);
+	set_end_time(end_command);
 
 	pthread_mutex_lock(&end_queue_mutex);
 

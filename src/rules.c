@@ -81,7 +81,7 @@ find_trigger(la_rule_t *rule, const char *command_string, const char *host)
 		if (command->host)
 		{
 			/* TODO: two strcmps are definitely inefficient */
-			if (!strcmp(command->string, command_string) &&
+                        if (!strcmp(command->begin_string, command_string) &&
 					!strcmp(command->host, host))
 				return command;
 		}
@@ -218,7 +218,7 @@ trigger_all_actions(la_rule_t *rule, la_pattern_t *pattern)
 
 		/* first look whether the same action has been triggered by the
 		 * same host before */
-		command = find_trigger(rule, action->begin->string, host);
+		command = find_trigger(rule, action->begin->begin_string, host);
 
 		/* if not create a copy of the command template */
 		if (!command)
@@ -245,7 +245,7 @@ assign_value_to_properties(kw_list_t *property_list, char *line,
 			property->node.succ;
 			property = (la_property_t *) property->node.succ)
 	{
-		property->value = strndup(line + pmatch[property->subexpression].rm_so,
+		property->value = xstrndup(line + pmatch[property->subexpression].rm_so,
 				pmatch[property->subexpression].rm_eo -
 				pmatch[property->subexpression].rm_so);
 	}

@@ -18,12 +18,11 @@
 
 #include <config.h>
 
-//#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//#include <sys/select.h>
 #include <time.h>
 #include <syslog.h>
+#include <assert.h>
 
 #include <libconfig.h>
 
@@ -32,7 +31,7 @@
 static void
 exec_command(const char *command_string)
 {
-	la_debug("exec_command(%s)\n", command_string);
+	la_log(LOG_DEBUG, "exec_command(%s)\n", command_string);
 
 	int result = system(command_string);
 	if (result == -1)
@@ -100,17 +99,24 @@ get_value_for_action_property(la_property_t *action_property,
 /* TODO: refactor */
 
 static char *
-convert_command(la_command_t *command)
+convert_command(la_command_t *command, la_commandtype_t type)
 {
-	size_t len = strlen(command->string);
+        const char *source_string = (type == LA_COMMANDTYPE_BEGIN) ?
+                command->begin_string : command->end_string;
+	size_t len = strlen(source_string);
 	/* FIXME */
 	char *result = (char *) xmalloc(10000);
 	char *result_ptr = result;
-	const char *string_ptr = command->string;
+	const char *string_ptr = source_string;
 
 	unsigned int start_pos = 0; /* position after last token */
-	la_property_t *action_property = (la_property_t *)
-		command->properties->head.succ;
+	la_property_t *action_property;
+
+        if (type == LA_COMMANDTYPE_BEGIN)
+                action_property = (la_property_t *) command->begin_properties->head.succ;
+        else
+                action_property = (la_property_t *) command->end_properties->head.succ;
+
 
 	while (action_property->node.succ)
 	{
@@ -130,14 +136,14 @@ convert_command(la_command_t *command)
 
 
 		start_pos = action_property->pos + action_property->length;
-		string_ptr = command->string + start_pos;
+		string_ptr = source_string + start_pos;
 
 		action_property = (la_property_t *) action_property->node.succ;
 	}
 
 	/* Copy remainder of string - only if there's something left.
 	 * Double-check just to bes sure we don't overrun any buffer */
-	if (string_ptr - command->string < strlen(command->string))
+	if (string_ptr - source_string < strlen(source_string))
 		/* strcpy() ok here because we definitley reserved enough space
 		 */
 		strcpy(result_ptr, string_ptr);
@@ -151,16 +157,20 @@ convert_command(la_command_t *command)
 void
 trigger_command(la_command_t *command)
 {
-	char *command_string;
-	la_log(LOG_DEBUG, "trigger_command(%s, %d)\n", command->string,
+	la_log(LOG_DEBUG, "trigger_command(%s, %d)\n", command->begin_string,
 			command->duration);
 
 	/* TODO: can't we convert_command() earlier? */
-	command_string = convert_command(command);
-	exec_command(command_string);
+        exec_command(convert_command(command, LA_COMMANDTYPE_BEGIN));
 
-	if (command->end_command && command->duration > 0)
-		enqueue_end_command(command->end_command, command->duration);
+        if (command->end_string && command->duration > 0)
+		enqueue_end_command(command);
+}
+
+void
+trigger_end_command(la_command_t *command)
+{
+        exec_command(convert_command(command, LA_COMMANDTYPE_END));
 }
 
 /*
@@ -240,23 +250,34 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
 
 
 /*
- * Clones command except for command.node. Must be freed after use. Shallow
- * copy only - except for end_command which is dup_command()ed as well.
+ * Clones command from a command template.
+ * - Clones begin_string / end_string.
+ * - Duplicates begin_properties / end_properties lists
+ * - Does not clone host
+ * Must be free()d after use.
  */
+
+/* FIXME: when are we call dup_command()? e.g. does the property list have
+ * content ever? */
 
 la_command_t *
 dup_command(la_command_t *command)
 {
 	la_command_t *result = (la_command_t *) xmalloc(sizeof(la_command_t));
 
-        result->string = command->string ? xstrdup(command->string) : NULL;
-	result->properties = command->properties; // FIXME: need to duplicate as well?
-	result->n_properties = command->n_properties;
+        result->begin_string = command->begin_string ?
+                xstrdup(command->begin_string) : NULL;
+	result->begin_properties = dup_property_list(command->begin_properties);
+	result->n_begin_properties = command->n_begin_properties;
+
+        result->end_string = command->end_string ?
+                xstrdup(command->end_string) : NULL;
+	result->end_properties = dup_property_list(command->end_properties);
+	result->n_end_properties = command->n_end_properties;
+
 	result->rule = command->rule;
 	result->pattern = command->pattern;
         result->host = command->host ? xstrdup(command->host) : NULL;
-	result->end_command = command->end_command ?
-		dup_command(command->end_command) : NULL;
 	result->duration = command->duration;
 	result->end_time = command->end_time;
 	result->n_triggers = command->n_triggers;
@@ -283,12 +304,6 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
         if (result->host)
                 free(result->host);
         result->host = xstrdup(get_host_property_value(pattern->properties));
-        if (result->end_command)
-        {
-                result->end_command->rule = result->rule;
-                result->end_command->pattern = result->pattern;
-                result->end_command->host = result->host;
-        }
 
         return result;
 }
@@ -305,20 +320,30 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
  */
 
 la_command_t *
-create_command(const char *string, int duration)
+create_command(const char *begin_string, const char *end_string, int duration)
 {
-	la_debug("create_command(%s, %d)\n", string, duration);
+        assert(begin_string);
+
+	la_debug("create_command(%s, %d)\n", begin_string, duration);
 	la_command_t *result = (la_command_t *) xmalloc(sizeof(la_command_t));
 
-        result->string = string ? xstrdup(string) : NULL;
-	result->properties = create_list();
-        result->n_properties = string ?
-                scan_action_tokens(result->properties, string) : 0;
+        result->begin_string = begin_string ? xstrdup(begin_string) : NULL;
+	result->begin_properties = create_list();
+        result->n_begin_properties = begin_string ?
+                scan_action_tokens(result->begin_properties, begin_string) : 0;
+
+        if (end_string)
+        {
+                result->end_string = end_string ? xstrdup(end_string) : NULL;
+                result->end_properties = create_list();
+                result->n_end_properties = end_string ?
+                        scan_action_tokens(
+                                        result->end_properties, end_string) : 0;
+        }
 
 	result->rule = NULL;
 	result->pattern = NULL;
 	result->host = NULL;
-	result->end_command = NULL;
 
 	result->duration = duration;
 	result->end_time = 0;

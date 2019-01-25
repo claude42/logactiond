@@ -18,12 +18,9 @@
 
 #include <config.h>
 
-//#include <regex.h>
-//#include <stdio.h>
-//#include <stdlib.h>
 #include <string.h>
-//#include <sys/select.h>
 #include <assert.h>
+#include <syslog.h>
 
 #include "logactiond.h"
 #include "nodelist.h"
@@ -117,6 +114,39 @@ create_property_from_action_token(const char *name, size_t length,
 		unsigned int pos)
 {
 	return create_property_from_token(name, length, pos, 0);
+}
+
+/*
+ * Clones property. strdup()s name, value
+ */
+
+static la_property_t *
+duplicate_property(la_property_t *property)
+{
+	la_property_t *result = (la_property_t *)
+		xmalloc(sizeof(la_property_t));
+
+        result->name = property->name ? xstrdup(property->name) : NULL;
+        result->is_host_property = property->is_host_property;
+        result->value = property->value ? xstrdup(property->value) : NULL;
+        result->pos = property->pos;
+        result->length = property->length;
+        result->subexpression = property->subexpression;
+
+        return result;
+}
+
+kw_list_t *
+dup_property_list(kw_list_t *list)
+{
+        kw_list_t *result = create_list();
+
+	for (la_property_t *property = (la_property_t *) list->head.succ;
+			property->node.succ;
+			property = (la_property_t *) property->node.succ)
+                add_tail(result, (kw_node_t *) duplicate_property(property));
+
+        return result;
 }
 
 
