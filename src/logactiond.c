@@ -190,6 +190,7 @@ main(int argc, char *argv[])
         register_signal_handler();
 
         init_end_queue();
+	init_watching();
 
         load_la_config(cfg_filename);
 

@@ -287,7 +287,7 @@ char *xstrndup(const char *s, size_t n);
 
 /* configfile.c */
 
-int *load_la_config(char *filename);
+void load_la_config(char *filename);
 
 void unload_la_config(void);
 

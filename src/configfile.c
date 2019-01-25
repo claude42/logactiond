@@ -504,7 +504,7 @@ load_defaults(void)
 const char ** include_func(config_t *config, const char *include_dir, const
                 char *path, const char **error);
 
-int *
+void
 load_la_config(char *filename)
 {
 	la_config = (la_config_t *) xmalloc(sizeof(la_config_t));
@@ -522,13 +522,10 @@ load_la_config(char *filename)
                                 config_error_text(&la_config->config_file));
         }
 
-	init_watching();
-
 	load_defaults();
-
 	load_rules();
 
-	return 0;
+        config_destroy(&la_config->config_file);
 }
 
 void
