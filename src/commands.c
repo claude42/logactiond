@@ -303,7 +303,9 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
         result->pattern = pattern;
         if (result->host)
                 free(result->host);
-        result->host = xstrdup(get_host_property_value(pattern->properties));
+        const char *host_property =
+                get_host_property_value(pattern->properties);
+        result->host = host_property ? xstrdup(host_property) : NULL;
 
         return result;
 }
