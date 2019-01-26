@@ -305,7 +305,8 @@ handle_log_line_for_rule(la_rule_t *rule, char *line)
  * duration - duration (in seconds) after which end command is activated
  *
  * Returns
- * Created rule
+ * Created rule. Does patterns, begin_commands, trigger_lit, properties with
+ * empty lists but does not add any elements.
  */
 
 la_rule_t *

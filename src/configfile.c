@@ -23,12 +23,13 @@
 #include <string.h>
 #include <sys/select.h>
 #include <err.h>
+#include <syslog.h>
+#include <assert.h>
 
 #include <dirent.h>
 #include <fnmatch.h>
 #include <limits.h>
 #include <sys/stat.h>
-#include <syslog.h>
 
 #include <libconfig.h>
 
@@ -88,8 +89,8 @@ config_get_string_or_die(const config_setting_t *setting, const char *name)
  * not exist
  */
 
-const config_setting_t
-*config_setting_lookup_or_die( const config_setting_t *setting,
+const config_setting_t *
+config_setting_lookup_or_die(const config_setting_t *setting,
 		const char *path)
 {
 	const config_setting_t *result;
@@ -100,6 +101,14 @@ const config_setting_t
 		die_semantic("Missing element %s\n", path);
 
 	return result;
+}
+
+static const config_setting_t *
+get_rule(const char *rule_name)
+{
+        return config_setting_lookup_or_die(config_lookup(
+                                &la_config->config_file,
+                                LA_RULES_LABEL), rule_name);
 }
 
 /*
@@ -116,22 +125,6 @@ get_action(const char *action_name)
 				&la_config->config_file,
 				LA_ACTIONS_LABEL), action_name);
 }
-
-/*
- * Returns a config_setting_t to a pattern within the main patterns section -
- * specified by the pattern_name.
- *
- * Returns NULL in case no pattern with that name exists
- */
-
-const config_setting_t *
-get_pattern(const char *pattern_name)
-{
-	return config_setting_lookup_or_die(config_lookup(
-				&la_config->config_file,
-				LA_PATTERNS_LABEL), pattern_name);
-}
-
 
 
 /*
@@ -186,15 +179,26 @@ get_source_name(const config_setting_t *rule)
 	return result;*/
 }
 
+/*
+ * Return source location to corresponding rule. Look first in user
+ * configuration section, then in rule section.
+ */
+
 const char *
-get_source_location(const config_setting_t *rule)
+get_source_location(const config_setting_t *rule, const config_setting_t *uc_rule)
 {
 	config_setting_t *source_def;
 	const char *result;
 
-	source_def = get_source(config_get_string_or_null(rule, LA_RULE_SOURCE_LABEL));
-	if (!source_def)
-		die_semantic("Source not found for rule %s\n", config_setting_name(rule));
+	source_def = get_source(config_get_string_or_null(uc_rule, LA_RULE_SOURCE_LABEL));
+        if (!source_def)
+        {
+                source_def = get_source(config_get_string_or_null(rule,
+                                        LA_RULE_SOURCE_LABEL));
+                if (!source_def)
+                        die_semantic("Source not found for rule %s\n",
+                                        config_setting_name(rule));
+        }
 
 	if (!config_setting_lookup_string(source_def, LA_LOCATION, &result))
 		die_semantic("Source location missing\n");
@@ -275,10 +279,27 @@ compile_list_of_actions(la_rule_t *rule,
  */
 
 static void
-load_actions(la_rule_t *rule, const config_setting_t *rule_def)
+load_actions(la_rule_t *rule, const config_setting_t *uc_rule_def)
 {
-	const config_setting_t *action_reference =
-		config_setting_lookup_or_die(rule_def, LA_RULE_ACTION_LABEL);
+        const config_setting_t *action_reference;
+
+        /* again unclear why this cast is necessary */
+        action_reference = config_setting_lookup((config_setting_t *)
+                        uc_rule_def, LA_RULE_ACTION_LABEL);
+        if (!action_reference)
+        {
+                config_setting_t *defaults_section =
+                        config_lookup(&la_config->config_file, LA_DEFAULTS_LABEL);
+                if (!defaults_section)
+                        die_semantic("No action specified for %s\n",
+                                        config_setting_name(rule));
+                action_reference = config_setting_lookup(defaults_section,
+                                LA_RULE_ACTION_LABEL);
+                if (!action_reference)
+                        die_semantic("No action specified for %s\n",
+                                        config_setting_name(rule));
+        }
+
 	int type = config_setting_type(action_reference);
 
 	if (type == CONFIG_TYPE_STRING)
@@ -292,21 +313,28 @@ load_actions(la_rule_t *rule, const config_setting_t *rule_def)
 }
 
 static void
-compile_pattern(la_rule_t *rule,
-		const config_setting_t *pattern_section)
+load_patterns(la_rule_t *rule, const config_setting_t *rule_def, 
+                const config_setting_t *uc_rule_def)
 {
-	if (!pattern_section)
-		die_semantic("Missing patterns section %s\n",
-				config_setting_get_string(pattern_section));
+        assert(rule); assert(rule_def); assert(uc_rule_def);
 
-	int n = config_setting_length(pattern_section);
+        const config_setting_t *patterns;
+
+        /* again unclear why this cast is necessary */
+        patterns = config_setting_lookup((config_setting_t *)
+                        uc_rule_def, LA_RULE_PATTERNS_LABEL);
+        if (!patterns)
+                patterns = config_setting_lookup_or_die(rule_def,
+                                LA_RULE_PATTERNS_LABEL);
+
+	int n = config_setting_length(patterns);
 	if (n < 0)
 		die_semantic("No patterns specified for %s\n",
-				config_setting_name(pattern_section));
+				config_setting_name(rule_def));
 
 	for (int i=0; i<n; i++)
 	{
-		const char *item = config_setting_get_string_elem(pattern_section, i);
+		const char *item = config_setting_get_string_elem(patterns, i);
 
 		la_pattern_t *pattern = create_pattern(item, rule);
 
@@ -314,44 +342,6 @@ compile_pattern(la_rule_t *rule,
 	}
 }
 
-static void
-compile_list_of_patterns(la_rule_t *rule,
-		const config_setting_t *pattern_reference)
-{
-	int n_items = config_setting_length(pattern_reference);
-
-	for (int i=0; i<n_items; i++)
-	{
-		config_setting_t *list_item =
-			config_setting_get_elem(pattern_reference, i);
-                compile_pattern(rule, get_pattern(config_setting_get_string(
-                                                list_item)));
-	}
-}
-
-
-/*
- * Return a list of all patterns (i.e. regex strings) assigned to a rule.
- * Calls compile_patterns() or compile_list_of_patterns() depending on whether
- * its a string or a list of strings.
- */
-
-static void
-load_patterns(la_rule_t *rule, const config_setting_t *rule_def)
-{
-	const config_setting_t *pattern_reference =
-		config_setting_lookup_or_die(rule_def, LA_RULE_PATTERN_LABEL);
-	int type = config_setting_type(pattern_reference);
-
-	if (type == CONFIG_TYPE_STRING)
-		compile_pattern(rule, get_pattern(
-					config_setting_get_string(
-						pattern_reference)));
-	else if (type == CONFIG_TYPE_LIST)
-		compile_list_of_patterns(rule, pattern_reference);
-	else
-		die_semantic("Element neither string nor list");
-}
 
 static kw_list_t *
 load_ignore_addresses(const config_setting_t *section)
@@ -383,11 +373,18 @@ load_ignore_addresses(const config_setting_t *section)
 	return result;
 }
 
+/*
+ * Add all properties which exist in a properties section the given section to
+ * the given properties list. Do not add properties which already exist in the
+ * list.
+ */
 
 static void
 load_properties(kw_list_t *properties, const config_setting_t *section)
 {
 	la_debug("load_properties(%s)\n", config_setting_name(section));
+
+        assert(properties); assert(section);
 
 	config_setting_t *properties_section =
 		config_setting_get_member(section, LA_PROPERTIES_LABEL);
@@ -407,6 +404,10 @@ load_properties(kw_list_t *properties, const config_setting_t *section)
 		if (!value)
 			die_hard("Only strings allowed for properties!\n");
 
+                /* if property with same name already exists, do nothing */
+                if (get_property_from_property_list(properties, name))
+                        continue;
+
 		la_property_t *property = create_property_from_config(name, value);
 
 		la_debug("Loaded prop %s from section %s\n", name, config_setting_name(section));
@@ -415,9 +416,29 @@ load_properties(kw_list_t *properties, const config_setting_t *section)
 }
 
 
+static int
+get_rule_parameter(const config_setting_t *rule_def,
+                const config_setting_t *uc_rule_def, const char *name)
+{
+        int result = config_get_unsigned_int_or_negative(uc_rule_def, name);
+
+        if (result < 0)
+                result = config_get_unsigned_int_or_negative(rule_def, name);
+
+        return result;
+}
+
+/*
+ * Load a single rule
+ *
+ * rule_def - section were rule is specified (non-user configuration)
+ * uc_rule_def - user configuration where rule is enabled an parameters
+ * from rule_def may be overwritten.
+ */
 
 static void
-load_single_rule(const config_setting_t *rule_def)
+load_single_rule(const config_setting_t *rule_def,
+                const config_setting_t *uc_rule_def)
 {
 	char *name;
 	la_rule_t *new_rule;
@@ -426,8 +447,9 @@ load_single_rule(const config_setting_t *rule_def)
 	la_sourcetype_t type;
 
 	name = config_setting_name(rule_def);
+        la_log(LOG_DEBUG, "Loading rule %s\n", name);
 
-	location = get_source_location(rule_def);
+	location = get_source_location(rule_def, uc_rule_def);
 	source = find_source_by_location(location);
 	if (!source)
 	{
@@ -438,16 +460,27 @@ load_single_rule(const config_setting_t *rule_def)
 		add_tail(la_config->sources, (kw_node_t *) source);
 	}
 
-	new_rule = create_rule(config_setting_name(rule_def), source,
-			config_get_unsigned_int_or_negative(rule_def,
-				LA_THRESHOLD_LABEL),
-			config_get_unsigned_int_or_negative(rule_def,
-				LA_PERIOD_LABEL),
-			config_get_unsigned_int_or_negative(rule_def,
-				LA_DURATION_LABEL));
+        /* get parameters either from rule or uc_rule */
+        int threshold = get_rule_parameter(rule_def, uc_rule_def,
+                        LA_THRESHOLD_LABEL);
+        int period = get_rule_parameter(rule_def, uc_rule_def,
+                        LA_PERIOD_LABEL);
+        int duration = get_rule_parameter(rule_def, uc_rule_def,
+                        LA_DURATION_LABEL);
+
+        new_rule = create_rule(config_setting_name(rule_def), source,
+                        threshold, period, duration);
+
+        /* Properties from uc_rule_def have priority over those from
+         * rule_def */
+        load_properties(new_rule->properties, uc_rule_def);
         load_properties(new_rule->properties, rule_def);
-	load_patterns(new_rule, rule_def);
-	load_actions(new_rule, rule_def);
+
+        /* Patterns from uc_rule_def have priority over those from rule_def */
+	load_patterns(new_rule, rule_def, uc_rule_def);
+
+        /* actions are only taken from uc_rule_def (or default settings) */
+	load_actions(new_rule, uc_rule_def);
 	add_tail(source->rules, (kw_node_t *) new_rule);
 }
 
@@ -455,18 +488,32 @@ load_single_rule(const config_setting_t *rule_def)
 static void
 load_rules(void)
 {
-	config_setting_t *rules_section =
-		config_lookup(&la_config->config_file, LA_RULES_LABEL);
+        config_setting_t *enabled_section = 
+		config_lookup(&la_config->config_file, LA_LOCAL_LABEL);
 
 	la_config->sources = create_list();
 
-	int n = config_setting_length(rules_section);
-	la_debug("load_rules(), n=%u\n", n);
-	if (n < 0)
-		die_semantic("No rules specified");
+        int n = config_setting_length(enabled_section);
+        if (n < 0)
+                die_semantic("No rules enabled\n");
 
-	for (int i=0; i<n; i++)
-		load_single_rule(config_setting_get_elem(rules_section, i));
+        for (int i=0; i<n; i++)
+        {
+                config_setting_t *e_rule = 
+                        config_setting_get_elem(enabled_section, i);
+
+                int enabled;
+                if (config_setting_lookup_bool(e_rule, LA_LOCAL_LABEL,
+                                        &enabled) == CONFIG_TRUE && enabled)
+                {
+                        load_single_rule(get_rule(config_setting_name(
+                                                        config_setting_get_elem(
+                                                                enabled_section,
+                                                                i))),
+                                        e_rule);
+                }
+
+        }
 }
 
 static void

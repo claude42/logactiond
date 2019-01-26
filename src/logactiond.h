@@ -60,15 +60,15 @@
 
 #define LA_SOURCES_LABEL "sources"
 
+#define LA_LOCAL_LABEL "local"
+
 #define LA_RULES_LABEL "rules"
 #define LA_RULE_SOURCE_LABEL "source"
 #define LA_RULE_TYPE_LABEL "type"
 #define LA_RULE_TYPE_FILE_OPTION "file"
 #define LA_RULE_TYPE_SYSTEMD_OPTION "systemd"
 #define LA_RULE_ACTION_LABEL "action"
-#define LA_RULE_PATTERN_LABEL "pattern"
-
-#define LA_PATTERNS_LABEL "patterns"
+#define LA_RULE_PATTERNS_LABEL "pattern"
 
 #define LA_LOCATION "location"
 
@@ -322,6 +322,9 @@ la_command_t *create_template(la_rule_t *rule, const char *begin_string,
 /* properties.c */
 
 const char *get_host_property_value(kw_list_t *property_list);
+
+la_property_t *get_property_from_property_list(kw_list_t *property_list,
+                const char *name);
 
 const char *get_value_from_property_list(kw_list_t *property_list,
 		la_property_t *property);

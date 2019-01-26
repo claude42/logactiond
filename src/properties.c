@@ -43,6 +43,38 @@ get_host_property_value(kw_list_t *property_list)
 	return NULL;
 }
 
+/*
+ * Go through property_list and find property with the same name as given as
+ * second parameter. If such a property is found, return the whole property.
+ * Return NULL otherwise.
+ */
+
+la_property_t *
+get_property_from_property_list(kw_list_t *property_list, const char *name)
+{
+        assert(name);
+
+        if (!property_list)
+                return NULL;
+
+        la_property_t *result = (la_property_t *) property_list->head.succ;
+
+        while (result->node.succ)
+        {
+                if (!strcmp(name, result->name))
+                        return result;
+                result = (la_property_t *) result->node.succ;
+        }
+
+        return NULL;
+}
+
+/*
+ * Go through property_list and find property on the list with same name as
+ * the property given as second parameter. If such a property is found, return
+ * assigned value. Return NULL otherwise.
+ */
+
 const char *
 get_value_from_property_list(kw_list_t *property_list, la_property_t *property)
 {
