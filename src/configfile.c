@@ -498,6 +498,7 @@ load_rules(void)
         if (n < 0)
                 die_semantic("No rules enabled\n");
 
+        bool any_enabled = false;
         for (int i=0; i<n; i++)
         {
                 config_setting_t *uc_rule = 
@@ -507,14 +508,17 @@ load_rules(void)
                 if (config_setting_lookup_bool(uc_rule, LA_LOCAL_ENABLED_LABEL,
                                         &enabled) == CONFIG_TRUE && enabled)
                 {
+                        any_enabled = true;
                         load_single_rule(get_rule(config_setting_name(
                                                         config_setting_get_elem(
                                                                 local_section,
                                                                 i))),
                                         uc_rule);
                 }
-
         }
+
+        if (!any_enabled)
+                die_semantic("No rules enabledd\n");
 }
 
 static void
