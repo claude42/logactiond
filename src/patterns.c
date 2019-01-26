@@ -31,8 +31,8 @@
 /* TODO: refactor */
 
 /*
- * Replaces first occurance of "<HOST>" in string by "([.:[:xdigit:]]+)".
- * Replaces all other "<SOMETHING>" tokens by "(.+)".
+ * Replaces first occurance of "%HOST%" in string by "([.:[:xdigit:]]+)".
+ * Replaces all other "%SOMETHING%" tokens by "(.+)".
  *
  * Returns newly allocated string, doesn't modify original.
  */
@@ -61,7 +61,7 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
                 {
                         num_host_tokens++;
                         if (num_host_tokens>1)
-                                die_hard("Only one <HOST> token allowed per pattern\n");
+                                die_hard("Only one %HOST% token allowed per pattern\n");
                         result_ptr = stpncpy(result_ptr, LA_HOST_TOKEN_REPL,
                                         LA_HOST_TOKEN_REPL_LEN);
                 }
@@ -90,52 +90,6 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
 }
 
 /*
- * Returns length of token - i.e. number of characters until closing '>' is
- * found. In case string ends before closing '>', die with an error message.
- */
-
-static size_t
-token_length(const char *string)
-{
-	const char *ptr = string+1;
-
-	while (*ptr)
-	{
-		if (*ptr == '<')
-			die_semantic("Closing '>' of token missing\n");
-		else if (*ptr == '>')
-			return ptr-string+1;
-		ptr++;
-	}
-
-	die_semantic("Closing '>' of token missing\n");
-
-	return 0; //avoid warning
-}
-
-/*
- * Creates a new property from token at *string with pos and subexpression.
- * Adds property to property list.
- */
-
-static size_t
-scan_single_token(kw_list_t *property_list, const char *string, unsigned int pos,
-		unsigned int subexpression)
-{
-	size_t length = token_length(string);
-
-	if (length > 2) /* so it's NOT just "<>" */
-	{
-		la_debug("TOKEN: %s, %u, %u\n", string, length, subexpression);
-		add_tail(property_list, (kw_node_t *)
-				create_property_from_token(string, length, pos,
-					subexpression));
-	}
-
-	return length;
-}
-
-/*
  * Scans pattern string for tokens. Tokens have the form <NAME> (as of now).
  * Adds each found token to property_list (incl. # of subexpression).
  *
@@ -155,24 +109,21 @@ scan_tokens(kw_list_t *property_list, const char *string)
 		die_hard("No property list or no string submitted");
 
 	while (*ptr) {
-		if (*ptr == '\\')
-		{
-			ptr+=2;
-		}
-		else if (*ptr == '(')
+		if (*ptr == '(')
 		{
 			subexpression++;
-			ptr++;
 		}
-		else if (*ptr == '<')
-		{
-			n_tokens++;
-			subexpression++;
-			ptr += scan_single_token(property_list, ptr, ptr-string,
-					subexpression);
-		}
-		else
-			ptr++;
+                else if (*ptr == '%')
+                {
+                        size_t length = scan_single_token(property_list, ptr,
+                                        ptr-string, subexpression);
+                        if (length > 2)
+                                n_tokens++;
+
+                        ptr += length;
+                }
+
+                ptr++; /* also skips over second '%' */
 	}
 
 	return n_tokens;

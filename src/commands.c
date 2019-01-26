@@ -174,51 +174,10 @@ trigger_end_command(la_command_t *command)
 }
 
 /*
- * Returns length of token - i.e. number of characters until closing '>' is
- * found. In case string ends before closing '>', die with an error message.
- *
- * Length will include '<' and '>'
- */
-
-static size_t
-token_length(const char *string)
-{
-	const char *ptr = string;
-
-	while (*ptr)
-	{
-		if (*ptr == '>')
-			return ptr-string+1;
-		ptr++;
-	}
-
-	die_semantic("Closing '>' of token missing\n");
-
-	return 0; // avoid warning
-}
-
-
-/*
  * Scans pattern string for tokens. Adds found tokens to token_list.
  *
  * Return number of found tokens.
  */
-
-static size_t
-scan_single_action_token(kw_list_t *property_list, const char *string, unsigned
-		int pos)
-{
-	size_t length = token_length(string);
-
-	if (length > 2) /* so it's NOT just "<>" */
-	{
-		add_tail(property_list, (kw_node_t *)
-				create_property_from_action_token(string,
-					length, pos));
-	}
-
-	return length;
-}
 
 
 static unsigned int
@@ -232,17 +191,17 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
 
 	while (*ptr)
         {
-		if (*ptr == '\\')
-		{
-			ptr++;
-		}
-		else if (*ptr == '<')
-		{
-			n_tokens++;
-			ptr += scan_single_action_token(property_list, ptr,
-					ptr-string);
-		}
-		ptr++; /* also skips over second '\\' or '>' */
+                if (*ptr == '%')
+                {
+                        size_t length = scan_single_token(property_list, ptr,
+                                        ptr-string, 0);
+                        if (length > 2)
+                                n_tokens++;
+
+                        ptr += length;
+                }
+
+		ptr++; /* also skips over second '%' */
 	}
 
 	return n_tokens;

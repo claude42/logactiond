@@ -25,8 +25,34 @@
 #include "logactiond.h"
 #include "nodelist.h"
 
+
 /*
- * Return value assigned to <HOST> property, NULL if not found.
+ * Returns length of token - i.e. number of characters until closing '%' is
+ * found. In case string ends before closing '%', die with an error message.
+ *
+ * Length will include both '%'
+ */
+
+size_t
+token_length(const char *string)
+{
+	const char *ptr = string+1;
+
+	while (*ptr)
+	{
+		if (*ptr == '%')
+			return ptr-string+1;
+		ptr++;
+	}
+
+	die_semantic("Closing '%' of token missing\n");
+
+	return 0; // avoid warning
+}
+
+
+/*
+ * Return value assigned to %HOST% property, NULL if not found.
  */
 
 const char *
@@ -101,15 +127,15 @@ get_value_from_property_list(kw_list_t *property_list, la_property_t *property)
 /*
  * Create and initialize new la_property_t.
  *
- * Input string is the token name. String must point to the initial '<' and
+ * Input string is the token name. String must point to the initial '%' and
  * doesn't not have to have the token's name null terminated but can be longer.
- * In la_property_t only the name without '<' and '>' will be saved (strdup()ed,
+ * In la_property_t only the name without thw two '%' will be saved (strdup()ed,
  * original will not be modified.
  *
- * Saved length includes '<' and '>' and will be saved as such in la_property_t.
+ * Saved length includes the two '%' and will be saved as such in la_property_t.
  *
  * Pos is the offset to the beginning of the string, pointing to the initial
- * '<'
+ * '%'
  */
 
 la_property_t *
@@ -127,6 +153,30 @@ create_property_from_token(const char *name, size_t length, unsigned int pos,
 	result->subexpression = subexpression;
 
 	return result;
+}
+
+/*
+ * Creates a new property from token at *string with pos and subexpression.
+ * Adds property to property list.
+ *
+ * String must point to first '%'
+ * Set subexpression=0 in case of action tokens.
+ */
+
+size_t
+scan_single_token(kw_list_t *property_list, const char *string, unsigned int pos,
+		unsigned int subexpression)
+{
+	size_t length = token_length(string);
+
+	if (length > 2) /* so it's NOT just "%%" */
+	{
+		add_tail(property_list, (kw_node_t *)
+				create_property_from_token(string, length, pos,
+					subexpression));
+	}
+
+	return length;
 }
 
 la_property_t *

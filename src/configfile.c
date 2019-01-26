@@ -447,7 +447,7 @@ load_single_rule(const config_setting_t *rule_def,
 	la_sourcetype_t type;
 
 	name = config_setting_name(rule_def);
-        la_log(LOG_DEBUG, "Loading rule %s\n", name);
+        la_debug("Loading rule %s\n", name);
 
 	location = get_source_location(rule_def, uc_rule_def);
 	source = find_source_by_location(location);
@@ -488,29 +488,30 @@ load_single_rule(const config_setting_t *rule_def,
 static void
 load_rules(void)
 {
-        config_setting_t *enabled_section = 
+        la_debug("load_rules()\n");
+        config_setting_t *local_section = 
 		config_lookup(&la_config->config_file, LA_LOCAL_LABEL);
 
 	la_config->sources = create_list();
 
-        int n = config_setting_length(enabled_section);
+        int n = config_setting_length(local_section);
         if (n < 0)
                 die_semantic("No rules enabled\n");
 
         for (int i=0; i<n; i++)
         {
-                config_setting_t *e_rule = 
-                        config_setting_get_elem(enabled_section, i);
+                config_setting_t *uc_rule = 
+                        config_setting_get_elem(local_section, i);
 
                 int enabled;
-                if (config_setting_lookup_bool(e_rule, LA_LOCAL_LABEL,
+                if (config_setting_lookup_bool(uc_rule, LA_LOCAL_ENABLED_LABEL,
                                         &enabled) == CONFIG_TRUE && enabled)
                 {
                         load_single_rule(get_rule(config_setting_name(
                                                         config_setting_get_elem(
-                                                                enabled_section,
+                                                                local_section,
                                                                 i))),
-                                        e_rule);
+                                        uc_rule);
                 }
 
         }
@@ -519,6 +520,7 @@ load_rules(void)
 static void
 load_defaults(void)
 {
+        la_debug("load_defaults()\n");
 	config_setting_t *defaults_section =
 		config_lookup(&la_config->config_file, LA_DEFAULTS_LABEL);
 

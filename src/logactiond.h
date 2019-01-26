@@ -61,6 +61,7 @@
 #define LA_SOURCES_LABEL "sources"
 
 #define LA_LOCAL_LABEL "local"
+#define LA_LOCAL_ENABLED_LABEL "enabled"
 
 #define LA_RULES_LABEL "rules"
 #define LA_RULE_SOURCE_LABEL "source"
@@ -320,6 +321,11 @@ la_command_t *create_template(la_rule_t *rule, const char *begin_string,
                 const char *end_string, int duration);
 
 /* properties.c */
+
+size_t token_length(const char *string);
+
+size_t scan_single_token(kw_list_t *property_list, const char *string,
+                unsigned int pos, unsigned int subexpression);
 
 const char *get_host_property_value(kw_list_t *property_list);
 
