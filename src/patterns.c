@@ -116,7 +116,7 @@ scan_tokens(kw_list_t *property_list, const char *string)
                 else if (*ptr == '%')
                 {
                         size_t length = scan_single_token(property_list, ptr,
-                                        ptr-string, subexpression);
+                                        ptr-string, ++subexpression);
                         if (length > 2)
                                 n_tokens++;
 
