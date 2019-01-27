@@ -143,6 +143,9 @@ xmalloc(size_t n)
 char *
 xstrdup(const char *s)
 {
+        if (!s)
+                return NULL;
+
 	void *result = strdup(s);
 	if (!result)
 		die_hard("Memory exhausted\n");

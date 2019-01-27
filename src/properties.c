@@ -208,9 +208,9 @@ duplicate_property(la_property_t *property)
 	la_property_t *result = (la_property_t *)
 		xmalloc(sizeof(la_property_t));
 
-        result->name = property->name ? xstrdup(property->name) : NULL;
+        result->name = xstrdup(property->name);
         result->is_host_property = property->is_host_property;
-        result->value = property->value ? xstrdup(property->value) : NULL;
+        result->value = xstrdup(property->value);
         result->pos = property->pos;
         result->length = property->length;
         result->subexpression = property->subexpression;

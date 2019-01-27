@@ -224,19 +224,17 @@ dup_command(la_command_t *command)
 {
 	la_command_t *result = (la_command_t *) xmalloc(sizeof(la_command_t));
 
-        result->begin_string = command->begin_string ?
-                xstrdup(command->begin_string) : NULL;
+        result->begin_string = xstrdup(command->begin_string);
 	result->begin_properties = dup_property_list(command->begin_properties);
 	result->n_begin_properties = command->n_begin_properties;
 
-        result->end_string = command->end_string ?
-                xstrdup(command->end_string) : NULL;
+        result->end_string = xstrdup(command->end_string);
 	result->end_properties = dup_property_list(command->end_properties);
 	result->n_end_properties = command->n_end_properties;
 
 	result->rule = command->rule;
 	result->pattern = command->pattern;
-        result->host = command->host ? xstrdup(command->host) : NULL;
+        result->host = xstdup(command->host);
 	result->duration = command->duration;
 	result->end_time = command->end_time;
 	result->n_triggers = command->n_triggers;
@@ -264,7 +262,7 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
                 free(result->host);
         const char *host_property =
                 get_host_property_value(pattern->properties);
-        result->host = host_property ? xstrdup(host_property) : NULL;
+        result->host = xstrdup(host_property);
 
         return result;
 }
@@ -289,12 +287,12 @@ create_template(la_rule_t *rule, const char *begin_string,
 	la_debug("create_command(%s, %d)\n", begin_string, duration);
 	la_command_t *result = (la_command_t *) xmalloc(sizeof(la_command_t));
 
-        result->begin_string = begin_string ? xstrdup(begin_string) : NULL;
+        result->begin_string = xstrdup(begin_string);
 	result->begin_properties = create_list();
         result->n_begin_properties = begin_string ?
                 scan_action_tokens(result->begin_properties, begin_string) : 0;
 
-        result->end_string = end_string ? xstrdup(end_string) : NULL;
+        result->end_string = xstrdup(end_string);
         result->end_properties = create_list();
         result->n_end_properties = end_string ?
                 scan_action_tokens(result->end_properties, end_string) : 0;
