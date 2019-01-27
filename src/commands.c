@@ -234,7 +234,7 @@ dup_command(la_command_t *command)
 
 	result->rule = command->rule;
 	result->pattern = command->pattern;
-        result->host = xstdup(command->host);
+        result->host = xstrdup(command->host);
 	result->duration = command->duration;
 	result->end_time = command->end_time;
 	result->n_triggers = command->n_triggers;
