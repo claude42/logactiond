@@ -63,6 +63,8 @@ address_on_ignore_list(const char *ip)
 la_address_t *
 create_address(const char *ip)
 {
+        assert(ip);
+
 	la_address_t *result = (la_address_t *) xmalloc(sizeof(la_address_t));
 
 	result->ip = xstrdup(ip);
