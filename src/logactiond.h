@@ -186,10 +186,10 @@ typedef struct la_rule_s
 typedef struct la_command_s
 {
 	kw_node_t node;
-	const char *begin_string;	/* string with tokens */
+	char *begin_string;	/* string with tokens */
 	kw_list_t *begin_properties;	/* detected tokens */
 	unsigned int n_begin_properties;/* number of detected tokens */
-	const char *end_string;	/* string with tokens */
+	char *end_string;	/* string with tokens */
 	kw_list_t *end_properties;	/* detected tokens */
 	unsigned int n_end_properties;/* number of detected tokens */
 	la_rule_t *rule;	/* related rule */
@@ -205,7 +205,6 @@ typedef struct la_command_s
 	/* only relevant in trigger_list */
 	unsigned int n_triggers;/* how man times triggered during period */
 	time_t start_time;	/* time of first trigger during period */
-	time_t fire_time;	/* time when command was fired */
 
 } la_command_t;
 
@@ -291,6 +290,8 @@ la_address_t *create_address(const char *ip);
 
 /* endqueue.c */
 
+la_command_t *find_end_command(la_rule_t *rule, const char *command_string, const char *host);
+
 void empty_end_queue(void);
 
 void enqueue_end_command(la_command_t *end_command);
@@ -310,6 +311,8 @@ la_command_t * create_command_from_template(la_command_t *template,
 
 la_command_t *create_template(la_rule_t *rule, const char *begin_string,
                 const char *end_string, int duration);
+
+void free_command(la_command_t *command);
 
 /* properties.c */
 
@@ -335,6 +338,10 @@ la_property_t *create_property_from_token(const char *name, size_t length, unsig
 		int pos, unsigned int subexpression);
 
 kw_list_t *dup_property_list(kw_list_t *list);
+
+void free_property(la_property_t *property);
+
+void free_property_list(kw_list_t *list);
 
 /* patterns.c */
 

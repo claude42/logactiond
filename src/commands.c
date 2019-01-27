@@ -172,6 +172,8 @@ trigger_command(la_command_t *command)
 
         if (command->end_string && command->duration > 0)
 		enqueue_end_command(command);
+        else
+                free_command(command);
 }
 
 void
@@ -246,7 +248,6 @@ dup_command(la_command_t *command)
 	result->end_time = command->end_time;
 	result->n_triggers = command->n_triggers;
 	result->start_time = command->start_time;
-	result->fire_time = command->fire_time;
 
 	return result;
 }
@@ -317,10 +318,23 @@ create_template(la_rule_t *rule, const char *begin_string,
 
 	result->n_triggers = 0;
 	result->start_time = 0;
-	result->fire_time = 0;
 
 	return result;
 }
+
+void
+free_command(la_command_t *command)
+{
+        assert(command);
+
+        free(command->begin_string);
+        free_property_list(command->begin_properties);
+        free(command->end_string);
+        free_property_list(command->end_properties);
+        free_property_list(command->pattern_properties);
+        free(command->host);
+}
+
 
 
 

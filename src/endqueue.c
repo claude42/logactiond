@@ -22,6 +22,9 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <syslog.h>
+#include <string.h>
+#include <assert.h>
 
 #include <libconfig.h>
 
@@ -29,6 +32,61 @@
 
 static kw_list_t *end_queue = NULL;
 pthread_mutex_t end_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/*
+ * Search for a command by a certain host for a given rule on the end_que
+ * list. Return if found, return NULL otherwise
+ */
+
+la_command_t *
+find_end_command(la_rule_t *rule, const char *command_string, const char *host)
+{
+        if (!end_queue)
+                return NULL;
+
+        la_command_t *result = NULL;
+
+        pthread_mutex_lock(&end_queue_mutex);
+
+        for (la_command_t *command = (la_command_t *) end_queue->head.succ;
+                        command->node.succ;
+                        command = (la_command_t *) command->node.succ)
+        {
+                if (!strcmp(command->begin_string, command_string))
+                {
+                        if (!command->host && !host)
+                        {
+                                result = command;
+                                break;
+                        }
+                        else if (command->host && host &&
+                                        !strcmp(command->host, host))
+                        {
+                                result = command;
+                                break;
+                        }
+                }
+        }
+
+	pthread_mutex_unlock(&end_queue_mutex);
+
+        return result;
+}
+
+/*
+ * Remove command from end_queue, trigger end command, then free it.
+ */
+
+static void
+remove_trigger_free_command(la_command_t *command)
+{
+        assert(command);
+
+        remove_node((kw_node_t *) command);
+        trigger_end_command(command);
+        free_command(command);
+}
+
 
 /*
  * Remove and trigger all remaining end and shutdown commands in the queue
@@ -49,8 +107,7 @@ empty_end_queue(void)
 		la_debug("empty_queue(), removing %s\n", command->end_string);
 		la_command_t *tmp = command;
 		command = (la_command_t *) command->node.succ;
-		remove_node((kw_node_t *) tmp);
-		trigger_end_command(tmp);
+                remove_trigger_free_command(tmp);
 	}
 
 	pthread_mutex_unlock(&end_queue_mutex);
@@ -77,8 +134,7 @@ consume_end_queue(void *ptr)
 				die_hard("Can't get current time\n");
 			if (now > command->end_time)
 			{
-				remove_node((kw_node_t *) command);
-				trigger_end_command(command);
+                                remove_trigger_free_command(command);
 				pthread_mutex_unlock(&end_queue_mutex);
 				continue; /* don't sleep, check for more list content first */
 			}

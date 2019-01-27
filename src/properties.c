@@ -21,6 +21,7 @@
 #include <string.h>
 #include <assert.h>
 #include <syslog.h>
+#include <stdlib.h>
 
 #include "logactiond.h"
 #include "nodelist.h"
@@ -229,6 +230,33 @@ dup_property_list(kw_list_t *list)
                 add_tail(result, (kw_node_t *) duplicate_property(property));
 
         return result;
+}
+
+void
+free_property(la_property_t *property)
+{
+        assert(property);
+
+        free(property->name);
+        free(property->value);
+}
+
+void
+free_property_list(kw_list_t *list)
+{
+        if (!list)
+                return;
+
+        la_property_t *property = (la_property_t *) list->head.succ;
+
+        while (property->node.succ)
+        {
+                la_property_t *tmp = property;
+                property = (la_property_t *) property->node.succ;
+                remove_node((kw_node_t *) tmp);
+                free_property(tmp);
+        }
+
 }
 
 
