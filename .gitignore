@@ -105,10 +105,14 @@ config.h
 config.log
 config.status
 
+src/tags
+src/TAGS
+
 src/logactiond
 
 libconfig/.gitignore
 libconfig/ac_config.h.in
+libconfig/ac_config.h
 libconfig/aclocal.m4
 libconfig/aux-build
 libconfig/configure
@@ -120,6 +124,10 @@ libconfig/lib/libconfig.pc
 libconfig/lib/libconfigConfig.cmake
 libconfig/lib/scanner.c
 libconfig/lib/scanner.h
+libconfig/lib/.deps/
+libconfig/lib/.libs/
 libconfig/libconfig.spec
 libconfig/libtool
 libconfig/m4
+libconfig/stamp-h1
+
