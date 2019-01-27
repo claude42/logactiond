@@ -18,8 +18,39 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <syslog.h>
+#include <assert.h>
 
 #include "nodelist.h"
+
+#include "logactiond.h"
+
+void
+assert_node(kw_node_t *node)
+{
+        assert(node->succ || node->pred);
+
+        assert (node->succ != node->pred);
+
+        if (node->pred)
+                assert (node->pred->succ == node);
+
+        if (node->succ)
+                assert (node->succ->pred == node);
+}
+
+void
+assert_list(kw_list_t *list)
+{
+        assert(list->head.succ && list->tail.pred);
+        assert(!list->head.pred && !list->tail.succ);
+
+        for (kw_node_t *node = list->head.succ; node->succ; node = node->succ)
+        {
+                assert_node(node);
+        }
+}
+
 
 /*
  * Can be freed with free()
@@ -42,6 +73,8 @@ create_list(void)
 	result->tail.succ = NULL;
 	result->tail.pred = (kw_node_t *) &result->head;
 
+        assert_list(result);
+
 	return result;
 }
 
@@ -56,28 +89,41 @@ insert_node_after(kw_node_t *ex_node, kw_node_t *new_node)
 	if (!ex_node || !new_node)
 		return;
 
+        assert_node(ex_node); assert_node(new_node);
+
 	if (!ex_node->succ)
 		ex_node = ex_node->pred;
+
+        kw_node_t *succ = ex_node->succ;
 
 	new_node->pred = ex_node;
 	new_node->succ = ex_node->succ;
 	ex_node->succ->pred = new_node;
 	ex_node->succ = new_node;
+
+        assert_node(new_node); assert_node(ex_node); assert_node(succ);
 }
+
 
 void
 insert_node_before(kw_node_t *ex_node, kw_node_t *new_node)
 {
-	if (!ex_node || !new_node)
-		return;
+        if (!ex_node || !new_node)
+                return;
+
+        assert_node(ex_node); assert_node(new_node);
 
 	if (!ex_node->pred)
 		ex_node = ex_node->succ;
+
+        kw_node_t *pred = ex_node->pred;
 
 	new_node->pred = ex_node->pred;
 	new_node->succ = ex_node;
 	ex_node->pred->succ = new_node;
 	ex_node->pred = new_node;
+
+        assert_node(new_node); assert_node(ex_node); assert_node(pred);
 }
 
 void
@@ -86,8 +132,12 @@ remove_node(kw_node_t *node)
 	if (!node->pred || !node->succ)
 		return;
 
+        assert_node(node);
+
 	node->pred->succ = node->succ;
 	node->succ->pred = node->pred;
+
+        assert_node(node->pred); assert_node(node->succ);
 }
 
 void
@@ -96,10 +146,14 @@ add_head(kw_list_t *list, kw_node_t *node)
 	if (!list || !node)
 		return;
 
+assert_list(list); assert_node(node);
+
 	node->succ = list->head.succ;
 	node->pred = (kw_node_t *) &list->head;
 	list->head.succ = node;
 	node->succ->pred = node;
+
+        assert_list(list); assert_node(node);
 }
 
 void
@@ -108,10 +162,14 @@ add_tail(kw_list_t *list, kw_node_t *node)
 	if (!list || !node)
 		return;
 
+        assert_list(list); assert_node(node);
+
 	node->succ = (kw_node_t *) &list->tail;
 	node->pred = list->tail.pred;
 	list->tail.pred = node;
 	node->pred->succ = node;
+
+        assert_list(list); assert_node(node);
 }
 
 kw_node_t *
@@ -136,6 +194,8 @@ get_tail(kw_list_t *list)
 kw_node_t *
 rem_head(kw_list_t *list)
 {
+        assert_list(list);
+
 	kw_node_t *result;
 
 	if (is_list_empty(list))
@@ -145,6 +205,8 @@ rem_head(kw_list_t *list)
 	list->head.succ = result->succ;
 	result->succ->pred = (kw_node_t *) &list->head;
 
+        assert_list(list);
+
 	return result;
 
 }
@@ -152,6 +214,8 @@ rem_head(kw_list_t *list)
 kw_node_t *
 rem_tail(kw_list_t *list)
 {
+        assert_list(list);
+
 	kw_node_t *result;
 
 	if (is_list_empty(list))
@@ -161,19 +225,27 @@ rem_tail(kw_list_t *list)
 	list->tail.pred = result->pred;
 	result->pred->succ = (kw_node_t *) &list->tail;
 
+        assert_list(list);
+
 	return result;
 }
 
 kw_node_t *
 get_list_iterator(kw_list_t *list)
 {
+        assert_list(list);
+
 	return (kw_node_t *) &list->head;
 }
 
 kw_node_t *
 get_next_node(kw_node_t **iterator)
 {
+        assert_node(*iterator);
+        
 	*iterator = (*iterator)->succ;
+
+        assert_node(*iterator);
 
 	if ((*iterator)->succ == NULL)
 		return NULL;
@@ -184,6 +256,8 @@ get_next_node(kw_node_t **iterator)
 void
 free_list(kw_list_t *list)
 {
+        assert_list(list);
+
 	kw_node_t *node = list->head.succ;
 
 	while (node->succ)
@@ -196,14 +270,11 @@ free_list(kw_list_t *list)
 	free(list);
 }
 
-typedef struct foo_s {
-	kw_node_t node;
-	char *text;
-} foo_t;
-
 unsigned int
 list_length(kw_list_t *list)
 {
+        assert_list(list);
+
 	kw_node_t *node = list->head.succ;
 	unsigned int result = 0;
 
@@ -226,7 +297,13 @@ list_length(kw_list_t *list)
  * Don't use mylist->head / mylist->tail
  */
 
-/*void testerli(void)
+/*
+typedef struct foo_s {
+	kw_node_t node;
+	char *text;
+} foo_t;
+
+void testerli(void)
 {
 	kw_list_t *mylist = create_list();
 	printf("mylist=%u\n", mylist);

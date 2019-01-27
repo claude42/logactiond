@@ -19,6 +19,8 @@
 #ifndef __nodelist_h
 #define __nodelist_h
 
+#include <stdbool.h>
+
 /*
  * functions missing
  *
@@ -68,6 +70,10 @@ kw_node_t * get_head(kw_list_t *list);
 void insert_node_before(kw_node_t *ex_node, kw_node_t *new_node);
 
 void remove_node(kw_node_t *node);
+
+void assert_node(kw_node_t *node);
+
+void assert_list(kw_list_t *list);
 
 
 #endif /* __nodelist_h */
