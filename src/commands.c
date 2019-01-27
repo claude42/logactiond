@@ -49,51 +49,59 @@ check_for_special_names(la_property_t *action_property)
 }*/
 
 static const char *
-get_value_for_action_property(la_property_t *action_property,
-		la_pattern_t *pattern, la_rule_t *rule)
+get_value_for_action_property(la_command_t *command,
+                la_property_t *action_property)
 {
+        assert(command); assert(action_property);
 
 	la_property_t *property;
 	const char *result;
 
-	if (rule)
+        /* try some standard names first */
+
+	if (command->rule)
 	{
 		if (!strcmp(action_property->name, "RULE-NAME"))
-			return rule->name;
+			return command->rule->name;
 
 		if (!strcmp(action_property->name, "SOURCE-NAME"))
-			return rule->source->name;
+			return command->rule->source->name;
 	}
 
-	if (pattern)
+	/* TODO: pattern names are not yet stored
+        if (command->pattern)
 	{
-		/* TODO: pattern names are not yet stored */
-		/*if (!strcmp(action_property->name, "PATTERN-NAME"))
-			return pattern->name;*/
+		if (!strcmp(action_property->name, "PATTERN-NAME"))
+			return command->pattern->name;
+        }*/
 
-		result = get_value_from_property_list(pattern->properties,
+        /* next search among tokens from matched line */
+
+        result = get_value_from_property_list(
+                        command->pattern_properties,
+                        action_property);
+        if (result)
+        {
+                la_debug("Value=%s\n", result);
+                return result;
+        }
+
+        /* next search in config file rule section */
+
+	if (command->rule)
+	{
+		result = get_value_from_property_list(command->rule->properties,
 				action_property);
 		if (result)
-		{
-			la_debug("Value=%s\n", result);
-			return result;
-		}
-	}
-
-	if (rule)
-	{
-		result = get_value_from_property_list(rule->properties,
-				action_property);
-		if (result)
 			return result;
 	}
 
-	result = get_value_from_property_list(la_config->default_properties,
-			action_property);
-	if (result)
-		return result;
+        /* lastly search in config file default section, return NULL if
+         * nothing is there either */
 
-	return NULL; /* token not present anywhere */
+        return get_value_from_property_list(la_config->default_properties,
+                        action_property);
+
 }
 
 /* TODO: refactor */
@@ -124,9 +132,8 @@ convert_command(la_command_t *command, la_commandtype_t type)
 		result_ptr = stpncpy(result_ptr, string_ptr, action_property->pos - start_pos);
 
 		/* copy value for token */
-		const char *repl = get_value_for_action_property(
-				action_property,
-				command->pattern, command->rule);
+		const char *repl = get_value_for_action_property(command,
+                                action_property);
 		if (repl)
 			result_ptr = stpncpy(result_ptr, repl, strlen(repl));
 		else
@@ -258,6 +265,7 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
         result = dup_command(template);
         result->rule = rule;
         result->pattern = pattern;
+        result->pattern_properties = dup_property_list(pattern->properties);
         if (result->host)
                 free(result->host);
         const char *host_property =
@@ -272,10 +280,12 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
  *
  * Duration = -1 prevents any end command
  * Duration = INT_MAX will result that the end command will only be fired on shutdown
+ *
+ * Note: begin_properties, end_properties will be initialized with
+ * create_list(); pattern_properties will always be NULL after
+ * create_template()
+ *
  * FIXME: use another value than INT_MAX
- * TODO: clarify meaning of begin_command struct members vs. end_command (same?
- * end_command always ignored?
- * TODO: maybe get rid of separate end_command at all
  */
 
 la_command_t *
@@ -299,6 +309,7 @@ create_template(la_rule_t *rule, const char *begin_string,
 
 	result->rule = rule;
 	result->pattern = NULL;
+        result->pattern_properties = NULL;
 	result->host = NULL;
 
 	result->duration = duration;
