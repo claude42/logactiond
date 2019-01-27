@@ -90,10 +90,10 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
 }
 
 /*
- * Scans pattern string for tokens. Tokens have the form <NAME> (as of now).
- * Adds each found token to property_list (incl. # of subexpression).
+ * Scans pattern string for tokens. Tokens have the form %NAME%.  Adds each
+ * found token to property_list (incl. # of subexpression).
  *
- * If string contains \, next character is ignored.
+ * If string contains %% this is ignored.
  *
  * Return number of found tokens.
  */
