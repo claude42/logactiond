@@ -183,16 +183,6 @@ typedef struct la_rule_s
 	kw_list_t *properties;
 } la_rule_t;
 
-typedef struct la_trigger_s
-{
-	kw_node_t node;
-	char *name;
-	la_command_t *command;
-	unsigned int n_triggers;/* how man times triggered during period */
-	time_t start_time;	/* time of first trigger during period */
-	char *host;		/* IP address */
-} la_trigger_t;
-
 typedef struct la_command_s
 {
 	kw_node_t node;
