@@ -89,7 +89,7 @@ insert_node_after(kw_node_t *ex_node, kw_node_t *new_node)
 	if (!ex_node || !new_node)
 		return;
 
-        assert_node(ex_node); assert_node(new_node);
+        assert_node(ex_node);
 
 	if (!ex_node->succ)
 		ex_node = ex_node->pred;
@@ -111,7 +111,7 @@ insert_node_before(kw_node_t *ex_node, kw_node_t *new_node)
         if (!ex_node || !new_node)
                 return;
 
-        assert_node(ex_node); assert_node(new_node);
+        assert_node(ex_node);
 
 	if (!ex_node->pred)
 		ex_node = ex_node->succ;
@@ -146,7 +146,7 @@ add_head(kw_list_t *list, kw_node_t *node)
 	if (!list || !node)
 		return;
 
-assert_list(list); assert_node(node);
+        assert_list(list);
 
 	node->succ = list->head.succ;
 	node->pred = (kw_node_t *) &list->head;
@@ -162,7 +162,7 @@ add_tail(kw_list_t *list, kw_node_t *node)
 	if (!list || !node)
 		return;
 
-        assert_list(list); assert_node(node);
+        assert_list(list);
 
 	node->succ = (kw_node_t *) &list->tail;
 	node->pred = list->tail.pred;
