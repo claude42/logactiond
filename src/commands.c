@@ -207,7 +207,7 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
                         if (length > 2)
                                 n_tokens++;
 
-                        ptr += length;
+                        ptr += length-1;
                 }
 
 		ptr++; /* also skips over second '%' */
