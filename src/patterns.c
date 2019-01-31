@@ -32,7 +32,8 @@ void
 assert_pattern(la_pattern_t *pattern)
 {
         assert(pattern);
-        assert(pattern->name);
+        /* we don't assign a name to patterns (yet) */
+        /* assert(pattern->name); */
         assert_rule(pattern->rule);
         assert_list(pattern->properties);
 }
@@ -97,7 +98,7 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
 		 */
 		strcpy(result_ptr, string_ptr);
 	}
-	la_log(LOG_DEBUG, "convert_regex(%s)=%s\n", string, result);
+	la_debug("convert_regex(%s)=%s\n", string, result);
 
 	return result; 
 }

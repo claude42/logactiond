@@ -141,14 +141,14 @@ handle_command_on_trigger_list(la_command_t *command)
                 /* still within current period - increase counter,
                  * trigger if necessary */
                 command->n_triggers++;
-                la_log(LOG_INFO, "Host: %s, trigger %u for %s\n",
+                la_log(LOG_INFO, "Host: %s, trigger %u for rule %s\n",
                                 command->host,
                                 command->n_triggers,
                                 command->rule->name);
                 if (command->n_triggers >= command->rule->threshold)
                 {
                         remove_node((kw_node_t *) command);
-                        la_log(LOG_INFO, "Host: %s, command fired for  %s\n",
+                        la_log(LOG_INFO, "Host: %s, command fired for rule %s\n",
                                 command->host,
                                 command->rule->name);
                         trigger_command(command);
@@ -159,7 +159,7 @@ handle_command_on_trigger_list(la_command_t *command)
                 /* if not, reset counter and period */
                 command->start_time = time(NULL);
                 command->n_triggers = 1;
-                la_log(LOG_INFO, "Host: %s, trigger 1 for %s\n",
+                la_log(LOG_INFO, "Host: %s, trigger 1 for rule %s\n",
                                 command->host,
                                 command->rule->name);
         }

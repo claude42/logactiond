@@ -290,7 +290,7 @@ la_address_t *create_address(const char *ip);
 
 /* endqueue.c */
 
-la_command_t *find_end_command(const char *command_string, const char *host);
+la_command_t *find_end_command(la_rule_t *rule, const char *host);
 
 void empty_end_queue(void);
 

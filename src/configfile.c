@@ -79,7 +79,7 @@ config_get_string_or_die(const config_setting_t *setting, const char *name)
 	const char* result = config_get_string_or_null(setting, name);
 
 	if (!result)
-		die_semantic("config_get_string_or_die: Config element %s missingn\n", name);
+		die_semantic("Config element %s missingn\n", name);
 
 	return result;
 }
@@ -468,6 +468,7 @@ load_single_rule(const config_setting_t *rule_def,
 
 	location = get_source_location(rule_def, uc_rule_def);
 	source = find_source_by_location(location);
+
 	if (!source)
 	{
 		source = create_source(get_source_name(rule_def),
@@ -477,6 +478,8 @@ load_single_rule(const config_setting_t *rule_def,
 		add_tail(la_config->sources, (kw_node_t *) source);
 	}
 
+        la_log(LOG_INFO, "Initializing rule %s for source %s.\n", name, source->name);
+
         /* get parameters either from rule or uc_rule */
         int threshold = get_rule_parameter(rule_def, uc_rule_def,
                         LA_THRESHOLD_LABEL);
@@ -485,8 +488,7 @@ load_single_rule(const config_setting_t *rule_def,
         int duration = get_rule_parameter(rule_def, uc_rule_def,
                         LA_DURATION_LABEL);
 
-        new_rule = create_rule(config_setting_name(rule_def), source,
-                        threshold, period, duration);
+        new_rule = create_rule(name, source, threshold, period, duration);
 
         /* Properties from uc_rule_def have priority over those from
          * rule_def */
@@ -578,7 +580,10 @@ const char ** include_func(config_t *config, const char *include_dir, const
 void
 load_la_config(char *filename)
 {
-        la_debug("load_la_config(%s)\n", filename);
+        if (!filename)
+                filename = CONFIG_FILE;
+
+        la_log(LOG_INFO, "Loading configuration from %s.\n", filename);
 
 	la_config = (la_config_t *) xmalloc(sizeof(la_config_t));
 
@@ -586,8 +591,7 @@ load_la_config(char *filename)
 
         config_set_include_func(&la_config->config_file, include_func);
 
-        if (!config_read_file(&la_config->config_file,
-                                filename ? filename : CONFIG_FILE))
+        if (!config_read_file(&la_config->config_file, filename))
         {
                 die_hard("%s:%d - %s\n",
                                 config_error_file(&la_config->config_file),
@@ -629,6 +633,9 @@ include_func(config_t *config, const char *include_dir, const char *path, const 
 	int result_capacity = 0;
 
 	*include_path = 0;
+
+        assert(path);
+        la_debug("include_func(%s)\n", path);
 
 	if(*path != '/')
 	{
@@ -686,8 +693,6 @@ include_func(config_t *config, const char *include_dir, const char *path, const 
 			*result_next = strdup(file_path);
 			++result_next;
 			++result_count;
-
-                        la_log(LOG_DEBUG, "file: %s\n", file_path);
 		}
 		closedir(dp);
 	}
