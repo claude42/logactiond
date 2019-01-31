@@ -42,12 +42,17 @@
 #include "logactiond.h"
 #include "nodelist.h"
 
+/*
+ * Check whether ip address is on ignore list. Returns false if ip==NULL
+ */
 
 bool
 address_on_ignore_list(const char *ip)
 {
         if (!ip)
                 return false;
+
+        la_debug("address_on_ignore_list(%s)\n", ip);
 
 	for (la_address_t *address = (la_address_t *) la_config->ignore_addresses->head.succ;
 			address->node.succ;
@@ -60,9 +65,14 @@ address_on_ignore_list(const char *ip)
 	return false;
 }
 
+/*
+ * Create new la_address_t. ip must not be NULL
+ */
+
 la_address_t *
 create_address(const char *ip)
 {
+        la_debug("create_address(%s)\n", ip);
         assert(ip);
 
 	la_address_t *result = (la_address_t *) xmalloc(sizeof(la_address_t));

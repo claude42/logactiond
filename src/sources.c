@@ -21,6 +21,7 @@
 #include <string.h>
 #include <sys/select.h>
 #include <syslog.h>
+#include <assert.h>
 
 #include <libconfig.h>
 
@@ -32,13 +33,26 @@
 static char *linebuffer = NULL;
 size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE;
 
+void
+assert_source(la_source_t *source)
+{
+        assert(source);
+        assert(source->name);
+        assert(source->location);
+        assert_list(source->rules);
+}
+
 /*
  * If string ends with a newline, replace this by \0
+ *
+ * line must not be NULL.
  */
 
 static void
 cut_newline(char *line)
 {
+        assert(line);
+
 	size_t len = strlen(line);
 
 	if (line[len-1] == '\n')
@@ -52,6 +66,7 @@ cut_newline(char *line)
 static void
 handle_log_line(la_source_t *source, char *line)
 {
+        assert(line); assert_source(source);
 	la_debug("handle_log_line(%s)\n", line);
 	cut_newline(line);
 
@@ -70,6 +85,9 @@ handle_log_line(la_source_t *source, char *line)
 void
 handle_new_content(la_source_t *source)
 {
+        assert_source(source);
+        la_debug("handle_new_content(%s)\n", source->name);
+
 	/* TODO: less random number? */
 	if (!linebuffer)
 		linebuffer = (char *) xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
@@ -113,6 +131,9 @@ handle_new_content(la_source_t *source)
 void
 watch_source(la_source_t *source, int whence)
 {
+        assert_source(source);
+        la_debug("watch_source(%s)\n", source->name);
+
 	source->file = fopen(source->location, "r");
 	if (!source->file)
 		die_err("fopen failed");
@@ -132,6 +153,9 @@ watch_source(la_source_t *source, int whence)
 void
 unwatch_source(la_source_t *source)
 {
+        assert(source);
+        la_debug("unwatch_source(%s)\n", source->name);
+
 	if (fclose(source->file))
 		die_err("fclose failed");
 	source->file = NULL;

@@ -28,10 +28,20 @@
 
 #include "logactiond.h"
 
+void
+assert_command(la_command_t *command)
+{
+        assert(command);
+        assert(command->begin_string);
+        assert_list(command->begin_properties);
+        assert_list(command->end_properties);
+}
+
 static void
 exec_command(const char *command_string)
 {
-	la_log(LOG_DEBUG, "exec_command(%s)\n", command_string);
+        assert(command_string);
+	la_debug("exec_command(%s)\n", command_string);
 
 	int result = system(command_string);
 	if (result == -1)
@@ -52,7 +62,8 @@ static const char *
 get_value_for_action_property(la_command_t *command,
                 la_property_t *action_property)
 {
-        assert(command); assert(action_property);
+        assert_command(command); assert(action_property);
+        la_debug("get_value_for_action_property(%s)\n", action_property->name);
 
 	la_property_t *property;
 	const char *result;
@@ -81,10 +92,7 @@ get_value_for_action_property(la_command_t *command,
                         command->pattern_properties,
                         action_property);
         if (result)
-        {
-                la_debug("Value=%s\n", result);
                 return result;
-        }
 
         /* next search in config file rule section */
 
@@ -109,8 +117,12 @@ get_value_for_action_property(la_command_t *command,
 static char *
 convert_command(la_command_t *command, la_commandtype_t type)
 {
+        assert_command(command);
+
         const char *source_string = (type == LA_COMMANDTYPE_BEGIN) ?
                 command->begin_string : command->end_string;
+        la_debug("convert_command(%s)\n", source_string);
+
 	size_t len = strlen(source_string);
 	/* FIXME */
 	char *result = (char *) xmalloc(10000);
@@ -125,7 +137,6 @@ convert_command(la_command_t *command, la_commandtype_t type)
         else
                 action_property = (la_property_t *) command->end_properties->head.succ;
 
-
 	while (action_property->node.succ)
 	{
 		/* copy string before next token */
@@ -134,6 +145,7 @@ convert_command(la_command_t *command, la_commandtype_t type)
 		/* copy value for token */
 		const char *repl = get_value_for_action_property(command,
                                 action_property);
+                /* TODO: LOG */
 		if (repl)
 			result_ptr = stpncpy(result_ptr, repl, strlen(repl));
 		else
@@ -164,8 +176,10 @@ convert_command(la_command_t *command, la_commandtype_t type)
 void
 trigger_command(la_command_t *command)
 {
-	la_log(LOG_DEBUG, "trigger_command(%s, %d)\n", command->begin_string,
-			command->duration);
+        assert_command(command);
+
+        la_debug("trigger_command(%s, %d)\n", command->begin_string,
+                        command->duration);
 
 	/* TODO: can't we convert_command() earlier? */
         exec_command(convert_command(command, LA_COMMANDTYPE_BEGIN));
@@ -179,6 +193,11 @@ trigger_command(la_command_t *command)
 void
 trigger_end_command(la_command_t *command)
 {
+        assert_command(command);
+
+        la_debug("trigger_end_command(%s, %d)\n", command->end_string,
+                        command->duration);
+
         exec_command(convert_command(command, LA_COMMANDTYPE_END));
 }
 
@@ -192,11 +211,12 @@ trigger_end_command(la_command_t *command)
 static unsigned int
 scan_action_tokens(kw_list_t *property_list, const char *string)
 {
+        assert_list(property_list); assert(string);
+
+        la_debug("scan_action_tokens(%s)\n", string);
+
 	const char *ptr = string;
 	unsigned int n_tokens = 0;
-
-	if (!property_list || !string)
-		die_hard("No property list or no string submitted");
 
 	while (*ptr)
         {
@@ -210,7 +230,7 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
                         ptr += length-1;
                 }
 
-		ptr++; /* also skips over second '%' */
+		ptr++; /* also skips over second '%' of a token */
 	}
 
 	return n_tokens;
@@ -231,6 +251,7 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
 la_command_t *
 dup_command(la_command_t *command)
 {
+        assert_command(command);
 	la_command_t *result = (la_command_t *) xmalloc(sizeof(la_command_t));
 
         result->begin_string = xstrdup(command->begin_string);
@@ -261,6 +282,11 @@ la_command_t *
 create_command_from_template(la_command_t *template, la_rule_t *rule,
                 la_pattern_t *pattern)
 {
+        assert_command(template); assert_rule(rule); assert_pattern(pattern);
+        assert_list(pattern->properties);
+
+        la_debug("create_command_from_template(%s)\n", template->begin_string);
+
         la_command_t *result;
 
         result = dup_command(template);
@@ -293,9 +319,10 @@ la_command_t *
 create_template(la_rule_t *rule, const char *begin_string,
                 const char *end_string, int duration)
 {
-        assert(begin_string);
+        assert_rule(rule); assert(begin_string);
 
 	la_debug("create_command(%s, %d)\n", begin_string, duration);
+
 	la_command_t *result = (la_command_t *) xmalloc(sizeof(la_command_t));
 
         result->begin_string = xstrdup(begin_string);
@@ -325,7 +352,9 @@ create_template(la_rule_t *rule, const char *begin_string,
 void
 free_command(la_command_t *command)
 {
-        assert(command);
+        assert_command(command);
+
+        la_debug("free_command(%s)\n", command->begin_string);
 
         free(command->begin_string);
         free_property_list(command->begin_properties);

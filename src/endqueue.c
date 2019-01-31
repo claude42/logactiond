@@ -29,6 +29,7 @@
 #include <libconfig.h>
 
 #include "logactiond.h"
+#include "nodelist.h"
 
 static kw_list_t *end_queue = NULL;
 pthread_mutex_t end_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -39,8 +40,12 @@ pthread_mutex_t end_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
  */
 
 la_command_t *
-find_end_command(la_rule_t *rule, const char *command_string, const char *host)
+find_end_command(const char *command_string, const char *host)
 {
+        assert(command_string);
+
+        la_debug("find_end_command(%s)\n", command_string);
+
         if (!end_queue)
                 return NULL;
 
@@ -80,7 +85,9 @@ find_end_command(la_rule_t *rule, const char *command_string, const char *host)
 static void
 remove_trigger_free_command(la_command_t *command)
 {
-        assert(command);
+        assert_command(command);
+
+        la_debug("remove_trigger_free_command(%s)\n", command->end_string);
 
         remove_node((kw_node_t *) command);
         trigger_end_command(command);
@@ -95,6 +102,8 @@ remove_trigger_free_command(la_command_t *command)
 void
 empty_end_queue(void)
 {
+        la_debug("empty_end_queue()\n");
+
 	if (!end_queue)
 		return;
 
@@ -117,6 +126,8 @@ empty_end_queue(void)
 static void *
 consume_end_queue(void *ptr)
 {
+        la_debug("consume_end_queue()\n");
+
 	for (;;)
 	{
 
@@ -159,6 +170,8 @@ consume_end_queue(void *ptr)
 void
 init_end_queue(void)
 {
+        la_debug("init_end_queue()\n");
+
 	end_queue = create_list();
 
 	pthread_t end_queue_thread;
@@ -170,6 +183,10 @@ init_end_queue(void)
 static void
 set_end_time(la_command_t *command)
 {
+        assert_command(command);
+
+        la_debug("set_end_time(%s)\n", command->end_string);
+
 	command->end_time = time(NULL);
 	if (command->end_time == -1)
 		die_hard("Can't get current time\n");
@@ -179,6 +196,8 @@ set_end_time(la_command_t *command)
 void
 enqueue_end_command(la_command_t *end_command)
 {
+        assert_command(end_command);
+
         la_debug("enqueue_end_command(%s, %u\n", end_command->end_string,
                         end_command->duration);
 

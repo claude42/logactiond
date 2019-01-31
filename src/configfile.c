@@ -106,6 +106,8 @@ config_setting_lookup_or_die(const config_setting_t *setting,
 static const config_setting_t *
 get_rule(const char *rule_name)
 {
+        assert(rule_name);
+
         return config_setting_lookup_or_die(config_lookup(
                                 &la_config->config_file,
                                 LA_RULES_LABEL), rule_name);
@@ -121,6 +123,8 @@ get_rule(const char *rule_name)
 const config_setting_t *
 get_action(const char *action_name)
 {
+        assert(action_name);
+
 	return config_setting_lookup_or_die(config_lookup(
 				&la_config->config_file,
 				LA_ACTIONS_LABEL), action_name);
@@ -162,21 +166,9 @@ get_source(const char *source)
 const char *
 get_source_name(const config_setting_t *rule)
 {
+        assert(rule);
+
         return config_get_string_or_die(rule, LA_RULE_SOURCE_LABEL);
-
-        /* What on earth was I thinking?!?
-	config_setting_t *source_def;
-	const char *result;
-
-	source_def = get_source(config_get_string_or_null(rule, LA_RULE_SOURCE_LABEL));
-	if (!source_def)
-		die_semantic("Source not found for rule %s\n", config_setting_name(rule));
-
-	result = config_setting_name(source_def);
-	if (!result)
-		die_semantic("Source name missing\n");
-
-	return result;*/
 }
 
 /*
@@ -187,6 +179,8 @@ get_source_name(const config_setting_t *rule)
 const char *
 get_source_location(const config_setting_t *rule, const config_setting_t *uc_rule)
 {
+        assert(rule); assert(uc_rule);
+
 	config_setting_t *source_def;
 	const char *result;
 
@@ -236,6 +230,10 @@ get_source_type(const config_setting_t *rule)
 static void
 compile_actions(la_rule_t *rule, const config_setting_t *action_def)
 {
+        assert_rule(rule); assert(action_def);
+
+        la_debug("compile_actions(%s)\n", rule->name);
+
         la_command_t *command;
         const char *initialize = config_get_string_or_null(action_def,
                         LA_ACTION_INITIALIZE_LABEL);
@@ -257,12 +255,17 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
         else
                 die_semantic("Begin action always required!\n");
 
+        assert_list(rule->begin_commands);
 }
 
 static void
 compile_list_of_actions(la_rule_t *rule,
 		const config_setting_t *action_def)
 {
+        assert_rule(rule); assert(action_def);
+
+        la_debug("compile_list_of_actions(%s)\n", rule->name);
+
 	int n_items = config_setting_length(action_def);
 
 	for (int i=0; i<n_items; i++)
@@ -281,6 +284,9 @@ compile_list_of_actions(la_rule_t *rule,
 static void
 load_actions(la_rule_t *rule, const config_setting_t *uc_rule_def)
 {
+        assert_rule(rule); assert(uc_rule_def);
+
+        la_debug("load_actions(%s)\n", rule->name);
         const config_setting_t *action_reference;
 
         /* again unclear why this cast is necessary */
@@ -316,7 +322,9 @@ static void
 load_patterns(la_rule_t *rule, const config_setting_t *rule_def, 
                 const config_setting_t *uc_rule_def)
 {
-        assert(rule); assert(rule_def); assert(uc_rule_def);
+        assert_rule(rule); assert(rule_def); assert(uc_rule_def);
+
+        la_debug("load_patterns(%s)\n", rule->name);
 
         const config_setting_t *patterns;
 
@@ -340,13 +348,17 @@ load_patterns(la_rule_t *rule, const config_setting_t *rule_def,
 
 		add_tail(rule->patterns, (kw_node_t *) pattern);
 	}
+        assert_list(rule->patterns);
 }
 
 
 static kw_list_t *
 load_ignore_addresses(const config_setting_t *section)
 {
+        assert(section);
+
 	la_debug("load_ignore_addresses(%s)\n", config_setting_name(section));
+
 	kw_list_t *result = create_list();
 
 	config_setting_t *ignore_section =
@@ -366,9 +378,11 @@ load_ignore_addresses(const config_setting_t *section)
 
 		la_address_t *address = create_address(ip);
 
-		la_debug("Loaded ignore addr %s from section %s\n", ip, config_setting_name(section));
+                la_debug("load_ignore_addresses(%s)=%s\n",
+                                config_setting_name(section), ip);
 		add_tail(result, (kw_node_t *) address);
 	}
+        assert_list(result);
 
 	return result;
 }
@@ -382,9 +396,9 @@ load_ignore_addresses(const config_setting_t *section)
 static void
 load_properties(kw_list_t *properties, const config_setting_t *section)
 {
-	la_debug("load_properties(%s)\n", config_setting_name(section));
+        assert_list(properties); assert(section);
 
-        assert(properties); assert(section);
+	la_debug("load_properties(%s)\n", config_setting_name(section));
 
 	config_setting_t *properties_section =
 		config_setting_get_member(section, LA_PROPERTIES_LABEL);
@@ -410,9 +424,10 @@ load_properties(kw_list_t *properties, const config_setting_t *section)
 
 		la_property_t *property = create_property_from_config(name, value);
 
-		la_debug("Loaded prop %s from section %s\n", name, config_setting_name(section));
+                la_debug("load_properties(%s)=%s\n", config_setting_name(section), name);
 		add_tail(properties, (kw_node_t *) property);
 	}
+        assert_list(properties);
 }
 
 
@@ -420,6 +435,8 @@ static int
 get_rule_parameter(const config_setting_t *rule_def,
                 const config_setting_t *uc_rule_def, const char *name)
 {
+        assert(rule_def); assert(uc_rule_def); assert(name);
+
         int result = config_get_unsigned_int_or_negative(uc_rule_def, name);
 
         if (result < 0)
@@ -440,14 +457,14 @@ static void
 load_single_rule(const config_setting_t *rule_def,
                 const config_setting_t *uc_rule_def)
 {
-	char *name;
+        assert(rule_def); assert(uc_rule_def);
 	la_rule_t *new_rule;
 	la_source_t *source;
 	const char *location;
 	la_sourcetype_t type;
 
-	name = config_setting_name(rule_def);
-        la_debug("Loading rule %s\n", name);
+	char *name = config_setting_name(rule_def);
+        la_debug("load_single_rule(%s)\n", name);
 
 	location = get_source_location(rule_def, uc_rule_def);
 	source = find_source_by_location(location);
@@ -489,6 +506,7 @@ static void
 load_rules(void)
 {
         la_debug("load_rules()\n");
+
         config_setting_t *local_section = 
 		config_lookup(&la_config->config_file, LA_LOCAL_LABEL);
 
@@ -512,8 +530,7 @@ load_rules(void)
                         load_single_rule(get_rule(config_setting_name(
                                                         config_setting_get_elem(
                                                                 local_section,
-                                                                i))),
-                                        uc_rule);
+                                                                i))), uc_rule);
                 }
         }
 
@@ -525,6 +542,7 @@ static void
 load_defaults(void)
 {
         la_debug("load_defaults()\n");
+
 	config_setting_t *defaults_section =
 		config_lookup(&la_config->config_file, LA_DEFAULTS_LABEL);
 
@@ -560,6 +578,8 @@ const char ** include_func(config_t *config, const char *include_dir, const
 void
 load_la_config(char *filename)
 {
+        la_debug("load_la_config(%s)\n", filename);
+
 	la_config = (la_config_t *) xmalloc(sizeof(la_config_t));
 
         config_init(&la_config->config_file);
@@ -584,6 +604,8 @@ load_la_config(char *filename)
 void
 unload_la_config(void)
 {
+        la_debug("unload_la_config()\n");
+
         config_destroy(&la_config->config_file);
 }
 

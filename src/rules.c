@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <syslog.h>
+#include <assert.h>
 
 #include <libconfig.h>
 
@@ -31,6 +32,18 @@
 /* FIXME: make 1000 of calls to get_host_property_value() more efficient */
 
 /* FIXME: trigger_list should definitely be a hash */
+
+void
+assert_rule(la_rule_t *rule)
+{
+        assert(rule);
+        assert(rule->name);
+        assert(rule->source);
+        assert_list(rule->patterns);
+        assert_list(rule->begin_commands);
+        assert_list(rule->trigger_list);
+        assert_list(rule->properties);
+}
 
 
 /*
@@ -60,10 +73,16 @@ get_next_pattern_for_rule(kw_node_t **iterator)
 static void
 add_trigger(la_command_t *command)
 {
+        assert_command(command);
+
+        la_debug("add_trigger(%s)\n", command->begin_string);
+
 	command->n_triggers = 0;
 	command->start_time = time(NULL);
 
 	add_head(command->rule->trigger_list, (kw_node_t *) command);
+
+        assert_list(command->rule->trigger_list);
 }
 
 /*
@@ -74,8 +93,12 @@ add_trigger(la_command_t *command)
 static la_command_t *
 find_trigger(la_rule_t *rule, const char *command_string, const char *host)
 {
+        assert_rule(rule); assert(command_string); assert(host);
+
 	if (!host || !command_string)
 		die_hard("No host / command_string specified\n");
+
+        la_debug("find_trigger(%s, %s, %s)\n", rule->name, command_string, host);
 
 	for (la_command_t *command = (la_command_t *) rule->trigger_list->head.succ;
 			command->node.succ;
@@ -105,6 +128,10 @@ find_trigger(la_rule_t *rule, const char *command_string, const char *host)
 static void
 handle_command_on_trigger_list(la_command_t *command)
 {
+        assert_command(command);
+
+        la_debug("handle_command_on_trigger_list(%s)\n", command->begin_string);
+
 	/* new commands not on the trigger_list yet have n_triggers == 0 */
 	if (command->n_triggers == 0)
 		add_trigger(command);
@@ -150,11 +177,16 @@ static void
 trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
                 const char *host, la_command_t *template)
 {
+        assert_rule(rule); assert_pattern(pattern); assert(host);
+        assert_command(template);
+
+        la_debug("trigger_single_command(%s)\n", template->begin_string);
+
         la_command_t *command;
 
         /* First check whether command still active on end_queue. In this
          * case, ignore new command */
-        if (find_end_command(rule, template->begin_string, host))
+        if (find_end_command(template->begin_string, host))
         {
                 la_log(LOG_INFO, "Host: %s ignored, command active for %s\n",
                                         host, rule->name);
@@ -194,7 +226,10 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
 static void
 trigger_all_commands(la_rule_t *rule, la_pattern_t *pattern)
 {
+        assert_rule(rule); assert_pattern(pattern);
+
 	la_debug("trigger_all_commands()\n");
+
         const char *host = get_host_property_value(pattern->properties);
 
         /* Do nothing if on ignore list */
@@ -225,6 +260,10 @@ static void
 assign_value_to_properties(kw_list_t *property_list, char *line,
 		regmatch_t pmatch[])
 {
+        assert_list(property_list); assert(line);
+
+        la_debug("assign_value_to_properties()\n");
+
 	for (la_property_t *property = (la_property_t *) property_list->head.succ;
 			property->node.succ;
 			property = (la_property_t *) property->node.succ)
@@ -242,6 +281,10 @@ assign_value_to_properties(kw_list_t *property_list, char *line,
 static void
 clear_property_values(kw_list_t *property_list)
 {
+        assert(property_list);
+
+        la_debug("clear_property_values()\n");
+
         for (la_property_t *property = (la_property_t *) property_list->head.succ;
                         property->node.succ;
                         property = (la_property_t *) property->node.succ)
@@ -261,6 +304,10 @@ clear_property_values(kw_list_t *property_list)
 void
 handle_log_line_for_rule(la_rule_t *rule, char *line)
 {
+        assert_rule(rule); assert(line);
+
+        la_debug("handle_log_line()\n");
+
 	kw_node_t *i = get_pattern_iterator_for_rule(rule);
 	la_pattern_t *pattern;
 

@@ -21,11 +21,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <sys/select.h>
+#include <assert.h>
 
 #if HAVE_INOTIFY
 #include <sys/inotify.h>
 #endif /* HAVE_INOTIFY */
-#include <sys/select.h>
 
 #include <libconfig.h>
 
@@ -41,6 +42,7 @@
 void
 watch_forever(void)
 {
+        la_debug("watch_forever()\n");
 #if HAVE_INOTIFY
 	watch_forever_inotify();
 #endif /* HAVE_INOTIFY */
@@ -55,6 +57,7 @@ watch_forever(void)
 void
 init_watching(void)
 {
+        la_debug("init_watching()\n");
 
 #if HAVE_INOTIFY
 	init_watching_inotify();

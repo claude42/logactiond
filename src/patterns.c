@@ -21,12 +21,21 @@
 #include <regex.h>
 #include <string.h>
 #include <syslog.h>
+#include <assert.h>
 
 #include <libconfig.h>
 
 #include "logactiond.h"
 #include "nodelist.h"
 
+void
+assert_pattern(la_pattern_t *pattern)
+{
+        assert(pattern);
+        assert(pattern->name);
+        assert_rule(pattern->rule);
+        assert_list(pattern->properties);
+}
 
 /* TODO: refactor */
 
@@ -40,6 +49,10 @@
 static char *
 convert_regex(const char *string, kw_list_t *property_list, unsigned int n_properties)
 {
+        assert(string); assert_list(property_list);
+
+        la_debug("convert_regex(%s)\n", string);
+
 	size_t len = strlen(string);
 	/* definitely an upper bound */
 	char *result = (char *) xmalloc(len +
@@ -101,6 +114,10 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
 static unsigned int
 scan_tokens(kw_list_t *property_list, const char *string)
 {
+        assert_list(property_list); assert(string);
+
+        la_debug("scan_tokens(%s)\n", string);
+
 	const char *ptr = string;
 	unsigned int subexpression = 0;
 	unsigned int n_tokens = 0;
@@ -136,6 +153,10 @@ scan_tokens(kw_list_t *property_list, const char *string)
 la_pattern_t *
 create_pattern(const char *string_from_configfile, la_rule_t *rule)
 {
+        assert(string_from_configfile); assert_rule(rule);
+
+        la_debug("create_pattern(%s)\n", string_from_configfile);
+
 	unsigned int n_properties;
 
 	la_pattern_t *result = (la_pattern_t *) xmalloc(sizeof(la_pattern_t));
@@ -155,7 +176,6 @@ create_pattern(const char *string_from_configfile, la_rule_t *rule)
 	}
 
 	return result;
-
 }
 
 

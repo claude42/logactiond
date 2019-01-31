@@ -42,6 +42,7 @@ assert_node(kw_node_t *node)
 void
 assert_list(kw_list_t *list)
 {
+        assert(list);
         assert(list->head.succ && list->tail.pred);
         assert(!list->head.pred && !list->tail.succ);
 

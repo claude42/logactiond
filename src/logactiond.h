@@ -290,7 +290,7 @@ la_address_t *create_address(const char *ip);
 
 /* endqueue.c */
 
-la_command_t *find_end_command(la_rule_t *rule, const char *command_string, const char *host);
+la_command_t *find_end_command(const char *command_string, const char *host);
 
 void empty_end_queue(void);
 
@@ -299,6 +299,8 @@ void enqueue_end_command(la_command_t *end_command);
 void init_end_queue(void);
 
 /* commands.c */
+
+void assert_command(la_command_t *command);
 
 void trigger_command(la_command_t *command);
 
@@ -345,9 +347,13 @@ void free_property_list(kw_list_t *list);
 
 /* patterns.c */
 
+void assert_pattern(la_pattern_t *pattern);
+
 la_pattern_t *create_pattern(const char *string_from_configfile, la_rule_t *rule);
 
-/* rules. c */
+/* rules.c */
+
+void assert_rule(la_rule_t *rule);
 
 void handle_log_line_for_rule(la_rule_t *rule, char *line);
 
@@ -355,6 +361,8 @@ la_rule_t * create_rule(char *name, la_source_t *source, int threshold,
 		int period, int duration);
 
 /* sources.c */
+
+void assert_source(la_source_t *source);
 
 void unwatch_source(la_source_t *source);
 

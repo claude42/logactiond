@@ -43,8 +43,10 @@ unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
  */
 
 static void
-skeleton_daemon()
+skeleton_daemon(void)
 {
+        la_debug("skeleton_daemon()\n");
+
 	pid_t pid;
 
 	/* Fork off the parent process */
@@ -99,6 +101,8 @@ skeleton_daemon()
 static void
 handle_signal(int signal)
 {
+        la_debug("handle_signal(%s)\n", signal);
+
         printf("Received signal %u\n", signal);
         empty_end_queue();
         unload_la_config();
@@ -108,6 +112,8 @@ handle_signal(int signal)
 static void
 register_signal_handler(void)
 {
+        la_debug("register_signal_handler()\n");
+
         struct sigaction new_act;
         struct sigaction old_act;
 
@@ -126,6 +132,8 @@ register_signal_handler(void)
 static void
 read_options(int argc, char *argv[])
 {
+        la_debug("read_options()\n");
+
         int opt;
 
         for (;;)
