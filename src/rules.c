@@ -182,7 +182,7 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
 
         la_debug("trigger_single_command(%s)\n", template->begin_string);
 
-        la_command_t *command;
+        la_command_t *command = NULL;
 
         /* First check whether command still active on end_queue. In this
          * case, ignore new command */
@@ -193,24 +193,17 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
                 return;
         }
 
-        /* Always trigger directly if no host found */
+        /* Check whether the same command has been triggered (but not yet
+         * fired) by the same host before. Create new command if not found. If
+         * host is not set, always create new command.
+         */
         // TODO: maybe add "need_host" config parameter. Don't trigger command
         // at all w/o host in this case
-        if (!host)
-        {
-                command = create_command_from_template(template, rule, pattern);
-        }
-        else
-        {
-                /* first look whether the same command has been triggered (but
-                 * not yet fired) by the same host before */
+        if (host)
                 command = find_trigger(rule, template->begin_string, host);
 
-                /* if not create a copy of the command template */
-                if (!command)
-                        command = create_command_from_template(template, rule,
-                                        pattern);
-        }
+        if (!command)
+                command = create_command_from_template(template, rule, pattern);
 
         handle_command_on_trigger_list(command);
 }
