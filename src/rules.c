@@ -186,7 +186,7 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
 
         /* First check whether command still active on end_queue. In this
          * case, ignore new command */
-        if (find_end_command(template->begin_string, host))
+        if (find_end_command(rule, host))
         {
                 la_log(LOG_INFO, "Host: %s ignored, command active for %s\n",
                                         host, rule->name);

@@ -37,14 +37,16 @@ pthread_mutex_t end_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 /*
  * Search for a command by a certain host for a given rule on the end_que
  * list. Return if found, return NULL otherwise
+ *
+ * host may be NULL
  */
 
 la_command_t *
-find_end_command(const char *command_string, const char *host)
+find_end_command(la_rule_t *rule, const char *host)
 {
-        assert(command_string);
+        assert_rule(rule);
 
-        la_debug("find_end_command(%s)\n", command_string);
+        la_debug("find_end_command(%s)\n", rule->name);
 
         if (!end_queue)
                 return NULL;
@@ -57,7 +59,7 @@ find_end_command(const char *command_string, const char *host)
                         command->node.succ;
                         command = (la_command_t *) command->node.succ)
         {
-                if (!strcmp(command->begin_string, command_string))
+                if (command->rule == rule)
                 {
                         if (!command->host && !host)
                         {
