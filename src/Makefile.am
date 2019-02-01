@@ -7,3 +7,4 @@ logactiond_CPPFLAGS = -I$(top_srcdir)/libconfig/lib
 #logactiond_CPPFLAGS = -I$(top_srcdir)/lib
 logactiond_CFLAGS = $(PTHREAD_CFLAGS)
 #logactiond_LDFLAGS = -Lconfig
+logactiond_LDFLAGS = -lresolv

@@ -26,6 +26,7 @@
 #include <regex.h>
 #include <stdbool.h>
 #include <time.h>
+#include <arpa/inet.h>
 
 #include <libconfig.h>
 
@@ -104,7 +105,8 @@ typedef struct la_address_s
 {
 	kw_node_t node;
         /* IP address as string, strdup()d */
-	const char *ip; 
+        struct in_addr addr;
+        uint8_t prefix;
 } la_address_t;
 
 /*

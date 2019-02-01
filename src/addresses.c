@@ -38,9 +38,23 @@
 
 #include <string.h>
 #include <assert.h>
+#include <arpa/inet.h>
 
 #include "logactiond.h"
 #include "nodelist.h"
+
+/*
+ * From https://stackoverflow.com/questions/7213995/ip-cidr-match-function
+ */
+bool cidr_match(struct in_addr addr, struct in_addr net, uint8_t prefix) {
+        if (prefix == 0) {
+                // C99 6.5.7 (3): u32 << 32 is undefined behaviour
+                return true;
+        }
+
+        return !((addr.s_addr ^ net.s_addr) & htonl(0xFFFFFFFFu << (32 - prefix)));
+}
+
 
 /*
  * Check whether ip address is on ignore list. Returns false if ip==NULL
@@ -49,16 +63,21 @@
 bool
 address_on_ignore_list(const char *ip)
 {
+        struct in_addr addr;
+
         if (!ip)
                 return false;
 
         la_debug("address_on_ignore_list(%s)\n", ip);
 
+        if (inet_pton(AF_INET, ip, &addr) != 1)
+                die_semantic("Invalid IP address!\n");
+
 	for (la_address_t *address = (la_address_t *) la_config->ignore_addresses->head.succ;
 			address->node.succ;
 			address = (la_address_t *) address->node.succ)
 	{
-		if (!strcmp(address->ip, ip))
+                if (cidr_match(addr, address->addr, address->prefix))
 			return true;
 	}
 
@@ -72,12 +91,17 @@ address_on_ignore_list(const char *ip)
 la_address_t *
 create_address(const char *ip)
 {
-        la_debug("create_address(%s)\n", ip);
         assert(ip);
 
 	la_address_t *result = (la_address_t *) xmalloc(sizeof(la_address_t));
 
-	result->ip = xstrdup(ip);
+        result->prefix = inet_net_pton(AF_INET, ip, &(result->addr.s_addr),
+                        sizeof(in_addr_t));
+
+        if (result->prefix == -1)
+                die_semantic("Invalid IP address!\n");
+
+        la_debug("create_address(%s)=%u\n", ip, result->prefix);
 
 	return result;
 }
