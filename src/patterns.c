@@ -173,7 +173,7 @@ create_pattern(const char *string_from_configfile, la_rule_t *rule)
 	if (r)
 	{
 		// TODO: improve error handling
-		die_err("Error compiling regex: %d\n", r);
+		die_err("Error %d compiling regex: %s\n", r, result->string);
 	}
 
 	return result;
