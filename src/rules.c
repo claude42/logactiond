@@ -29,8 +29,6 @@
 #include "logactiond.h"
 #include "nodelist.h"
 
-/* FIXME: make 1000 of calls to get_host_property_value() more efficient */
-
 /* FIXME: trigger_list should definitely be a hash */
 
 void
@@ -203,7 +201,7 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
                 command = find_trigger(rule, template->begin_string, host);
 
         if (!command)
-                command = create_command_from_template(template, rule, pattern);
+                command = create_command_from_template(template, rule, pattern, host);
 
         handle_command_on_trigger_list(command);
 }
