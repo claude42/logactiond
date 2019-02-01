@@ -249,7 +249,7 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
  * Clones command from a command template.
  * - Clones begin_string / end_string.
  * - Duplicates begin_properties / end_properties lists
- * - Does not clone host
+ * - Don't clone rule, pattern, host, end_time, n_triggers, start_time
  * Must be free()d after use.
  */
 
@@ -270,13 +270,13 @@ dup_command(la_command_t *command)
 	result->end_properties = dup_property_list(command->end_properties);
 	result->n_end_properties = command->n_end_properties;
 
-	result->rule = command->rule;
-	result->pattern = command->pattern;
-        result->host = xstrdup(command->host);
 	result->duration = command->duration;
-	result->end_time = command->end_time;
-	result->n_triggers = command->n_triggers;
-	result->start_time = command->start_time;
+	//result->rule = command->rule;
+	//result->pattern = command->pattern;
+        //result->host = xstrdup(command->host);
+	//result->end_time = command->end_time;
+	//result->n_triggers = command->n_triggers;
+	//result->start_time = command->start_time;
 
 	return result;
 }
@@ -288,7 +288,7 @@ dup_command(la_command_t *command)
 
 la_command_t *
 create_command_from_template(la_command_t *template, la_rule_t *rule,
-                la_pattern_t *pattern)
+                la_pattern_t *pattern, const char *host)
 {
         assert_command(template); assert_rule(rule); assert_pattern(pattern);
         assert_list(pattern->properties);
@@ -301,11 +301,8 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
         result->rule = rule;
         result->pattern = pattern;
         result->pattern_properties = dup_property_list(pattern->properties);
-        if (result->host)
-                free(result->host);
-        const char *host_property =
-                get_host_property_value(pattern->properties);
-        result->host = xstrdup(host_property);
+        result->host = xstrdup(host);
+        result->end_time = result->n_triggers = result->start_time= 0;
 
         return result;
 }
