@@ -77,9 +77,13 @@
 #define LA_TOKEN_REPL "(.+)"
 #define LA_TOKEN_REPL_LEN 4
 
-#define LA_HOST_TOKEN "HOST"
+#define LA_HOST_TOKEN "host"
 #define LA_HOST_TOKEN_REPL "([.:[:xdigit:]]+)"
 #define LA_HOST_TOKEN_REPL_LEN 17
+
+#define LA_RULENAME_TOKEN "rulename"
+#define LA_SOURCENAME_TOKEN "sourcename"
+#define LA_PATTERNNAME_TOKEN "patternname"
 
 // maximum number of tokens that can be matched
 

@@ -111,7 +111,6 @@ die_hard(char *fmt, ...)
 	va_start(myargs, fmt);
 	vsnprintf(message_buffer, 999, fmt, myargs);
 	va_end(myargs);
-	vfprintf(stderr, fmt, myargs);
 	stderr_or_syslog(LOG_ERR, message_buffer);
 
 	unload_la_config();

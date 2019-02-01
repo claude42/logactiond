@@ -73,17 +73,17 @@ get_value_for_action_property(la_command_t *command,
 
 	if (command->rule)
 	{
-		if (!strcmp(action_property->name, "RULE-NAME"))
+		if (!strcmp(action_property->name, LA_RULENAME_TOKEN))
 			return command->rule->name;
 
-		if (!strcmp(action_property->name, "SOURCE-NAME"))
+		if (!strcmp(action_property->name, LA_SOURCENAME_TOKEN))
 			return command->rule->source->name;
 	}
 
 	/* TODO: pattern names are not yet stored
         if (command->pattern)
 	{
-		if (!strcmp(action_property->name, "PATTERN-NAME"))
+		if (!strcmp(action_property->name, LA_PATTERNNAME_TOKEN))
 			return command->pattern->name;
         }*/
 

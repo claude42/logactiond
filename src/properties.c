@@ -22,6 +22,7 @@
 #include <assert.h>
 #include <syslog.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "logactiond.h"
 #include "nodelist.h"
@@ -124,6 +125,28 @@ get_value_from_property_list(kw_list_t *property_list, la_property_t *property)
 	return NULL;
 }
 
+/*
+ * Convert name to lower case. Also die if non alpha-numeric character is
+ * found.
+ */
+
+static void convert_property_name(char *name)
+{
+        assert(name);
+        la_debug("convert_property_name(%s)\n", name);
+
+        char *ptr = name;
+
+        for (; *ptr; ptr++)
+        {
+                if (!isalnum(*ptr))
+                        /* will print out partially converted name :-/ */
+                        die_hard("Invalid property name %s.\n", name);
+                
+                *ptr = tolower((unsigned char) *ptr);
+        }
+}
+
 
 /*
  * Create and initialize new la_property_t.
@@ -147,6 +170,7 @@ create_property_from_token(const char *name, size_t length, unsigned int pos,
 		xmalloc(sizeof(la_property_t));
 
 	result->name = xstrndup(name+1, length-2);
+        convert_property_name(result->name);
         result->value = NULL;
         result->is_host_property = !strcmp(result->name, LA_HOST_TOKEN);
 	result->length = length;
@@ -186,6 +210,7 @@ create_property_from_config(const char *name, const char *value)
 	la_property_t *result = (la_property_t *) xmalloc(sizeof(la_property_t));
 
 	result->name = xstrdup(name);
+        convert_property_name(result->name);
         result->is_host_property = !strcmp(result->name, LA_HOST_TOKEN);
 	result->value = xstrdup(value);
 	
