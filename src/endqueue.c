@@ -25,6 +25,7 @@
 #include <syslog.h>
 #include <string.h>
 #include <assert.h>
+#include <limits.h>
 
 #include <libconfig.h>
 
@@ -33,6 +34,7 @@
 
 static kw_list_t *end_queue = NULL;
 pthread_mutex_t end_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t end_queue_condition = PTHREAD_COND_INITIALIZER;
 
 /*
  * Search for a command by a certain host for a given rule on the end_que
@@ -124,50 +126,72 @@ empty_end_queue(void)
 	pthread_mutex_unlock(&end_queue_mutex);
 }
 
+static void
+wait_for_next_end_command(la_command_t *command)
+{
+        assert_command(command);
+        la_debug("wait_for_next_end_command(%s)\n", command->end_string);
+        if (command->end_time == INT_MAX)
+        {
+                /* next command is a shutdown command, wait indefinitely */
+                la_debug("consume %u INT_MAX, pthread_cond_wait()\n", time(NULL));
+                pthread_cond_wait(&end_queue_condition, &end_queue_mutex);
+                la_debug("consume %u INT_MAX woke up\n", time(NULL));
+        }
+        else
+        {
+                /* next command is a end command, wait until its end_time */
+                struct timespec wait_interval;
+                wait_interval.tv_nsec = 0;
+                wait_interval.tv_sec = command->end_time;
+                la_debug("consume %u pthread_cond_timedwait(%u)\n",
+                                time(NULL), wait_interval.tv_sec);
+                pthread_cond_timedwait(&end_queue_condition, &end_queue_mutex,
+                                &wait_interval);
+        }
+}
 
 static void *
 consume_end_queue(void *ptr)
 {
         la_debug("consume_end_queue()\n");
 
-	for (;;)
-	{
+        for (;;)
+        {
+                time_t now = time(NULL);
+                if (now == -1)
+                        die_hard("Can't get current time\n");
 
+                la_debug("consume_end_queue(), %u: pthread_mutex_lock()\n", now);
 		pthread_mutex_lock(&end_queue_mutex);
 
-		if (!is_list_empty(end_queue))
-		{
-			la_command_t *command = (la_command_t *) end_queue->head.succ;
-			la_debug("consume_end_queue(), next=%s, time=%u, end_time=%u\n",
-					command->end_string, time(NULL), command->end_time);
+                la_command_t *command = (la_command_t *) end_queue->head.succ;
 
-			/* TODO: error handling */
-			time_t now = time(NULL);
-			if (now == -1)
-				die_hard("Can't get current time\n");
-			if (now > command->end_time)
-			{
-                                remove_trigger_free_command(command);
-				pthread_mutex_unlock(&end_queue_mutex);
-				continue; /* don't sleep, check for more list content first */
-			}
-			else
-			{
-				pthread_mutex_unlock(&end_queue_mutex);
-				sleep(1);
-			}
-		}
-		else
-		{
-			pthread_mutex_unlock(&end_queue_mutex);
+                if (is_list_empty(end_queue))
+                {
+                        /* list is empty, wait indefinitely */
+                        la_debug("consume_end_queue(), %u EMPTY pthread_cond_wait()\n", now);
+                        pthread_cond_wait(&end_queue_condition, &end_queue_mutex);
+                }
+                else if (now < command->end_time)
+                {
+                        /* non-empty list, but end_time of first command not
+                         * reached yet */
+                        wait_for_next_end_command(command);
+                }
+                else
+                {
+                        /* end_time of next command reached, remove it
+                         * and don't sleep but immediately look for more */
+                        la_debug("consume %u remove_trigger_free_command()\n", now);
+                        remove_trigger_free_command(command);
+                }
 
-			/* TODO: wait for signal instead of just sleep */
-			sleep(1);
-			la_debug("consume_end_queue(), que_empty");
-		}
-	}
-
+                la_debug("consume %u pthread_mutex_unlock()\n", now);
+                pthread_mutex_unlock(&end_queue_mutex);
+        }
 }
+
 
 void
 init_end_queue(void)
@@ -182,6 +206,11 @@ init_end_queue(void)
 		die_hard("Couldn't create end_queue thread\n");
 }
 
+/*
+ * Set end time to current time + duration. Set to INT_MAX in case duration ==
+ * INT_MAX.
+ */
+
 static void
 set_end_time(la_command_t *command)
 {
@@ -189,10 +218,17 @@ set_end_time(la_command_t *command)
 
         la_debug("set_end_time(%s)\n", command->end_string);
 
-	command->end_time = time(NULL);
-	if (command->end_time == -1)
-		die_hard("Can't get current time\n");
-	command->end_time += command->duration;
+        if (command->duration == INT_MAX)
+        {
+                command->end_time = INT_MAX;
+        }
+        else
+        {
+                command->end_time = time(NULL);
+                if (command->end_time == -1)
+                        die_hard("Can't get current time\n");
+                command->end_time += command->duration;
+        }
 }
 
 void
@@ -208,6 +244,7 @@ enqueue_end_command(la_command_t *end_command)
 
 	set_end_time(end_command);
 
+        la_debug("enqueue %u pthread_mutex_lock()\n", time(NULL));
 	pthread_mutex_lock(&end_queue_mutex);
 
 	la_command_t *tmp;
@@ -219,8 +256,12 @@ enqueue_end_command(la_command_t *end_command)
 			break;
 	}
 
+        la_debug("enqueue %u insert_node_before()\n", time(NULL));
 	insert_node_before((kw_node_t *) tmp, (kw_node_t *) end_command);
+        la_debug("enqueue %u pthread_cond_signal()\n", time(NULL));
+        pthread_cond_signal(&end_queue_condition);
 
+        la_debug("enqueue %u pthread_mutex_unlock()\n", time(NULL));
 	pthread_mutex_unlock(&end_queue_mutex);
 }
 
