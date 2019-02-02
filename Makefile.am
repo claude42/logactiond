@@ -1,5 +1,19 @@
 #SUBDIRS = lib src
 SUBDIRS = libconfig src
+
+confdir = $(sysconfdir)/logactiond
+dist_conf_DATA = conf/logactiond.cfg
+
+actionsdir = $(confdir)/actions
+dist_actions_DATA = conf/actions/*
+
+rulesdir = $(confdir)/rules
+dist_rules_DATA = conf/rules/*
+
+sourcesdir = $(confdir)/sources
+dist_sources_DATA = conf/sources/*
+
+
 #ACLOCAL_AMFLAGS = -I m4
 #EXTRA_DIST = m4/gnulib-cache.m4
 

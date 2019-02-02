@@ -36,7 +36,7 @@
 
 //#define NDEBUG
 
-#define CONF_DIR "/etc/logactiond"
+//#define CONF_DIR "/etc/logactiond"
 #define CONFIG_FILE "logactiond.cfg"
 
 // one level above LOG_DEBUG

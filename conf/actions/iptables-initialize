@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# $1=RULE-NAME, $2=CHAIN $3=PROTOCOL, $4=PORT
+
+echo "INITIALIZE $1"
+
+iptables -N "la-$1"
+iptables -A "la-$1" -j RETURN
+iptables -I $2 -p $3 -m multiport --dports $4 -j "la-$1"
+

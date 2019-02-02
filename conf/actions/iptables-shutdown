@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# $1=RULE-NAME, $2=CHAIN $3=PROTOCOL, $4=PORT
+
+echo "SHUTDOWN $1"
+
+iptables -D $2 -p $3 -m multiport --dports $4 -j "la-$1"
+iptables -F "la-$1"
+iptables -X "la-$1"
+

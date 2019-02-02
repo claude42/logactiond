@@ -29,8 +29,7 @@ AM_YFLAGS = -d -p $(PARSER_PREFIX)
 
 
 libsrc = grammar.y libconfig.c parsectx.h scanctx.c scanctx.h scanner.l \
-    strbuf.c strbuf.h strvec.c strvec.h util.c util.h wincompat.c wincompat.h
-libinc = libconfig.h
+    strbuf.c strbuf.h strvec.c strvec.h util.c util.h wincompat.c wincompat.h libconfig.h
 
 libsrc_cpp =  $(libsrc) libconfigcpp.c++
 libinc_cpp =  libconfig.h++
@@ -39,10 +38,10 @@ BUILT_SOURCES = scanner.c scanner.h grammar.c grammar.h
 
 
 ## Build mode: C-only or C & C++
-lib_LTLIBRARIES = libconfig.la
+noinst_LTLIBRARIES = libconfig.la
 
 if BUILDCXX
-lib_LTLIBRARIES += libconfig++.la
+noinst_LTLIBRARIES += libconfig++.la
 endif
 
 
@@ -62,12 +61,6 @@ endif
 libconfig_la_CPPFLAGS = -DPARSER_PREFIX=\"$(PARSER_PREFIX)\" $(libcppflags)
 libconfig___la_CPPFLAGS = -DPARSER_PREFIX=\"$(PARSER_PREFIX)\" $(libcppxxflags)
 
-include_HEADERS = $(libinc)
-
-if BUILDCXX
-  include_HEADERS += $(libinc_cpp)
-endif
-
 
 libconfig_la_LDFLAGS = $(VERINFO) -no-undefined
 
@@ -80,18 +73,10 @@ EXTRA_DIST = \
 	*.vcproj \
 	*.vcxproj
 
-pkgconfigdir = $(libdir)/pkgconfig
-
-pkgconfig_DATA = libconfig.pc
-
-if BUILDCXX
-pkgconfig_DATA += libconfig++.pc
-endif
-
-cmakedir = $(libdir)/cmake/libconfig
-cmake_DATA = libconfigConfig.cmake
-
-if BUILDCXX
-cmakeppdir = $(libdir)/cmake/libconfig++
-cmakepp_DATA = libconfig++Config.cmake
-endif
+#pkgconfigdir = $(libdir)/pkgconfig
+#
+#pkgconfig_DATA = libconfig.pc
+#
+#if BUILDCXX
+#pkgconfig_DATA += libconfig++.pc
+#endif
