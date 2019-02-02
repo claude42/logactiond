@@ -148,6 +148,7 @@ wait_for_next_end_command(la_command_t *command)
                                 time(NULL), wait_interval.tv_sec);
                 pthread_cond_timedwait(&end_queue_condition, &end_queue_mutex,
                                 &wait_interval);
+                la_debug("consume %u woke up\n", time(NULL));
         }
 }
 
@@ -156,14 +157,14 @@ consume_end_queue(void *ptr)
 {
         la_debug("consume_end_queue()\n");
 
+        la_debug("consume_end_queue(), %u: pthread_mutex_lock()\n", time(NULL));
+        pthread_mutex_lock(&end_queue_mutex);
+
         for (;;)
         {
                 time_t now = time(NULL);
                 if (now == -1)
                         die_hard("Can't get current time\n");
-
-                la_debug("consume_end_queue(), %u: pthread_mutex_lock()\n", now);
-		pthread_mutex_lock(&end_queue_mutex);
 
                 la_command_t *command = (la_command_t *) end_queue->head.succ;
 
@@ -172,6 +173,7 @@ consume_end_queue(void *ptr)
                         /* list is empty, wait indefinitely */
                         la_debug("consume_end_queue(), %u EMPTY pthread_cond_wait()\n", now);
                         pthread_cond_wait(&end_queue_condition, &end_queue_mutex);
+                        la_debug("consume_end_queue(), %u EMPTY woke up\n", now);
                 }
                 else if (now < command->end_time)
                 {
@@ -186,9 +188,6 @@ consume_end_queue(void *ptr)
                         la_debug("consume %u remove_trigger_free_command()\n", now);
                         remove_trigger_free_command(command);
                 }
-
-                la_debug("consume %u pthread_mutex_unlock()\n", now);
-                pthread_mutex_unlock(&end_queue_mutex);
         }
 }
 
