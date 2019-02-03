@@ -478,7 +478,8 @@ load_single_rule(const config_setting_t *rule_def,
 		add_tail(la_config->sources, (kw_node_t *) source);
 	}
 
-        la_log(LOG_INFO, "Initializing rule %s for source %s.\n", name, source->name);
+        la_log(LOG_INFO, "Initializing rule \"%s\" for source \"%s\".\n",
+                        name, source->name);
 
         /* get parameters either from rule or uc_rule */
         int threshold = get_rule_parameter(rule_def, uc_rule_def,
@@ -583,7 +584,7 @@ load_la_config(char *filename)
         if (!filename)
                 filename = CONFIG_FILE;
 
-        la_log(LOG_INFO, "Loading configuration from %s.\n", filename);
+        la_log(LOG_INFO, "Loading configuration from \"%s\".\n", filename);
 
 	la_config = (la_config_t *) xmalloc(sizeof(la_config_t));
 

@@ -88,7 +88,8 @@ unwatch_source_inotify(la_source_t *source)
 	la_debug("unwatch_source_inotify(%s)\n", source->name);
 
 	if (inotify_rm_watch(inotify_fd, source->wd))
-		la_log_errno(LOG_ERR, "unwatch source failed");
+                la_log_errno(LOG_ERR, "Unable to unwatch source \"%s\".\n",
+                                source->name);
 	source->wd = 0;
 }
 

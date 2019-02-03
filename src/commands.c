@@ -200,10 +200,10 @@ trigger_end_command(la_command_t *command)
                         command->duration);
 
         if (command->duration == INT_MAX)
-                la_log(LOG_INFO, "Shuttding down rule %s.\n",
+                la_log(LOG_INFO, "Shuttding down rule \"%s\".\n",
                                 command->rule->name);
         else
-                la_log(LOG_INFO, "Host: %s, command ended for rule %s\n",
+                la_log(LOG_INFO, "Host: %s, action ended for rule \"%s\".\n",
                                 command->host, command->rule->name);
 
         exec_command(convert_command(command, LA_COMMANDTYPE_END));
