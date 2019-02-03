@@ -42,14 +42,14 @@ static void
 exec_command(const char *command_string)
 {
         assert(command_string);
-	la_debug("exec_command(%s)\n", command_string);
+	la_debug("exec_command(%s)", command_string);
 
 	int result = system(command_string);
 	if (result == -1)
-		la_log(LOG_ERR, "Could not create child process for command \"%s\"", 
+		la_log(LOG_ERR, "Could not create child process for command \"%s\".", 
 				command_string);
 	else if (result == 127)
-		la_log(LOG_ERR, "Could not execute shell for \"%s\"",
+		la_log(LOG_ERR, "Could not execute shell for \"%s\".",
 				command_string);
 }
 
@@ -64,7 +64,7 @@ get_value_for_action_property(la_command_t *command,
                 la_property_t *action_property)
 {
         assert_command(command); assert(action_property);
-        la_debug("get_value_for_action_property(%s)\n", action_property->name);
+        la_debug("get_value_for_action_property(%s)", action_property->name);
 
 	la_property_t *property;
 	const char *result;
@@ -122,7 +122,7 @@ convert_command(la_command_t *command, la_commandtype_t type)
 
         const char *source_string = (type == LA_COMMANDTYPE_BEGIN) ?
                 command->begin_string : command->end_string;
-        la_debug("convert_command(%s)\n", source_string);
+        la_debug("convert_command(%s)", source_string);
 
 	size_t len = strlen(source_string);
 	/* FIXME */
@@ -170,7 +170,7 @@ convert_command(la_command_t *command, la_commandtype_t type)
 	else
 		*result_ptr = '\0';
 
-	la_debug("convert_command(%s)=%s\n", command->begin_string, result);
+	la_debug("convert_command(%s)=%s", command->begin_string, result);
 	return result;
 }
 
@@ -179,7 +179,7 @@ trigger_command(la_command_t *command)
 {
         assert_command(command);
 
-        la_debug("trigger_command(%s, %d)\n", command->begin_string,
+        la_debug("trigger_command(%s, %d)", command->begin_string,
                         command->duration);
 
 	/* TODO: can't we convert_command() earlier? */
@@ -196,14 +196,14 @@ trigger_end_command(la_command_t *command)
 {
         assert_command(command);
 
-        la_debug("trigger_end_command(%s, %d)\n", command->end_string,
+        la_debug("trigger_end_command(%s, %d)", command->end_string,
                         command->duration);
 
         if (command->duration == INT_MAX)
-                la_log(LOG_INFO, "Shutting down rule \"%s\".\n",
+                la_log(LOG_INFO, "Shutting down rule \"%s\".",
                                 command->rule->name);
         else
-                la_log(LOG_INFO, "Host: %s, action ended for rule \"%s\".\n",
+                la_log(LOG_INFO, "Host: %s, action ended for rule \"%s\".",
                                 command->host, command->rule->name);
 
         exec_command(convert_command(command, LA_COMMANDTYPE_END));
@@ -221,7 +221,7 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
 {
         assert_list(property_list); assert(string);
 
-        la_debug("scan_action_tokens(%s)\n", string);
+        la_debug("scan_action_tokens(%s)", string);
 
 	const char *ptr = string;
 	unsigned int n_tokens = 0;
@@ -293,7 +293,7 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
         assert_command(template); assert_rule(rule); assert_pattern(pattern);
         assert_list(pattern->properties);
 
-        la_debug("create_command_from_template(%s)\n", template->begin_string);
+        la_debug("create_command_from_template(%s)", template->begin_string);
 
         la_command_t *result;
 
@@ -326,7 +326,7 @@ create_template(la_rule_t *rule, const char *begin_string,
 {
         assert_rule(rule); assert(begin_string);
 
-	la_debug("create_command(%s, %d)\n", begin_string, duration);
+	la_debug("create_command(%s, %d)", begin_string, duration);
 
 	la_command_t *result = (la_command_t *) xmalloc(sizeof(la_command_t));
 
@@ -359,7 +359,7 @@ free_command(la_command_t *command)
 {
         assert_command(command);
 
-        la_debug("free_command(%s)\n", command->begin_string);
+        la_debug("free_command(%s)", command->begin_string);
 
         free(command->begin_string);
         free_property_list(command->begin_properties);

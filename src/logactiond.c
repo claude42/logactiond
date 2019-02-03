@@ -45,7 +45,7 @@ unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
 static void
 skeleton_daemon(void)
 {
-        la_debug("skeleton_daemon()\n");
+        la_debug("skeleton_daemon()");
 
 	pid_t pid;
 
@@ -110,7 +110,7 @@ handle_signal(int signal)
 static void
 register_signal_handler(void)
 {
-        la_debug("register_signal_handler()\n");
+        la_debug("register_signal_handler()");
 
         struct sigaction new_act;
         struct sigaction old_act;
@@ -130,7 +130,7 @@ register_signal_handler(void)
 static void
 read_options(int argc, char *argv[])
 {
-        la_debug("read_options()\n");
+        la_debug("read_options()");
 
         int opt;
 

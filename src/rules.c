@@ -73,7 +73,7 @@ add_trigger(la_command_t *command)
 {
         assert_command(command);
 
-        la_debug("add_trigger(%s)\n", command->begin_string);
+        la_debug("add_trigger(%s)", command->begin_string);
 
 	command->n_triggers = 0;
 	command->start_time = time(NULL);
@@ -94,9 +94,9 @@ find_trigger(la_rule_t *rule, const char *command_string, const char *host)
         assert_rule(rule); assert(command_string); assert(host);
 
 	if (!host || !command_string)
-		die_hard("No host / command_string specified\n");
+		die_hard("No host / command_string specified!");
 
-        la_debug("find_trigger(%s, %s, %s)\n", rule->name, command_string, host);
+        la_debug("find_trigger(%s, %s, %s)", rule->name, command_string, host);
 
 	for (la_command_t *command = (la_command_t *) rule->trigger_list->head.succ;
 			command->node.succ;
@@ -128,7 +128,7 @@ handle_command_on_trigger_list(la_command_t *command)
 {
         assert_command(command);
 
-        la_debug("handle_command_on_trigger_list(%s)\n", command->begin_string);
+        la_debug("handle_command_on_trigger_list(%s)", command->begin_string);
 
 	/* new commands not on the trigger_list yet have n_triggers == 0 */
 	if (command->n_triggers == 0)
@@ -139,14 +139,14 @@ handle_command_on_trigger_list(la_command_t *command)
                 /* still within current period - increase counter,
                  * trigger if necessary */
                 command->n_triggers++;
-                la_log(LOG_INFO, "Host: %s, trigger %u for rule \"%s\".\n",
+                la_log(LOG_INFO, "Host: %s, trigger %u for rule \"%s\".",
                                 command->host,
                                 command->n_triggers,
                                 command->rule->name);
                 if (command->n_triggers >= command->rule->threshold)
                 {
                         remove_node((kw_node_t *) command);
-                        la_log(LOG_INFO, "Host: %s, command fired for rule \"%s\".\n",
+                        la_log(LOG_INFO, "Host: %s, command fired for rule \"%s\".",
                                 command->host,
                                 command->rule->name);
                         trigger_command(command);
@@ -157,7 +157,7 @@ handle_command_on_trigger_list(la_command_t *command)
                 /* if not, reset counter and period */
                 command->start_time = time(NULL);
                 command->n_triggers = 1;
-                la_log(LOG_INFO, "Host: %s, trigger 1 for rule \"%s\".\n",
+                la_log(LOG_INFO, "Host: %s, trigger 1 for rule \"%s\".",
                                 command->host,
                                 command->rule->name);
         }
@@ -178,7 +178,7 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
         assert_rule(rule); assert_pattern(pattern); assert(host);
         assert_command(template);
 
-        la_debug("trigger_single_command(%s)\n", template->begin_string);
+        la_debug("trigger_single_command(%s)", template->begin_string);
 
         la_command_t *command = NULL;
 
@@ -186,7 +186,7 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
          * case, ignore new command */
         if (find_end_command(rule, host))
         {
-                la_log(LOG_INFO, "Host: %s, ignored, command active for rule \"%s\".\n",
+                la_log(LOG_INFO, "Host: %s, ignored, command active for rule \"%s\".",
                                         host, rule->name);
                 return;
         }
@@ -219,14 +219,14 @@ trigger_all_commands(la_rule_t *rule, la_pattern_t *pattern)
 {
         assert_rule(rule); assert_pattern(pattern);
 
-	la_debug("trigger_all_commands()\n");
+	la_debug("trigger_all_commands()");
 
         const char *host = get_host_property_value(pattern->properties);
 
         /* Do nothing if on ignore list */
         if (address_on_ignore_list(host))
         {
-                la_log(LOG_INFO, "Host: %s, always ignored.\n", host);
+                la_log(LOG_INFO, "Host: %s, always ignored.", host);
                 return;
         }
 
@@ -253,7 +253,7 @@ assign_value_to_properties(kw_list_t *property_list, char *line,
 {
         assert_list(property_list); assert(line);
 
-        la_debug("assign_value_to_properties()\n");
+        la_debug("assign_value_to_properties()");
 
 	for (la_property_t *property = (la_property_t *) property_list->head.succ;
 			property->node.succ;
@@ -274,7 +274,7 @@ clear_property_values(kw_list_t *property_list)
 {
         assert(property_list);
 
-        la_debug("clear_property_values()\n");
+        la_debug("clear_property_values()");
 
         for (la_property_t *property = (la_property_t *) property_list->head.succ;
                         property->node.succ;
@@ -297,7 +297,7 @@ handle_log_line_for_rule(la_rule_t *rule, char *line)
 {
         assert_rule(rule); assert(line);
 
-        la_debug("handle_log_line()\n");
+        la_debug("handle_log_line()");
 
 	kw_node_t *i = get_pattern_iterator_for_rule(rule);
 	la_pattern_t *pattern;

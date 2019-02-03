@@ -68,10 +68,10 @@ address_on_ignore_list(const char *ip)
         if (!ip)
                 return false;
 
-        la_debug("address_on_ignore_list(%s)\n", ip);
+        la_debug("address_on_ignore_list(%s)", ip);
 
         if (inet_pton(AF_INET, ip, &addr) != 1)
-                die_semantic("Invalid IP address!\n");
+                die_semantic("Invalid IP address!");
 
 	for (la_address_t *address = (la_address_t *) la_config->ignore_addresses->head.succ;
 			address->node.succ;
@@ -99,9 +99,9 @@ create_address(const char *ip)
                         sizeof(in_addr_t));
 
         if (result->prefix == -1)
-                die_semantic("Invalid IP address!\n");
+                die_semantic("Invalid IP address!");
 
-        la_debug("create_address(%s)=%u\n", ip, result->prefix);
+        la_debug("create_address(%s)=%u", ip, result->prefix);
 
 	return result;
 }

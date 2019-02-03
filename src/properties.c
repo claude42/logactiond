@@ -47,7 +47,7 @@ token_length(const char *string)
 		ptr++;
 	}
 
-	die_semantic("Closing '\%' of token missing\n");
+	die_semantic("Closing '\%' of token missing!");
 
 	return 0; // avoid warning
 }
@@ -133,7 +133,7 @@ get_value_from_property_list(kw_list_t *property_list, la_property_t *property)
 static void convert_property_name(char *name)
 {
         assert(name);
-        la_debug("convert_property_name(%s)\n", name);
+        la_debug("convert_property_name(%s)", name);
 
         char *ptr = name;
 
@@ -141,7 +141,7 @@ static void convert_property_name(char *name)
         {
                 if (!isalnum(*ptr))
                         /* will print out partially converted name :-/ */
-                        die_hard("Invalid property name %s.\n", name);
+                        die_hard("Invalid property name %s!", name);
                 
                 *ptr = tolower((unsigned char) *ptr);
         }

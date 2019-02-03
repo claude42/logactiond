@@ -67,7 +67,7 @@ static void
 handle_log_line(la_source_t *source, char *line)
 {
         assert(line); assert_source(source);
-	la_debug("handle_log_line(%s)\n", line);
+	la_debug("handle_log_line(%s)", line);
 	cut_newline(line);
 
         for (la_rule_t *rule = (la_rule_t *) source->rules->head.succ;
@@ -86,7 +86,7 @@ void
 handle_new_content(la_source_t *source)
 {
         assert_source(source);
-        la_debug("handle_new_content(%s)\n", source->name);
+        la_debug("handle_new_content(%s)", source->name);
 
 	/* TODO: less random number? */
 	if (!linebuffer)
@@ -101,7 +101,7 @@ handle_new_content(la_source_t *source)
 			return;
 		}
 		else
-			die_err("Error while reading from logfile");
+			die_err("Error while reading from logfile!");
 	}
 	handle_log_line(source, linebuffer);
 
@@ -114,7 +114,7 @@ handle_new_content(la_source_t *source)
 			if (feof(source->file))
 				break;
 			else
-				die_err("Error while reading from logfile");
+				die_err("Error while reading from logfile!");
 		}
 		handle_log_line(source, linebuffer);
 	}
@@ -132,13 +132,13 @@ void
 watch_source(la_source_t *source, int whence)
 {
         assert_source(source);
-        la_debug("watch_source(%s)\n", source->name);
+        la_debug("watch_source(%s)", source->name);
 
 	source->file = fopen(source->location, "r");
 	if (!source->file)
-		die_err("fopen failed");
+		die_err("fopen failed!");
 	if (fseek(source->file, 0, whence))
-		die_err("fseek failed");
+		die_err("fseek failed!");
 
 #if HAVE_INOTIFY
 	watch_source_inotify(source);
@@ -154,10 +154,10 @@ void
 unwatch_source(la_source_t *source)
 {
         assert(source);
-        la_debug("unwatch_source(%s)\n", source->name);
+        la_debug("unwatch_source(%s)", source->name);
 
 	if (fclose(source->file))
-		die_err("fclose failed");
+		die_err("fclose failed!");
 	source->file = NULL;
 
 #if HAVE_INOTIFY

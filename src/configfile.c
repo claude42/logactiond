@@ -79,7 +79,7 @@ config_get_string_or_die(const config_setting_t *setting, const char *name)
 	const char* result = config_get_string_or_null(setting, name);
 
 	if (!result)
-		die_semantic("Config element %s missingn\n", name);
+		die_semantic("Config element %s missingn!", name);
 
 	return result;
 }
@@ -98,7 +98,7 @@ config_setting_lookup_or_die(const config_setting_t *setting,
 	 * here but nowhere else */
 	result = config_setting_lookup((config_setting_t *) setting, path);
 	if (!result)
-		die_semantic("Missing element %s\n", path);
+		die_semantic("Missing element %s!", path);
 
 	return result;
 }
@@ -151,7 +151,7 @@ get_source(const char *source)
 
 	sources_section = config_lookup(&la_config->config_file, LA_SOURCES_LABEL);
 	if (!sources_section)
-		die_semantic(LA_SOURCES_LABEL " section missing.");
+		die_semantic(LA_SOURCES_LABEL " section missing!");
 
 	result = config_setting_lookup(sources_section, source);
 
@@ -190,12 +190,12 @@ get_source_location(const config_setting_t *rule, const config_setting_t *uc_rul
                 source_def = get_source(config_get_string_or_null(rule,
                                         LA_RULE_SOURCE_LABEL));
                 if (!source_def)
-                        die_semantic("Source not found for rule %s\n",
+                        die_semantic("Source not found for rule %s!",
                                         config_setting_name(rule));
         }
 
 	if (!config_setting_lookup_string(source_def, LA_LOCATION, &result))
-		die_semantic("Source location missing\n");
+		die_semantic("Source location missing!");
 
 	return result;
 }
@@ -208,7 +208,7 @@ get_source_type(const config_setting_t *rule)
 
 	source_def = get_source(config_get_string_or_die(rule, LA_RULE_SOURCE_LABEL));
 	if (!source_def)
-		die_semantic("Source not found");
+		die_semantic("Source not found!");
 
 	type = config_get_string_or_die(source_def, LA_RULE_TYPE_LABEL);
 
@@ -217,7 +217,7 @@ get_source_type(const config_setting_t *rule)
 	else if (!strcmp(type, LA_RULE_TYPE_SYSTEMD_OPTION))
 		return LA_RULE_TYPE_SYSTEMD;
 	else
-		die_semantic("Wrong source type \"%s\" specified\n.", type);
+		die_semantic("Wrong source type \"%s\" specified!", type);
 
 	return 0; // avoid warning
 }
@@ -232,7 +232,7 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
 {
         assert_rule(rule); assert(action_def);
 
-        la_debug("compile_actions(%s)\n", rule->name);
+        la_debug("compile_actions(%s)", rule->name);
 
         la_command_t *command;
         const char *initialize = config_get_string_or_null(action_def,
@@ -253,7 +253,7 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
                                 create_template(rule, begin, end,
                                         rule->duration));
         else
-                die_semantic("Begin action always required!\n");
+                die_semantic("Begin action always required!");
 
         assert_list(rule->begin_commands);
 }
@@ -264,7 +264,7 @@ compile_list_of_actions(la_rule_t *rule,
 {
         assert_rule(rule); assert(action_def);
 
-        la_debug("compile_list_of_actions(%s)\n", rule->name);
+        la_debug("compile_list_of_actions(%s)", rule->name);
 
 	int n_items = config_setting_length(action_def);
 
@@ -286,7 +286,7 @@ load_actions(la_rule_t *rule, const config_setting_t *uc_rule_def)
 {
         assert_rule(rule); assert(uc_rule_def);
 
-        la_debug("load_actions(%s)\n", rule->name);
+        la_debug("load_actions(%s)", rule->name);
         const config_setting_t *action_reference;
 
         /* again unclear why this cast is necessary */
@@ -297,12 +297,12 @@ load_actions(la_rule_t *rule, const config_setting_t *uc_rule_def)
                 config_setting_t *defaults_section =
                         config_lookup(&la_config->config_file, LA_DEFAULTS_LABEL);
                 if (!defaults_section)
-                        die_semantic("No action specified for %s\n",
+                        die_semantic("No action specified for %s!",
                                         config_setting_name(rule));
                 action_reference = config_setting_lookup(defaults_section,
                                 LA_RULE_ACTION_LABEL);
                 if (!action_reference)
-                        die_semantic("No action specified for %s\n",
+                        die_semantic("No action specified for %s!",
                                         config_setting_name(rule));
         }
 
@@ -315,7 +315,7 @@ load_actions(la_rule_t *rule, const config_setting_t *uc_rule_def)
 	else if (type == CONFIG_TYPE_LIST)
 		compile_list_of_actions(rule, action_reference);
 	else
-		die_semantic("Element neither string nor list");
+		die_semantic("Element neither string nor list!");
 }
 
 static void
@@ -324,7 +324,7 @@ load_patterns(la_rule_t *rule, const config_setting_t *rule_def,
 {
         assert_rule(rule); assert(rule_def); assert(uc_rule_def);
 
-        la_debug("load_patterns(%s)\n", rule->name);
+        la_debug("load_patterns(%s)", rule->name);
 
         const config_setting_t *patterns;
 
@@ -337,7 +337,7 @@ load_patterns(la_rule_t *rule, const config_setting_t *rule_def,
 
 	int n = config_setting_length(patterns);
 	if (n < 0)
-		die_semantic("No patterns specified for %s\n",
+		die_semantic("No patterns specified for %s!",
 				config_setting_name(rule_def));
 
 	for (int i=0; i<n; i++)
@@ -357,7 +357,7 @@ load_ignore_addresses(const config_setting_t *section)
 {
         assert(section);
 
-	la_debug("load_ignore_addresses(%s)\n", config_setting_name(section));
+	la_debug("load_ignore_addresses(%s)", config_setting_name(section));
 
 	kw_list_t *result = create_list();
 
@@ -374,11 +374,11 @@ load_ignore_addresses(const config_setting_t *section)
 			config_setting_get_elem(ignore_section, i);
 		const char *ip = config_setting_get_string(elem);
 		if (!ip)
-			die_hard("Only strings allowed for ignore addresses!\n");
+			die_hard("Only strings allowed for ignore addresses!");
 
 		la_address_t *address = create_address(ip);
 
-                la_debug("load_ignore_addresses(%s)=%s\n",
+                la_debug("load_ignore_addresses(%s)=%s",
                                 config_setting_name(section), ip);
 		add_tail(result, (kw_node_t *) address);
 	}
@@ -398,7 +398,7 @@ load_properties(kw_list_t *properties, const config_setting_t *section)
 {
         assert_list(properties); assert(section);
 
-	la_debug("load_properties(%s)\n", config_setting_name(section));
+	la_debug("load_properties(%s)", config_setting_name(section));
 
 	config_setting_t *properties_section =
 		config_setting_get_member(section, LA_PROPERTIES_LABEL);
@@ -413,10 +413,10 @@ load_properties(kw_list_t *properties, const config_setting_t *section)
 			config_setting_get_elem(properties_section, i);
 		const char *name = config_setting_name(elem);
 		if (!name)
-			die_hard("Property without a name?!\n");
+			die_hard("Property without a name?!");
 		const char *value = config_setting_get_string(elem);
 		if (!value)
-			die_hard("Only strings allowed for properties!\n");
+			die_hard("Only strings allowed for properties!");
 
                 /* if property with same name already exists, do nothing */
                 if (get_property_from_property_list(properties, name))
@@ -424,7 +424,7 @@ load_properties(kw_list_t *properties, const config_setting_t *section)
 
 		la_property_t *property = create_property_from_config(name, value);
 
-                la_debug("load_properties(%s)=%s\n", config_setting_name(section), name);
+                la_debug("load_properties(%s)=%s", config_setting_name(section), name);
 		add_tail(properties, (kw_node_t *) property);
 	}
         assert_list(properties);
@@ -464,7 +464,7 @@ load_single_rule(const config_setting_t *rule_def,
 	la_sourcetype_t type;
 
 	char *name = config_setting_name(rule_def);
-        la_debug("load_single_rule(%s)\n", name);
+        la_debug("load_single_rule(%s)", name);
 
 	location = get_source_location(rule_def, uc_rule_def);
 	source = find_source_by_location(location);
@@ -480,7 +480,7 @@ load_single_rule(const config_setting_t *rule_def,
 
         assert_source(source);
 
-        la_log(LOG_INFO, "Initializing rule \"%s\" for source \"%s\".\n",
+        la_log(LOG_INFO, "Initializing rule \"%s\" for source \"%s\".",
                         name, source->name);
 
         /* get parameters either from rule or uc_rule */
@@ -510,7 +510,7 @@ load_single_rule(const config_setting_t *rule_def,
 static void
 load_rules(void)
 {
-        la_debug("load_rules()\n");
+        la_debug("load_rules()");
 
         config_setting_t *local_section = 
 		config_lookup(&la_config->config_file, LA_LOCAL_LABEL);
@@ -519,7 +519,7 @@ load_rules(void)
 
         int n = config_setting_length(local_section);
         if (n < 0)
-                die_semantic("No rules enabled\n");
+                die_semantic("No rules enabled!");
 
         bool any_enabled = false;
         for (int i=0; i<n; i++)
@@ -540,13 +540,13 @@ load_rules(void)
         }
 
         if (!any_enabled)
-                die_semantic("No rules enabledd\n");
+                die_semantic("No rules enabledd!");
 }
 
 static void
 load_defaults(void)
 {
-        la_debug("load_defaults()\n");
+        la_debug("load_defaults()");
 
 	config_setting_t *defaults_section =
 		config_lookup(&la_config->config_file, LA_DEFAULTS_LABEL);
@@ -586,7 +586,7 @@ load_la_config(char *filename)
         if (!filename)
                 filename = CONFIG_FILE;
 
-        la_log(LOG_INFO, "Loading configuration from \"%s\".\n", filename);
+        la_log(LOG_INFO, "Loading configuration from \"%s\".", filename);
 
 	la_config = (la_config_t *) xmalloc(sizeof(la_config_t));
 
@@ -596,7 +596,7 @@ load_la_config(char *filename)
 
         if (!config_read_file(&la_config->config_file, filename))
         {
-                die_hard("%s:%d - %s\n",
+                die_hard("%s:%d - %s!",
                                 config_error_file(&la_config->config_file),
                                 config_error_line(&la_config->config_file),
                                 config_error_text(&la_config->config_file));
@@ -611,7 +611,7 @@ load_la_config(char *filename)
 void
 unload_la_config(void)
 {
-        la_debug("unload_la_config()\n");
+        la_debug("unload_la_config()");
 
         config_destroy(&la_config->config_file);
 }
@@ -638,7 +638,7 @@ include_func(config_t *config, const char *include_dir, const char *path, const 
 	*include_path = 0;
 
         assert(path);
-        la_debug("include_func(%s)\n", path);
+        la_debug("include_func(%s)", path);
 
 	if(*path != '/')
 	{

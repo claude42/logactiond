@@ -30,24 +30,31 @@
 
 extern bool run_in_foreground;
 
-static char message_buffer[1000];
+static void
+log_message(int priority, char *fmt, va_list gp, char *add)
+{
+	if (priority >= log_level)
+		return;
+
+        if (run_in_foreground)
+        {
+                fprintf(stderr, "<%u>", priority);
+                vfprintf(stderr, fmt, gp);
+                if (add)
+                        fprintf(stderr, ": %s", add);
+                fprintf(stderr, "\n");
+        }
+        else
+        {
+                vsyslog(priority, fmt, gp);
+                // FIXME: must print "add" as well
+        }
+}
 
 void xfree(void *ptr)
 {
 	la_debug("FREED %u\n", ptr);
 	free(ptr);
-}
-
-static void
-stderr_or_syslog(int priority, char *message)
-{
-	if (priority >= log_level)
-		return;
-
-	if (run_in_foreground)
-		fprintf(stderr, "<%u>%s", priority, message);
-	else
-		syslog(priority, "%s", message);
 }
 
 void
@@ -57,10 +64,9 @@ la_debug(char *fmt, ...)
 	va_list myargs;
 
 	va_start(myargs, fmt);
-	vsnprintf(message_buffer, 999, fmt, myargs);
+        log_message(LOG_VDEBUG, fmt, myargs, NULL);
 	va_end(myargs);
 
-	stderr_or_syslog(LOG_VDEBUG, message_buffer);
 #endif /* NDEBUG */
 }
 
@@ -70,10 +76,8 @@ la_log_errno(int priority, char *fmt, ...)
 	va_list myargs;
 
 	va_start(myargs, fmt);
-	int len = vsnprintf(message_buffer, 999, fmt, myargs);
+        log_message(priority, fmt, myargs, strerror(errno));
 	va_end(myargs);
-	snprintf(message_buffer+len, 1000-len, ": %s\n", strerror(errno));
-	stderr_or_syslog(LOG_ERR, message_buffer);
 }
 
 void
@@ -82,10 +86,8 @@ la_log(int priority, char *fmt, ...)
 	va_list myargs;
 
 	va_start(myargs, fmt);
-	vsnprintf(message_buffer, 999, fmt, myargs);
+        log_message(priority, fmt, myargs, NULL);
 	va_end(myargs);
-
-	stderr_or_syslog(priority, message_buffer);
 }
 
 void
@@ -94,13 +96,11 @@ die_semantic(char *fmt, ...)
 	va_list myargs;
 
 	va_start(myargs, fmt);
-	vsnprintf(message_buffer, 999, fmt, myargs);
+        log_message(LOG_ERR, fmt, myargs, NULL);
 	va_end(myargs);
-	stderr_or_syslog(LOG_ERR, message_buffer);
 
 	unload_la_config();
 	exit(EXIT_FAILURE);
-
 }
 
 void
@@ -109,9 +109,8 @@ die_hard(char *fmt, ...)
 	va_list myargs;
 
 	va_start(myargs, fmt);
-	vsnprintf(message_buffer, 999, fmt, myargs);
+        log_message(LOG_ERR, fmt, myargs, NULL);
 	va_end(myargs);
-	stderr_or_syslog(LOG_ERR, message_buffer);
 
 	unload_la_config();
 	exit(EXIT_FAILURE);
@@ -121,11 +120,12 @@ void
 die_err(char *fmt, ...)
 {
 	va_list myargs;
+
 	va_start(myargs, fmt);
-	int len = vsnprintf(message_buffer, 999, fmt, myargs);
+        log_message(LOG_ERR, fmt, myargs, strerror(errno));
 	va_end(myargs);
-	snprintf(message_buffer+len, 1000-len, ": %s\n", strerror(errno));
-	stderr_or_syslog(LOG_ERR, message_buffer);
+
+        unload_la_config();
 	exit(EXIT_FAILURE);
 }
 

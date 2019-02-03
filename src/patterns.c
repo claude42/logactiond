@@ -52,7 +52,7 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
 {
         assert(string); assert_list(property_list);
 
-        la_debug("convert_regex(%s)\n", string);
+        la_debug("convert_regex(%s)", string);
 
 	size_t len = strlen(string);
 	/* definitely an upper bound */
@@ -75,7 +75,7 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
                 {
                         num_host_tokens++;
                         if (num_host_tokens>1)
-                                die_hard("Only one %HOST% token allowed per pattern\n");
+                                die_hard("Only one %HOST% token allowed per pattern!");
                         result_ptr = stpncpy(result_ptr, LA_HOST_TOKEN_REPL,
                                         LA_HOST_TOKEN_REPL_LEN);
                 }
@@ -98,7 +98,7 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
 		 */
 		strcpy(result_ptr, string_ptr);
 	}
-	la_debug("convert_regex(%s)=%s\n", string, result);
+	la_debug("convert_regex(%s)=%s", string, result);
 
 	return result; 
 }
@@ -117,14 +117,14 @@ scan_tokens(kw_list_t *property_list, const char *string)
 {
         assert_list(property_list); assert(string);
 
-        la_debug("scan_tokens(%s)\n", string);
+        la_debug("scan_tokens(%s)", string);
 
 	const char *ptr = string;
 	unsigned int subexpression = 0;
 	unsigned int n_tokens = 0;
 
 	if (!property_list || !string)
-		die_hard("No property list or no string submitted");
+		die_hard("No property list or no string submitted!");
 
 	while (*ptr) {
 		if (*ptr == '(')
@@ -156,7 +156,7 @@ create_pattern(const char *string_from_configfile, la_rule_t *rule)
 {
         assert(string_from_configfile); assert_rule(rule);
 
-        la_debug("create_pattern(%s)\n", string_from_configfile);
+        la_debug("create_pattern(%s)", string_from_configfile);
 
 	unsigned int n_properties;
 
@@ -173,7 +173,7 @@ create_pattern(const char *string_from_configfile, la_rule_t *rule)
 	if (r)
 	{
 		// TODO: improve error handling
-		die_err("Error %d compiling regex: %s\n", r, result->string);
+		die_err("Error %d compiling regex: %s!", r, result->string);
 	}
 
 	return result;
