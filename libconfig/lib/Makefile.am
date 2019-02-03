@@ -40,9 +40,9 @@ BUILT_SOURCES = scanner.c scanner.h grammar.c grammar.h
 ## Build mode: C-only or C & C++
 noinst_LTLIBRARIES = libconfig.la
 
-if BUILDCXX
-noinst_LTLIBRARIES += libconfig++.la
-endif
+#if BUILDCXX
+#lib_LTLIBRARIES += libconfig++.la
+#endif
 
 
 libconfig_la_SOURCES = $(libsrc)
@@ -62,6 +62,7 @@ libconfig_la_CPPFLAGS = -DPARSER_PREFIX=\"$(PARSER_PREFIX)\" $(libcppflags)
 libconfig___la_CPPFLAGS = -DPARSER_PREFIX=\"$(PARSER_PREFIX)\" $(libcppxxflags)
 
 
+
 libconfig_la_LDFLAGS = $(VERINFO) -no-undefined
 
 libconfig___la_LDFLAGS = $(VERINFO) -no-undefined
@@ -73,10 +74,3 @@ EXTRA_DIST = \
 	*.vcproj \
 	*.vcxproj
 
-#pkgconfigdir = $(libdir)/pkgconfig
-#
-#pkgconfig_DATA = libconfig.pc
-#
-#if BUILDCXX
-#pkgconfig_DATA += libconfig++.pc
-#endif
