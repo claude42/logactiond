@@ -11,25 +11,35 @@
 - getops					DONE
 - properties					DONE
 - old style + new style daemon			DONE
-- logging
+- include wildcard				DONE
+- really need separate end/shutdown commands? why not integrate fully into command DONE
+- directly triggered commands (e.g. w/o threshold): multiple commands during DONE
+- Ignore IPs					DONE
+- git version control				DONE
+- dirname module really needed (we're calling dir_name & base_name) DONE
+- freeing of commands				DONE
+- only alphanumeric chars as properties, can insensitive match DONE
+- give unique numbers to command templates	WHY AGAIN?
+- logging					DONE
+- complete config directory structure		DONE
 - create pidfile
-- include wildcard
-- freeing of commands
-- really need separate end/shutdown commands? why not integrate fully into command
-- no endqueue polling (http://www.yolinux.com/TUTORIALS/LinuxTutorialPosixThreads.html#SYNCHRONIZATION)
+- no endqueue polling (http://www.yolinux.com/TUTORIALS/LinuxTutorialPosixThreads.html#SYNCHRONIZATION) DONE
+  duration possible?!
 - make install
+
+- memory refactoring
+  -
 
 - documentation
 - check action
-- Ignore IPs
+- permanent ban
 
 - Max one instance per regex token
 - Polling backend
-- git version control
 - Match time stamp? Better not
 - Tool to manually test patterns
 - External program to analyze pre-matched log line
-- dirname module really needed (we're calling dir_name & base_name)
+- IPv6 support
 
 
 
