@@ -2,7 +2,7 @@
 
 # $1=RULE-NAME, $2=CHAIN $3=PROTOCOL, $4=PORT
 
-echo "INITIALIZE $1"
+#echo "INITIALIZE $1"
 
 iptables -N "la-$1"
 iptables -A "la-$1" -j RETURN
