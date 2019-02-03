@@ -1,0 +1,10 @@
+[Unit]
+Description=logactiond triggers actions based on logfile contents
+After=syslog.target
+
+[Service]
+ExecStart=/usr/local/sbin/logactiond -f
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
