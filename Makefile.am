@@ -5,7 +5,8 @@ confdir = $(sysconfdir)/logactiond
 dist_conf_DATA = conf/logactiond.cfg
 
 actionsdir = $(confdir)/actions
-dist_actions_DATA = conf/actions/*
+dist_actions_DATA = conf/actions/*.cfg
+dist_actions_SCRIPTS = conf/actions/*-initialize conf/actions/*-shutdown
 
 rulesdir = $(confdir)/rules
 dist_rules_DATA = conf/rules/*
