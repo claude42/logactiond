@@ -245,10 +245,12 @@ trigger_all_commands(la_rule_t *rule, la_pattern_t *pattern)
  * property_list - existing properties from pattern
  * line - matched log line
  * pmatch - result from regexec() call pointing to matches in line
+ *
+ * FIXME: will not work with multiple threads
  */
 
 static void
-assign_value_to_properties(kw_list_t *property_list, char *line,
+assign_value_to_properties(kw_list_t *property_list, const char *line,
 		regmatch_t pmatch[])
 {
         assert_list(property_list); assert(line);
@@ -293,7 +295,7 @@ clear_property_values(kw_list_t *property_list)
  */
 
 void
-handle_log_line_for_rule(la_rule_t *rule, char *line)
+handle_log_line_for_rule(la_rule_t *rule, const char *line)
 {
         assert_rule(rule); assert(line);
 

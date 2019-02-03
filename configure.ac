@@ -44,6 +44,8 @@ AC_CHECK_FUNCS([inotify_init],
   [AC_DEFINE([HAVE_INOTIFY], [1],
     [Define to 1 if you have usable inotify support.])])
 
+AC_CHECK_LIB([systemd], [sd_journal_open])
+
 AC_CONFIG_FILES([Makefile
                  src/Makefile])
 #lib/Makefile

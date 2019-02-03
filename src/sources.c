@@ -27,19 +27,15 @@
 
 #include "logactiond.h"
 
-/* Buffer for reading log lines */
-#define DEFAULT_LINEBUFFER_SIZE 8192
-
-static char *linebuffer = NULL;
-size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE;
 
 void
 assert_source(la_source_t *source)
 {
         assert(source);
         assert(source->name);
-        assert(source->location);
+        assert(source->type == LA_SOURCE_TYPE_SYSTEMD || source->location);
         assert_list(source->rules);
+        assert(source->type > LA_SOURCE_TYPE_UNDEFINED && source->type <= LA_SOURCE_TYPE_SYSTEMD);
 }
 
 /*
@@ -49,22 +45,24 @@ assert_source(la_source_t *source)
  */
 
 static void
-cut_newline(char *line)
+cut_newline(const char *line)
 {
         assert(line);
+        la_debug("cut_newline()\n");
+        return;
 
-	size_t len = strlen(line);
+	/*size_t len = strlen(line);
 
 	if (line[len-1] == '\n')
-		line[len-1] = '\0';
+		line[len-1] = '\0';*/
 }
 
 /*
  * Call handle_log_line_for_rule() for each of the sources rules
  */
 
-static void
-handle_log_line(la_source_t *source, char *line)
+void
+handle_log_line(la_source_t *source, const char *line)
 {
         assert(line); assert_source(source);
 	la_debug("handle_log_line(%s)\n", line);
@@ -78,49 +76,18 @@ handle_log_line(la_source_t *source, char *line)
 	}
 }
 
-/*
- * Read new content from file and hand over to handle_log_line()
- */
 
-void
-handle_new_content(la_source_t *source)
+static void
+open_source_file(la_source_t *source, int whence)
 {
-        assert_source(source);
-        la_debug("handle_new_content(%s)\n", source->name);
+        assert (source);
 
-	/* TODO: less random number? */
-	if (!linebuffer)
-		linebuffer = (char *) xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
-
-	ssize_t num_read = getline(&linebuffer, &linebuffer_size, source->file);
-	if (num_read==-1)
-	{
-		if (feof(source->file))
-		{
-			fseek(source->file, 0, SEEK_END);
-			return;
-		}
-		else
-			die_err("Error while reading from logfile");
-	}
-	handle_log_line(source, linebuffer);
-
-
-	for (;;)
-	{
-		ssize_t num_read = getline(&linebuffer, &linebuffer_size, source->file);
-		if (num_read==-1)
-		{
-			if (feof(source->file))
-				break;
-			else
-				die_err("Error while reading from logfile");
-		}
-		handle_log_line(source, linebuffer);
-	}
+	source->file = fopen(source->location, "r");
+	if (!source->file)
+		die_err("fopen failed");
+	if (fseek(source->file, 0, whence))
+		die_err("fseek failed");
 }
-
-
 
 /*
  * Add general watch for given filename.
@@ -134,16 +101,37 @@ watch_source(la_source_t *source, int whence)
         assert_source(source);
         la_debug("watch_source(%s)\n", source->name);
 
-	source->file = fopen(source->location, "r");
-	if (!source->file)
-		die_err("fopen failed");
-	if (fseek(source->file, 0, whence))
-		die_err("fseek failed");
-
+        switch (source->type)
+        {
+                case LA_SOURCE_TYPE_POLLING:
+                        die_hard("Source type 'polling' not supported yet.\n");
+                        break;
+                case LA_SOURCE_TYPE_INOTIFY:
 #if HAVE_INOTIFY
-	watch_source_inotify(source);
+                        open_source_file(source, whence);
+                        watch_source_inotify(source);
+#else /* HAVE_INOTIFY */
+                        die_hard("Source type 'inotify' not supported.\n");
 #endif /* HAVE_INOTIFY */
+                        break;
+                case LA_SOURCE_TYPE_SYSTEMD:
+#if HAVE_LIBSYSTEMD
+                        watch_source_systemd(source);
+#else /* HAVE_LIBSYSTEMD */
+                        die_hard("Source type 'systemd' not supported.\n");
+#endif /* HAVE_LIBSYSTEMD */
+                        break;
+        }
+}
 
+static void
+close_source_file(la_source_t *source)
+{
+        assert (source);
+
+	if (fclose(source->file))
+		die_err("fclose failed");
+	source->file = NULL;
 }
 
 /*
@@ -156,14 +144,28 @@ unwatch_source(la_source_t *source)
         assert(source);
         la_debug("unwatch_source(%s)\n", source->name);
 
-	if (fclose(source->file))
-		die_err("fclose failed");
-	source->file = NULL;
 
+        switch (source->type)
+        {
+                case LA_SOURCE_TYPE_POLLING:
+                        die_hard("Source type 'polling' not supported yet.\n");
+                        break;
+                case LA_SOURCE_TYPE_INOTIFY:
 #if HAVE_INOTIFY
-	unwatch_source_inotify(source);
+                        close_source_file(source);
+                        unwatch_source_inotify(source);
+#else /* HAVE_INOTIFY */
+                        die_hard("Source type 'inotify' not supported.\n");
 #endif /* HAVE_INOTIFY */
-
+                        break;
+                case LA_SOURCE_TYPE_SYSTEMD:
+#if HAVE_LIBSYSTEMD
+                        unwatch_source_systemd(source);
+#else /* HAVE_LIBSYSTEMD */
+                        die_hard("Source type 'systemd' not supported.\n");
+#endif /* HAVE_LIBSYSTEMD */
+                        break;
+        }
 }
 
 /*
@@ -190,23 +192,23 @@ create_source(const char *name, la_sourcetype_t type, const char *location)
  */
 
 la_source_t
-*find_source_by_location(const char *location)
+*find_source(const char *location, la_sourcetype_t type)
 {
 	la_source_t *la_source;
-	la_source_t *result = NULL;
 
 	kw_node_t *i = get_list_iterator(la_config->sources);
 
 	while ((la_source = (la_source_t *) get_next_node(&i)))
 	{
-		if (!strcmp(location, la_source->location))
-		{
-			result = la_source;
-			break;
-		}
+                if (type == la_source->type)
+                {
+                        if (type == LA_SOURCE_TYPE_SYSTEMD ||
+                                        !strcmp(location, la_source->location))
+                                return la_source;
+                }
 	}
 
-	return result;
+	return NULL;
 }
 
 /* vim: set autowrite expandtab: */

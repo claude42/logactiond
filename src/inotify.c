@@ -34,6 +34,12 @@
 
 #include "logactiond.h"
 
+/* Buffer for reading log lines */
+#define DEFAULT_LINEBUFFER_SIZE 8192
+
+static char *linebuffer = NULL;
+size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE;
+
 /* Buffer for reading inotify events */
 #define EVENT_SIZE  ( sizeof (struct inotify_event) )
 #define BUF_LEN     ( 1024 * ( EVENT_SIZE + 16 ) )
@@ -111,6 +117,7 @@ find_source_by_parent_wd(int parent_wd, char *file_name)
 	la_source_t *source;
 	while (source = (la_source_t *) get_next_node(&i))
 	{
+                assert_source(source);
 		if (source->parent_wd == parent_wd)
 		{
 			/* all praise basename/dirname which may or may not
@@ -151,6 +158,49 @@ find_source_by_file_wd(int file_wd)
 }
 
 /*
+ * Read new content from file and hand over to handle_log_line()
+ */
+
+static void
+handle_new_content_inotify(la_source_t *source)
+{
+        assert_source(source);
+        la_debug("handle_new_content_inotify(%s)\n", source->name);
+
+	/* TODO: less random number? */
+	if (!linebuffer)
+		linebuffer = (char *) xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
+
+	ssize_t num_read = getline(&linebuffer, &linebuffer_size, source->file);
+	if (num_read==-1)
+	{
+		if (feof(source->file))
+		{
+			fseek(source->file, 0, SEEK_END);
+			return;
+		}
+		else
+			die_err("Error while reading from logfile");
+	}
+	handle_log_line(source, linebuffer);
+
+
+	for (;;)
+	{
+		ssize_t num_read = getline(&linebuffer, &linebuffer_size, source->file);
+		if (num_read==-1)
+		{
+			if (feof(source->file))
+				break;
+			else
+				die_err("Error while reading from logfile");
+		}
+		handle_log_line(source, linebuffer);
+	}
+}
+
+
+/*
  *
  */
 
@@ -165,7 +215,7 @@ watched_file_created(la_source_t *source)
 	if (source->file)
 		unwatch_source(source);
 	watch_source(source, SEEK_SET);
-	handle_new_content(source);
+	handle_new_content_inotify(source);
 }
 
 static void
@@ -237,7 +287,7 @@ handle_inotify_file_event(struct inotify_event *event)
 		return;
 
 	la_debug("handle_inotify_file_event(%s)\n", source->name);
-	handle_new_content(source);
+	handle_new_content_inotify(source);
 }
 
 static void
@@ -285,8 +335,6 @@ watch_forever_inotify(void)
 /*
  * Add inotify watch for given filename. Also ads a watch for its parent dir if
  * dir is true.
- *
- * Returns la_watch_t
  */
 
 void

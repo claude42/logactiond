@@ -174,6 +174,10 @@ get_source_name(const config_setting_t *rule)
 /*
  * Return source location to corresponding rule. Look first in user
  * configuration section, then in rule section.
+ *
+ * Die when neither rule nor uc_rule define a source.
+ *
+ * Return NULL when source doesn't specify a location.
  */
 
 const char *
@@ -195,9 +199,34 @@ get_source_location(const config_setting_t *rule, const config_setting_t *uc_rul
         }
 
 	if (!config_setting_lookup_string(source_def, LA_LOCATION, &result))
-		die_semantic("Source location missing\n");
+                result = NULL;
 
 	return result;
+}
+
+static la_sourcetype_t
+translate_source_type(const char *type)
+{
+        assert(type);
+
+        if (!strcmp(type, LA_SOURCE_TYPE_POLLING_OPTION))
+        {
+		return LA_SOURCE_TYPE_POLLING;
+        }
+        else if (!strcmp(type, LA_SOURCE_TYPE_INOTIFY_OPTION))
+        {
+		return LA_SOURCE_TYPE_INOTIFY;
+        }
+	else if (!strcmp(type, LA_SOURCE_TYPE_SYSTEMD_OPTION))
+        {
+		return LA_SOURCE_TYPE_SYSTEMD;
+        }
+	else
+        {
+		die_semantic("Wrong source type \"%s\" specified\n.", type);
+        }
+
+	return 0; // avoid warning
 }
 
 static la_sourcetype_t
@@ -210,16 +239,30 @@ get_source_type(const config_setting_t *rule)
 	if (!source_def)
 		die_semantic("Source not found");
 
-	type = config_get_string_or_die(source_def, LA_RULE_TYPE_LABEL);
+	type = config_get_string_or_null(source_def, LA_SOURCE_TYPE_LABEL);
 
-	if (!strcmp(type, LA_RULE_TYPE_FILE_OPTION))
-		return LA_RULE_TYPE_FILE;
-	else if (!strcmp(type, LA_RULE_TYPE_SYSTEMD_OPTION))
-		return LA_RULE_TYPE_SYSTEMD;
-	else
-		die_semantic("Wrong source type \"%s\" specified\n.", type);
+        if (type == NULL)
+        {
+                if (la_config->default_sourcetype)
+                        return la_config->default_sourcetype;
+                else
+                        die_semantic("No source type specified\n.");
+        }
 
-	return 0; // avoid warning
+        return translate_source_type(type);
+}
+
+static la_sourcetype_t
+get_default_source_type(const config_setting_t *defaults_section)
+{
+        const char *type = config_get_string_or_null(defaults_section,
+                        LA_DEFAULTS_SOURCETYPE_LABEL);
+
+        if (type == NULL)
+                return LA_SOURCE_TYPE_UNDEFINED;
+        else
+                return translate_source_type(type);
+
 }
 
 /*
@@ -467,12 +510,14 @@ load_single_rule(const config_setting_t *rule_def,
         la_debug("load_single_rule(%s)\n", name);
 
 	location = get_source_location(rule_def, uc_rule_def);
-	source = find_source_by_location(location);
+        /* TODO: look at uc_rule_def as well */
+        type = get_source_type(rule_def);
+	source = find_source(location, type);
 
 	if (!source)
 	{
-		source = create_source(get_source_name(rule_def),
-				get_source_type(rule_def), location);
+                source = create_source(get_source_name(rule_def), type,
+                                location);
 		watch_source(source, SEEK_END);
 
 		add_tail(la_config->sources, (kw_node_t *) source);
@@ -559,6 +604,9 @@ load_defaults(void)
 		la_config->default_duration =
 			config_get_unsigned_int_or_negative(defaults_section,
 					LA_DURATION_LABEL);
+
+                la_config->default_sourcetype =
+                        get_default_source_type(defaults_section);
 
                 la_config->default_properties = create_list();
                 load_properties(la_config->default_properties, defaults_section);
