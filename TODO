@@ -1,94 +1,15 @@
-- execute shutdown action on shutdown		DONE
-- threshold					DONE
-- defaults					DONE
-- commands von vorn nach hinten			DONE
-- #define string constants			DONE
-- handle action-properties			DONE
-- fix LA_TOKEN_REPL_LEN				DONE
-- merge property + token			DONE
-- really exec()					DONE
-- inotify for other cases			DONE
-- getops					DONE
-- properties					DONE
-- old style + new style daemon			DONE
-- include wildcard				DONE
-- really need separate end/shutdown commands? why not integrate fully into command DONE
-- directly triggered commands (e.g. w/o threshold): multiple commands during DONE
-- Ignore IPs					DONE
-- git version control				DONE
-- dirname module really needed (we're calling dir_name & base_name) DONE
-- freeing of commands				DONE
-- only alphanumeric chars as properties, can insensitive match DONE
-- give unique numbers to command templates	WHY AGAIN?
-- logging					DONE
-- complete config directory structure		DONE
-- create pidfile
-- no endqueue polling (http://www.yolinux.com/TUTORIALS/LinuxTutorialPosixThreads.html#SYNCHRONIZATION) DONE
-  duration possible?!
-- make install
+TODOs in no particular order
 
-- memory refactoring
-  -
-
-- documentation
-- check action
-- permanent ban
-
-- Max one instance per regex token
-- Polling backend
-- Match time stamp? Better not
-- Tool to manually test patterns
-- External program to analyze pre-matched log line
-- IPv6 support
-
-
-
-
-
-
-
-Thresholds
-- if threshold = 1 trigger immediately
-- if period = 0 trigger immediately
-- if threshold = n > 1, period = 0: trigger after n occurances, no matter which period
-
-if threshold > 1:
-- 1st trigger
-  - search for existing trigger object with IP address
-  - create "trigger" object linked to rule and put into queue
-    - trigger_count = 1
-    - threshold = rule_threshold
-    - start_time = now
-    - duration = rule_duration
-    - IP address
-- subsequent triggers
-  - search for existing trigger object with IP address
-  - if now-start_time < duration
-    - trigger_count++
-    - if trigger_count >= threshold
-      - trigger
-      - delete trigger object
-  - else if now-start_time >= duration
-    - start_time = now
-    - trigger_count = 1
-
-
-----------------
-
-aus config datei werden command templates gemacht
-
-begin
-- bei trigger_action wird das template gedupt
-  - end commando wird auch gedupt angehängt
-  - Informationen werden angehängt
-    - Host, rule, pattern
-    - n_trigger, start_time wird gesetzt
-  - in trigger liste gesetzt
-  - wenn bereit rausgenommen, ausgeführt (trigger_command als einziger Parameter übergeben)
-  - command->end_command in end_queue gesetzt
-  - Rest gefree()t
-
-
-
-initialize:
--
+* create a pidfile
+* create documentation (esp. config file) and manpages
+* implement a check action (similar to what fail2ban does)
+* implement the possibility to permanently ban a host
+* make the thing thread safe. Although it's using threads already, many of the
+  parts are still not thread safe (which isn't a problem in the current
+  implementation but will be when multiple backends will be implemented)
+* FSEvents backend
+* Polling backend
+* systemd backend
+* Limit regexes to one instance per token
+* Tool to manually test patterns
+* IPv6 support
