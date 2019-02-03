@@ -101,7 +101,7 @@ skeleton_daemon(void)
 static void
 handle_signal(int signal)
 {
-        printf("Received signal %u\n", signal);
+        /* printf("Received signal %u\n", signal); */
         empty_end_queue();
         unload_la_config();
         exit(0);

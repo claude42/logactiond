@@ -478,6 +478,8 @@ load_single_rule(const config_setting_t *rule_def,
 		add_tail(la_config->sources, (kw_node_t *) source);
 	}
 
+        assert_source(source);
+
         la_log(LOG_INFO, "Initializing rule \"%s\" for source \"%s\".\n",
                         name, source->name);
 
