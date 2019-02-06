@@ -37,6 +37,39 @@ char *pid_file = NULL;
 bool run_in_foreground = false;
 unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
 
+static void
+handle_signal(int signal)
+{
+        /* printf("Received signal %u\n", signal); */
+        empty_end_queue();
+        unload_la_config();
+        exit(0);
+}
+
+static void
+register_signal_handler(void)
+{
+        la_debug("register_signal_handler()");
+
+        struct sigaction new_act;
+        struct sigaction old_act;
+
+        new_act.sa_handler = handle_signal;
+        sigemptyset(&new_act.sa_mask);
+        new_act.sa_flags = 0;
+        
+	signal(SIGCHLD, SIG_IGN);
+        /* TODO: take care of SIGHUP */
+	signal(SIGHUP, SIG_IGN);
+
+        sigaction(SIGINT, NULL, &old_act);
+        if (old_act.sa_handler != SIG_IGN)
+                sigaction(SIGINT, &new_act, NULL);
+        sigaction(SIGTERM, NULL, &old_act);
+        if (old_act.sa_handler != SIG_IGN)
+                sigaction(SIGTERM, &new_act, NULL);
+}
+
 /*
  * Taken from Pascal Werkl's answer to
  * https://stackoverflow.com/questions/17954432/creating-a-daemon-in-linux#17955149
@@ -66,8 +99,7 @@ skeleton_daemon(void)
 
 	/* Catch, ignore and handle signals */
 	//TODO: Implement a working signal handler */
-	signal(SIGCHLD, SIG_IGN);
-	signal(SIGHUP, SIG_IGN);
+        register_signal_handler();
 
 	/* Fork off for the second time*/
 		pid = fork();
@@ -96,35 +128,6 @@ skeleton_daemon(void)
 
 	/* Open the log file */
 	openlog (NULL, 0, LOG_DAEMON);
-}
-
-static void
-handle_signal(int signal)
-{
-        /* printf("Received signal %u\n", signal); */
-        empty_end_queue();
-        unload_la_config();
-        exit(0);
-}
-
-static void
-register_signal_handler(void)
-{
-        la_debug("register_signal_handler()");
-
-        struct sigaction new_act;
-        struct sigaction old_act;
-
-        new_act.sa_handler = handle_signal;
-        sigemptyset(&new_act.sa_mask);
-        new_act.sa_flags = 0;
-        
-        sigaction(SIGINT, NULL, &old_act);
-        if (old_act.sa_handler != SIG_IGN)
-                sigaction(SIGINT, &new_act, NULL);
-        sigaction(SIGTERM, NULL, &old_act);
-        if (old_act.sa_handler != SIG_IGN)
-                sigaction(SIGTERM, &new_act, NULL);
 }
 
 static void
@@ -192,8 +195,8 @@ main(int argc, char *argv[])
 
         if (!run_in_foreground)
                 skeleton_daemon();
-
-        register_signal_handler();
+        else
+                register_signal_handler();
 
         init_end_queue();
 	init_watching();
