@@ -131,6 +131,13 @@ skeleton_daemon(void)
 }
 
 static void
+print_usage(void)
+{
+        fprintf(stderr,
+                "Usage: logactiond [-c configfile] [-d] [-f] [-p pidfile] [-v]\n");
+}
+
+static void
 read_options(int argc, char *argv[])
 {
         la_debug("read_options()");
@@ -145,7 +152,7 @@ read_options(int argc, char *argv[])
                         {"configfile", required_argument, NULL, 'c'},
                         {"debug",      optional_argument, NULL, 'd'},
                         {"pidfile",    required_argument, NULL, 'p'},
-                        {"version",    no_argument,       NULL, 'v'},
+                        {"verbose",    no_argument,       NULL, 'v'},
                         {0,            0,                 0,    0  }
                 };
 
@@ -173,7 +180,8 @@ read_options(int argc, char *argv[])
                         case 'v': 
                                 break;
                         case '?':
-                                printf("Problem\n");
+                                print_usage();
+                                exit(0);
                                 break;
                         default:
                                 printf("Getop returnd character code %c\n", c);
