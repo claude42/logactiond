@@ -58,7 +58,6 @@ register_signal_handler(void)
         sigemptyset(&new_act.sa_mask);
         new_act.sa_flags = 0;
         
-	signal(SIGCHLD, SIG_IGN);
         /* TODO: take care of SIGHUP */
 	signal(SIGHUP, SIG_IGN);
 
@@ -98,7 +97,7 @@ skeleton_daemon(void)
 		exit(EXIT_FAILURE);
 
 	/* Catch, ignore and handle signals */
-	//TODO: Implement a working signal handler */
+	signal(SIGCHLD, SIG_IGN);
         register_signal_handler();
 
 	/* Fork off for the second time*/
