@@ -14,6 +14,9 @@ dist_rules_DATA = conf/rules/*
 sourcesdir = $(confdir)/sources
 dist_sources_DATA = conf/sources/*
 
+testdir = $(confdir)/test
+dist_test_DATA = conf/test/*
+
 
 #ACLOCAL_AMFLAGS = -I m4
 #EXTRA_DIST = m4/gnulib-cache.m4
