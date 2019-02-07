@@ -101,7 +101,7 @@ handle_new_content(la_source_t *source)
 			return;
 		}
 		else
-			die_err("Error while reading from logfile!");
+                        die_err("Reading from source \"%s\" failed", source->name);
 	}
 	handle_log_line(source, linebuffer);
 
@@ -114,7 +114,7 @@ handle_new_content(la_source_t *source)
 			if (feof(source->file))
 				break;
 			else
-				die_err("Error while reading from logfile!");
+                                die_err("Reading from source \"%s\" failed", source->name);
 		}
 		handle_log_line(source, linebuffer);
 	}
@@ -136,9 +136,9 @@ watch_source(la_source_t *source, int whence)
 
 	source->file = fopen(source->location, "r");
 	if (!source->file)
-		die_err("fopen failed!");
+		die_err("Opening source \"%s\" failed", source->name);
 	if (fseek(source->file, 0, whence))
-		die_err("fseek failed!");
+		die_err("Seeking in source \"%s\" failed", source->name);
 
 #if HAVE_INOTIFY
 	watch_source_inotify(source);
@@ -157,7 +157,7 @@ unwatch_source(la_source_t *source)
         la_debug("unwatch_source(%s)", source->name);
 
 	if (fclose(source->file))
-		die_err("fclose failed!");
+		die_err("Closing source \"%s\" failed", source->name);
 	source->file = NULL;
 
 #if HAVE_INOTIFY
