@@ -268,7 +268,7 @@ assign_value_to_properties(kw_list_t *property_list, char *line,
 static void
 clear_property_values(kw_list_t *property_list)
 {
-        assert(property_list);
+        assert_list(property_list);
 
         la_debug("clear_property_values()");
 

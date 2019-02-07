@@ -27,6 +27,12 @@
 #include "logactiond.h"
 #include "nodelist.h"
 
+void
+assert_property(la_property_t *property)
+{
+        assert(property);
+        assert(property->name);
+}
 
 /*
  * Returns length of token - i.e. number of characters until closing '%' is
@@ -108,7 +114,7 @@ get_value_from_property_list(kw_list_t *property_list, la_property_t *property)
 {
 	/* not sure whether property_list can't get NULL under normal
 	 * circumstances */
-	assert(property);
+	assert_property(property);
 
 	if (!property_list)
 		return NULL;
@@ -260,7 +266,7 @@ dup_property_list(kw_list_t *list)
 void
 free_property(la_property_t *property)
 {
-        assert(property);
+        assert_property(property);
 
         free(property->name);
         free(property->value);

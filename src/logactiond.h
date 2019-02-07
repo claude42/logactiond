@@ -327,6 +327,8 @@ void free_command(la_command_t *command);
 
 /* properties.c */
 
+void assert_property(la_property_t *property);
+
 size_t token_length(const char *string);
 
 size_t scan_single_token(kw_list_t *property_list, const char *string,

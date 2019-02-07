@@ -56,7 +56,7 @@ exec_command(const char *command_string)
 static const char*
 check_for_special_names(la_command_t *command, la_property_t *action_property)
 {
-        assert_command(command), assert(action_property);
+        assert_command(command), assert_property(action_property);
         la_debug("check_for_special_names(%s)", action_property->name);
 
 	if (command->rule)
@@ -82,7 +82,7 @@ static const char *
 get_value_for_action_property(la_command_t *command,
                 la_property_t *action_property)
 {
-        assert_command(command); assert(action_property);
+        assert_command(command); assert_property(action_property);
         la_debug("get_value_for_action_property(%s)", action_property->name);
 
 	la_property_t *property;
