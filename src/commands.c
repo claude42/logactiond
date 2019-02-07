@@ -146,7 +146,6 @@ convert_command(la_command_t *command, la_commandtype_t type)
 		/* copy value for token */
 		const char *repl = get_value_for_action_property(command,
                                 action_property);
-                /* TODO: LOG */
 		if (repl)
 			result_ptr = stpncpy(result_ptr, repl, strlen(repl));
 		else
@@ -262,6 +261,8 @@ dup_command(la_command_t *command)
         assert_command(command);
 	la_command_t *result = (la_command_t *) xmalloc(sizeof(la_command_t));
 
+        result->id = command->id;
+
         result->begin_string = xstrdup(command->begin_string);
 	result->begin_properties = dup_property_list(command->begin_properties);
 	result->n_begin_properties = command->n_begin_properties;
@@ -329,6 +330,8 @@ create_template(la_rule_t *rule, const char *begin_string,
 	la_debug("create_command(%s, %d)", begin_string, duration);
 
 	la_command_t *result = (la_command_t *) xmalloc(sizeof(la_command_t));
+
+        result->id = ++id_counter;
 
         result->begin_string = xstrdup(begin_string);
 	result->begin_properties = create_list();

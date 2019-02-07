@@ -192,6 +192,7 @@ typedef struct la_rule_s
 typedef struct la_command_s
 {
 	kw_node_t node;
+        unsigned int id;        /* unique id */
 	char *begin_string;	/* string with tokens */
 	kw_list_t *begin_properties;	/* detected tokens */
 	unsigned int n_begin_properties;/* number of detected tokens */
@@ -257,6 +258,8 @@ typedef struct la_config_s
 extern la_config_t *la_config;
 
 extern unsigned int log_level;
+
+extern unsigned int id_counter;
 
 /* Functions */
 

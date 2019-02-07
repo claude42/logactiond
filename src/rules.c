@@ -89,14 +89,11 @@ add_trigger(la_command_t *command)
  */
 
 static la_command_t *
-find_trigger(la_rule_t *rule, const char *command_string, const char *host)
+find_trigger(la_rule_t *rule, la_command_t *template, const char *host)
 {
-        assert_rule(rule); assert(command_string); assert(host);
+        assert_rule(rule); assert_command(template); assert(host);
 
-	if (!host || !command_string)
-		die_hard("No host / command_string specified!");
-
-        la_debug("find_trigger(%s, %s, %s)", rule->name, command_string, host);
+        la_debug("find_trigger(%s, %u, %s)", rule->name, template->id, host);
 
 	for (la_command_t *command = (la_command_t *) rule->trigger_list->head.succ;
 			command->node.succ;
@@ -104,8 +101,7 @@ find_trigger(la_rule_t *rule, const char *command_string, const char *host)
 	{
 		if (command->host)
 		{
-			/* TODO: two strcmps are definitely inefficient */
-                        if (!strcmp(command->begin_string, command_string) &&
+                        if ((command->id == template->id) &&
 					!strcmp(command->host, host))
 				return command;
 		}
@@ -198,7 +194,7 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
         // TODO: maybe add "need_host" config parameter. Don't trigger command
         // at all w/o host in this case
         if (host)
-                command = find_trigger(rule, template->begin_string, host);
+                command = find_trigger(rule, template, host);
 
         if (!command)
                 command = create_command_from_template(template, rule, pattern, host);

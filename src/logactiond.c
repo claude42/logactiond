@@ -36,6 +36,7 @@ char *cfg_filename = NULL;
 char *pid_file = NULL;
 bool run_in_foreground = false;
 unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
+unsigned int id_counter = 0;
 
 static void
 handle_signal(int signal)
