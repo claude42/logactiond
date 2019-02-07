@@ -13,3 +13,8 @@ TODOs in no particular order
 * Limit regexes to one instance per token
 * Tool to manually test patterns
 * IPv6 support
+* kill -HUP to reload
+* problems when doing autoreconf -v -i
+* update THANKS
+* Add logactiond -L
+* Make "make distcheck work"
