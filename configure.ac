@@ -18,6 +18,7 @@ AC_PROG_CC
 
 # Checks for libraries.
 #AC_CHECK_LIB([config], [config_init], , [AC_MSG_ERROR([LIBCONFIG NOT FOUND])])
+AC_CHECK_LIB([resolv], [inet_net_pton])
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h limits.h stdlib.h string.h syslog.h unistd.h])
@@ -29,7 +30,6 @@ AC_TYPE_PID_T
 AC_TYPE_SIZE_T
 AC_TYPE_SSIZE_T
 AC_TYPE_UINT32_T
-AC_TYPE_UINT8_T
 
 # Checks for library functions.
 AC_FUNC_FORK
