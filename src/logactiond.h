@@ -108,9 +108,8 @@ typedef enum la_commandtype_s { LA_COMMANDTYPE_BEGIN, LA_COMMANDTYPE_END } la_co
 typedef struct la_address_s
 {
 	kw_node_t node;
-        /* IP address as string, strdup()d */
         struct in_addr addr;
-        uint8_t prefix;
+        int prefix;
 } la_address_t;
 
 /*

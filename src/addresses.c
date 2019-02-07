@@ -46,7 +46,7 @@
 /*
  * From https://stackoverflow.com/questions/7213995/ip-cidr-match-function
  */
-bool cidr_match(struct in_addr addr, struct in_addr net, uint8_t prefix) {
+bool cidr_match(struct in_addr addr, struct in_addr net, int prefix) {
         if (prefix == 0) {
                 // C99 6.5.7 (3): u32 << 32 is undefined behaviour
                 return true;
@@ -99,7 +99,7 @@ create_address(const char *ip)
                         sizeof(in_addr_t));
 
         if (result->prefix == -1)
-                die_semantic("Invalid IP address!");
+                die_err("Invalid IP address %s", ip);
 
         la_debug("create_address(%s)=%u", ip, result->prefix);
 
