@@ -53,23 +53,11 @@ exec_command(const char *command_string)
 				command_string);
 }
 
-/* TODO, refactor */
-/*static char*
-check_for_special_names(la_property_t *action_property)
+static const char*
+check_for_special_names(la_command_t *command, la_property_t *action_property)
 {
-}*/
-
-static const char *
-get_value_for_action_property(la_command_t *command,
-                la_property_t *action_property)
-{
-        assert_command(command); assert(action_property);
-        la_debug("get_value_for_action_property(%s)", action_property->name);
-
-	la_property_t *property;
-	const char *result;
-
-        /* try some standard names first */
+        assert_command(command), assert(action_property);
+        la_debug("check_for_special_names(%s)", action_property->name);
 
 	if (command->rule)
 	{
@@ -86,6 +74,25 @@ get_value_for_action_property(la_command_t *command,
 		if (!strcmp(action_property->name, LA_PATTERNNAME_TOKEN))
 			return command->pattern->name;
         }*/
+
+        return NULL;
+}
+
+static const char *
+get_value_for_action_property(la_command_t *command,
+                la_property_t *action_property)
+{
+        assert_command(command); assert(action_property);
+        la_debug("get_value_for_action_property(%s)", action_property->name);
+
+	la_property_t *property;
+	const char *result = NULL;
+
+        /* try some standard names first */
+
+        result = check_for_special_names(command, action_property);
+        if (result)
+                return result;
 
         /* next search among tokens from matched line */
 
