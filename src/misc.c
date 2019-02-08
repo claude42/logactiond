@@ -33,8 +33,8 @@ extern bool run_in_foreground;
 static void
 log_message(int priority, char *fmt, va_list gp, char *add)
 {
-	if (priority >= log_level)
-		return;
+        if (priority >= log_level)
+                return;
 
         if (run_in_foreground)
         {
@@ -53,19 +53,19 @@ log_message(int priority, char *fmt, va_list gp, char *add)
 
 void xfree(void *ptr)
 {
-	la_debug("FREED %u\n", ptr);
-	free(ptr);
+        la_debug("FREED %u\n", ptr);
+        free(ptr);
 }
 
 void
 la_debug(char *fmt, ...)
 {
 #ifndef NDEBUG
-	va_list myargs;
+        va_list myargs;
 
-	va_start(myargs, fmt);
+        va_start(myargs, fmt);
         log_message(LOG_VDEBUG, fmt, myargs, NULL);
-	va_end(myargs);
+        va_end(myargs);
 
 #endif /* NDEBUG */
 }
@@ -73,70 +73,70 @@ la_debug(char *fmt, ...)
 void
 la_log_errno(int priority, char *fmt, ...)
 {
-	va_list myargs;
+        va_list myargs;
 
-	va_start(myargs, fmt);
+        va_start(myargs, fmt);
         log_message(priority, fmt, myargs, strerror(errno));
-	va_end(myargs);
+        va_end(myargs);
 }
 
 void
 la_log(int priority, char *fmt, ...)
 {
-	va_list myargs;
+        va_list myargs;
 
-	va_start(myargs, fmt);
+        va_start(myargs, fmt);
         log_message(priority, fmt, myargs, NULL);
-	va_end(myargs);
+        va_end(myargs);
 }
 
 void
 die_semantic(char *fmt, ...)
 {
-	va_list myargs;
+        va_list myargs;
 
-	va_start(myargs, fmt);
+        va_start(myargs, fmt);
         log_message(LOG_ERR, fmt, myargs, NULL);
-	va_end(myargs);
+        va_end(myargs);
 
-	unload_la_config();
-	exit(EXIT_FAILURE);
+        unload_la_config();
+        exit(EXIT_FAILURE);
 }
 
 void
 die_hard(char *fmt, ...)
 {
-	va_list myargs;
+        va_list myargs;
 
-	va_start(myargs, fmt);
+        va_start(myargs, fmt);
         log_message(LOG_ERR, fmt, myargs, NULL);
-	va_end(myargs);
+        va_end(myargs);
 
-	unload_la_config();
-	exit(EXIT_FAILURE);
+        unload_la_config();
+        exit(EXIT_FAILURE);
 }
 
 void
 die_err(char *fmt, ...)
 {
-	va_list myargs;
+        va_list myargs;
 
-	va_start(myargs, fmt);
+        va_start(myargs, fmt);
         log_message(LOG_ERR, fmt, myargs, strerror(errno));
-	va_end(myargs);
+        va_end(myargs);
 
         unload_la_config();
-	exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
 }
 
 void *
 xmalloc(size_t n)
 {
-	void *result =  malloc(n);
-	if (!result && n!=0)
-		die_hard("Memory exhausted\n");
+        void *result =  malloc(n);
+        if (!result && n!=0)
+                die_hard("Memory exhausted\n");
 
-	return result;
+        return result;
 }
 
 char *
@@ -145,21 +145,21 @@ xstrdup(const char *s)
         if (!s)
                 return NULL;
 
-	void *result = strdup(s);
-	if (!result)
-		die_hard("Memory exhausted\n");
+        void *result = strdup(s);
+        if (!result)
+                die_hard("Memory exhausted\n");
 
-	return result;
+        return result;
 }
 
 char *
 xstrndup(const char *s, size_t n)
 {
-	void *result = strndup(s, n);
-	if (!result)
-		die_hard("Memory exhausted\n");
+        void *result = strndup(s, n);
+        if (!result)
+                die_hard("Memory exhausted\n");
 
-	return result;
+        return result;
 }
 
 /* vim: set autowrite expandtab: */

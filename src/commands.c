@@ -42,15 +42,15 @@ static void
 exec_command(const char *command_string)
 {
         assert(command_string);
-	la_debug("exec_command(%s)", command_string);
+        la_debug("exec_command(%s)", command_string);
 
-	int result = system(command_string);
-	if (result == -1)
-		la_log(LOG_ERR, "Could not create child process for command \"%s\".", 
-				command_string);
-	else if (result == 127)
-		la_log(LOG_ERR, "Could not execute shell for \"%s\".",
-				command_string);
+        int result = system(command_string);
+        if (result == -1)
+                la_log(LOG_ERR, "Could not create child process for command \"%s\".", 
+                                command_string);
+        else if (result == 127)
+                la_log(LOG_ERR, "Could not execute shell for \"%s\".",
+                                command_string);
 }
 
 static const char*
@@ -59,20 +59,20 @@ check_for_special_names(la_command_t *command, la_property_t *action_property)
         assert_command(command), assert_property(action_property);
         la_debug("check_for_special_names(%s)", action_property->name);
 
-	if (command->rule)
-	{
-		if (!strcmp(action_property->name, LA_RULENAME_TOKEN))
-			return command->rule->name;
+        if (command->rule)
+        {
+                if (!strcmp(action_property->name, LA_RULENAME_TOKEN))
+                        return command->rule->name;
 
-		if (!strcmp(action_property->name, LA_SOURCENAME_TOKEN))
-			return command->rule->source->name;
-	}
+                if (!strcmp(action_property->name, LA_SOURCENAME_TOKEN))
+                        return command->rule->source->name;
+        }
 
-	/* TODO: pattern names are not yet stored
+        /* TODO: pattern names are not yet stored
         if (command->pattern)
-	{
-		if (!strcmp(action_property->name, LA_PATTERNNAME_TOKEN))
-			return command->pattern->name;
+        {
+                if (!strcmp(action_property->name, LA_PATTERNNAME_TOKEN))
+                        return command->pattern->name;
         }*/
 
         return NULL;
@@ -85,8 +85,8 @@ get_value_for_action_property(la_command_t *command,
         assert_command(command); assert_property(action_property);
         la_debug("get_value_for_action_property(%s)", action_property->name);
 
-	la_property_t *property;
-	const char *result = NULL;
+        la_property_t *property;
+        const char *result = NULL;
 
         /* try some standard names first */
 
@@ -104,13 +104,13 @@ get_value_for_action_property(la_command_t *command,
 
         /* next search in config file rule section */
 
-	if (command->rule)
-	{
-		result = get_value_from_property_list(command->rule->properties,
-				action_property);
-		if (result)
-			return result;
-	}
+        if (command->rule)
+        {
+                result = get_value_from_property_list(command->rule->properties,
+                                action_property);
+                if (result)
+                        return result;
+        }
 
         /* lastly search in config file default section, return NULL if
          * nothing is there either */
@@ -131,53 +131,53 @@ convert_command(la_command_t *command, la_commandtype_t type)
                 command->begin_string : command->end_string;
         la_debug("convert_command(%s)", source_string);
 
-	size_t len = strlen(source_string);
-	/* FIXME */
-	char *result = (char *) xmalloc(10000);
-	char *result_ptr = result;
-	const char *string_ptr = source_string;
+        size_t len = strlen(source_string);
+        /* FIXME */
+        char *result = (char *) xmalloc(10000);
+        char *result_ptr = result;
+        const char *string_ptr = source_string;
 
-	unsigned int start_pos = 0; /* position after last token */
-	la_property_t *action_property;
+        unsigned int start_pos = 0; /* position after last token */
+        la_property_t *action_property;
 
         if (type == LA_COMMANDTYPE_BEGIN)
                 action_property = (la_property_t *) command->begin_properties->head.succ;
         else
                 action_property = (la_property_t *) command->end_properties->head.succ;
 
-	while (action_property->node.succ)
-	{
-		/* copy string before next token */
-		result_ptr = stpncpy(result_ptr, string_ptr, action_property->pos - start_pos);
+        while (action_property->node.succ)
+        {
+                /* copy string before next token */
+                result_ptr = stpncpy(result_ptr, string_ptr, action_property->pos - start_pos);
 
-		/* copy value for token */
-		const char *repl = get_value_for_action_property(command,
+                /* copy value for token */
+                const char *repl = get_value_for_action_property(command,
                                 action_property);
-		if (repl)
-			result_ptr = stpncpy(result_ptr, repl, strlen(repl));
-		else
-			/* in case there's no value found, we now copy nothing
+                if (repl)
+                        result_ptr = stpncpy(result_ptr, repl, strlen(repl));
+                else
+                        /* in case there's no value found, we now copy nothing
                          * - still TBD whether this is a good idea */
                         ;
 
 
-		start_pos = action_property->pos + action_property->length;
-		string_ptr = source_string + start_pos;
+                start_pos = action_property->pos + action_property->length;
+                string_ptr = source_string + start_pos;
 
-		action_property = (la_property_t *) action_property->node.succ;
-	}
+                action_property = (la_property_t *) action_property->node.succ;
+        }
 
-	/* Copy remainder of string - only if there's something left.
-	 * Double-check just to bes sure we don't overrun any buffer */
-	if (string_ptr - source_string < strlen(source_string))
-		/* strcpy() ok here because we definitley reserved enough space
-		 */
-		strcpy(result_ptr, string_ptr);
-	else
-		*result_ptr = '\0';
+        /* Copy remainder of string - only if there's something left.
+         * Double-check just to bes sure we don't overrun any buffer */
+        if (string_ptr - source_string < strlen(source_string))
+                /* strcpy() ok here because we definitley reserved enough space
+                 */
+                strcpy(result_ptr, string_ptr);
+        else
+                *result_ptr = '\0';
 
-	la_debug("convert_command(%s)=%s", command->begin_string, result);
-	return result;
+        la_debug("convert_command(%s)=%s", command->begin_string, result);
+        return result;
 }
 
 void
@@ -188,11 +188,11 @@ trigger_command(la_command_t *command)
         la_debug("trigger_command(%s, %d)", command->begin_string,
                         command->duration);
 
-	/* TODO: can't we convert_command() earlier? */
+        /* TODO: can't we convert_command() earlier? */
         exec_command(convert_command(command, LA_COMMANDTYPE_BEGIN));
 
         if (command->end_string && command->duration > 0)
-		enqueue_end_command(command);
+                enqueue_end_command(command);
         else
                 free_command(command);
 }
@@ -229,10 +229,10 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
 
         la_debug("scan_action_tokens(%s)", string);
 
-	const char *ptr = string;
-	unsigned int n_tokens = 0;
+        const char *ptr = string;
+        unsigned int n_tokens = 0;
 
-	while (*ptr)
+        while (*ptr)
         {
                 if (*ptr == '%')
                 {
@@ -244,10 +244,10 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
                         ptr += length-1;
                 }
 
-		ptr++; /* also skips over second '%' of a token */
-	}
+                ptr++; /* also skips over second '%' of a token */
+        }
 
-	return n_tokens;
+        return n_tokens;
 }
 
 
@@ -266,27 +266,27 @@ la_command_t *
 dup_command(la_command_t *command)
 {
         assert_command(command);
-	la_command_t *result = (la_command_t *) xmalloc(sizeof(la_command_t));
+        la_command_t *result = (la_command_t *) xmalloc(sizeof(la_command_t));
 
         result->id = command->id;
 
         result->begin_string = xstrdup(command->begin_string);
-	result->begin_properties = dup_property_list(command->begin_properties);
-	result->n_begin_properties = command->n_begin_properties;
+        result->begin_properties = dup_property_list(command->begin_properties);
+        result->n_begin_properties = command->n_begin_properties;
 
         result->end_string = xstrdup(command->end_string);
-	result->end_properties = dup_property_list(command->end_properties);
-	result->n_end_properties = command->n_end_properties;
+        result->end_properties = dup_property_list(command->end_properties);
+        result->n_end_properties = command->n_end_properties;
 
-	result->duration = command->duration;
-	//result->rule = command->rule;
-	//result->pattern = command->pattern;
+        result->duration = command->duration;
+        //result->rule = command->rule;
+        //result->pattern = command->pattern;
         //result->host = xstrdup(command->host);
-	//result->end_time = command->end_time;
-	//result->n_triggers = command->n_triggers;
-	//result->start_time = command->start_time;
+        //result->end_time = command->end_time;
+        //result->n_triggers = command->n_triggers;
+        //result->start_time = command->start_time;
 
-	return result;
+        return result;
 }
 
 
@@ -334,14 +334,14 @@ create_template(la_rule_t *rule, const char *begin_string,
 {
         assert_rule(rule); assert(begin_string);
 
-	la_debug("create_command(%s, %d)", begin_string, duration);
+        la_debug("create_command(%s, %d)", begin_string, duration);
 
-	la_command_t *result = (la_command_t *) xmalloc(sizeof(la_command_t));
+        la_command_t *result = (la_command_t *) xmalloc(sizeof(la_command_t));
 
         result->id = ++id_counter;
 
         result->begin_string = xstrdup(begin_string);
-	result->begin_properties = create_list();
+        result->begin_properties = create_list();
         result->n_begin_properties = begin_string ?
                 scan_action_tokens(result->begin_properties, begin_string) : 0;
 
@@ -350,18 +350,18 @@ create_template(la_rule_t *rule, const char *begin_string,
         result->n_end_properties = end_string ?
                 scan_action_tokens(result->end_properties, end_string) : 0;
 
-	result->rule = rule;
-	result->pattern = NULL;
+        result->rule = rule;
+        result->pattern = NULL;
         result->pattern_properties = NULL;
-	result->host = NULL;
+        result->host = NULL;
 
-	result->duration = duration;
-	result->end_time = 0;
+        result->duration = duration;
+        result->end_time = 0;
 
-	result->n_triggers = 0;
-	result->start_time = 0;
+        result->n_triggers = 0;
+        result->start_time = 0;
 
-	return result;
+        return result;
 }
 
 void

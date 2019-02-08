@@ -51,13 +51,13 @@ assert_rule(la_rule_t *rule)
 static inline kw_node_t*
 get_pattern_iterator_for_rule(la_rule_t *rule)
 {
-	return get_list_iterator(rule->patterns);
+        return get_list_iterator(rule->patterns);
 }
 
 static inline la_pattern_t *
 get_next_pattern_for_rule(kw_node_t **iterator)
 {
-	return (la_pattern_t *) get_next_node(iterator);
+        return (la_pattern_t *) get_next_node(iterator);
 }
 
 /*
@@ -75,10 +75,10 @@ add_trigger(la_command_t *command)
 
         la_debug("add_trigger(%s)", command->begin_string);
 
-	command->n_triggers = 0;
-	command->start_time = time(NULL);
+        command->n_triggers = 0;
+        command->start_time = time(NULL);
 
-	add_head(command->rule->trigger_list, (kw_node_t *) command);
+        add_head(command->rule->trigger_list, (kw_node_t *) command);
 
         assert_list(command->rule->trigger_list);
 }
@@ -95,19 +95,19 @@ find_trigger(la_rule_t *rule, la_command_t *template, const char *host)
 
         la_debug("find_trigger(%s, %u, %s)", rule->name, template->id, host);
 
-	for (la_command_t *command = (la_command_t *) rule->trigger_list->head.succ;
-			command->node.succ;
-			command = (la_command_t *) command->node.succ)
-	{
-		if (command->host)
-		{
+        for (la_command_t *command = (la_command_t *) rule->trigger_list->head.succ;
+                        command->node.succ;
+                        command = (la_command_t *) command->node.succ)
+        {
+                if (command->host)
+                {
                         if ((command->id == template->id) &&
-					!strcmp(command->host, host))
-				return command;
-		}
-	}
+                                        !strcmp(command->host, host))
+                                return command;
+                }
+        }
 
-	return NULL;
+        return NULL;
 }
 
 /* TODO: definitely should refactor */
@@ -126,9 +126,9 @@ handle_command_on_trigger_list(la_command_t *command)
 
         la_debug("handle_command_on_trigger_list(%s)", command->begin_string);
 
-	/* new commands not on the trigger_list yet have n_triggers == 0 */
-	if (command->n_triggers == 0)
-		add_trigger(command);
+        /* new commands not on the trigger_list yet have n_triggers == 0 */
+        if (command->n_triggers == 0)
+                add_trigger(command);
 
         if (time(NULL) - command->start_time < command->rule->period)
         {
@@ -215,7 +215,7 @@ trigger_all_commands(la_rule_t *rule, la_pattern_t *pattern)
 {
         assert_rule(rule); assert_pattern(pattern);
 
-	la_debug("trigger_all_commands()");
+        la_debug("trigger_all_commands()");
 
         const char *host = get_host_property_value(pattern->properties);
 
@@ -229,9 +229,9 @@ trigger_all_commands(la_rule_t *rule, la_pattern_t *pattern)
         for (la_command_t *template = (la_command_t *) rule->begin_commands->head.succ;
                         template->node.succ;
                         template = (la_command_t *) template->node.succ)
-	{
+        {
                 trigger_single_command(rule, pattern, host, template);
-	}
+        }
 }
 
 /*
@@ -245,20 +245,20 @@ trigger_all_commands(la_rule_t *rule, la_pattern_t *pattern)
 
 static void
 assign_value_to_properties(kw_list_t *property_list, char *line,
-		regmatch_t pmatch[])
+                regmatch_t pmatch[])
 {
         assert_list(property_list); assert(line);
 
         la_debug("assign_value_to_properties()");
 
-	for (la_property_t *property = (la_property_t *) property_list->head.succ;
-			property->node.succ;
-			property = (la_property_t *) property->node.succ)
-	{
-		property->value = xstrndup(line + pmatch[property->subexpression].rm_so,
-				pmatch[property->subexpression].rm_eo -
-				pmatch[property->subexpression].rm_so);
-	}
+        for (la_property_t *property = (la_property_t *) property_list->head.succ;
+                        property->node.succ;
+                        property = (la_property_t *) property->node.succ)
+        {
+                property->value = xstrndup(line + pmatch[property->subexpression].rm_so,
+                                pmatch[property->subexpression].rm_eo -
+                                pmatch[property->subexpression].rm_so);
+        }
 }
 
 /*
@@ -295,22 +295,22 @@ handle_log_line_for_rule(la_rule_t *rule, char *line)
 
         la_debug("handle_log_line()");
 
-	kw_node_t *i = get_pattern_iterator_for_rule(rule);
-	la_pattern_t *pattern;
+        kw_node_t *i = get_pattern_iterator_for_rule(rule);
+        la_pattern_t *pattern;
 
-	while ((pattern = get_next_pattern_for_rule(&i)))
-	{
-		/* TODO: make this dynamic based on detected tokens */
-		regmatch_t pmatch[MAX_NMATCH];
-		if (!regexec(pattern->regex, line, MAX_NMATCH, pmatch, 0))
-		{
-			assign_value_to_properties(pattern->properties, line,
-					pmatch);
-			trigger_all_commands(rule, pattern);
+        while ((pattern = get_next_pattern_for_rule(&i)))
+        {
+                /* TODO: make this dynamic based on detected tokens */
+                regmatch_t pmatch[MAX_NMATCH];
+                if (!regexec(pattern->regex, line, MAX_NMATCH, pmatch, 0))
+                {
+                        assign_value_to_properties(pattern->properties, line,
+                                        pmatch);
+                        trigger_all_commands(rule, pattern);
                         clear_property_values(pattern->properties);
-			return;
-		}
-	}
+                        return;
+                }
+        }
 }
 
 /*
@@ -330,29 +330,29 @@ handle_log_line_for_rule(la_rule_t *rule, char *line)
 
 la_rule_t *
 create_rule(char *name, la_source_t *source, int threshold, int period, int
-		duration)
+                duration)
 {
-	la_rule_t *result = (la_rule_t *) xmalloc(sizeof(la_rule_t));
+        la_rule_t *result = (la_rule_t *) xmalloc(sizeof(la_rule_t));
 
-	result->name = xstrdup(name);
-	result->source = source;
+        result->name = xstrdup(name);
+        result->source = source;
 
-	if (threshold >= 0)
-		result->threshold = threshold;
-	else if (la_config->default_threshold >= 0)
-		result->threshold = la_config->default_threshold;
-	else
-		result->threshold = 1;
+        if (threshold >= 0)
+                result->threshold = threshold;
+        else if (la_config->default_threshold >= 0)
+                result->threshold = la_config->default_threshold;
+        else
+                result->threshold = 1;
 
-	result->duration = duration!=-1 ? duration : la_config->default_duration;
-	result->period = period!=-1 ? period : la_config->default_period;
+        result->duration = duration!=-1 ? duration : la_config->default_duration;
+        result->period = period!=-1 ? period : la_config->default_period;
 
-	result->patterns = create_list();
-	result->begin_commands = create_list();
-	result->trigger_list = create_list();
+        result->patterns = create_list();
+        result->begin_commands = create_list();
+        result->trigger_list = create_list();
         result->properties = create_list();
 
-	return result;
+        return result;
 }
 
 

@@ -73,15 +73,15 @@ address_on_ignore_list(const char *ip)
         if (inet_pton(AF_INET, ip, &addr) != 1)
                 die_semantic("Invalid IP address!");
 
-	for (la_address_t *address = (la_address_t *) la_config->ignore_addresses->head.succ;
-			address->node.succ;
-			address = (la_address_t *) address->node.succ)
-	{
+        for (la_address_t *address = (la_address_t *) la_config->ignore_addresses->head.succ;
+                        address->node.succ;
+                        address = (la_address_t *) address->node.succ)
+        {
                 if (cidr_match(addr, address->addr, address->prefix))
-			return true;
-	}
+                        return true;
+        }
 
-	return false;
+        return false;
 }
 
 /*
@@ -93,7 +93,7 @@ create_address(const char *ip)
 {
         assert(ip);
 
-	la_address_t *result = (la_address_t *) xmalloc(sizeof(la_address_t));
+        la_address_t *result = (la_address_t *) xmalloc(sizeof(la_address_t));
 
         result->prefix = inet_net_pton(AF_INET, ip, &(result->addr.s_addr),
                         sizeof(in_addr_t));
@@ -103,7 +103,7 @@ create_address(const char *ip)
 
         la_debug("create_address(%s)=%u", ip, result->prefix);
 
-	return result;
+        return result;
 }
 
 /* vim: set autowrite expandtab: */

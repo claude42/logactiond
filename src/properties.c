@@ -44,18 +44,18 @@ assert_property(la_property_t *property)
 size_t
 token_length(const char *string)
 {
-	const char *ptr = string+1;
+        const char *ptr = string+1;
 
-	while (*ptr)
-	{
-		if (*ptr == '%')
-			return ptr-string+1;
-		ptr++;
-	}
+        while (*ptr)
+        {
+                if (*ptr == '%')
+                        return ptr-string+1;
+                ptr++;
+        }
 
-	die_semantic("Closing '\%' of token missing!");
+        die_semantic("Closing '\%' of token missing!");
 
-	return 0; // avoid warning
+        return 0; // avoid warning
 }
 
 
@@ -66,15 +66,15 @@ token_length(const char *string)
 const char *
 get_host_property_value(kw_list_t *property_list)
 {
-	for (la_property_t *property = (la_property_t *) property_list->head.succ;
-			property->node.succ;
-			property = (la_property_t *) property->node.succ)
-	{
+        for (la_property_t *property = (la_property_t *) property_list->head.succ;
+                        property->node.succ;
+                        property = (la_property_t *) property->node.succ)
+        {
                 if (property->is_host_property)
                         return property->value;
-	}
+        }
 
-	return NULL;
+        return NULL;
 }
 
 /*
@@ -112,23 +112,23 @@ get_property_from_property_list(kw_list_t *property_list, const char *name)
 const char *
 get_value_from_property_list(kw_list_t *property_list, la_property_t *property)
 {
-	/* not sure whether property_list can't get NULL under normal
-	 * circumstances */
-	assert_property(property);
+        /* not sure whether property_list can't get NULL under normal
+         * circumstances */
+        assert_property(property);
 
-	if (!property_list)
-		return NULL;
+        if (!property_list)
+                return NULL;
 
-	la_property_t *result = (la_property_t *) property_list->head.succ;
+        la_property_t *result = (la_property_t *) property_list->head.succ;
 
-	while (result->node.succ)
-	{
-		if(!strncmp(property->name, result->name, property->length))
-			return result->value;
-		result = (la_property_t *) result->node.succ;
-	}
+        while (result->node.succ)
+        {
+                if(!strncmp(property->name, result->name, property->length))
+                        return result->value;
+                result = (la_property_t *) result->node.succ;
+        }
 
-	return NULL;
+        return NULL;
 }
 
 /*
@@ -170,20 +170,20 @@ static void convert_property_name(char *name)
 
 la_property_t *
 create_property_from_token(const char *name, size_t length, unsigned int pos,
-		unsigned int subexpression)
+                unsigned int subexpression)
 {
-	la_property_t *result = (la_property_t *)
-		xmalloc(sizeof(la_property_t));
+        la_property_t *result = (la_property_t *)
+                xmalloc(sizeof(la_property_t));
 
-	result->name = xstrndup(name+1, length-2);
+        result->name = xstrndup(name+1, length-2);
         convert_property_name(result->name);
         result->value = NULL;
         result->is_host_property = !strcmp(result->name, LA_HOST_TOKEN);
-	result->length = length;
-	result->pos = pos;
-	result->subexpression = subexpression;
+        result->length = length;
+        result->pos = pos;
+        result->subexpression = subexpression;
 
-	return result;
+        return result;
 }
 
 /*
@@ -196,38 +196,38 @@ create_property_from_token(const char *name, size_t length, unsigned int pos,
 
 size_t
 scan_single_token(kw_list_t *property_list, const char *string, unsigned int pos,
-		unsigned int subexpression)
+                unsigned int subexpression)
 {
-	size_t length = token_length(string);
+        size_t length = token_length(string);
 
-	if (length > 2) /* so it's NOT just "%%" */
-	{
-		add_tail(property_list, (kw_node_t *)
-				create_property_from_token(string, length, pos,
-					subexpression));
-	}
+        if (length > 2) /* so it's NOT just "%%" */
+        {
+                add_tail(property_list, (kw_node_t *)
+                                create_property_from_token(string, length, pos,
+                                        subexpression));
+        }
 
-	return length;
+        return length;
 }
 
 la_property_t *
 create_property_from_config(const char *name, const char *value)
 {
-	la_property_t *result = (la_property_t *) xmalloc(sizeof(la_property_t));
+        la_property_t *result = (la_property_t *) xmalloc(sizeof(la_property_t));
 
-	result->name = xstrdup(name);
+        result->name = xstrdup(name);
         convert_property_name(result->name);
         result->is_host_property = !strcmp(result->name, LA_HOST_TOKEN);
-	result->value = xstrdup(value);
-	
-	return result;
+        result->value = xstrdup(value);
+        
+        return result;
 }
 
 la_property_t *
 create_property_from_action_token(const char *name, size_t length,
-		unsigned int pos)
+                unsigned int pos)
 {
-	return create_property_from_token(name, length, pos, 0);
+        return create_property_from_token(name, length, pos, 0);
 }
 
 /*
@@ -237,8 +237,8 @@ create_property_from_action_token(const char *name, size_t length,
 static la_property_t *
 duplicate_property(la_property_t *property)
 {
-	la_property_t *result = (la_property_t *)
-		xmalloc(sizeof(la_property_t));
+        la_property_t *result = (la_property_t *)
+                xmalloc(sizeof(la_property_t));
 
         result->name = xstrdup(property->name);
         result->is_host_property = property->is_host_property;
@@ -255,9 +255,9 @@ dup_property_list(kw_list_t *list)
 {
         kw_list_t *result = create_list();
 
-	for (la_property_t *property = (la_property_t *) list->head.succ;
-			property->node.succ;
-			property = (la_property_t *) property->node.succ)
+        for (la_property_t *property = (la_property_t *) list->head.succ;
+                        property->node.succ;
+                        property = (la_property_t *) property->node.succ)
                 add_tail(result, (kw_node_t *) duplicate_property(property));
 
         return result;

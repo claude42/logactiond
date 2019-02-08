@@ -77,7 +77,7 @@ find_end_command(la_rule_t *rule, const char *host)
                 }
         }
 
-	pthread_mutex_unlock(&end_queue_mutex);
+        pthread_mutex_unlock(&end_queue_mutex);
 
         return result;
 }
@@ -108,22 +108,22 @@ empty_end_queue(void)
 {
         la_debug("empty_end_queue()");
 
-	if (!end_queue)
-		return;
+        if (!end_queue)
+                return;
 
-	pthread_mutex_lock(&end_queue_mutex);
+        pthread_mutex_lock(&end_queue_mutex);
 
-	la_command_t *command = (la_command_t *) end_queue->head.succ;
+        la_command_t *command = (la_command_t *) end_queue->head.succ;
 
-	while (command->node.succ)
-	{
-		la_debug("empty_queue(), removing %s", command->end_string);
-		la_command_t *tmp = command;
-		command = (la_command_t *) command->node.succ;
+        while (command->node.succ)
+        {
+                la_debug("empty_queue(), removing %s", command->end_string);
+                la_command_t *tmp = command;
+                command = (la_command_t *) command->node.succ;
                 remove_trigger_free_command(tmp);
-	}
+        }
 
-	pthread_mutex_unlock(&end_queue_mutex);
+        pthread_mutex_unlock(&end_queue_mutex);
 }
 
 static void
@@ -197,12 +197,12 @@ init_end_queue(void)
 {
         la_debug("init_end_queue()");
 
-	end_queue = create_list();
+        end_queue = create_list();
 
-	pthread_t end_queue_thread;
+        pthread_t end_queue_thread;
 
-	if (pthread_create(&end_queue_thread, NULL, consume_end_queue, NULL))
-		die_hard("Couldn't create end_queue thread!");
+        if (pthread_create(&end_queue_thread, NULL, consume_end_queue, NULL))
+                die_hard("Couldn't create end_queue thread!");
 }
 
 /*
@@ -238,30 +238,30 @@ enqueue_end_command(la_command_t *end_command)
         la_debug("enqueue_end_command(%s, %u)", end_command->end_string,
                         end_command->duration);
 
-	if (end_command->duration <= 0)
-		return;
+        if (end_command->duration <= 0)
+                return;
 
-	set_end_time(end_command);
+        set_end_time(end_command);
 
         la_debug("enqueue %u pthread_mutex_lock()", time(NULL));
-	pthread_mutex_lock(&end_queue_mutex);
+        pthread_mutex_lock(&end_queue_mutex);
 
-	la_command_t *tmp;
-	for (tmp = (la_command_t *) end_queue->head.succ;
-			tmp->node.succ;
-			tmp = (la_command_t *) tmp->node.succ)
-	{
-		if (end_command->end_time <= tmp->end_time)
-			break;
-	}
+        la_command_t *tmp;
+        for (tmp = (la_command_t *) end_queue->head.succ;
+                        tmp->node.succ;
+                        tmp = (la_command_t *) tmp->node.succ)
+        {
+                if (end_command->end_time <= tmp->end_time)
+                        break;
+        }
 
         la_debug("enqueue %u insert_node_before()", time(NULL));
-	insert_node_before((kw_node_t *) tmp, (kw_node_t *) end_command);
+        insert_node_before((kw_node_t *) tmp, (kw_node_t *) end_command);
         la_debug("enqueue %u pthread_cond_signal()", time(NULL));
         pthread_cond_signal(&end_queue_condition);
 
         la_debug("enqueue %u pthread_mutex_unlock()", time(NULL));
-	pthread_mutex_unlock(&end_queue_mutex);
+        pthread_mutex_unlock(&end_queue_mutex);
 }
 
 /* vim: set autowrite expandtab: */

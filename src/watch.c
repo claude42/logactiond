@@ -44,7 +44,7 @@ watch_forever(void)
 {
         la_debug("watch_forever()");
 #if HAVE_INOTIFY
-	watch_forever_inotify();
+        watch_forever_inotify();
 #endif /* HAVE_INOTIFY */
 }
 
@@ -60,9 +60,9 @@ init_watching(void)
         la_debug("init_watching()");
 
 #if HAVE_INOTIFY
-	init_watching_inotify();
+        init_watching_inotify();
 #else /* HAVE_INOTIFY */
-	die_hard("Don't have inotify!");
+        die_hard("Don't have inotify!");
 #endif /* HAVE_INOTIFY */
 }
 

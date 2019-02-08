@@ -107,7 +107,7 @@ typedef enum la_commandtype_s { LA_COMMANDTYPE_BEGIN, LA_COMMANDTYPE_END } la_co
 
 typedef struct la_address_s
 {
-	kw_node_t node;
+        kw_node_t node;
         struct in_addr addr;
         int prefix;
 } la_address_t;
@@ -127,90 +127,90 @@ typedef struct la_address_s
 
 typedef struct la_property_s
 {
-	kw_node_t node;
-	/* name of the property (for matched tokens: without '<' and '>') */
-	char *name;
+        kw_node_t node;
+        /* name of the property (for matched tokens: without '<' and '>') */
+        char *name;
         /* Property created from HOST token */
         bool is_host_property;
-	/* Different uses:
-	 * - when used for config file properties, this is simply the value
-	 *   assigned to the property in the config file
-	 * - when used when matching a log line to a regex, this is the matched
-	 *   value from the log line
-	 * - when used as an action token, this is the value taken from the
-	 *   original token
-	 *
-	 * XXX: Not thread-safe: i.e. using the same pattern for different
-	 * backends will not work.
-	 * BTW: strings will be strdup()ed - take care to free again */
-	char *value;
+        /* Different uses:
+         * - when used for config file properties, this is simply the value
+         *   assigned to the property in the config file
+         * - when used when matching a log line to a regex, this is the matched
+         *   value from the log line
+         * - when used as an action token, this is the value taken from the
+         *   original token
+         *
+         * XXX: Not thread-safe: i.e. using the same pattern for different
+         * backends will not work.
+         * BTW: strings will be strdup()ed - take care to free again */
+        char *value;
 
-	/* The following  members will only be used when properties are
-	 * obtained from log lines matching tokens or in action strings.
-	 */
+        /* The following  members will only be used when properties are
+         * obtained from log lines matching tokens or in action strings.
+         */
 
-	/* Position in original string. Points to innitial '<'!.
-	 * Only for use in convert_regex() */
-	unsigned int pos;
-	/* Length of token including '<' and '>'. Save us a few strlen() calls in
-	 * convert_regex()... */
-	size_t length;
+        /* Position in original string. Points to innitial '<'!.
+         * Only for use in convert_regex() */
+        unsigned int pos;
+        /* Length of token including '<' and '>'. Save us a few strlen() calls in
+         * convert_regex()... */
+        size_t length;
 
-	/* The following members will only be used when matching log lines.  */
+        /* The following members will only be used when matching log lines.  */
 
-	/* Number of the subexpression this token represents in the regular
-	 * expression.
-	 */
-	unsigned int subexpression;
+        /* Number of the subexpression this token represents in the regular
+         * expression.
+         */
+        unsigned int subexpression;
 } la_property_t;
 
 typedef struct la_pattern_s
 {
-	kw_node_t node;
-	char *name;
-	la_rule_t *rule;
-	const char *string; /* already converted regex, doesn't contain tokens anymore */
-	regex_t *regex; /* compiled regex */
-	kw_list_t *properties; /* list of la_property_t */
+        kw_node_t node;
+        char *name;
+        la_rule_t *rule;
+        const char *string; /* already converted regex, doesn't contain tokens anymore */
+        regex_t *regex; /* compiled regex */
+        kw_list_t *properties; /* list of la_property_t */
 } la_pattern_t;
 
 typedef struct la_rule_s
 {
-	kw_node_t node;
-	char *name;
-	la_source_t *source;
-	kw_list_t *patterns;
-	kw_list_t *begin_commands;
-	unsigned int threshold;
-	unsigned int period;
-	unsigned int duration;
-	kw_list_t *trigger_list;
-	kw_list_t *properties;
+        kw_node_t node;
+        char *name;
+        la_source_t *source;
+        kw_list_t *patterns;
+        kw_list_t *begin_commands;
+        unsigned int threshold;
+        unsigned int period;
+        unsigned int duration;
+        kw_list_t *trigger_list;
+        kw_list_t *properties;
 } la_rule_t;
 
 typedef struct la_command_s
 {
-	kw_node_t node;
+        kw_node_t node;
         unsigned int id;        /* unique id */
-	char *begin_string;	/* string with tokens */
-	kw_list_t *begin_properties;	/* detected tokens */
-	unsigned int n_begin_properties;/* number of detected tokens */
-	char *end_string;	/* string with tokens */
-	kw_list_t *end_properties;	/* detected tokens */
-	unsigned int n_end_properties;/* number of detected tokens */
-	la_rule_t *rule;	/* related rule */
-	la_pattern_t *pattern;	/* related pattern*/
+        char *begin_string;        /* string with tokens */
+        kw_list_t *begin_properties;        /* detected tokens */
+        unsigned int n_begin_properties;/* number of detected tokens */
+        char *end_string;        /* string with tokens */
+        kw_list_t *end_properties;        /* detected tokens */
+        unsigned int n_end_properties;/* number of detected tokens */
+        la_rule_t *rule;        /* related rule */
+        la_pattern_t *pattern;        /* related pattern*/
         kw_list_t *pattern_properties; /* properties from matched pattern */
-	char *host;	        /* IP address */
-	int duration;		/* duration how long command shall stay active,
-				   -1 if none */
+        char *host;                /* IP address */
+        int duration;                /* duration how long command shall stay active,
+                                   -1 if none */
 
-	/* only relevant for end_commands */
-	time_t end_time;	/* specific time for enqueued end_commands */
+        /* only relevant for end_commands */
+        time_t end_time;        /* specific time for enqueued end_commands */
 
-	/* only relevant in trigger_list */
-	unsigned int n_triggers;/* how man times triggered during period */
-	time_t start_time;	/* time of first trigger during period */
+        /* only relevant in trigger_list */
+        unsigned int n_triggers;/* how man times triggered during period */
+        time_t start_time;        /* time of first trigger during period */
 
 } la_command_t;
 
@@ -220,36 +220,36 @@ typedef struct la_command_s
 
 typedef struct la_source_s
 {
-	kw_node_t node;
+        kw_node_t node;
         /* Name of source in config file - strdup()d */
-	const char *name;
-	la_sourcetype_t type;
+        const char *name;
+        la_sourcetype_t type;
         /* Filename (or equivalent) - strdup()d */
-	const char *location;
+        const char *location;
         /* Parent dir of log file - currently only used for inotify */
-	const char *parent_dir;
+        const char *parent_dir;
         /* Rules assigned to log file */
-	kw_list_t *rules;
+        kw_list_t *rules;
         /* File handle for log file */
-	FILE *file;
+        FILE *file;
 #if HAVE_INOTIFY
         /* Watch descriptor for log file itself */
         int wd;
         /* Watch descriptor for parent directory */
-	int parent_wd;
+        int parent_wd;
 #endif /* HAVE_INOTIFY */
 
 } la_source_t;
 
 typedef struct la_config_s
 {
-	config_t config_file;
-	kw_list_t *sources;
-	int default_threshold;
-	int default_period;
-	int default_duration;
-	kw_list_t *default_properties;
-	kw_list_t *ignore_addresses;
+        config_t config_file;
+        kw_list_t *sources;
+        int default_threshold;
+        int default_period;
+        int default_duration;
+        kw_list_t *default_properties;
+        kw_list_t *ignore_addresses;
 } la_config_t;
 
 /* Global variables */
@@ -339,15 +339,15 @@ la_property_t *get_property_from_property_list(kw_list_t *property_list,
                 const char *name);
 
 const char *get_value_from_property_list(kw_list_t *property_list,
-		la_property_t *property);
+                la_property_t *property);
 
 la_property_t *create_property_from_config(const char *name, const char *value);
 
 la_property_t *create_property_from_action_token(const char *name, size_t length,
-		unsigned int pos);
+                unsigned int pos);
 
 la_property_t *create_property_from_token(const char *name, size_t length, unsigned
-		int pos, unsigned int subexpression);
+                int pos, unsigned int subexpression);
 
 kw_list_t *dup_property_list(kw_list_t *list);
 
@@ -368,7 +368,7 @@ void assert_rule(la_rule_t *rule);
 void handle_log_line_for_rule(la_rule_t *rule, char *line);
 
 la_rule_t * create_rule(char *name, la_source_t *source, int threshold,
-		int period, int duration);
+                int period, int duration);
 
 /* sources.c */
 

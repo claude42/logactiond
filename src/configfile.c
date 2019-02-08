@@ -46,11 +46,11 @@ la_config_t *la_config;
 const char*
 config_get_string_or_null(const config_setting_t *setting, const char *name)
 {
-	const char* result;
-	if (!config_setting_lookup_string(setting, name, &result))
-		result = NULL;
+        const char* result;
+        if (!config_setting_lookup_string(setting, name, &result))
+                result = NULL;
 
-	return result;
+        return result;
 }
 
 /*
@@ -60,13 +60,13 @@ config_get_string_or_null(const config_setting_t *setting, const char *name)
 
 int
 config_get_unsigned_int_or_negative(const config_setting_t *setting,
-		const char *name)
+                const char *name)
 {
-	int result;
-	if (!config_setting_lookup_int(setting, name, &result))
-		return -1;
+        int result;
+        if (!config_setting_lookup_int(setting, name, &result))
+                return -1;
 
-	return result;
+        return result;
 }
 
 /*
@@ -76,12 +76,12 @@ config_get_unsigned_int_or_negative(const config_setting_t *setting,
 const char*
 config_get_string_or_die(const config_setting_t *setting, const char *name)
 {
-	const char* result = config_get_string_or_null(setting, name);
+        const char* result = config_get_string_or_null(setting, name);
 
-	if (!result)
-		die_semantic("Config element %s missingn!", name);
+        if (!result)
+                die_semantic("Config element %s missingn!", name);
 
-	return result;
+        return result;
 }
 
 /*
@@ -91,16 +91,16 @@ config_get_string_or_die(const config_setting_t *setting, const char *name)
 
 const config_setting_t *
 config_setting_lookup_or_die(const config_setting_t *setting,
-		const char *path)
+                const char *path)
 {
-	const config_setting_t *result;
-	/* TODO: not sure why config_setting_t * (without const) is required
-	 * here but nowhere else */
-	result = config_setting_lookup((config_setting_t *) setting, path);
-	if (!result)
-		die_semantic("Missing element %s!", path);
+        const config_setting_t *result;
+        /* TODO: not sure why config_setting_t * (without const) is required
+         * here but nowhere else */
+        result = config_setting_lookup((config_setting_t *) setting, path);
+        if (!result)
+                die_semantic("Missing element %s!", path);
 
-	return result;
+        return result;
 }
 
 static const config_setting_t *
@@ -125,9 +125,9 @@ get_action(const char *action_name)
 {
         assert(action_name);
 
-	return config_setting_lookup_or_die(config_lookup(
-				&la_config->config_file,
-				LA_ACTIONS_LABEL), action_name);
+        return config_setting_lookup_or_die(config_lookup(
+                                &la_config->config_file,
+                                LA_ACTIONS_LABEL), action_name);
 }
 
 
@@ -143,19 +143,19 @@ get_action(const char *action_name)
 static config_setting_t *
 get_source(const char *source)
 {
-	config_setting_t *sources_section;
-	config_setting_t *result;
+        config_setting_t *sources_section;
+        config_setting_t *result;
 
-	if (!source)
-		return NULL;
+        if (!source)
+                return NULL;
 
-	sources_section = config_lookup(&la_config->config_file, LA_SOURCES_LABEL);
-	if (!sources_section)
-		die_semantic(LA_SOURCES_LABEL " section missing!");
+        sources_section = config_lookup(&la_config->config_file, LA_SOURCES_LABEL);
+        if (!sources_section)
+                die_semantic(LA_SOURCES_LABEL " section missing!");
 
-	result = config_setting_lookup(sources_section, source);
+        result = config_setting_lookup(sources_section, source);
 
-	return  result;
+        return  result;
 }
 
 /*
@@ -181,10 +181,10 @@ get_source_location(const config_setting_t *rule, const config_setting_t *uc_rul
 {
         assert(rule); assert(uc_rule);
 
-	config_setting_t *source_def;
-	const char *result;
+        config_setting_t *source_def;
+        const char *result;
 
-	source_def = get_source(config_get_string_or_null(uc_rule, LA_RULE_SOURCE_LABEL));
+        source_def = get_source(config_get_string_or_null(uc_rule, LA_RULE_SOURCE_LABEL));
         if (!source_def)
         {
                 source_def = get_source(config_get_string_or_null(rule,
@@ -194,32 +194,32 @@ get_source_location(const config_setting_t *rule, const config_setting_t *uc_rul
                                         config_setting_name(rule));
         }
 
-	if (!config_setting_lookup_string(source_def, LA_LOCATION, &result))
-		die_semantic("Source location missing!");
+        if (!config_setting_lookup_string(source_def, LA_LOCATION, &result))
+                die_semantic("Source location missing!");
 
-	return result;
+        return result;
 }
 
 static la_sourcetype_t
 get_source_type(const config_setting_t *rule)
 {
-	config_setting_t *source_def;
-	const char *type;
+        config_setting_t *source_def;
+        const char *type;
 
-	source_def = get_source(config_get_string_or_die(rule, LA_RULE_SOURCE_LABEL));
-	if (!source_def)
-		die_semantic("Source not found!");
+        source_def = get_source(config_get_string_or_die(rule, LA_RULE_SOURCE_LABEL));
+        if (!source_def)
+                die_semantic("Source not found!");
 
-	type = config_get_string_or_die(source_def, LA_RULE_TYPE_LABEL);
+        type = config_get_string_or_die(source_def, LA_RULE_TYPE_LABEL);
 
-	if (!strcmp(type, LA_RULE_TYPE_FILE_OPTION))
-		return LA_RULE_TYPE_FILE;
-	else if (!strcmp(type, LA_RULE_TYPE_SYSTEMD_OPTION))
-		return LA_RULE_TYPE_SYSTEMD;
-	else
-		die_semantic("Wrong source type \"%s\" specified!", type);
+        if (!strcmp(type, LA_RULE_TYPE_FILE_OPTION))
+                return LA_RULE_TYPE_FILE;
+        else if (!strcmp(type, LA_RULE_TYPE_SYSTEMD_OPTION))
+                return LA_RULE_TYPE_SYSTEMD;
+        else
+                die_semantic("Wrong source type \"%s\" specified!", type);
 
-	return 0; // avoid warning
+        return 0; // avoid warning
 }
 
 /*
@@ -260,21 +260,21 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
 
 static void
 compile_list_of_actions(la_rule_t *rule,
-		const config_setting_t *action_def)
+                const config_setting_t *action_def)
 {
         assert_rule(rule); assert(action_def);
 
         la_debug("compile_list_of_actions(%s)", rule->name);
 
-	int n_items = config_setting_length(action_def);
+        int n_items = config_setting_length(action_def);
 
-	for (int i=0; i<n_items; i++)
-	{
-		config_setting_t *list_item =
-			config_setting_get_elem(action_def, i);
-		compile_actions(rule, get_action(config_setting_get_string(
-						list_item)));
-	}
+        for (int i=0; i<n_items; i++)
+        {
+                config_setting_t *list_item =
+                        config_setting_get_elem(action_def, i);
+                compile_actions(rule, get_action(config_setting_get_string(
+                                                list_item)));
+        }
 }
 
 /*
@@ -306,16 +306,16 @@ load_actions(la_rule_t *rule, const config_setting_t *uc_rule_def)
                                         config_setting_name(rule));
         }
 
-	int type = config_setting_type(action_reference);
+        int type = config_setting_type(action_reference);
 
-	if (type == CONFIG_TYPE_STRING)
-		compile_actions(rule, get_action(
-					config_setting_get_string(
-						action_reference)));
-	else if (type == CONFIG_TYPE_LIST)
-		compile_list_of_actions(rule, action_reference);
-	else
-		die_semantic("Element neither string nor list!");
+        if (type == CONFIG_TYPE_STRING)
+                compile_actions(rule, get_action(
+                                        config_setting_get_string(
+                                                action_reference)));
+        else if (type == CONFIG_TYPE_LIST)
+                compile_list_of_actions(rule, action_reference);
+        else
+                die_semantic("Element neither string nor list!");
 }
 
 static void
@@ -335,19 +335,19 @@ load_patterns(la_rule_t *rule, const config_setting_t *rule_def,
                 patterns = config_setting_lookup_or_die(rule_def,
                                 LA_RULE_PATTERNS_LABEL);
 
-	int n = config_setting_length(patterns);
-	if (n < 0)
-		die_semantic("No patterns specified for %s!",
-				config_setting_name(rule_def));
+        int n = config_setting_length(patterns);
+        if (n < 0)
+                die_semantic("No patterns specified for %s!",
+                                config_setting_name(rule_def));
 
-	for (int i=0; i<n; i++)
-	{
-		const char *item = config_setting_get_string_elem(patterns, i);
+        for (int i=0; i<n; i++)
+        {
+                const char *item = config_setting_get_string_elem(patterns, i);
 
-		la_pattern_t *pattern = create_pattern(item, rule);
+                la_pattern_t *pattern = create_pattern(item, rule);
 
-		add_tail(rule->patterns, (kw_node_t *) pattern);
-	}
+                add_tail(rule->patterns, (kw_node_t *) pattern);
+        }
         assert_list(rule->patterns);
 }
 
@@ -357,34 +357,34 @@ load_ignore_addresses(const config_setting_t *section)
 {
         assert(section);
 
-	la_debug("load_ignore_addresses(%s)", config_setting_name(section));
+        la_debug("load_ignore_addresses(%s)", config_setting_name(section));
 
-	kw_list_t *result = create_list();
+        kw_list_t *result = create_list();
 
-	config_setting_t *ignore_section =
-		config_setting_get_member(section, "ignore");
+        config_setting_t *ignore_section =
+                config_setting_get_member(section, "ignore");
 
-	if (!ignore_section)
-		return result;
+        if (!ignore_section)
+                return result;
 
-	int n = config_setting_length(ignore_section);
-	for (int i=0; i<n; i++)
-	{
-		config_setting_t *elem =
-			config_setting_get_elem(ignore_section, i);
-		const char *ip = config_setting_get_string(elem);
-		if (!ip)
-			die_hard("Only strings allowed for ignore addresses!");
+        int n = config_setting_length(ignore_section);
+        for (int i=0; i<n; i++)
+        {
+                config_setting_t *elem =
+                        config_setting_get_elem(ignore_section, i);
+                const char *ip = config_setting_get_string(elem);
+                if (!ip)
+                        die_hard("Only strings allowed for ignore addresses!");
 
-		la_address_t *address = create_address(ip);
+                la_address_t *address = create_address(ip);
 
                 la_debug("load_ignore_addresses(%s)=%s",
                                 config_setting_name(section), ip);
-		add_tail(result, (kw_node_t *) address);
-	}
+                add_tail(result, (kw_node_t *) address);
+        }
         assert_list(result);
 
-	return result;
+        return result;
 }
 
 /*
@@ -398,35 +398,35 @@ load_properties(kw_list_t *properties, const config_setting_t *section)
 {
         assert_list(properties); assert(section);
 
-	la_debug("load_properties(%s)", config_setting_name(section));
+        la_debug("load_properties(%s)", config_setting_name(section));
 
-	config_setting_t *properties_section =
-		config_setting_get_member(section, LA_PROPERTIES_LABEL);
+        config_setting_t *properties_section =
+                config_setting_get_member(section, LA_PROPERTIES_LABEL);
 
-	if (!properties_section)
-		return;
+        if (!properties_section)
+                return;
 
-	int n = config_setting_length(properties_section);
-	for (int i=0; i<n; i++)
-	{
-		config_setting_t *elem =
-			config_setting_get_elem(properties_section, i);
-		const char *name = config_setting_name(elem);
-		if (!name)
-			die_hard("Property without a name?!");
-		const char *value = config_setting_get_string(elem);
-		if (!value)
-			die_hard("Only strings allowed for properties!");
+        int n = config_setting_length(properties_section);
+        for (int i=0; i<n; i++)
+        {
+                config_setting_t *elem =
+                        config_setting_get_elem(properties_section, i);
+                const char *name = config_setting_name(elem);
+                if (!name)
+                        die_hard("Property without a name?!");
+                const char *value = config_setting_get_string(elem);
+                if (!value)
+                        die_hard("Only strings allowed for properties!");
 
                 /* if property with same name already exists, do nothing */
                 if (get_property_from_property_list(properties, name))
                         continue;
 
-		la_property_t *property = create_property_from_config(name, value);
+                la_property_t *property = create_property_from_config(name, value);
 
                 la_debug("load_properties(%s)=%s", config_setting_name(section), name);
-		add_tail(properties, (kw_node_t *) property);
-	}
+                add_tail(properties, (kw_node_t *) property);
+        }
         assert_list(properties);
 }
 
@@ -458,25 +458,25 @@ load_single_rule(const config_setting_t *rule_def,
                 const config_setting_t *uc_rule_def)
 {
         assert(rule_def); assert(uc_rule_def);
-	la_rule_t *new_rule;
-	la_source_t *source;
-	const char *location;
-	la_sourcetype_t type;
+        la_rule_t *new_rule;
+        la_source_t *source;
+        const char *location;
+        la_sourcetype_t type;
 
-	char *name = config_setting_name(rule_def);
+        char *name = config_setting_name(rule_def);
         la_debug("load_single_rule(%s)", name);
 
-	location = get_source_location(rule_def, uc_rule_def);
-	source = find_source_by_location(location);
+        location = get_source_location(rule_def, uc_rule_def);
+        source = find_source_by_location(location);
 
-	if (!source)
-	{
-		source = create_source(get_source_name(rule_def),
-				get_source_type(rule_def), location);
-		watch_source(source, SEEK_END);
+        if (!source)
+        {
+                source = create_source(get_source_name(rule_def),
+                                get_source_type(rule_def), location);
+                watch_source(source, SEEK_END);
 
-		add_tail(la_config->sources, (kw_node_t *) source);
-	}
+                add_tail(la_config->sources, (kw_node_t *) source);
+        }
 
         assert_source(source);
 
@@ -499,11 +499,11 @@ load_single_rule(const config_setting_t *rule_def,
         load_properties(new_rule->properties, rule_def);
 
         /* Patterns from uc_rule_def have priority over those from rule_def */
-	load_patterns(new_rule, rule_def, uc_rule_def);
+        load_patterns(new_rule, rule_def, uc_rule_def);
 
         /* actions are only taken from uc_rule_def (or default settings) */
-	load_actions(new_rule, uc_rule_def);
-	add_tail(source->rules, (kw_node_t *) new_rule);
+        load_actions(new_rule, uc_rule_def);
+        add_tail(source->rules, (kw_node_t *) new_rule);
 }
 
 
@@ -513,9 +513,9 @@ load_rules(void)
         la_debug("load_rules()");
 
         config_setting_t *local_section = 
-		config_lookup(&la_config->config_file, LA_LOCAL_LABEL);
+                config_lookup(&la_config->config_file, LA_LOCAL_LABEL);
 
-	la_config->sources = create_list();
+        la_config->sources = create_list();
 
         int n = config_setting_length(local_section);
         if (n < 0)
@@ -548,33 +548,33 @@ load_defaults(void)
 {
         la_debug("load_defaults()");
 
-	config_setting_t *defaults_section =
-		config_lookup(&la_config->config_file, LA_DEFAULTS_LABEL);
+        config_setting_t *defaults_section =
+                config_lookup(&la_config->config_file, LA_DEFAULTS_LABEL);
 
-	if (defaults_section)
-	{
-		la_config->default_threshold =
-			config_get_unsigned_int_or_negative(defaults_section,
-					LA_THRESHOLD_LABEL);
-		la_config->default_period =
-			config_get_unsigned_int_or_negative(defaults_section,
-					LA_PERIOD_LABEL);
-		la_config->default_duration =
-			config_get_unsigned_int_or_negative(defaults_section,
-					LA_DURATION_LABEL);
+        if (defaults_section)
+        {
+                la_config->default_threshold =
+                        config_get_unsigned_int_or_negative(defaults_section,
+                                        LA_THRESHOLD_LABEL);
+                la_config->default_period =
+                        config_get_unsigned_int_or_negative(defaults_section,
+                                        LA_PERIOD_LABEL);
+                la_config->default_duration =
+                        config_get_unsigned_int_or_negative(defaults_section,
+                                        LA_DURATION_LABEL);
 
                 la_config->default_properties = create_list();
                 load_properties(la_config->default_properties, defaults_section);
-		la_config->ignore_addresses = load_ignore_addresses(defaults_section);
-	}
-	else
-	{
-		la_config->default_threshold = -1;
-		la_config->default_period = -1;
-		la_config->default_duration = -1;
-		la_config->default_properties = NULL;
-		la_config->ignore_addresses = NULL;
-	}
+                la_config->ignore_addresses = load_ignore_addresses(defaults_section);
+        }
+        else
+        {
+                la_config->default_threshold = -1;
+                la_config->default_period = -1;
+                la_config->default_duration = -1;
+                la_config->default_properties = NULL;
+                la_config->ignore_addresses = NULL;
+        }
 }
 
 const char ** include_func(config_t *config, const char *include_dir, const
@@ -588,7 +588,7 @@ load_la_config(char *filename)
 
         la_log(LOG_INFO, "Loading configuration from \"%s\".", filename);
 
-	la_config = (la_config_t *) xmalloc(sizeof(la_config_t));
+        la_config = (la_config_t *) xmalloc(sizeof(la_config_t));
 
         config_init(&la_config->config_file);
 
@@ -602,8 +602,8 @@ load_la_config(char *filename)
                                 config_error_text(&la_config->config_file));
         }
 
-	load_defaults();
-	load_rules();
+        load_defaults();
+        load_rules();
 
         config_destroy(&la_config->config_file);
 }
@@ -623,86 +623,86 @@ unload_la_config(void)
 const char **
 include_func(config_t *config, const char *include_dir, const char *path, const char **error)
 {
-	char *p;
-	DIR *dp;
-	struct dirent *dir_entry;
-	struct stat stat_buf;
-	char include_path[PATH_MAX + 1];
-	size_t include_path_len = 0;
-	char file_path[PATH_MAX + 1];
-	char **result = NULL;
-	char **result_next = result;
-	int result_count = 0;
-	int result_capacity = 0;
+        char *p;
+        DIR *dp;
+        struct dirent *dir_entry;
+        struct stat stat_buf;
+        char include_path[PATH_MAX + 1];
+        size_t include_path_len = 0;
+        char file_path[PATH_MAX + 1];
+        char **result = NULL;
+        char **result_next = result;
+        int result_count = 0;
+        int result_capacity = 0;
 
-	*include_path = 0;
+        *include_path = 0;
 
         assert(path);
         la_debug("include_func(%s)", path);
 
-	if(*path != '/')
-	{
-		if(include_dir)
-		{
-			strcat(include_path, include_dir);
-			include_path_len += strlen(include_dir);
-		}
-	}
+        if(*path != '/')
+        {
+                if(include_dir)
+                {
+                        strcat(include_path, include_dir);
+                        include_path_len += strlen(include_dir);
+                }
+        }
 
-	p = strrchr(path, '/');
-	if(p > path)
-	{
-		int len = p - path;
+        p = strrchr(path, '/');
+        if(p > path)
+        {
+                int len = p - path;
 
 
-		if((include_path_len > 0) && (*(include_path +
-						include_path_len - 1) != '/'))
-		{
-			strcat(include_path, "/");
-			++include_path_len;
-		}
+                if((include_path_len > 0) && (*(include_path +
+                                                include_path_len - 1) != '/'))
+                {
+                        strcat(include_path, "/");
+                        ++include_path_len;
+                }
 
-		strncat(include_path, path, len);
-		include_path_len += len;
-	}
+                strncat(include_path, path, len);
+                include_path_len += len;
+        }
 
-	if(include_path_len == 0)
-	{
-		strcpy(include_path, ".");
-		include_path_len = 1;
-	}
+        if(include_path_len == 0)
+        {
+                strcpy(include_path, ".");
+                include_path_len = 1;
+        }
 
-	dp = opendir(include_path);
-	if(dp)
-	{
-		while((dir_entry = readdir(dp)) != NULL)
-		{
-			snprintf(file_path, PATH_MAX, "%s/%s", include_path,
-					dir_entry->d_name);
-			if(lstat(file_path, &stat_buf) != 0)
-				continue;
-			if(!S_ISREG(stat_buf.st_mode))
-				continue;
-			if(fnmatch(path, file_path, FNM_PATHNAME) != 0)
-				continue;
+        dp = opendir(include_path);
+        if(dp)
+        {
+                while((dir_entry = readdir(dp)) != NULL)
+                {
+                        snprintf(file_path, PATH_MAX, "%s/%s", include_path,
+                                        dir_entry->d_name);
+                        if(lstat(file_path, &stat_buf) != 0)
+                                continue;
+                        if(!S_ISREG(stat_buf.st_mode))
+                                continue;
+                        if(fnmatch(path, file_path, FNM_PATHNAME) != 0)
+                                continue;
 
-			if(result_count == result_capacity)
-			{
-				result_capacity += 16;
-				result = (char **)realloc(result, (result_capacity + 1) * sizeof(char *));
-				result_next = result + result_count;
-			}
+                        if(result_count == result_capacity)
+                        {
+                                result_capacity += 16;
+                                result = (char **)realloc(result, (result_capacity + 1) * sizeof(char *));
+                                result_next = result + result_count;
+                        }
 
-			*result_next = strdup(file_path);
-			++result_next;
-			++result_count;
-		}
-		closedir(dp);
-	}
+                        *result_next = strdup(file_path);
+                        ++result_next;
+                        ++result_count;
+                }
+                closedir(dp);
+        }
 
-	*result_next = NULL;
+        *result_next = NULL;
 
-	return ((const char **)result);
+        return ((const char **)result);
 }
 
 /* vim: set autowrite expandtab: */

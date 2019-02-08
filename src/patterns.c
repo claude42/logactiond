@@ -54,23 +54,23 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
 
         la_debug("convert_regex(%s)", string);
 
-	size_t len = strlen(string);
-	/* definitely an upper bound */
-	char *result = (char *) xmalloc(len +
-			n_properties * LA_HOST_TOKEN_REPL_LEN + 1);
-	char *result_ptr = result;
-	const char *string_ptr = string;
+        size_t len = strlen(string);
+        /* definitely an upper bound */
+        char *result = (char *) xmalloc(len +
+                        n_properties * LA_HOST_TOKEN_REPL_LEN + 1);
+        char *result_ptr = result;
+        const char *string_ptr = string;
 
-	unsigned int start_pos = 0; /* position after last token */
+        unsigned int start_pos = 0; /* position after last token */
         unsigned int num_host_tokens = 0;
 
-	la_property_t *property = (la_property_t *) property_list->head.succ;
+        la_property_t *property = (la_property_t *) property_list->head.succ;
 
-	while (property->node.succ)
-	{
-		/* copy string before next token */
-		result_ptr = stpncpy(result_ptr, string_ptr, property->pos - start_pos);
-		/* copy corresponding regular expression for token */
+        while (property->node.succ)
+        {
+                /* copy string before next token */
+                result_ptr = stpncpy(result_ptr, string_ptr, property->pos - start_pos);
+                /* copy corresponding regular expression for token */
                 if (property->is_host_property)
                 {
                         num_host_tokens++;
@@ -84,23 +84,23 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
                         result_ptr = stpncpy(result_ptr, LA_TOKEN_REPL, LA_TOKEN_REPL_LEN);
                 }
 
-		start_pos = property->pos + property->length;
-		string_ptr = string + start_pos;
+                start_pos = property->pos + property->length;
+                string_ptr = string + start_pos;
 
-		property = (la_property_t *) property->node.succ;
-	}
+                property = (la_property_t *) property->node.succ;
+        }
 
-	/* Copy remainder of string - only if there's something left.
-	 * Double-check just to bes sure we don't overrun any buffer */
-	if (string_ptr - string < strlen(string))
-	{
-		/* strcpy() ok here because we definitley reserved enough space
-		 */
-		strcpy(result_ptr, string_ptr);
-	}
-	la_debug("convert_regex(%s)=%s", string, result);
+        /* Copy remainder of string - only if there's something left.
+         * Double-check just to bes sure we don't overrun any buffer */
+        if (string_ptr - string < strlen(string))
+        {
+                /* strcpy() ok here because we definitley reserved enough space
+                 */
+                strcpy(result_ptr, string_ptr);
+        }
+        la_debug("convert_regex(%s)=%s", string, result);
 
-	return result; 
+        return result; 
 }
 
 /*
@@ -119,18 +119,18 @@ scan_tokens(kw_list_t *property_list, const char *string)
 
         la_debug("scan_tokens(%s)", string);
 
-	const char *ptr = string;
-	unsigned int subexpression = 0;
-	unsigned int n_tokens = 0;
+        const char *ptr = string;
+        unsigned int subexpression = 0;
+        unsigned int n_tokens = 0;
 
-	if (!property_list || !string)
-		die_hard("No property list or no string submitted!");
+        if (!property_list || !string)
+                die_hard("No property list or no string submitted!");
 
-	while (*ptr) {
-		if (*ptr == '(')
-		{
-			subexpression++;
-		}
+        while (*ptr) {
+                if (*ptr == '(')
+                {
+                        subexpression++;
+                }
                 else if (*ptr == '%')
                 {
                         size_t length = scan_single_token(property_list, ptr,
@@ -142,9 +142,9 @@ scan_tokens(kw_list_t *property_list, const char *string)
                 }
 
                 ptr++; /* also skips over second '%' */
-	}
+        }
 
-	return n_tokens;
+        return n_tokens;
 }
 
 /*
@@ -158,25 +158,25 @@ create_pattern(const char *string_from_configfile, la_rule_t *rule)
 
         la_debug("create_pattern(%s)", string_from_configfile);
 
-	unsigned int n_properties;
+        unsigned int n_properties;
 
-	la_pattern_t *result = (la_pattern_t *) xmalloc(sizeof(la_pattern_t));
-	
-	result->rule = rule;
-	result->properties = create_list();
-	n_properties = scan_tokens(result->properties, string_from_configfile);
-	result->string = convert_regex(string_from_configfile,
-			result->properties, n_properties);
+        la_pattern_t *result = (la_pattern_t *) xmalloc(sizeof(la_pattern_t));
+        
+        result->rule = rule;
+        result->properties = create_list();
+        n_properties = scan_tokens(result->properties, string_from_configfile);
+        result->string = convert_regex(string_from_configfile,
+                        result->properties, n_properties);
 
-	result->regex = (regex_t *) xmalloc(sizeof(regex_t));
-	int r = regcomp(result->regex, result->string, REG_EXTENDED);
-	if (r)
-	{
-		// TODO: improve error handling
-		die_err("Error %d compiling regex: %s!", r, result->string);
-	}
+        result->regex = (regex_t *) xmalloc(sizeof(regex_t));
+        int r = regcomp(result->regex, result->string, REG_EXTENDED);
+        if (r)
+        {
+                // TODO: improve error handling
+                die_err("Error %d compiling regex: %s!", r, result->string);
+        }
 
-	return result;
+        return result;
 }
 
 

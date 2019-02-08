@@ -60,7 +60,7 @@ register_signal_handler(void)
         new_act.sa_flags = 0;
         
         /* TODO: take care of SIGHUP */
-	signal(SIGHUP, SIG_IGN);
+        signal(SIGHUP, SIG_IGN);
 
         sigaction(SIGINT, NULL, &old_act);
         if (old_act.sa_handler != SIG_IGN)
@@ -80,54 +80,54 @@ skeleton_daemon(void)
 {
         la_debug("skeleton_daemon()");
 
-	pid_t pid;
+        pid_t pid;
 
-	/* Fork off the parent process */
-	pid = fork();
+        /* Fork off the parent process */
+        pid = fork();
 
-	/* An error occurred */
-	if (pid < 0)
-		exit(EXIT_FAILURE);
+        /* An error occurred */
+        if (pid < 0)
+                exit(EXIT_FAILURE);
 
-	/* Success: Let the parent terminate */
-	if (pid > 0)
-		exit(EXIT_SUCCESS);
+        /* Success: Let the parent terminate */
+        if (pid > 0)
+                exit(EXIT_SUCCESS);
 
-	/* On success: The child process becomes session leader */
-	if (setsid() < 0)
-		exit(EXIT_FAILURE);
+        /* On success: The child process becomes session leader */
+        if (setsid() < 0)
+                exit(EXIT_FAILURE);
 
-	/* Catch, ignore and handle signals */
-	signal(SIGCHLD, SIG_IGN);
+        /* Catch, ignore and handle signals */
+        signal(SIGCHLD, SIG_IGN);
         register_signal_handler();
 
-	/* Fork off for the second time*/
-		pid = fork();
+        /* Fork off for the second time*/
+                pid = fork();
 
-	/* An error occurred */
-	if (pid < 0)
-		exit(EXIT_FAILURE);
+        /* An error occurred */
+        if (pid < 0)
+                exit(EXIT_FAILURE);
 
-	/* Success: Let the parent terminate */
-	if (pid > 0)
-		exit(EXIT_SUCCESS);
+        /* Success: Let the parent terminate */
+        if (pid > 0)
+                exit(EXIT_SUCCESS);
 
-	/* Set new file permissions */
-	umask(0);
+        /* Set new file permissions */
+        umask(0);
 
-	/* Change the working directory to the root directory */
-	/* or another appropriated directory */
-	chdir(CONF_DIR);
+        /* Change the working directory to the root directory */
+        /* or another appropriated directory */
+        chdir(CONF_DIR);
 
-	/* Close all open file descriptors */
-	int x;
-	for (x = sysconf(_SC_OPEN_MAX); x>=0; x--)
-	{
-		close (x);
-	}
+        /* Close all open file descriptors */
+        int x;
+        for (x = sysconf(_SC_OPEN_MAX); x>=0; x--)
+        {
+                close (x);
+        }
 
-	/* Open the log file */
-	openlog (NULL, 0, LOG_DAEMON);
+        /* Open the log file */
+        openlog (NULL, 0, LOG_DAEMON);
 }
 
 static void
@@ -194,10 +194,10 @@ read_options(int argc, char *argv[])
 int
 main(int argc, char *argv[])
 {
-	int ifd;
-	int wd;
+        int ifd;
+        int wd;
 
-	chdir(CONF_DIR);
+        chdir(CONF_DIR);
 
         read_options(argc, argv);
 
@@ -207,7 +207,7 @@ main(int argc, char *argv[])
                 register_signal_handler();
 
         init_end_queue();
-	init_watching();
+        init_watching();
 
         load_la_config(cfg_filename);
 
