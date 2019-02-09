@@ -48,13 +48,13 @@ assert_rule(la_rule_t *rule)
  * Iterates through all compiled regexs for one rule.
  */
 
-static inline kw_node_t*
+kw_node_t*
 get_pattern_iterator_for_rule(la_rule_t *rule)
 {
         return get_list_iterator(rule->patterns);
 }
 
-static inline la_pattern_t *
+la_pattern_t *
 get_next_pattern_for_rule(kw_node_t **iterator)
 {
         return (la_pattern_t *) get_next_node(iterator);
@@ -171,6 +171,7 @@ static void
 trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
                 const char *host, la_command_t *template)
 {
+#ifndef NOCOMMANDS
         assert_rule(rule); assert_pattern(pattern); assert(host);
         assert_command(template);
 
@@ -200,6 +201,7 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
                 command = create_command_from_template(template, rule, pattern, host);
 
         handle_command_on_trigger_list(command);
+#endif /* NOCOMMANDS */
 }
 
 /*

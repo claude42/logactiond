@@ -89,6 +89,9 @@
 
 #define MAX_NMATCH 20
 
+// buffer size for reading log lines
+#define DEFAULT_LINEBUFFER_SIZE 8192
+
 
 /* Types */
 
@@ -100,6 +103,9 @@ typedef struct la_command_s la_command_t;
 typedef enum la_sourcetype_s { LA_RULE_TYPE_FILE, LA_RULE_TYPE_SYSTEMD } la_sourcetype_t;
 
 typedef enum la_commandtype_s { LA_COMMANDTYPE_BEGIN, LA_COMMANDTYPE_END } la_commandtype_t;
+
+typedef enum la_runtype_s { LA_DAEMON_BACKGROUND, LA_DAEMON_FOREGROUND,
+        LA_UTIL_FOREGROUND } la_runtype_t;
 
 /*
  * bla
@@ -167,7 +173,7 @@ typedef struct la_property_s
 typedef struct la_pattern_s
 {
         kw_node_t node;
-        char *name;
+        unsigned int num;
         la_rule_t *rule;
         const char *string; /* already converted regex, doesn't contain tokens anymore */
         regex_t *regex; /* compiled regex */
@@ -359,9 +365,14 @@ void free_property_list(kw_list_t *list);
 
 void assert_pattern(la_pattern_t *pattern);
 
-la_pattern_t *create_pattern(const char *string_from_configfile, la_rule_t *rule);
+la_pattern_t *create_pattern(const char *string_from_configfile,
+                unsigned int num, la_rule_t *rule);
 
 /* rules.c */
+
+kw_node_t* get_pattern_iterator_for_rule(la_rule_t *rule);
+
+la_pattern_t *get_next_pattern_for_rule(kw_node_t **iterator);
 
 void assert_rule(la_rule_t *rule);
 

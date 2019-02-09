@@ -27,9 +27,6 @@
 
 #include "logactiond.h"
 
-/* Buffer for reading log lines */
-#define DEFAULT_LINEBUFFER_SIZE 8192
-
 static char *linebuffer = NULL;
 size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE;
 
@@ -43,23 +40,6 @@ assert_source(la_source_t *source)
 }
 
 /*
- * If string ends with a newline, replace this by \0
- *
- * line must not be NULL.
- */
-
-static void
-cut_newline(char *line)
-{
-        assert(line);
-
-        size_t len = strlen(line);
-
-        if (line[len-1] == '\n')
-                line[len-1] = '\0';
-}
-
-/*
  * Call handle_log_line_for_rule() for each of the sources rules
  */
 
@@ -68,7 +48,6 @@ handle_log_line(la_source_t *source, char *line)
 {
         assert(line); assert_source(source);
         la_debug("handle_log_line(%s)", line);
-        cut_newline(line);
 
         for (la_rule_t *rule = (la_rule_t *) source->rules->head.succ;
                         rule->node.succ;
@@ -92,6 +71,8 @@ handle_new_content(la_source_t *source)
         if (!linebuffer)
                 linebuffer = (char *) xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
 
+        /* TODO: can't remember why this extra read before the loop could be
+         * necessary?!? */
         ssize_t num_read = getline(&linebuffer, &linebuffer_size, source->file);
         if (num_read==-1)
         {
@@ -134,6 +115,7 @@ watch_source(la_source_t *source, int whence)
         assert_source(source);
         la_debug("watch_source(%s)", source->name);
 
+#ifndef NOWATCH
         source->file = fopen(source->location, "r");
         if (!source->file)
                 die_err("Opening source \"%s\" failed", source->name);
@@ -144,6 +126,7 @@ watch_source(la_source_t *source, int whence)
         watch_source_inotify(source);
 #endif /* HAVE_INOTIFY */
 
+#endif /* NOWATCH */
 }
 
 /*
@@ -156,6 +139,7 @@ unwatch_source(la_source_t *source)
         assert(source);
         la_debug("unwatch_source(%s)", source->name);
 
+#ifndef NOWATCH
         if (fclose(source->file))
                 die_err("Closing source \"%s\" failed", source->name);
         source->file = NULL;
@@ -164,6 +148,7 @@ unwatch_source(la_source_t *source)
         unwatch_source_inotify(source);
 #endif /* HAVE_INOTIFY */
 
+#endif /* NOWATCH */
 }
 
 /*

@@ -37,7 +37,7 @@
 
 char *cfg_filename = NULL;
 char *pid_file = NULL;
-bool run_in_foreground = false;
+la_runtype_t run_type = LA_DAEMON_BACKGROUND;
 unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
 unsigned int id_counter = 0;
 
@@ -167,7 +167,7 @@ read_options(int argc, char *argv[])
                 switch (c)
                 {
                         case 'f': 
-                                run_in_foreground = true;
+                                run_type = LA_DAEMON_FOREGROUND;
                                 break;
                         case 'c':
                                 cfg_filename = optarg;
@@ -238,7 +238,7 @@ main(int argc, char *argv[])
 
         read_options(argc, argv);
 
-        if (!run_in_foreground)
+        if (run_type == LA_DAEMON_BACKGROUND)
                 skeleton_daemon();
         else
                 register_signal_handler();

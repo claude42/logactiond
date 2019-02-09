@@ -344,7 +344,7 @@ load_patterns(la_rule_t *rule, const config_setting_t *rule_def,
         {
                 const char *item = config_setting_get_string_elem(patterns, i);
 
-                la_pattern_t *pattern = create_pattern(item, rule);
+                la_pattern_t *pattern = create_pattern(item, i, rule);
 
                 add_tail(rule->patterns, (kw_node_t *) pattern);
         }
