@@ -29,6 +29,9 @@
 #include <signal.h>
 #include <assert.h>
 #include <getopt.h>
+#if HAVE_INOTIFY
+#include <sys/inotify.h>
+#endif /* HAVE_INOTIFY */
 
 #include "logactiond.h"
 
@@ -189,6 +192,40 @@ read_options(int argc, char *argv[])
 
                 }
         }
+}
+
+/*
+ * Abstract event loop
+ */
+
+void
+watch_forever(void)
+{
+        la_debug("watch_forever()");
+#ifndef NOWATCH
+#if HAVE_INOTIFY
+        watch_forever_inotify();
+#endif /* HAVE_INOTIFY */
+#endif /* NOWATCH */
+}
+
+/*
+ * Do all steps necessary before files can be watched. Depending on the method
+ * used, no such steps might be necessary at all.
+ */
+
+void
+init_watching(void)
+{
+        la_debug("init_watching()");
+
+#ifndef NOWATCH
+#if HAVE_INOTIFY
+        init_watching_inotify();
+#else /* HAVE_INOTIFY */
+        die_hard("Don't have inotify!");
+#endif /* HAVE_INOTIFY */
+#endif /* NOWATCH */
 }
 
 int
