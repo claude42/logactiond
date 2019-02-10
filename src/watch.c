@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <sys/select.h>
 #include <assert.h>
+#include <syslog.h>
 
 #if HAVE_INOTIFY
 #include <sys/inotify.h>

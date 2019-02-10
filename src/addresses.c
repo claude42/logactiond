@@ -39,6 +39,7 @@
 #include <string.h>
 #include <assert.h>
 #include <arpa/inet.h>
+#include <stdlib.h>
 
 #include "logactiond.h"
 #include "nodelist.h"
@@ -46,7 +47,9 @@
 /*
  * From https://stackoverflow.com/questions/7213995/ip-cidr-match-function
  */
-bool cidr_match(struct in_addr addr, struct in_addr net, int prefix) {
+bool
+cidr_match(struct in_addr addr, struct in_addr net, int prefix)
+{
         if (prefix == 0) {
                 // C99 6.5.7 (3): u32 << 32 is undefined behaviour
                 return true;
@@ -55,23 +58,44 @@ bool cidr_match(struct in_addr addr, struct in_addr net, int prefix) {
         return !((addr.s_addr ^ net.s_addr) & htonl(0xFFFFFFFFu << (32 - prefix)));
 }
 
+/*
+ * Convert address to string. Returned string must be freed
+ */
+char *
+addr_to_string(struct in_addr addr)
+{
+        char *result = (char *) xmalloc(INET_ADDRSTRLEN);
+
+        if (!inet_ntop(AF_INET, &addr, result, INET_ADDRSTRLEN))
+                die_err("Invalid IP address!");
+
+        return result;
+}
+
+struct in_addr
+string_to_addr(const char *host)
+{
+        assert(host);
+
+        struct in_addr result;
+
+        if (inet_pton(AF_INET, host, &result) != 1)
+                die_err("Invalid IP address");
+
+        return result;
+}
+
 
 /*
  * Check whether ip address is on ignore list. Returns false if ip==NULL
  */
 
 bool
-address_on_ignore_list(const char *ip)
+address_on_ignore_list(struct in_addr addr)
 {
-        struct in_addr addr;
-
-        if (!ip)
-                return false;
-
-        la_debug("address_on_ignore_list(%s)", ip);
-
-        if (inet_pton(AF_INET, ip, &addr) != 1)
-                die_semantic("Invalid IP address!");
+        char *host = addr_to_string(addr);
+        la_debug("address_on_ignore_list(%s)", host);
+        free(host);
 
         for (la_address_t *address = (la_address_t *) la_config->ignore_addresses->head.succ;
                         address->node.succ;

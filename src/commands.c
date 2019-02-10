@@ -296,7 +296,7 @@ dup_command(la_command_t *command)
 
 la_command_t *
 create_command_from_template(la_command_t *template, la_rule_t *rule,
-                la_pattern_t *pattern, const char *host)
+                la_pattern_t *pattern, struct in_addr addr)
 {
         assert_command(template); assert_rule(rule); assert_pattern(pattern);
         assert_list(pattern->properties);
@@ -309,7 +309,8 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
         result->rule = rule;
         result->pattern = pattern;
         result->pattern_properties = dup_property_list(pattern->properties);
-        result->host = xstrdup(host);
+        result->addr = addr;
+        result->host = addr_to_string(addr);
         result->end_time = result->n_triggers = result->start_time= 0;
 
         return result;
@@ -353,6 +354,7 @@ create_template(la_rule_t *rule, const char *begin_string,
         result->rule = rule;
         result->pattern = NULL;
         result->pattern_properties = NULL;
+        result->addr.s_addr = -1;
         result->host = NULL;
 
         result->duration = duration;

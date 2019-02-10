@@ -201,6 +201,7 @@ typedef struct la_command_s
         la_rule_t *rule;        /* related rule */
         la_pattern_t *pattern;        /* related pattern*/
         kw_list_t *pattern_properties; /* properties from matched pattern */
+        struct in_addr addr;     /* IP address */
         char *host;                /* IP address */
         int duration;                /* duration how long command shall stay active,
                                    -1 if none */
@@ -292,13 +293,17 @@ void unload_la_config(void);
 
 /* addresses.c */
 
-bool address_on_ignore_list(const char *ip);
+struct in_addr string_to_addr(const char *host);
+
+char *addr_to_string(struct in_addr addr);
+
+bool address_on_ignore_list(struct in_addr addr);
 
 la_address_t *create_address(const char *ip);
 
 /* endqueue.c */
 
-la_command_t *find_end_command(la_rule_t *rule, const char *host);
+la_command_t *find_end_command(la_rule_t *rule, struct in_addr addr);
 
 void empty_end_queue(void);
 
@@ -317,7 +322,7 @@ void trigger_end_command(la_command_t *command);
 la_command_t * dup_command(la_command_t *command);
 
 la_command_t * create_command_from_template(la_command_t *template,
-                la_rule_t *rule, la_pattern_t *pattern, const char *host);
+                la_rule_t *rule, la_pattern_t *pattern, struct in_addr addr);
 
 la_command_t *create_template(la_rule_t *rule, const char *begin_string,
                 const char *end_string, int duration);

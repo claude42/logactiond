@@ -26,6 +26,7 @@
 #include <string.h>
 #include <assert.h>
 #include <limits.h>
+#include <arpa/inet.h>
 
 #include <libconfig.h>
 
@@ -44,7 +45,7 @@ pthread_cond_t end_queue_condition = PTHREAD_COND_INITIALIZER;
  */
 
 la_command_t *
-find_end_command(la_rule_t *rule, const char *host)
+find_end_command(la_rule_t *rule, struct in_addr addr)
 {
         assert_rule(rule);
 
@@ -63,13 +64,7 @@ find_end_command(la_rule_t *rule, const char *host)
         {
                 if (command->rule == rule)
                 {
-                        if (!command->host && !host)
-                        {
-                                result = command;
-                                break;
-                        }
-                        else if (command->host && host &&
-                                        !strcmp(command->host, host))
+                        if (command->addr.s_addr == addr.s_addr)
                         {
                                 result = command;
                                 break;
@@ -155,8 +150,6 @@ wait_for_next_end_command(la_command_t *command)
 static void *
 consume_end_queue(void *ptr)
 {
-        la_debug("consume_end_queue()");
-
         la_debug("consume_end_queue(), %u: pthread_mutex_lock()", time(NULL));
         pthread_mutex_lock(&end_queue_mutex);
 

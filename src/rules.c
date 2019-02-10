@@ -89,22 +89,23 @@ add_trigger(la_command_t *command)
  */
 
 static la_command_t *
-find_trigger(la_rule_t *rule, la_command_t *template, const char *host)
+find_trigger(la_rule_t *rule, la_command_t *template, struct in_addr addr)
 {
-        assert_rule(rule); assert_command(template); assert(host);
+        assert_rule(rule); assert_command(template);
 
-        la_debug("find_trigger(%s, %u, %s)", rule->name, template->id, host);
+        if (addr.s_addr == -1)
+                return NULL;
+
+        /* FIXME */
+        //la_debug("find_trigger(%s, %u, %s)", rule->name, template->id, host);
 
         for (la_command_t *command = (la_command_t *) rule->trigger_list->head.succ;
                         command->node.succ;
                         command = (la_command_t *) command->node.succ)
         {
-                if (command->host)
-                {
-                        if ((command->id == template->id) &&
-                                        !strcmp(command->host, host))
-                                return command;
-                }
+                if (command->id == template->id &&
+                                command->addr.s_addr == addr.s_addr)
+                        return command;
         }
 
         return NULL;
@@ -169,9 +170,9 @@ handle_command_on_trigger_list(la_command_t *command)
 
 static void
 trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
-                const char *host, la_command_t *template)
+                struct in_addr addr, la_command_t *template)
 {
-        assert_rule(rule); assert_pattern(pattern); assert(host);
+        assert_rule(rule); assert_pattern(pattern);
         assert_command(template);
 
         la_debug("trigger_single_command(%s)", template->begin_string);
@@ -180,10 +181,12 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
 
         /* First check whether command still active on end_queue. In this
          * case, ignore new command */
-        if (find_end_command(rule, host))
+        if (find_end_command(rule, addr))
         {
+                char *host = addr_to_string(addr);
                 la_log(LOG_INFO, "Host: %s, ignored, command active for rule \"%s\".",
                                         host, rule->name);
+                free(host);
                 return;
         }
 
@@ -193,11 +196,11 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
          */
         // TODO: maybe add "need_host" config parameter. Don't trigger command
         // at all w/o host in this case
-        if (host)
-                command = find_trigger(rule, template, host);
+        command = find_trigger(rule, template, addr);
 
         if (!command)
-                command = create_command_from_template(template, rule, pattern, host);
+                command = create_command_from_template(template, rule,
+                                pattern, addr);
 
         handle_command_on_trigger_list(command);
 }
@@ -218,9 +221,15 @@ trigger_all_commands(la_rule_t *rule, la_pattern_t *pattern)
         la_debug("trigger_all_commands()");
 
         const char *host = get_host_property_value(pattern->properties);
+        /* TODO improve */
+        struct in_addr addr;
+        if (host)
+                addr = string_to_addr(host);
+        else
+                addr.s_addr = -1;
 
         /* Do nothing if on ignore list */
-        if (address_on_ignore_list(host))
+        if (address_on_ignore_list(addr))
         {
                 la_log(LOG_INFO, "Host: %s, always ignored.", host);
                 return;
@@ -230,7 +239,7 @@ trigger_all_commands(la_rule_t *rule, la_pattern_t *pattern)
                         template->node.succ;
                         template = (la_command_t *) template->node.succ)
         {
-                trigger_single_command(rule, pattern, host, template);
+                trigger_single_command(rule, pattern, addr, template);
         }
 }
 
