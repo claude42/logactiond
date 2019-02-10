@@ -67,7 +67,7 @@ const char *
 get_host_property_value(kw_list_t *property_list)
 {
         for (la_property_t *property = ITERATE_PROPERTIES(property_list);
-                        property = NEXT_PROPERTY(property);)
+                        (property = NEXT_PROPERTY(property));)
         {
                 if (property->is_host_property)
                         return property->value;
@@ -90,9 +90,8 @@ get_property_from_property_list(kw_list_t *property_list, const char *name)
         if (!property_list)
                 return NULL;
 
-        la_property_t *result = ITERATE_PROPERTIES(property_list);
-
-        while (result = NEXT_PROPERTY(result)) 
+        for (la_property_t *result = ITERATE_PROPERTIES(property_list);
+                        (result = NEXT_PROPERTY(result));)
         {
                 if (!strcmp(name, result->name))
                         return result;
@@ -118,7 +117,7 @@ get_value_from_property_list(kw_list_t *property_list, la_property_t *property)
                 return NULL;
 
         for (la_property_t *result = ITERATE_PROPERTIES(property_list);
-                        result = NEXT_PROPERTY(result);)
+                        (result = NEXT_PROPERTY(result));)
         {
                 if(!strncmp(property->name, result->name, property->length))
                         return result->value;
@@ -252,7 +251,7 @@ dup_property_list(kw_list_t *list)
         kw_list_t *result = create_list();
 
         for (la_property_t *property = ITERATE_PROPERTIES(list);
-                        property = NEXT_PROPERTY(property);)
+                        (property = NEXT_PROPERTY(property));)
                 add_tail(result, (kw_node_t *) duplicate_property(property));
 
         return result;
@@ -279,10 +278,10 @@ free_property_list(kw_list_t *list)
         {
                 la_property_t *tmp = property;
                 property = NEXT_PROPERTY(property);
-                remove_node((kw_node_t *) tmp);
                 free_property(tmp);
         }
 
+        free(list);
 }
 
 

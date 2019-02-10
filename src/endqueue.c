@@ -58,7 +58,7 @@ find_end_command(la_rule_t *rule, const char *host)
         pthread_mutex_lock(&end_queue_mutex);
 
         for (la_command_t *command = ITERATE_COMMANDS(end_queue);
-                        command = NEXT_COMMAND(command);)
+                        (command = NEXT_COMMAND(command));)
         {
                 if (command->rule == rule)
                 {
@@ -247,7 +247,7 @@ enqueue_end_command(la_command_t *end_command)
 
         la_command_t *tmp;
         for (tmp = ITERATE_COMMANDS(end_queue);
-                        tmp = NEXT_COMMAND(tmp);)
+                        (tmp = NEXT_COMMAND(tmp));)
         {
                 if (end_command->end_time <= tmp->end_time)
                         break;

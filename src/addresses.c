@@ -39,6 +39,7 @@
 #include <string.h>
 #include <assert.h>
 #include <arpa/inet.h>
+#include <stdlib.h>
 
 #include "logactiond.h"
 #include "nodelist.h"
@@ -74,7 +75,7 @@ address_on_ignore_list(const char *ip)
                 die_semantic("Invalid IP address!");
 
         for (la_address_t *address = ITERATE_ADDRESSES(la_config->ignore_addresses);
-                        address = NEXT_ADDRESS(address);)
+                        (address = NEXT_ADDRESS(address));)
         {
                 if (cidr_match(addr, address->addr, address->prefix))
                         return true;
@@ -104,5 +105,30 @@ create_address(const char *ip)
 
         return result;
 }
+
+void
+free_address(la_address_t *address)
+{
+        free(address);
+}
+
+void
+free_address_list(kw_list_t *list)
+{
+        if (!list)
+                return;
+
+        la_address_t *address = ITERATE_ADDRESSES(list);
+
+        while (HAS_NEXT_ADDRESS(address))
+        {
+                la_address_t *tmp = address;
+                address = NEXT_ADDRESS(address);
+                free_address(tmp);
+        }
+
+        free(list);
+}
+
 
 /* vim: set autowrite expandtab: */

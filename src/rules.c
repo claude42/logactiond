@@ -79,7 +79,7 @@ find_trigger(la_rule_t *rule, la_command_t *template, const char *host)
         la_debug("find_trigger(%s, %u, %s)", rule->name, template->id, host);
 
         for (la_command_t *command = ITERATE_COMMANDS(rule->trigger_list);
-                        command = NEXT_COMMAND(command);)
+                        (command = NEXT_COMMAND(command));)
         {
                 if (command->host)
                 {
@@ -91,8 +91,6 @@ find_trigger(la_rule_t *rule, la_command_t *template, const char *host)
 
         return NULL;
 }
-
-/* TODO: definitely should refactor */
 
 /*
  * - Add command to trigger list if not in there yet.
@@ -211,7 +209,7 @@ trigger_all_commands(la_rule_t *rule, la_pattern_t *pattern)
         }
 
         for (la_command_t *template = ITERATE_COMMANDS(rule->begin_commands);
-                        template = NEXT_COMMAND(template);)
+                        (template = NEXT_COMMAND(template));)
         {
                 trigger_single_command(rule, pattern, host, template);
         }
@@ -235,7 +233,7 @@ assign_value_to_properties(kw_list_t *property_list, char *line,
         la_debug("assign_value_to_properties()");
 
         for (la_property_t *property = ITERATE_PROPERTIES(property_list);
-                        property = NEXT_PROPERTY(property);)
+                        (property = NEXT_PROPERTY(property));)
         {
                 property->value = xstrndup(line + pmatch[property->subexpression].rm_so,
                                 pmatch[property->subexpression].rm_eo -
@@ -255,7 +253,7 @@ clear_property_values(kw_list_t *property_list)
         la_debug("clear_property_values()");
 
         for (la_property_t *property = ITERATE_PROPERTIES(property_list);
-                        property = NEXT_PROPERTY(property);)
+                        (property = NEXT_PROPERTY(property));)
         {
                 if (property->value)
                         free(property->value);
@@ -277,7 +275,7 @@ handle_log_line_for_rule(la_rule_t *rule, char *line)
         la_debug("handle_log_line()");
 
         for (la_pattern_t *pattern = ITERATE_PATTERNS(rule->patterns);
-                        pattern = NEXT_PATTERN(pattern);)
+                        (pattern = NEXT_PATTERN(pattern));)
         {
                 /* TODO: make this dynamic based on detected tokens */
                 regmatch_t pmatch[MAX_NMATCH];
@@ -333,6 +331,39 @@ create_rule(char *name, la_source_t *source, int threshold, int period, int
 
         return result;
 }
+
+void
+free_rule(la_rule_t *rule)
+{
+        assert_rule(rule);
+
+        free(rule->name);
+        free_pattern_list(rule->patterns);
+        free_command_list(rule->begin_commands);
+        free_command_list(rule->trigger_list);
+        free_property_list(rule->properties);
+
+        free(rule);
+}
+
+void
+free_rule_list(kw_list_t *list)
+{
+        if (!list)
+                return;
+
+        la_rule_t *rule = ITERATE_RULES(list);
+
+        while (HAS_NEXT_RULE(rule))
+        {
+                la_rule_t *tmp = rule;
+                rule = NEXT_RULE(rule);
+                free_rule(tmp);
+        }
+
+        free(list);
+}
+
 
 
 /* vim: set autowrite expandtab: */

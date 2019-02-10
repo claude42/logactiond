@@ -22,6 +22,7 @@
 #include <sys/select.h>
 #include <syslog.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include <libconfig.h>
 
@@ -50,7 +51,7 @@ handle_log_line(la_source_t *source, char *line)
         la_debug("handle_log_line(%s)", line);
 
         for (la_rule_t *rule = ITERATE_RULES(source->rules);
-                        rule = NEXT_RULE(rule);)
+                        (rule = NEXT_RULE(rule));)
         {
                 handle_log_line_for_rule(rule, line);
         }
@@ -163,10 +164,43 @@ create_source(const char *name, la_sourcetype_t type, const char *location)
         result = (la_source_t *) xmalloc(sizeof(la_source_t));
         result->name = xstrdup(name);
         result->location = xstrdup(location);
+        result->parent_dir = NULL;
         result->type = type;
         result->rules = create_list();
 
         return result;
+}
+
+void
+free_source(la_source_t *source)
+{
+        assert_source(source);
+
+        unwatch_source(source);
+        free(source->name);
+        free(source->location);
+        free(source->parent_dir);
+        free_rule_list(source->rules);
+
+        free(source);
+}
+
+void
+free_source_list(kw_list_t *list)
+{
+        if (!list)
+                return;
+
+        la_source_t *source = ITERATE_SOURCES(list);
+
+        while (HAS_NEXT_SOURCE(source))
+        {
+                la_source_t *tmp = source;
+                source = NEXT_SOURCE(source);
+                free_source(tmp);
+        }
+
+        free(list);
 }
 
 /*

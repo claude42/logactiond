@@ -22,6 +22,7 @@
 #include <string.h>
 #include <syslog.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include <libconfig.h>
 
@@ -62,9 +63,8 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
         unsigned int start_pos = 0; /* position after last token */
         unsigned int num_host_tokens = 0;
 
-        la_property_t *property = ITERATE_PROPERTIES(property_list);
-
-        while (property = NEXT_PROPERTY(property))
+        for (la_property_t *property = ITERATE_PROPERTIES(property_list);
+                        (property = NEXT_PROPERTY(property));)
         {
                 /* copy string before next token */
                 result_ptr = stpncpy(result_ptr, string_ptr, property->pos - start_pos);
@@ -158,7 +158,7 @@ create_pattern(const char *string_from_configfile, unsigned int num,
         unsigned int n_properties;
 
         la_pattern_t *result = (la_pattern_t *) xmalloc(sizeof(la_pattern_t));
-        
+
         result->num = num;
         result->rule = rule;
         result->properties = create_list();
@@ -177,5 +177,35 @@ create_pattern(const char *string_from_configfile, unsigned int num,
         return result;
 }
 
+void
+free_pattern(la_pattern_t *pattern)
+{
+        assert_pattern(pattern);
+
+        free(pattern->string);
+        free(pattern->regex);
+        free_property_list(pattern->properties);
+
+        free(pattern);
+
+}
+
+void
+free_pattern_list(kw_list_t *list)
+{
+        if (!list)
+                return;
+
+        la_pattern_t *pattern = ITERATE_PATTERNS(list);
+
+        while (HAS_NEXT_PATTERN(pattern))
+        {
+                la_pattern_t *tmp = pattern;
+                pattern = NEXT_PATTERN(pattern);
+                free_pattern(tmp);
+        }
+
+        free(list);
+}
 
 /* vim: set autowrite expandtab: */

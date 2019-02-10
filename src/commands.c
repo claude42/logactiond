@@ -138,7 +138,7 @@ convert_command(la_command_t *command, la_commandtype_t type)
         else
                 action_property = ITERATE_PROPERTIES(command->end_properties);
 
-        while (action_property = NEXT_PROPERTY(action_property))
+        while ((action_property = NEXT_PROPERTY(action_property)))
         {
                 /* copy string before next token */
                 result_ptr = stpncpy(result_ptr, string_ptr, action_property->pos - start_pos);
@@ -370,9 +370,26 @@ free_command(la_command_t *command)
         free_property_list(command->end_properties);
         free_property_list(command->pattern_properties);
         free(command->host);
+        free(command);
 }
 
+void
+free_command_list(kw_list_t *list)
+{
+        if (!list)
+                return;
 
+        la_command_t *command = ITERATE_COMMANDS(list);
+
+        while (HAS_NEXT_COMMAND(command))
+        {
+                la_command_t *tmp = command;
+                command = NEXT_COMMAND(command);
+                free_command(tmp);
+        }
+
+        free(list);
+}
 
 
 /* vim: set autowrite expandtab: */
