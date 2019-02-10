@@ -89,6 +89,30 @@
 
 #define MAX_NMATCH 20
 
+// buffer size for reading log lines
+#define DEFAULT_LINEBUFFER_SIZE 8192
+
+/* List macros */
+
+#define ITERATE_ADDRESSES(ADDRESSES) (la_address_t *) &ADDRESSES->head
+#define NEXT_ADDRESS(ADDRESS) (la_address_t *) (ADDRESS->node.succ->succ ? ADDRESS->node.succ : NULL)
+
+#define ITERATE_COMMANDS(COMMANDS) (la_command_t *) &COMMANDS->head
+#define NEXT_COMMAND(COMMAND) (la_command_t *) (COMMAND->node.succ->succ ? COMMAND->node.succ : NULL)
+#define HAS_NEXT_COMMAND(COMMAND) COMMAND->node.succ
+
+#define ITERATE_PATTERNS(PATTERNS) (la_pattern_t *) &PATTERNS->head
+#define NEXT_PATTERN(PATTERN) (la_pattern_t *) (PATTERN->node.succ->succ ? PATTERN->node.succ : NULL)
+
+#define ITERATE_PROPERTIES(PROPERTIES) (la_property_t *) &PROPERTIES->head
+#define NEXT_PROPERTY(PROPERTY) (la_property_t *) (PROPERTY->node.succ->succ ? PROPERTY->node.succ : NULL)
+#define HAS_NEXT_PROPERTY(PROPERTY) PROPERTY->node.succ
+
+#define ITERATE_RULES(RULES) (la_rule_t *) &RULES->head
+#define NEXT_RULE(RULE) (la_rule_t *) (RULE->node.succ->succ ? RULE->node.succ : NULL)
+
+#define ITERATE_SOURCES(SOURCES) (la_source_t *) &SOURCES->head
+#define NEXT_SOURCE(SOURCE) (la_source_t *) (SOURCE->node.succ->succ ? SOURCE->node.succ : NULL)
 
 /* Types */
 
@@ -100,6 +124,9 @@ typedef struct la_command_s la_command_t;
 typedef enum la_sourcetype_s { LA_RULE_TYPE_FILE, LA_RULE_TYPE_SYSTEMD } la_sourcetype_t;
 
 typedef enum la_commandtype_s { LA_COMMANDTYPE_BEGIN, LA_COMMANDTYPE_END } la_commandtype_t;
+
+typedef enum la_runtype_s { LA_DAEMON_BACKGROUND, LA_DAEMON_FOREGROUND,
+        LA_UTIL_FOREGROUND, LA_UTIL_DEBUG } la_runtype_t;
 
 /*
  * bla
@@ -167,7 +194,7 @@ typedef struct la_property_s
 typedef struct la_pattern_s
 {
         kw_node_t node;
-        char *name;
+        unsigned int num;
         la_rule_t *rule;
         const char *string; /* already converted regex, doesn't contain tokens anymore */
         regex_t *regex; /* compiled regex */
@@ -364,7 +391,8 @@ void free_property_list(kw_list_t *list);
 
 void assert_pattern(la_pattern_t *pattern);
 
-la_pattern_t *create_pattern(const char *string_from_configfile, la_rule_t *rule);
+la_pattern_t *create_pattern(const char *string_from_configfile,
+                unsigned int num, la_rule_t *rule);
 
 /* rules.c */
 

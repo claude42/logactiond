@@ -29,12 +29,15 @@
 #include <signal.h>
 #include <assert.h>
 #include <getopt.h>
+#if HAVE_INOTIFY
+#include <sys/inotify.h>
+#endif /* HAVE_INOTIFY */
 
 #include "logactiond.h"
 
 char *cfg_filename = NULL;
 char *pid_file = NULL;
-bool run_in_foreground = false;
+la_runtype_t run_type = LA_DAEMON_BACKGROUND;
 unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
 unsigned int id_counter = 0;
 
@@ -164,7 +167,7 @@ read_options(int argc, char *argv[])
                 switch (c)
                 {
                         case 'f': 
-                                run_in_foreground = true;
+                                run_type = LA_DAEMON_FOREGROUND;
                                 break;
                         case 'c':
                                 cfg_filename = optarg;
@@ -191,6 +194,40 @@ read_options(int argc, char *argv[])
         }
 }
 
+/*
+ * Abstract event loop
+ */
+
+void
+watch_forever(void)
+{
+        la_debug("watch_forever()");
+#ifndef NOWATCH
+#if HAVE_INOTIFY
+        watch_forever_inotify();
+#endif /* HAVE_INOTIFY */
+#endif /* NOWATCH */
+}
+
+/*
+ * Do all steps necessary before files can be watched. Depending on the method
+ * used, no such steps might be necessary at all.
+ */
+
+void
+init_watching(void)
+{
+        la_debug("init_watching()");
+
+#ifndef NOWATCH
+#if HAVE_INOTIFY
+        init_watching_inotify();
+#else /* HAVE_INOTIFY */
+        die_hard("Don't have inotify!");
+#endif /* HAVE_INOTIFY */
+#endif /* NOWATCH */
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -201,7 +238,9 @@ main(int argc, char *argv[])
 
         read_options(argc, argv);
 
-        if (!run_in_foreground)
+        la_log(LOG_INFO, "Starting up " PACKAGE_STRING);
+
+        if (run_type == LA_DAEMON_BACKGROUND)
                 skeleton_daemon();
         else
                 register_signal_handler();

@@ -58,9 +58,8 @@ find_end_command(la_rule_t *rule, struct in_addr addr)
 
         pthread_mutex_lock(&end_queue_mutex);
 
-        for (la_command_t *command = (la_command_t *) end_queue->head.succ;
-                        command->node.succ;
-                        command = (la_command_t *) command->node.succ)
+        for (la_command_t *command = ITERATE_COMMANDS(end_queue);
+                        command = NEXT_COMMAND(command);)
         {
                 if (command->rule == rule)
                 {
@@ -108,13 +107,13 @@ empty_end_queue(void)
 
         pthread_mutex_lock(&end_queue_mutex);
 
-        la_command_t *command = (la_command_t *) end_queue->head.succ;
+        la_command_t *command = ITERATE_COMMANDS(end_queue);
 
-        while (command->node.succ)
+        while (HAS_NEXT_COMMAND(command))
         {
                 la_debug("empty_queue(), removing %s", command->end_string);
                 la_command_t *tmp = command;
-                command = (la_command_t *) command->node.succ;
+                command = NEXT_COMMAND(command);
                 remove_trigger_free_command(tmp);
         }
 
@@ -240,9 +239,8 @@ enqueue_end_command(la_command_t *end_command)
         pthread_mutex_lock(&end_queue_mutex);
 
         la_command_t *tmp;
-        for (tmp = (la_command_t *) end_queue->head.succ;
-                        tmp->node.succ;
-                        tmp = (la_command_t *) tmp->node.succ)
+        for (tmp = ITERATE_COMMANDS(end_queue);
+                        tmp = NEXT_COMMAND(tmp);)
         {
                 if (end_command->end_time <= tmp->end_time)
                         break;

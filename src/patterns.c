@@ -32,8 +32,6 @@ void
 assert_pattern(la_pattern_t *pattern)
 {
         assert(pattern);
-        /* we don't assign a name to patterns (yet) */
-        /* assert(pattern->name); */
         assert_rule(pattern->rule);
         assert_list(pattern->properties);
 }
@@ -64,9 +62,9 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
         unsigned int start_pos = 0; /* position after last token */
         unsigned int num_host_tokens = 0;
 
-        la_property_t *property = (la_property_t *) property_list->head.succ;
+        la_property_t *property = ITERATE_PROPERTIES(property_list);
 
-        while (property->node.succ)
+        while (property = NEXT_PROPERTY(property))
         {
                 /* copy string before next token */
                 result_ptr = stpncpy(result_ptr, string_ptr, property->pos - start_pos);
@@ -86,8 +84,6 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
 
                 start_pos = property->pos + property->length;
                 string_ptr = string + start_pos;
-
-                property = (la_property_t *) property->node.succ;
         }
 
         /* Copy remainder of string - only if there's something left.
@@ -152,7 +148,8 @@ scan_tokens(kw_list_t *property_list, const char *string)
  */
 
 la_pattern_t *
-create_pattern(const char *string_from_configfile, la_rule_t *rule)
+create_pattern(const char *string_from_configfile, unsigned int num,
+                la_rule_t *rule)
 {
         assert(string_from_configfile); assert_rule(rule);
 
@@ -162,6 +159,7 @@ create_pattern(const char *string_from_configfile, la_rule_t *rule)
 
         la_pattern_t *result = (la_pattern_t *) xmalloc(sizeof(la_pattern_t));
         
+        result->num = num;
         result->rule = rule;
         result->properties = create_list();
         n_properties = scan_tokens(result->properties, string_from_configfile);
@@ -169,7 +167,7 @@ create_pattern(const char *string_from_configfile, la_rule_t *rule)
                         result->properties, n_properties);
 
         result->regex = (regex_t *) xmalloc(sizeof(regex_t));
-        int r = regcomp(result->regex, result->string, REG_EXTENDED);
+        int r = regcomp(result->regex, result->string, REG_EXTENDED | REG_NEWLINE);
         if (r)
         {
                 // TODO: improve error handling

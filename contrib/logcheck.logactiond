@@ -1,3 +1,4 @@
+^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Starting up logactiond [[:digit:]]\.[[:digit:]]$
 ^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Loading configuration from ".*"\.$
 ^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Initializing rule "[^[:space:]]+" for source "[^[:space:]]+"\.$
 ^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Shutting down rule "[^[:space:]]+"\.$

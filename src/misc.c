@@ -28,26 +28,31 @@
 
 #include "logactiond.h"
 
-extern bool run_in_foreground;
+extern la_runtype_t run_type;
 
 static void
 log_message(int priority, char *fmt, va_list gp, char *add)
 {
-        if (priority >= log_level)
+        if (priority >= log_level ||
+                        (run_type == LA_UTIL_FOREGROUND && priority >= LOG_INFO))
                 return;
 
-        if (run_in_foreground)
+        switch (run_type)
         {
-                fprintf(stderr, "<%u>", priority);
-                vfprintf(stderr, fmt, gp);
-                if (add)
-                        fprintf(stderr, ": %s", add);
-                fprintf(stderr, "\n");
-        }
-        else
-        {
-                vsyslog(priority, fmt, gp);
-                // FIXME: must print "add" as well
+                case LA_DAEMON_BACKGROUND:
+                        vsyslog(priority, fmt, gp);
+                        // FIXME: must print "add" as well
+                        break;
+                case LA_DAEMON_FOREGROUND:
+                        fprintf(stderr, "<%u>", priority);
+                        /* intended fall through! */
+                case LA_UTIL_FOREGROUND:
+                case LA_UTIL_DEBUG:
+                        vfprintf(stderr, fmt, gp);
+                        if (add)
+                                fprintf(stderr, ": %s", add);
+                        fprintf(stderr, "\n");
+                        break;
         }
 }
 

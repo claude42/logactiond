@@ -68,13 +68,6 @@ check_for_special_names(la_command_t *command, la_property_t *action_property)
                         return command->rule->source->name;
         }
 
-        /* TODO: pattern names are not yet stored
-        if (command->pattern)
-        {
-                if (!strcmp(action_property->name, LA_PATTERNNAME_TOKEN))
-                        return command->pattern->name;
-        }*/
-
         return NULL;
 }
 
@@ -141,11 +134,11 @@ convert_command(la_command_t *command, la_commandtype_t type)
         la_property_t *action_property;
 
         if (type == LA_COMMANDTYPE_BEGIN)
-                action_property = (la_property_t *) command->begin_properties->head.succ;
+                action_property = ITERATE_PROPERTIES(command->begin_properties);
         else
-                action_property = (la_property_t *) command->end_properties->head.succ;
+                action_property = ITERATE_PROPERTIES(command->end_properties);
 
-        while (action_property->node.succ)
+        while (action_property = NEXT_PROPERTY(action_property))
         {
                 /* copy string before next token */
                 result_ptr = stpncpy(result_ptr, string_ptr, action_property->pos - start_pos);
@@ -163,8 +156,6 @@ convert_command(la_command_t *command, la_commandtype_t type)
 
                 start_pos = action_property->pos + action_property->length;
                 string_ptr = source_string + start_pos;
-
-                action_property = (la_property_t *) action_property->node.succ;
         }
 
         /* Copy remainder of string - only if there's something left.
@@ -188,6 +179,7 @@ trigger_command(la_command_t *command)
         la_debug("trigger_command(%s, %d)", command->begin_string,
                         command->duration);
 
+#ifndef NOCOMMANDS
         /* TODO: can't we convert_command() earlier? */
         exec_command(convert_command(command, LA_COMMANDTYPE_BEGIN));
 
@@ -195,6 +187,7 @@ trigger_command(la_command_t *command)
                 enqueue_end_command(command);
         else
                 free_command(command);
+#endif /* NOCOMMANDS */
 }
 
 void
