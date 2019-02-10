@@ -76,6 +76,7 @@ read_options(int argc, char *argv[])
                                 break;
                         case 'd': 
                                 log_level++;
+                                run_type = LA_UTIL_DEBUG;
                                 if (optarg && *optarg == 'd')
                                         log_level++;
                                 break;
@@ -102,10 +103,8 @@ next_line(la_rule_t *rule, char *line)
 
         la_debug("next_line(%s)", line);
 
-        kw_node_t *i = get_pattern_iterator_for_rule(rule);
-        la_pattern_t *pattern;
-
-        while ((pattern = get_next_pattern_for_rule(&i)))
+        for (la_pattern_t *pattern = ITERATE_PATTERNS(rule->patterns);
+                        pattern = NEXT_PATTERN(pattern);)
         {
                 la_debug("pattern %u: %s\n", pattern->num, pattern->string);
                 /* TODO: make this dynamic based on detected tokens */
@@ -122,13 +121,11 @@ next_line(la_rule_t *rule, char *line)
 static void
 iterate_through_all_rules(char *line)
 {
-        for (la_source_t *source = (la_source_t *) la_config->sources->head.succ;
-                        source->node.succ;
-                        source = (la_source_t *) source->node.succ)
+        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+                        source = NEXT_SOURCE(source);)
         {
-                for (la_rule_t *rule = (la_rule_t *) source->rules->head.succ;
-                                rule->node.succ;
-                                rule = (la_rule_t *) rule->node.succ)
+                for (la_rule_t *rule = ITERATE_RULES(source->rules);
+                                rule = NEXT_RULE(rule);)
                 {
                         next_line(rule, line);
                 }
@@ -138,13 +135,11 @@ iterate_through_all_rules(char *line)
 static la_rule_t *
 find_rule(const char *rule_name)
 {
-        for (la_source_t *source = (la_source_t *) la_config->sources->head.succ;
-                        source->node.succ;
-                        source = (la_source_t *) source->node.succ)
+        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+                        source = NEXT_SOURCE(source);)
         {
-                for (la_rule_t *rule = (la_rule_t *) source->rules->head.succ;
-                                rule->node.succ;
-                                rule = (la_rule_t *) rule->node.succ)
+                for (la_rule_t *rule = ITERATE_RULES(source->rules);
+                                rule = NEXT_RULE(rule);)
                 {
                         if (!strcmp(rule_name, rule->name))
                         {
@@ -183,6 +178,7 @@ main(int argc, char *argv[])
         la_rule_t *one_rule = NULL;
         if (rule_name)
                 one_rule = find_rule(rule_name);
+        
 
         char *linebuffer = (char *) xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
         size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE*sizeof(char);

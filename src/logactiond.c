@@ -238,6 +238,8 @@ main(int argc, char *argv[])
 
         read_options(argc, argv);
 
+        la_log(LOG_INFO, "Starting up " PACKAGE_STRING);
+
         if (run_type == LA_DAEMON_BACKGROUND)
                 skeleton_daemon();
         else

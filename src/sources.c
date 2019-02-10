@@ -49,9 +49,8 @@ handle_log_line(la_source_t *source, char *line)
         assert(line); assert_source(source);
         la_debug("handle_log_line(%s)", line);
 
-        for (la_rule_t *rule = (la_rule_t *) source->rules->head.succ;
-                        rule->node.succ;
-                        rule = (la_rule_t *) rule->node.succ)
+        for (la_rule_t *rule = ITERATE_RULES(source->rules);
+                        rule = NEXT_RULE(rule);)
         {
                 handle_log_line_for_rule(rule, line);
         }

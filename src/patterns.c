@@ -62,9 +62,9 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
         unsigned int start_pos = 0; /* position after last token */
         unsigned int num_host_tokens = 0;
 
-        la_property_t *property = (la_property_t *) property_list->head.succ;
+        la_property_t *property = ITERATE_PROPERTIES(property_list);
 
-        while (property->node.succ)
+        while (property = NEXT_PROPERTY(property))
         {
                 /* copy string before next token */
                 result_ptr = stpncpy(result_ptr, string_ptr, property->pos - start_pos);
@@ -84,8 +84,6 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
 
                 start_pos = property->pos + property->length;
                 string_ptr = string + start_pos;
-
-                property = (la_property_t *) property->node.succ;
         }
 
         /* Copy remainder of string - only if there's something left.
