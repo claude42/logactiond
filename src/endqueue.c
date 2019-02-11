@@ -108,9 +108,7 @@ wait_for_next_end_command(la_command_t *command)
         if (command->end_time == INT_MAX)
         {
                 /* next command is a shutdown command, wait indefinitely */
-                la_debug("consume %u INT_MAX, pthread_cond_wait()", time(NULL));
                 pthread_cond_wait(&end_queue_condition, &end_queue_mutex);
-                la_debug("consume %u INT_MAX woke up", time(NULL));
         }
         else
         {
@@ -118,18 +116,14 @@ wait_for_next_end_command(la_command_t *command)
                 struct timespec wait_interval;
                 wait_interval.tv_nsec = 0;
                 wait_interval.tv_sec = command->end_time;
-                la_debug("consume %u pthread_cond_timedwait(%u)",
-                                time(NULL), wait_interval.tv_sec);
                 pthread_cond_timedwait(&end_queue_condition, &end_queue_mutex,
                                 &wait_interval);
-                la_debug("consume %u woke up", time(NULL));
         }
 }
 
 static void *
 consume_end_queue(void *ptr)
 {
-        la_debug("consume_end_queue(), %u: pthread_mutex_lock()", time(NULL));
         pthread_mutex_lock(&end_queue_mutex);
 
         for (;;)
@@ -143,9 +137,7 @@ consume_end_queue(void *ptr)
                 if (is_list_empty(end_queue))
                 {
                         /* list is empty, wait indefinitely */
-                        la_debug("consume_end_queue(), %u EMPTY pthread_cond_wait()", now);
                         pthread_cond_wait(&end_queue_condition, &end_queue_mutex);
-                        la_debug("consume_end_queue(), %u EMPTY woke up", now);
                 }
                 else if (now < command->end_time)
                 {
@@ -157,7 +149,6 @@ consume_end_queue(void *ptr)
                 {
                         /* end_time of next command reached, remove it
                          * and don't sleep but immediately look for more */
-                        la_debug("consume %u remove_trigger_free_command()", now);
                         remove_node((kw_node_t *) command);
                         trigger_end_command(command);
                         free_command(command);
@@ -217,9 +208,10 @@ enqueue_end_command(la_command_t *end_command)
 
         set_end_time(end_command);
 
-        la_debug("enqueue %u pthread_mutex_lock()", time(NULL));
         pthread_mutex_lock(&end_queue_mutex);
 
+        /* We don't use the ITERATE_COMMANDS, NEXT_COMMAND here for a
+         * reason... */
         la_command_t *tmp;
         for (tmp = (la_command_t *) end_queue->head.succ;
                         tmp->node.succ;
@@ -229,12 +221,9 @@ enqueue_end_command(la_command_t *end_command)
                         break;
         }
 
-        la_debug("enqueue %u insert_node_before()", time(NULL));
         insert_node_before((kw_node_t *) tmp, (kw_node_t *) end_command);
-        la_debug("enqueue %u pthread_cond_signal()", time(NULL));
         pthread_cond_signal(&end_queue_condition);
 
-        la_debug("enqueue %u pthread_mutex_unlock()", time(NULL));
         pthread_mutex_unlock(&end_queue_mutex);
 }
 
