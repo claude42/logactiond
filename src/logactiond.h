@@ -96,23 +96,42 @@
 
 #define ITERATE_ADDRESSES(ADDRESSES) (la_address_t *) &ADDRESSES->head
 #define NEXT_ADDRESS(ADDRESS) (la_address_t *) (ADDRESS->node.succ->succ ? ADDRESS->node.succ : NULL)
+#define HAS_NEXT_ADDRESS(ADDRESS) ADDRESS->node.succ
+#define REM_ADDRESSES_HEAD(ADDRESSES) (la_address_t *) rem_head(ADDRESSES)
 
 #define ITERATE_COMMANDS(COMMANDS) (la_command_t *) &COMMANDS->head
 #define NEXT_COMMAND(COMMAND) (la_command_t *) (COMMAND->node.succ->succ ? COMMAND->node.succ : NULL)
 #define HAS_NEXT_COMMAND(COMMAND) COMMAND->node.succ
+#define REM_COMMANDS_HEAD(COMMANDS) (la_command_t *) rem_head(COMMANDS)
 
 #define ITERATE_PATTERNS(PATTERNS) (la_pattern_t *) &PATTERNS->head
 #define NEXT_PATTERN(PATTERN) (la_pattern_t *) (PATTERN->node.succ->succ ? PATTERN->node.succ : NULL)
+#define HAS_NEXT_PATTERN(PATTERN) PATTERN->node.succ
+#define REM_PATTERNS_HEAD(PATTERNS) (la_pattern_t *) rem_head(PATTERNS)
 
 #define ITERATE_PROPERTIES(PROPERTIES) (la_property_t *) &PROPERTIES->head
 #define NEXT_PROPERTY(PROPERTY) (la_property_t *) (PROPERTY->node.succ->succ ? PROPERTY->node.succ : NULL)
 #define HAS_NEXT_PROPERTY(PROPERTY) PROPERTY->node.succ
+#define REM_PROPERTIES_HEAD(PROPERTIES) (la_property_t *) rem_head(PROPERTIES)
 
 #define ITERATE_RULES(RULES) (la_rule_t *) &RULES->head
 #define NEXT_RULE(RULE) (la_rule_t *) (RULE->node.succ->succ ? RULE->node.succ : NULL)
+#define HAS_NEXT_RULE(RULE) RULE->node.succ
+#define REM_RULES_HEAD(RULES) (la_rule_t *) rem_head(RULES)
 
 #define ITERATE_SOURCES(SOURCES) (la_source_t *) &SOURCES->head
 #define NEXT_SOURCE(SOURCE) (la_source_t *) (SOURCE->node.succ->succ ? SOURCE->node.succ : NULL)
+#define HAS_NEXT_SOURCE(SOURCE) SOURCE->node.succ
+#define REM_SOURCES_HEAD(SOURCES) (la_source_t *) rem_head(SOURCES)
+
+/* assertions */
+
+#define assert_ffl(expr, func, file, line) ((expr) ? (void)(0) : die_hard("Jo %s, %s, %u", func, file, line))
+
+#define assert_command(COMMAND) assert_command_ffl(COMMAND, __func__, __FILE__, __LINE__)
+#define assert_rule(RULE) assert_rule_ffl(RULE, __func__, __FILE__, __LINE__)
+#define assert_source(SOURCE) assert_source_ffl(SOURCE, __func__, __FILE__, __LINE__)
+#define assert_pattern(PATTERN) assert_pattern_ffl(PATTERN, __func__, __FILE__, __LINE__)
 
 /* Types */
 
@@ -196,7 +215,7 @@ typedef struct la_pattern_s
         kw_node_t node;
         unsigned int num;
         la_rule_t *rule;
-        const char *string; /* already converted regex, doesn't contain tokens anymore */
+        char *string; /* already converted regex, doesn't contain tokens anymore */
         regex_t *regex; /* compiled regex */
         kw_list_t *properties; /* list of la_property_t */
 } la_pattern_t;
@@ -250,12 +269,12 @@ typedef struct la_source_s
 {
         kw_node_t node;
         /* Name of source in config file - strdup()d */
-        const char *name;
+        char *name;
         la_sourcetype_t type;
         /* Filename (or equivalent) - strdup()d */
-        const char *location;
+        char *location;
         /* Parent dir of log file - currently only used for inotify */
-        const char *parent_dir;
+        char *parent_dir;
         /* Rules assigned to log file */
         kw_list_t *rules;
         /* File handle for log file */
@@ -320,6 +339,10 @@ void unload_la_config(void);
 
 /* addresses.c */
 
+void free_address(la_address_t *address);
+
+void free_address_list(kw_list_t *list);
+
 struct in_addr string_to_addr(const char *host);
 
 char *addr_to_string(struct in_addr addr);
@@ -340,7 +363,7 @@ void init_end_queue(void);
 
 /* commands.c */
 
-void assert_command(la_command_t *command);
+void assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned int line);
 
 void trigger_command(la_command_t *command);
 
@@ -355,6 +378,8 @@ la_command_t *create_template(la_rule_t *rule, const char *begin_string,
                 const char *end_string, int duration);
 
 void free_command(la_command_t *command);
+
+void free_command_list(kw_list_t *list);
 
 /* properties.c */
 
@@ -389,23 +414,31 @@ void free_property_list(kw_list_t *list);
 
 /* patterns.c */
 
-void assert_pattern(la_pattern_t *pattern);
+void assert_pattern_ffl(la_pattern_t *pattern, const char *func, char *file, unsigned int line);
 
 la_pattern_t *create_pattern(const char *string_from_configfile,
                 unsigned int num, la_rule_t *rule);
 
+void free_pattern(la_pattern_t *pattern);
+
+void free_pattern_list(kw_list_t *list);
+
 /* rules.c */
 
-void assert_rule(la_rule_t *rule);
+void assert_rule_ffl(la_rule_t *rule, const char *func, char *file, unsigned int line);
 
 void handle_log_line_for_rule(la_rule_t *rule, char *line);
 
 la_rule_t * create_rule(char *name, la_source_t *source, int threshold,
                 int period, int duration);
 
+void free_rule(la_rule_t *rule);
+
+void free_rule_list(kw_list_t *list);
+
 /* sources.c */
 
-void assert_source(la_source_t *source);
+void assert_source_ffl(la_source_t *source, const char *func, char *file, unsigned int line);
 
 void unwatch_source(la_source_t *source);
 
@@ -414,6 +447,10 @@ void watch_source(la_source_t *source, int whence);
 la_source_t *find_source_by_location(const char *location);
 
 la_source_t *create_source(const char *name, la_sourcetype_t type, const char *location);
+
+void free_source(la_source_t *source);
+
+void free_source_list(kw_list_t *list);
 
 /* watch.c */
 

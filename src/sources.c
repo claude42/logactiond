@@ -22,6 +22,7 @@
 #include <sys/select.h>
 #include <syslog.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include <libconfig.h>
 
@@ -31,12 +32,15 @@ static char *linebuffer = NULL;
 size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE;
 
 void
-assert_source(la_source_t *source)
+assert_source_ffl(la_source_t *source, const char *func, char *file, unsigned int line)
 {
-        assert(source);
-        assert(source->name);
-        assert(source->location);
-        assert_list(source->rules);
+        if (!source)
+                die_hard("%s:%u: %s: Assertion 'source' failed. ", file, line, func);
+        if (!source->name)
+                die_hard("%s:%u: %s: Assertion 'source->name' failed. ", file, line, func);
+        if (!source->location)
+                die_hard("%s:%u: %s: Assertion 'source->location' failed. ", file, line, func);
+        assert_list_ffl(source->rules, func, file, line);
 }
 
 /*
@@ -50,7 +54,7 @@ handle_log_line(la_source_t *source, char *line)
         la_debug("handle_log_line(%s)", line);
 
         for (la_rule_t *rule = ITERATE_RULES(source->rules);
-                        rule = NEXT_RULE(rule);)
+                        (rule = NEXT_RULE(rule));)
         {
                 handle_log_line_for_rule(rule, line);
         }
@@ -163,10 +167,40 @@ create_source(const char *name, la_sourcetype_t type, const char *location)
         result = (la_source_t *) xmalloc(sizeof(la_source_t));
         result->name = xstrdup(name);
         result->location = xstrdup(location);
+        result->parent_dir = NULL;
         result->type = type;
         result->rules = create_list();
 
         return result;
+}
+
+void
+free_source(la_source_t *source)
+{
+        assert_source(source);
+
+        unwatch_source(source);
+
+        free_rule_list(source->rules);
+
+        free(source->name);
+        free(source->location);
+        free(source->parent_dir);
+
+        free(source);
+}
+
+void
+free_source_list(kw_list_t *list)
+{
+        if (!list)
+                return;
+
+        for (la_source_t *tmp;
+                        (tmp = REM_SOURCES_HEAD(list));)
+                free_source(tmp);
+
+        free(list);
 }
 
 /*

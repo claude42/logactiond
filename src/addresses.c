@@ -98,7 +98,7 @@ address_on_ignore_list(struct in_addr addr)
         free(host);
 
         for (la_address_t *address = ITERATE_ADDRESSES(la_config->ignore_addresses);
-                        address = NEXT_ADDRESS(address);)
+                        (address = NEXT_ADDRESS(address));)
         {
                 if (cidr_match(addr, address->addr, address->prefix))
                         return true;
@@ -128,5 +128,25 @@ create_address(const char *ip)
 
         return result;
 }
+
+void
+free_address(la_address_t *address)
+{
+        free(address);
+}
+
+void
+free_address_list(kw_list_t *list)
+{
+        if (!list)
+                return;
+
+        for (la_address_t *tmp;
+                        (tmp = REM_ADDRESSES_HEAD(list));)
+                free_address(tmp);
+
+        free(list);
+}
+
 
 /* vim: set autowrite expandtab: */

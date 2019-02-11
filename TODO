@@ -17,3 +17,4 @@ TODOs in no particular order
 * Make "make distcheck work"
 * die correctly with threads (join...)
 * better NDEBUG support for la_debug()
+* remove la_debug()s from endqueue.c

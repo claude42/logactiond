@@ -618,7 +618,11 @@ unload_la_config(void)
 {
         la_debug("unload_la_config()");
 
-        config_destroy(&la_config->config_file);
+        assert (la_config);
+
+        free_source_list(la_config->sources);
+        free_property_list(la_config->default_properties);
+        free_address_list(la_config->ignore_addresses);
 }
 
 /*

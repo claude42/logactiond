@@ -26,29 +26,40 @@
 #include "logactiond.h"
 
 void
-assert_node(kw_node_t *node)
+assert_node_ffl(kw_node_t *node, const char *func, char *file, unsigned int line)
 {
-        assert(node->succ || node->pred);
-
-        assert (node->succ != node->pred);
-
+        if (!(node->succ || node->pred))
+                die_hard("%s:%u: %s: Assertion 'node->succ || node->pred' failed.",
+                                file, line, func);
+        if (!(node->succ != node->pred))
+                die_hard("%s:%u: %s: Assertion 'node->succ != node->pred' failed.",
+                                file, line, func);
         if (node->pred)
-                assert (node->pred->succ == node);
+                if (!(node->pred->succ == node))
+                        die_hard("%s:%u: %s: Assertion 'node->pred->succ == node' failed.",
+                                        file, line, func);
 
         if (node->succ)
-                assert (node->succ->pred == node);
+                if (!(node->succ->pred == node))
+                        die_hard("%s:%u: %s: Assertion 'node->succ->pred == node' failed.",
+                                        file, line, func);
 }
 
 void
-assert_list(kw_list_t *list)
+assert_list_ffl(kw_list_t *list, const char *func, char *file, unsigned int line)
 {
-        assert(list);
-        assert(list->head.succ && list->tail.pred);
-        assert(!list->head.pred && !list->tail.succ);
+        if (!list)
+                die_hard("%s:%u: %s: Assertion 'list' failed.", file, line, func);
+        if (!(list->head.succ && list->tail.pred))
+                die_hard("%s:%u: %s: Assertion 'list->head.succ && "
+                                "list->tail.pred' failed.", file, line, func);
+        if (!(!list->head.pred && !list->tail.succ))
+                die_hard("%s:%u: %s: Assertion '!list->head.pred && "
+                                "!list->tail.succ' failed.", file, line, func);
 
         for (kw_node_t *node = list->head.succ; node->succ; node = node->succ)
         {
-                assert_node(node);
+                assert_node_ffl(node, func, file, line);
         }
 }
 

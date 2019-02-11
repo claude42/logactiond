@@ -160,7 +160,7 @@ watched_file_created(la_source_t *source)
 {
         assert_source(source);
 
-        la_debug("watched_file_created(%s)", source->name);
+        la_log(LOG_INFO, "watched_file_created(%s)", source->name);
 
         /* unwatch not necessary in case of a previous IN_DELETE */
         if (source->file)
@@ -174,7 +174,7 @@ watched_file_moved_to(la_source_t *source)
 {
         assert_source(source);
 
-        la_debug("watched_file_moved_to(%s)", source->name);
+        la_log(LOG_INFO, "watched_file_moved_to(%s)", source->name);
 
         /* unwatch not necessary in case of a previous IN_DELETE */
         if (source->file)
@@ -189,7 +189,7 @@ watched_file_deleted(la_source_t *source)
 {
         assert_source(source);
 
-        la_debug("watched_file_deleted(%s)", source->name);
+        la_log(LOG_INFO, "watched_file_deleted(%s)", source->name);
 
         unwatch_source(source);
 }

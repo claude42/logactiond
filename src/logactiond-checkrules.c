@@ -104,7 +104,7 @@ next_line(la_rule_t *rule, char *line)
         la_debug("next_line(%s)", line);
 
         for (la_pattern_t *pattern = ITERATE_PATTERNS(rule->patterns);
-                        pattern = NEXT_PATTERN(pattern);)
+                        (pattern = NEXT_PATTERN(pattern));)
         {
                 la_debug("pattern %u: %s\n", pattern->num, pattern->string);
                 /* TODO: make this dynamic based on detected tokens */
@@ -122,10 +122,10 @@ static void
 iterate_through_all_rules(char *line)
 {
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
-                        source = NEXT_SOURCE(source);)
+                        (source = NEXT_SOURCE(source));)
         {
                 for (la_rule_t *rule = ITERATE_RULES(source->rules);
-                                rule = NEXT_RULE(rule);)
+                                (rule = NEXT_RULE(rule));)
                 {
                         next_line(rule, line);
                 }
@@ -136,10 +136,10 @@ static la_rule_t *
 find_rule(const char *rule_name)
 {
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
-                        source = NEXT_SOURCE(source);)
+                        (source = NEXT_SOURCE(source));)
         {
                 for (la_rule_t *rule = ITERATE_RULES(source->rules);
-                                rule = NEXT_RULE(rule);)
+                                (rule = NEXT_RULE(rule));)
                 {
                         if (!strcmp(rule_name, rule->name))
                         {

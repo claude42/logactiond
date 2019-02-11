@@ -22,6 +22,7 @@
 #include <string.h>
 #include <syslog.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include <libconfig.h>
 
@@ -29,11 +30,12 @@
 #include "nodelist.h"
 
 void
-assert_pattern(la_pattern_t *pattern)
+assert_pattern_ffl(la_pattern_t *pattern, const char *func, char *file, unsigned int line)
 {
-        assert(pattern);
-        assert_rule(pattern->rule);
-        assert_list(pattern->properties);
+        if (!pattern)
+                die_hard("%s:%u: %s: Assertion 'pattern' failed. ", file, line, func);
+        assert_rule_ffl(pattern->rule, func, file, line);
+        assert_list_ffl(pattern->properties, func, file, line);
 }
 
 /* TODO: refactor */
@@ -62,9 +64,8 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
         unsigned int start_pos = 0; /* position after last token */
         unsigned int num_host_tokens = 0;
 
-        la_property_t *property = ITERATE_PROPERTIES(property_list);
-
-        while (property = NEXT_PROPERTY(property))
+        for (la_property_t *property = ITERATE_PROPERTIES(property_list);
+                        (property = NEXT_PROPERTY(property));)
         {
                 /* copy string before next token */
                 result_ptr = stpncpy(result_ptr, string_ptr, property->pos - start_pos);
@@ -158,7 +159,7 @@ create_pattern(const char *string_from_configfile, unsigned int num,
         unsigned int n_properties;
 
         la_pattern_t *result = (la_pattern_t *) xmalloc(sizeof(la_pattern_t));
-        
+
         result->num = num;
         result->rule = rule;
         result->properties = create_list();
@@ -177,5 +178,31 @@ create_pattern(const char *string_from_configfile, unsigned int num,
         return result;
 }
 
+void
+free_pattern(la_pattern_t *pattern)
+{
+        assert_pattern(pattern);
+
+        free_property_list(pattern->properties);
+
+        free(pattern->string);
+        free(pattern->regex);
+
+        free(pattern);
+
+}
+
+void
+free_pattern_list(kw_list_t *list)
+{
+        if (!list)
+                return;
+
+        for (la_pattern_t *tmp;
+                        (tmp = REM_PATTERNS_HEAD(list));)
+                free_pattern(tmp);
+
+        free(list);
+}
 
 /* vim: set autowrite expandtab: */

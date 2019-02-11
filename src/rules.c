@@ -32,15 +32,18 @@
 /* FIXME: trigger_list should definitely be a hash */
 
 void
-assert_rule(la_rule_t *rule)
+assert_rule_ffl(la_rule_t *rule, const char *func, char *file, unsigned int line)
 {
-        assert(rule);
-        assert(rule->name);
-        assert(rule->source);
-        assert_list(rule->patterns);
-        assert_list(rule->begin_commands);
-        assert_list(rule->trigger_list);
-        assert_list(rule->properties);
+        if (!rule)
+                die_hard("%s:%u: %s: Assertion 'rule' failed. ", file, line, func);
+        if (!rule->name)
+                die_hard("%s:%u: %s: Assertion 'rule->name' failed. ", file, line, func);
+        if (!rule->source)
+                assert_source_ffl(rule->source, func, file, line);
+        assert_list_ffl(rule->patterns, func, file, line);
+        assert_list_ffl(rule->begin_commands, func, file, line);
+        assert_list_ffl(rule->trigger_list, func, file, line);
+        assert_list_ffl(rule->properties, func, file, line);
 }
 
 /*
@@ -83,7 +86,7 @@ find_trigger(la_rule_t *rule, la_command_t *template, struct in_addr addr)
                         addr_to_string(addr));
 
         for (la_command_t *command = ITERATE_COMMANDS(rule->trigger_list);
-                        command = NEXT_COMMAND(command);)
+                        (command = NEXT_COMMAND(command));)
         {
                 if (command->id == template->id &&
                                 command->addr.s_addr == addr.s_addr)
@@ -92,8 +95,6 @@ find_trigger(la_rule_t *rule, la_command_t *template, struct in_addr addr)
 
         return NULL;
 }
-
-/* TODO: definitely should refactor */
 
 /*
  * - Add command to trigger list if not in there yet.
@@ -220,7 +221,7 @@ trigger_all_commands(la_rule_t *rule, la_pattern_t *pattern)
         }
 
         for (la_command_t *template = ITERATE_COMMANDS(rule->begin_commands);
-                        template = NEXT_COMMAND(template);)
+                        (template = NEXT_COMMAND(template));)
         {
                 trigger_single_command(rule, pattern, addr, template);
         }
@@ -244,7 +245,7 @@ assign_value_to_properties(kw_list_t *property_list, char *line,
         la_debug("assign_value_to_properties()");
 
         for (la_property_t *property = ITERATE_PROPERTIES(property_list);
-                        property = NEXT_PROPERTY(property);)
+                        (property = NEXT_PROPERTY(property));)
         {
                 property->value = xstrndup(line + pmatch[property->subexpression].rm_so,
                                 pmatch[property->subexpression].rm_eo -
@@ -264,7 +265,7 @@ clear_property_values(kw_list_t *property_list)
         la_debug("clear_property_values()");
 
         for (la_property_t *property = ITERATE_PROPERTIES(property_list);
-                        property = NEXT_PROPERTY(property);)
+                        (property = NEXT_PROPERTY(property));)
         {
                 if (property->value)
                         free(property->value);
@@ -286,7 +287,7 @@ handle_log_line_for_rule(la_rule_t *rule, char *line)
         la_debug("handle_log_line()");
 
         for (la_pattern_t *pattern = ITERATE_PATTERNS(rule->patterns);
-                        pattern = NEXT_PATTERN(pattern);)
+                        (pattern = NEXT_PATTERN(pattern));)
         {
                 /* TODO: make this dynamic based on detected tokens */
                 regmatch_t pmatch[MAX_NMATCH];
@@ -342,6 +343,35 @@ create_rule(char *name, la_source_t *source, int threshold, int period, int
 
         return result;
 }
+
+void
+free_rule(la_rule_t *rule)
+{
+        assert_rule(rule);
+
+        free_pattern_list(rule->patterns);
+        free_command_list(rule->begin_commands);
+        free_command_list(rule->trigger_list);
+        free_property_list(rule->properties);
+
+        free(rule->name);
+
+        free(rule);
+}
+
+void
+free_rule_list(kw_list_t *list)
+{
+        if (!list)
+                return;
+
+        for (la_rule_t *tmp;
+                        (tmp = REM_RULES_HEAD(list));)
+                free_rule(tmp);
+
+        free(list);
+}
+
 
 
 /* vim: set autowrite expandtab: */

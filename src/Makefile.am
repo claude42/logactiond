@@ -8,9 +8,6 @@ logactiond_checkrules_SOURCES = logactiond-checkrules.c logactiond.h addresses.c
 logactiond_checkrules_LDADD = $(top_srcdir)/libconfig/lib/.libs/libconfig.a
 logactiond_checkrules_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\"" -DNOCOMMANDS -DNOWATCH
 
-# because of inet_net_pton
-logactiond_LDFLAGS = -lresolv
-
 
 
 

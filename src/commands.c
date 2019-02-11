@@ -30,12 +30,15 @@
 #include "logactiond.h"
 
 void
-assert_command(la_command_t *command)
+assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned int line)
 {
-        assert(command);
-        assert(command->begin_string);
-        assert_list(command->begin_properties);
-        assert_list(command->end_properties);
+        if (!command)
+                die_hard("%s:%u: %s: Assertion 'command' failed. ", file, line, func);
+        if (!command->begin_string)
+                die_hard("%s:%u: %s: Assertion 'command->begin_string' "
+                                "failed.", file, line, func);
+        assert_list_ffl(command->begin_properties, func, file, line);
+        assert_list_ffl(command->end_properties, func, file, line);
 }
 
 static void
@@ -138,7 +141,7 @@ convert_command(la_command_t *command, la_commandtype_t type)
         else
                 action_property = ITERATE_PROPERTIES(command->end_properties);
 
-        while (action_property = NEXT_PROPERTY(action_property))
+        while ((action_property = NEXT_PROPERTY(action_property)))
         {
                 /* copy string before next token */
                 result_ptr = stpncpy(result_ptr, string_ptr, action_property->pos - start_pos);
@@ -363,18 +366,30 @@ void
 free_command(la_command_t *command)
 {
         assert_command(command);
-
         la_debug("free_command(%s)", command->begin_string);
 
-        free(command->begin_string);
         free_property_list(command->begin_properties);
-        free(command->end_string);
         free_property_list(command->end_properties);
         free_property_list(command->pattern_properties);
+
+        free(command->begin_string);
+        free(command->end_string);
         free(command->host);
+        free(command);
 }
 
+void
+free_command_list(kw_list_t *list)
+{
+        if (!list)
+                return;
 
+        for (la_command_t *tmp;
+                        (tmp = REM_COMMANDS_HEAD(list));)
+                free_command(tmp);
+
+        free(list);
+}
 
 
 /* vim: set autowrite expandtab: */

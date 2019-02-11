@@ -44,10 +44,15 @@ unsigned int id_counter = 0;
 static void
 handle_signal(int signal)
 {
+        la_debug("handle_signal(%u)", signal);
         /* printf("Received signal %u\n", signal); */
-        empty_end_queue();
         unload_la_config();
-        exit(0);
+        empty_end_queue();
+
+        if (signal == SIGHUP)
+                load_la_config(cfg_filename);
+        else
+                exit(0);
 }
 
 static void
@@ -61,9 +66,6 @@ register_signal_handler(void)
         new_act.sa_handler = handle_signal;
         sigemptyset(&new_act.sa_mask);
         new_act.sa_flags = 0;
-        
-        /* TODO: take care of SIGHUP */
-        signal(SIGHUP, SIG_IGN);
 
         sigaction(SIGINT, NULL, &old_act);
         if (old_act.sa_handler != SIG_IGN)
@@ -71,6 +73,9 @@ register_signal_handler(void)
         sigaction(SIGTERM, NULL, &old_act);
         if (old_act.sa_handler != SIG_IGN)
                 sigaction(SIGTERM, &new_act, NULL);
+        sigaction(SIGHUP, NULL, &old_act);
+        if (old_act.sa_handler != SIG_IGN)
+                sigaction(SIGHUP, &new_act, NULL);
 }
 
 /*

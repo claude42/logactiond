@@ -21,6 +21,11 @@
 
 #include <stdbool.h>
 
+/* Assertions */
+
+#define assert_list(LIST) assert_list_ffl(LIST, __func__, __FILE__, __LINE__)
+#define assert_node(NODE) assert_node_ffl(NODE, __func__, __FILE__, __LINE__)
+
 /*
  * functions missing
  *
@@ -59,6 +64,8 @@ void add_head(kw_list_t *list, kw_node_t *node);
 
 void add_tail(kw_list_t *list, kw_node_t *node);
 
+kw_node_t *rem_head(kw_list_t *list);
+
 kw_node_t *get_list_iterator(kw_list_t *list);
 
 kw_node_t *get_next_node(kw_node_t **iterator);
@@ -71,9 +78,9 @@ void insert_node_before(kw_node_t *ex_node, kw_node_t *new_node);
 
 void remove_node(kw_node_t *node);
 
-void assert_node(kw_node_t *node);
+void assert_node_ffl(kw_node_t *node, const char *func, char *file, unsigned int line);
 
-void assert_list(kw_list_t *list);
+void assert_list_ffl(kw_list_t *list, const char *func, char *file, unsigned int line);
 
 
 #endif /* __nodelist_h */
