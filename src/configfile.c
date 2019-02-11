@@ -596,10 +596,15 @@ load_la_config(char *filename)
 
         if (!config_read_file(&la_config->config_file, filename))
         {
-                die_hard("%s:%d - %s!",
-                                config_error_file(&la_config->config_file),
-                                config_error_line(&la_config->config_file),
-                                config_error_text(&la_config->config_file));
+                char *config_error_file =
+                        config_error_file(&la_config->config_file);
+                if (config_error_file)
+                        die_hard("%s:%d - %s!",
+                                        config_error_file(&la_config->config_file),
+                                        config_error_line(&la_config->config_file),
+                                        config_error_text(&la_config->config_file));
+                else
+                        die_hard("%s!, config_error_text(&la_config->config_file));
         }
 
         load_defaults();
