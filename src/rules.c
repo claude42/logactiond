@@ -284,7 +284,7 @@ handle_log_line_for_rule(la_rule_t *rule, char *line)
 {
         assert_rule(rule); assert(line);
 
-        la_debug("handle_log_line()");
+        la_debug("handle_log_line_for_rule()");
 
         for (la_pattern_t *pattern = ITERATE_PATTERNS(rule->patterns);
                         (pattern = NEXT_PATTERN(pattern));)
