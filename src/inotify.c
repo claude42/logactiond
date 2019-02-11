@@ -83,7 +83,7 @@ la_debug_inotify_event(struct inotify_event *event, uint32_t monitored)
 void
 unwatch_source_inotify(la_source_t *source)
 {
-        assert_source(source);
+        assert_source(source); assert(inotify_fd != 0);
 
         la_debug("unwatch_source_inotify(%s)", source->name);
 
@@ -293,7 +293,7 @@ watch_forever_inotify(void)
 void
 watch_source_inotify(la_source_t *source)
 {
-        assert_source(source);
+        assert_source(source); assert(inotify_fd != 0);
 
         la_debug("watch_source_inotify(%s)", source->name);
 
