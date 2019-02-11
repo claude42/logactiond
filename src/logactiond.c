@@ -46,8 +46,10 @@ handle_signal(int signal)
 {
         la_debug("handle_signal(%u)", signal);
         /* printf("Received signal %u\n", signal); */
-        unload_la_config();
+        /* TODO: once we have multiple threads watching sources, must ensure
+         * that threads are stopped before continuing */
         empty_end_queue();
+        unload_la_config();
 
         if (signal == SIGHUP)
                 load_la_config(cfg_filename);
