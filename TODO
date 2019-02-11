@@ -11,12 +11,9 @@ TODOs in no particular order
 * Polling backend
 * systemd backend
 * Limit regexes to one instance per token
-* Tool to manually test patterns
 * IPv6 support
-* kill -HUP to reload
 * problems when doing autoreconf -v -i
-* update THANKS
 * Add logactiond -L
 * Make "make distcheck work"
 * die correctly with threads (join...)
-* fix load_la_config(), die_hard()
+* better NDEBUG support for la_debug()
