@@ -133,3 +133,4 @@ libconfig/m4
 libconfig/stamp-h1
 
 *~
+*.swp
