@@ -44,6 +44,7 @@ unsigned int id_counter = 0;
 static void
 handle_signal(int signal)
 {
+        la_debug("handle_signal(%u)", signal);
         /* printf("Received signal %u\n", signal); */
         unload_la_config();
         empty_end_queue();
