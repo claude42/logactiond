@@ -58,7 +58,7 @@ log_message(int priority, char *fmt, va_list gp, char *add)
 
 void xfree(void *ptr)
 {
-        la_debug("FREED %u\n", ptr);
+        la_debug("free(%u)", ptr);
         free(ptr);
 }
 
