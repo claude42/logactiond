@@ -34,7 +34,7 @@
 
 
 
-#define NDEBUG
+//#define NDEBUG
 
 //#define CONF_DIR "/etc/logactiond"
 #define CONFIG_FILE "logactiond.cfg"
@@ -97,26 +97,41 @@
 #define ITERATE_ADDRESSES(ADDRESSES) (la_address_t *) &ADDRESSES->head
 #define NEXT_ADDRESS(ADDRESS) (la_address_t *) (ADDRESS->node.succ->succ ? ADDRESS->node.succ : NULL)
 #define HAS_NEXT_ADDRESS(ADDRESS) ADDRESS->node.succ
+#define REM_ADDRESSES_HEAD(ADDRESSES) (la_address_t *) rem_head(ADDRESSES)
 
 #define ITERATE_COMMANDS(COMMANDS) (la_command_t *) &COMMANDS->head
 #define NEXT_COMMAND(COMMAND) (la_command_t *) (COMMAND->node.succ->succ ? COMMAND->node.succ : NULL)
 #define HAS_NEXT_COMMAND(COMMAND) COMMAND->node.succ
+#define REM_COMMANDS_HEAD(COMMANDS) (la_command_t *) rem_head(COMMANDS)
 
 #define ITERATE_PATTERNS(PATTERNS) (la_pattern_t *) &PATTERNS->head
 #define NEXT_PATTERN(PATTERN) (la_pattern_t *) (PATTERN->node.succ->succ ? PATTERN->node.succ : NULL)
 #define HAS_NEXT_PATTERN(PATTERN) PATTERN->node.succ
+#define REM_PATTERNS_HEAD(PATTERNS) (la_pattern_t *) rem_head(PATTERNS)
 
 #define ITERATE_PROPERTIES(PROPERTIES) (la_property_t *) &PROPERTIES->head
 #define NEXT_PROPERTY(PROPERTY) (la_property_t *) (PROPERTY->node.succ->succ ? PROPERTY->node.succ : NULL)
 #define HAS_NEXT_PROPERTY(PROPERTY) PROPERTY->node.succ
+#define REM_PROPERTIES_HEAD(PROPERTIES) (la_property_t *) rem_head(PROPERTIES)
 
 #define ITERATE_RULES(RULES) (la_rule_t *) &RULES->head
 #define NEXT_RULE(RULE) (la_rule_t *) (RULE->node.succ->succ ? RULE->node.succ : NULL)
 #define HAS_NEXT_RULE(RULE) RULE->node.succ
+#define REM_RULES_HEAD(RULES) (la_rule_t *) rem_head(RULES)
 
 #define ITERATE_SOURCES(SOURCES) (la_source_t *) &SOURCES->head
 #define NEXT_SOURCE(SOURCE) (la_source_t *) (SOURCE->node.succ->succ ? SOURCE->node.succ : NULL)
 #define HAS_NEXT_SOURCE(SOURCE) SOURCE->node.succ
+#define REM_SOURCES_HEAD(SOURCES) (la_source_t *) rem_head(SOURCES)
+
+/* assertions */
+
+#define assert_ffl(expr, func, file, line) ((expr) ? (void)(0) : die_hard("Jo %s, %s, %u", func, file, line))
+
+#define assert_command(COMMAND) assert_command_ffl(COMMAND, __func__, __FILE__, __LINE__)
+#define assert_rule(RULE) assert_rule_ffl(RULE, __func__, __FILE__, __LINE__)
+#define assert_source(SOURCE) assert_source_ffl(SOURCE, __func__, __FILE__, __LINE__)
+#define assert_pattern(PATTERN) assert_pattern_ffl(PATTERN, __func__, __FILE__, __LINE__)
 
 /* Types */
 
@@ -343,7 +358,7 @@ void init_end_queue(void);
 
 /* commands.c */
 
-void assert_command(la_command_t *command);
+void assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned int line);
 
 void trigger_command(la_command_t *command);
 
@@ -394,7 +409,7 @@ void free_property_list(kw_list_t *list);
 
 /* patterns.c */
 
-void assert_pattern(la_pattern_t *pattern);
+void assert_pattern_ffl(la_pattern_t *pattern, const char *func, char *file, unsigned int line);
 
 la_pattern_t *create_pattern(const char *string_from_configfile,
                 unsigned int num, la_rule_t *rule);
@@ -405,7 +420,7 @@ void free_pattern_list(kw_list_t *list);
 
 /* rules.c */
 
-void assert_rule(la_rule_t *rule);
+void assert_rule_ffl(la_rule_t *rule, const char *func, char *file, unsigned int line);
 
 void handle_log_line_for_rule(la_rule_t *rule, char *line);
 
@@ -418,7 +433,7 @@ void free_rule_list(kw_list_t *list);
 
 /* sources.c */
 
-void assert_source(la_source_t *source);
+void assert_source_ffl(la_source_t *source, const char *func, char *file, unsigned int line);
 
 void unwatch_source(la_source_t *source);
 

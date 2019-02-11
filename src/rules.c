@@ -32,15 +32,18 @@
 /* FIXME: trigger_list should definitely be a hash */
 
 void
-assert_rule(la_rule_t *rule)
+assert_rule_ffl(la_rule_t *rule, const char *func, char *file, unsigned int line)
 {
-        assert(rule);
-        assert(rule->name);
-        assert(rule->source);
-        assert_list(rule->patterns);
-        assert_list(rule->begin_commands);
-        assert_list(rule->trigger_list);
-        assert_list(rule->properties);
+        if (!rule)
+                die_hard("%s:%u: %s: Assertion 'rule' failed. ", file, line, func);
+        if (!rule->name)
+                die_hard("%s:%u: %s: Assertion 'rule->name' failed. ", file, line, func);
+        if (!rule->source)
+                assert_source_ffl(rule->source, func, file, line);
+        assert_list_ffl(rule->patterns, func, file, line);
+        assert_list_ffl(rule->begin_commands, func, file, line);
+        assert_list_ffl(rule->trigger_list, func, file, line);
+        assert_list_ffl(rule->properties, func, file, line);
 }
 
 /*
@@ -81,12 +84,9 @@ find_trigger(la_rule_t *rule, la_command_t *template, const char *host)
         for (la_command_t *command = ITERATE_COMMANDS(rule->trigger_list);
                         (command = NEXT_COMMAND(command));)
         {
-                if (command->host)
-                {
-                        if ((command->id == template->id) &&
-                                        !strcmp(command->host, host))
-                                return command;
-                }
+                if ((command->id == template->id) && command->host &&
+                                !strcmp(command->host, host))
+                        return command;
         }
 
         return NULL;
@@ -337,11 +337,12 @@ free_rule(la_rule_t *rule)
 {
         assert_rule(rule);
 
-        free(rule->name);
         free_pattern_list(rule->patterns);
         free_command_list(rule->begin_commands);
         free_command_list(rule->trigger_list);
         free_property_list(rule->properties);
+
+        free(rule->name);
 
         free(rule);
 }
@@ -352,14 +353,9 @@ free_rule_list(kw_list_t *list)
         if (!list)
                 return;
 
-        la_rule_t *rule = ITERATE_RULES(list);
-
-        while (HAS_NEXT_RULE(rule))
-        {
-                la_rule_t *tmp = rule;
-                rule = NEXT_RULE(rule);
+        for (la_rule_t *tmp;
+                        tmp = REM_RULES_HEAD(list);)
                 free_rule(tmp);
-        }
 
         free(list);
 }

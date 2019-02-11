@@ -30,12 +30,15 @@
 #include "logactiond.h"
 
 void
-assert_command(la_command_t *command)
+assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned int line)
 {
-        assert(command);
-        assert(command->begin_string);
-        assert_list(command->begin_properties);
-        assert_list(command->end_properties);
+        if (!command)
+                die_hard("%s:%u: %s: Assertion 'command' failed. ", file, line, func);
+        if (!command->begin_string)
+                die_hard("%s:%u: %s: Assertion 'command->begin_string' "
+                                "failed.", file, line, func);
+        assert_list_ffl(command->begin_properties, func, file, line);
+        assert_list_ffl(command->end_properties, func, file, line);
 }
 
 static void
@@ -361,14 +364,14 @@ void
 free_command(la_command_t *command)
 {
         assert_command(command);
-
         la_debug("free_command(%s)", command->begin_string);
 
-        free(command->begin_string);
         free_property_list(command->begin_properties);
-        free(command->end_string);
         free_property_list(command->end_properties);
         free_property_list(command->pattern_properties);
+
+        free(command->begin_string);
+        free(command->end_string);
         free(command->host);
         free(command);
 }
@@ -379,14 +382,9 @@ free_command_list(kw_list_t *list)
         if (!list)
                 return;
 
-        la_command_t *command = ITERATE_COMMANDS(list);
-
-        while (HAS_NEXT_COMMAND(command))
-        {
-                la_command_t *tmp = command;
-                command = NEXT_COMMAND(command);
+        for (la_command_t *tmp;
+                        tmp = REM_COMMANDS_HEAD(list);)
                 free_command(tmp);
-        }
 
         free(list);
 }

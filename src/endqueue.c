@@ -82,23 +82,6 @@ find_end_command(la_rule_t *rule, const char *host)
 }
 
 /*
- * Remove command from end_queue, trigger end command, then free it.
- */
-
-static void
-remove_trigger_free_command(la_command_t *command)
-{
-        assert_command(command);
-
-        la_debug("remove_trigger_free_command(%s)", command->end_string);
-
-        remove_node((kw_node_t *) command);
-        trigger_end_command(command);
-        free_command(command);
-}
-
-
-/*
  * Remove and trigger all remaining end and shutdown commands in the queue
  */
 
@@ -112,14 +95,11 @@ empty_end_queue(void)
 
         pthread_mutex_lock(&end_queue_mutex);
 
-        la_command_t *command = ITERATE_COMMANDS(end_queue);
-
-        while (HAS_NEXT_COMMAND(command))
+        for (la_command_t *tmp;
+                        tmp = REM_COMMANDS_HEAD(end_queue);)
         {
-                la_debug("empty_queue(), removing %s", command->end_string);
-                la_command_t *tmp = command;
-                command = NEXT_COMMAND(command);
-                remove_trigger_free_command(tmp);
+                trigger_end_command(tmp);
+                free_command(tmp);
         }
 
         pthread_mutex_unlock(&end_queue_mutex);
@@ -185,7 +165,9 @@ consume_end_queue(void *ptr)
                         /* end_time of next command reached, remove it
                          * and don't sleep but immediately look for more */
                         la_debug("consume %u remove_trigger_free_command()", now);
-                        remove_trigger_free_command(command);
+                        remove_node((kw_node_t *) command);
+                        trigger_end_command(command);
+                        free_command(command);
                 }
         }
 }
@@ -246,8 +228,9 @@ enqueue_end_command(la_command_t *end_command)
         pthread_mutex_lock(&end_queue_mutex);
 
         la_command_t *tmp;
-        for (tmp = ITERATE_COMMANDS(end_queue);
-                        (tmp = NEXT_COMMAND(tmp));)
+        for (tmp = (la_command_t *) end_queue->head.succ;
+                        tmp->node.succ;
+                        tmp = (la_command_t *) tmp->node.succ)
         {
                 if (end_command->end_time <= tmp->end_time)
                         break;

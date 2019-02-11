@@ -32,12 +32,15 @@ static char *linebuffer = NULL;
 size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE;
 
 void
-assert_source(la_source_t *source)
+assert_source_ffl(la_source_t *source, const char *func, char *file, unsigned int line)
 {
-        assert(source);
-        assert(source->name);
-        assert(source->location);
-        assert_list(source->rules);
+        if (!source)
+                die_hard("%s:%u: %s: Assertion 'source' failed. ", file, line, func);
+        if (!source->name)
+                die_hard("%s:%u: %s: Assertion 'source->name' failed. ", file, line, func);
+        if (!source->location)
+                die_hard("%s:%u: %s: Assertion 'source->location' failed. ", file, line, func);
+        assert_list_ffl(source->rules, func, file, line);
 }
 
 /*
@@ -177,10 +180,12 @@ free_source(la_source_t *source)
         assert_source(source);
 
         unwatch_source(source);
+
+        free_rule_list(source->rules);
+
         free(source->name);
         free(source->location);
         free(source->parent_dir);
-        free_rule_list(source->rules);
 
         free(source);
 }
@@ -191,14 +196,9 @@ free_source_list(kw_list_t *list)
         if (!list)
                 return;
 
-        la_source_t *source = ITERATE_SOURCES(list);
-
-        while (HAS_NEXT_SOURCE(source))
-        {
-                la_source_t *tmp = source;
-                source = NEXT_SOURCE(source);
+        for (la_source_t *tmp;
+                        tmp = REM_SOURCES_HEAD(list);)
                 free_source(tmp);
-        }
 
         free(list);
 }

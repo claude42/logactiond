@@ -618,8 +618,6 @@ unload_la_config(void)
         free_source_list(la_config->sources);
         free_property_list(la_config->default_properties);
         free_address_list(la_config->ignore_addresses);
-
-        //config_destroy(&la_config->config_file);
 }
 
 /*

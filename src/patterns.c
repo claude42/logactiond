@@ -30,11 +30,12 @@
 #include "nodelist.h"
 
 void
-assert_pattern(la_pattern_t *pattern)
+assert_pattern_ffl(la_pattern_t *pattern, const char *func, char *file, unsigned int line)
 {
-        assert(pattern);
-        assert_rule(pattern->rule);
-        assert_list(pattern->properties);
+        if (!pattern)
+                die_hard("%s:%u: %s: Assertion 'pattern' failed. ", file, line, func);
+        assert_rule_ffl(pattern->rule, func, file, line);
+        assert_list_ffl(pattern->properties, func, file, line);
 }
 
 /* TODO: refactor */
@@ -182,9 +183,10 @@ free_pattern(la_pattern_t *pattern)
 {
         assert_pattern(pattern);
 
+        free_property_list(pattern->properties);
+
         free(pattern->string);
         free(pattern->regex);
-        free_property_list(pattern->properties);
 
         free(pattern);
 
@@ -196,14 +198,9 @@ free_pattern_list(kw_list_t *list)
         if (!list)
                 return;
 
-        la_pattern_t *pattern = ITERATE_PATTERNS(list);
-
-        while (HAS_NEXT_PATTERN(pattern))
-        {
-                la_pattern_t *tmp = pattern;
-                pattern = NEXT_PATTERN(pattern);
+        for (la_pattern_t *tmp;
+                        tmp = REM_PATTERNS_HEAD(list);)
                 free_pattern(tmp);
-        }
 
         free(list);
 }

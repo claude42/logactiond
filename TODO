@@ -17,4 +17,5 @@ TODOs in no particular order
 * update THANKS
 * Add logactiond -L
 * Make "make distcheck work"
-* assert_xx_file_line()
+* assert_xx_file_line(), TODO: assert_node()
+* remove la_debug()s from endqueue.c

@@ -272,14 +272,9 @@ free_property_list(kw_list_t *list)
         if (!list)
                 return;
 
-        la_property_t *property = ITERATE_PROPERTIES(list);
-
-        while (HAS_NEXT_PROPERTY(property))
-        {
-                la_property_t *tmp = property;
-                property = NEXT_PROPERTY(property);
+        for (la_property_t *tmp;
+                        tmp = REM_PROPERTIES_HEAD(list);)
                 free_property(tmp);
-        }
 
         free(list);
 }

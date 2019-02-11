@@ -118,14 +118,9 @@ free_address_list(kw_list_t *list)
         if (!list)
                 return;
 
-        la_address_t *address = ITERATE_ADDRESSES(list);
-
-        while (HAS_NEXT_ADDRESS(address))
-        {
-                la_address_t *tmp = address;
-                address = NEXT_ADDRESS(address);
+        for (la_address_t *tmp;
+                        tmp = REM_ADDRESSES_HEAD(list);)
                 free_address(tmp);
-        }
 
         free(list);
 }
