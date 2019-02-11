@@ -199,7 +199,7 @@ free_pattern_list(kw_list_t *list)
                 return;
 
         for (la_pattern_t *tmp;
-                        tmp = REM_PATTERNS_HEAD(list);)
+                        (tmp = REM_PATTERNS_HEAD(list));)
                 free_pattern(tmp);
 
         free(list);

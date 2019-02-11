@@ -273,7 +273,7 @@ free_property_list(kw_list_t *list)
                 return;
 
         for (la_property_t *tmp;
-                        tmp = REM_PROPERTIES_HEAD(list);)
+                        (tmp = REM_PROPERTIES_HEAD(list));)
                 free_property(tmp);
 
         free(list);

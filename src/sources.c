@@ -197,7 +197,7 @@ free_source_list(kw_list_t *list)
                 return;
 
         for (la_source_t *tmp;
-                        tmp = REM_SOURCES_HEAD(list);)
+                        (tmp = REM_SOURCES_HEAD(list));)
                 free_source(tmp);
 
         free(list);

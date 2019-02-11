@@ -96,7 +96,7 @@ empty_end_queue(void)
         pthread_mutex_lock(&end_queue_mutex);
 
         for (la_command_t *tmp;
-                        tmp = REM_COMMANDS_HEAD(end_queue);)
+                        (tmp = REM_COMMANDS_HEAD(end_queue));)
         {
                 trigger_end_command(tmp);
                 free_command(tmp);

@@ -354,7 +354,7 @@ free_rule_list(kw_list_t *list)
                 return;
 
         for (la_rule_t *tmp;
-                        tmp = REM_RULES_HEAD(list);)
+                        (tmp = REM_RULES_HEAD(list));)
                 free_rule(tmp);
 
         free(list);

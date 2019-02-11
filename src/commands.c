@@ -383,7 +383,7 @@ free_command_list(kw_list_t *list)
                 return;
 
         for (la_command_t *tmp;
-                        tmp = REM_COMMANDS_HEAD(list);)
+                        (tmp = REM_COMMANDS_HEAD(list));)
                 free_command(tmp);
 
         free(list);

@@ -119,7 +119,7 @@ free_address_list(kw_list_t *list)
                 return;
 
         for (la_address_t *tmp;
-                        tmp = REM_ADDRESSES_HEAD(list);)
+                        (tmp = REM_ADDRESSES_HEAD(list));)
                 free_address(tmp);
 
         free(list);
