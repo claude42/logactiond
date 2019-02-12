@@ -170,6 +170,12 @@ create_source(const char *name, la_sourcetype_t type, const char *location)
         result->parent_dir = NULL;
         result->type = type;
         result->rules = create_list();
+        result->file = NULL;
+
+#if HAVE_INOTIFY
+        result->wd = 0;
+        result->parent_wd = 0;
+#endif /* HAVE_INOTIFY */
 
         return result;
 }
