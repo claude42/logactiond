@@ -54,6 +54,9 @@ exec_command(const char *command_string)
         else if (result == 127)
                 la_log(LOG_ERR, "Could not execute shell for \"%s\".",
                                 command_string);
+        else
+                la_log(LOG_ERR, "Command \"%s\" returned with error code %d.",
+                                command_string, result);
 }
 
 static const char*
