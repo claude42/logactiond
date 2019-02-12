@@ -39,9 +39,6 @@
 //#define CONF_DIR "/etc/logactiond"
 #define CONFIG_FILE "logactiond.cfg"
 
-// one level above LOG_DEBUG
-#define LOG_VDEBUG LOG_DEBUG+1
-
 #define PIDFILE "/var/run/logactiond.pid"
 
 

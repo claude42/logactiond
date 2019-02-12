@@ -108,7 +108,7 @@ la_debug(char *fmt, ...)
         va_list myargs;
 
         va_start(myargs, fmt);
-        log_message(LOG_VDEBUG, fmt, myargs, NULL);
+        log_message(LOG_DEBUG, fmt, myargs, NULL);
         va_end(myargs);
 
 #endif /* NDEBUG */
