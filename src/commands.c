@@ -116,7 +116,29 @@ get_value_for_action_property(la_command_t *command,
 
 }
 
+static size_t
+compute_converted_length(la_command_t *command, la_commandtype_t type,
+                size_t source_len)
+{
+        size_t result = source_len;
+
+        la_property_t  *action_property = ITERATE_PROPERTIES(
+                        type == LA_COMMANDTYPE_BEGIN ?
+                        command->begin_properties :
+                        command->end_properties);
+
+        while ((action_property = NEXT_PROPERTY(action_property)))
+                result += strlen(get_value_for_action_property(command,
+                                        action_property));
+
+        return result;
+}
+
 /* TODO: refactor */
+/* TODO: current implementation leads to calling
+ * get_value_for_action_property() twice per property which is unnecessarily
+ * expensive. Let's find a better solution
+ */
 
 static char *
 convert_command(la_command_t *command, la_commandtype_t type)
@@ -127,19 +149,19 @@ convert_command(la_command_t *command, la_commandtype_t type)
                 command->begin_string : command->end_string;
         la_debug("convert_command(%s)", source_string);
 
-        size_t len = strlen(source_string);
-        /* FIXME */
-        char *result = (char *) xmalloc(10000);
-        char *result_ptr = result;
+        size_t source_len = strlen(source_string);
         const char *string_ptr = source_string;
 
-        unsigned int start_pos = 0; /* position after last token */
-        la_property_t *action_property;
+        char *result = xmalloc(compute_converted_length(command, type,
+                                source_len));
+        char *result_ptr = result;
 
-        if (type == LA_COMMANDTYPE_BEGIN)
-                action_property = ITERATE_PROPERTIES(command->begin_properties);
-        else
-                action_property = ITERATE_PROPERTIES(command->end_properties);
+        unsigned int start_pos = 0; /* position after last token */
+
+        la_property_t *action_property = ITERATE_PROPERTIES(
+                        type == LA_COMMANDTYPE_BEGIN ?
+                        command->begin_properties :
+                        command->end_properties);
 
         while ((action_property = NEXT_PROPERTY(action_property)))
         {
@@ -163,7 +185,7 @@ convert_command(la_command_t *command, la_commandtype_t type)
 
         /* Copy remainder of string - only if there's something left.
          * Double-check just to bes sure we don't overrun any buffer */
-        if (string_ptr - source_string < strlen(source_string))
+        if (string_ptr - source_string < source_len)
                 /* strcpy() ok here because we definitley reserved enough space
                  */
                 strcpy(result_ptr, string_ptr);

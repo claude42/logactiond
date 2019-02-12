@@ -94,32 +94,32 @@
 
 /* List macros */
 
-#define ITERATE_ADDRESSES(ADDRESSES) (la_address_t *) &ADDRESSES->head
+#define ITERATE_ADDRESSES(ADDRESSES) (la_address_t *) &(ADDRESSES)->head
 #define NEXT_ADDRESS(ADDRESS) (la_address_t *) (ADDRESS->node.succ->succ ? ADDRESS->node.succ : NULL)
 #define HAS_NEXT_ADDRESS(ADDRESS) ADDRESS->node.succ
 #define REM_ADDRESSES_HEAD(ADDRESSES) (la_address_t *) rem_head(ADDRESSES)
 
-#define ITERATE_COMMANDS(COMMANDS) (la_command_t *) &COMMANDS->head
+#define ITERATE_COMMANDS(COMMANDS) (la_command_t *) &(COMMANDS)->head
 #define NEXT_COMMAND(COMMAND) (la_command_t *) (COMMAND->node.succ->succ ? COMMAND->node.succ : NULL)
 #define HAS_NEXT_COMMAND(COMMAND) COMMAND->node.succ
 #define REM_COMMANDS_HEAD(COMMANDS) (la_command_t *) rem_head(COMMANDS)
 
-#define ITERATE_PATTERNS(PATTERNS) (la_pattern_t *) &PATTERNS->head
+#define ITERATE_PATTERNS(PATTERNS) (la_pattern_t *) &(PATTERNS)->head
 #define NEXT_PATTERN(PATTERN) (la_pattern_t *) (PATTERN->node.succ->succ ? PATTERN->node.succ : NULL)
 #define HAS_NEXT_PATTERN(PATTERN) PATTERN->node.succ
 #define REM_PATTERNS_HEAD(PATTERNS) (la_pattern_t *) rem_head(PATTERNS)
 
-#define ITERATE_PROPERTIES(PROPERTIES) (la_property_t *) &PROPERTIES->head
+#define ITERATE_PROPERTIES(PROPERTIES) (la_property_t *) &(PROPERTIES)->head
 #define NEXT_PROPERTY(PROPERTY) (la_property_t *) (PROPERTY->node.succ->succ ? PROPERTY->node.succ : NULL)
 #define HAS_NEXT_PROPERTY(PROPERTY) PROPERTY->node.succ
 #define REM_PROPERTIES_HEAD(PROPERTIES) (la_property_t *) rem_head(PROPERTIES)
 
-#define ITERATE_RULES(RULES) (la_rule_t *) &RULES->head
+#define ITERATE_RULES(RULES) (la_rule_t *) &(RULES)->head
 #define NEXT_RULE(RULE) (la_rule_t *) (RULE->node.succ->succ ? RULE->node.succ : NULL)
 #define HAS_NEXT_RULE(RULE) RULE->node.succ
 #define REM_RULES_HEAD(RULES) (la_rule_t *) rem_head(RULES)
 
-#define ITERATE_SOURCES(SOURCES) (la_source_t *) &SOURCES->head
+#define ITERATE_SOURCES(SOURCES) (la_source_t *) &(SOURCES)->head
 #define NEXT_SOURCE(SOURCE) (la_source_t *) (SOURCE->node.succ->succ ? SOURCE->node.succ : NULL)
 #define HAS_NEXT_SOURCE(SOURCE) SOURCE->node.succ
 #define REM_SOURCES_HEAD(SOURCES) (la_source_t *) rem_head(SOURCES)
