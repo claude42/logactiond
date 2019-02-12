@@ -48,15 +48,23 @@ exec_command(const char *command_string)
         la_debug("exec_command(%s)", command_string);
 
         int result = system(command_string);
-        if (result == -1)
-                la_log(LOG_ERR, "Could not create child process for command \"%s\".", 
-                                command_string);
-        else if (result == 127)
-                la_log(LOG_ERR, "Could not execute shell for \"%s\".",
-                                command_string);
-        else
-                la_log(LOG_ERR, "Command \"%s\" returned with error code %d.",
-                                command_string, result);
+        switch (result)
+        {
+                case 0:
+                        break;
+                case -1:
+                        la_log(LOG_ERR, "Could not create child process for "
+                                        "command \"%s\".", command_string);
+                        break;
+                case 127:
+                        la_log(LOG_ERR, "Could not execute shell for \"%s\".",
+                                        command_string);
+                        break;
+                default:
+                        la_log(LOG_ERR, "Command \"%s\" returned with error "
+                                        "code %d.", command_string, result);
+                        break;
+        }
 }
 
 static const char*
