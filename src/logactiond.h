@@ -126,12 +126,17 @@
 
 /* assertions */
 
-#define assert_ffl(expr, func, file, line) ((expr) ? (void)(0) : die_hard("Jo %s, %s, %u", func, file, line))
-
+#ifdef NDEBUG
+#define assert_command(COMMAND) (void)(0)
+#define assert_rule(RULE) (void)(0)
+#define assert_source(SOURCE) (void)(0)
+#define assert_pattern(PATTERN) (void)(0)
+#else /* NDEBUG */
 #define assert_command(COMMAND) assert_command_ffl(COMMAND, __func__, __FILE__, __LINE__)
 #define assert_rule(RULE) assert_rule_ffl(RULE, __func__, __FILE__, __LINE__)
 #define assert_source(SOURCE) assert_source_ffl(SOURCE, __func__, __FILE__, __LINE__)
 #define assert_pattern(PATTERN) assert_pattern_ffl(PATTERN, __func__, __FILE__, __LINE__)
+#endif /* NDEBUG */
 
 /* Types */
 
