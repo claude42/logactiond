@@ -25,10 +25,49 @@
 #include <syslog.h>
 #include <errno.h>
 #include <stdarg.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "logactiond.h"
 
 extern la_runtype_t run_type;
+
+bool created_pidfile = false;
+
+void
+remove_pidfile(void)
+{
+        if (created_pidfile)
+        {
+                if (unlink(PIDFILE) && errno != ENOENT)
+                        la_log(LOG_ERR, "Unable to remove pidfile");
+        }
+        created_pidfile = false;
+}
+
+void
+create_pidfile(void)
+{
+        int fd;
+        char buf[20]; /* should be enough - I think */
+
+        fd = open(PIDFILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+        if (fd == -1)
+                die_err("Unable to open pidfile");
+
+        created_pidfile = true;
+
+        if (ftruncate(fd, 0))
+                die_err("Unable to truncate pidfile");
+
+        snprintf(buf, 20, "%ld\n", (long) getpid());
+        int len = strlen(buf);
+        if (write(fd, buf, len) != len)
+                die_err("Unable to write pid to pidfile");
+
+        if (close(fd))
+                die_err("Unable to close pidfile");
+}
 
 static void
 log_message(int priority, char *fmt, va_list gp, char *add)
@@ -105,6 +144,7 @@ die_semantic(char *fmt, ...)
         va_end(myargs);
 
         unload_la_config();
+        remove_pidfile();
         exit(EXIT_FAILURE);
 }
 
@@ -118,6 +158,7 @@ die_hard(char *fmt, ...)
         va_end(myargs);
 
         unload_la_config();
+        remove_pidfile();
         exit(EXIT_FAILURE);
 }
 
@@ -131,6 +172,7 @@ die_err(char *fmt, ...)
         va_end(myargs);
 
         unload_la_config();
+        remove_pidfile();
         exit(EXIT_FAILURE);
 }
 

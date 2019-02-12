@@ -52,9 +52,14 @@ handle_signal(int signal)
         unload_la_config();
 
         if (signal == SIGHUP)
+        {
                 load_la_config(cfg_filename);
+        }
         else
+        {
+                remove_pidfile();
                 exit(0);
+        }
 }
 
 static void
@@ -135,6 +140,9 @@ skeleton_daemon(void)
         {
                 close (x);
         }
+
+        /* create pidfile */
+        create_pidfile();
 
         /* Open the log file */
         openlog (NULL, 0, LOG_DAEMON);

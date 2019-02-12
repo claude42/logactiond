@@ -42,6 +42,7 @@
 // one level above LOG_DEBUG
 #define LOG_VDEBUG LOG_DEBUG+1
 
+#define PIDFILE "/var/run/logactiond.pid"
 
 
 #define LA_DEFAULTS_LABEL "defaults"
@@ -315,6 +316,10 @@ extern unsigned int id_counter;
 /* Functions */
 
 /* misc.c */
+
+void remove_pidfile(void);
+
+void create_pidfile(void);
 
 void xfree (void *ptr);
 
