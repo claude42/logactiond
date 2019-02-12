@@ -118,9 +118,15 @@ find_source_by_parent_wd(int parent_wd, char *file_name)
                          * modify the original string... */
                         char *tmp = xstrdup(source->location);
                         char *base_name = basename(tmp);
-                        free(tmp);
                         if (!strcmp(file_name, base_name))
+                        {
+                                free(tmp);
                                 return source;
+                        }
+                        else
+                        {
+                                free(tmp);
+                        }
                 }
         }
 
@@ -303,8 +309,8 @@ watch_source_inotify(la_source_t *source)
 
         if (!source->parent_wd) {
                 /* all praise basename/dirname */
-                char *tmp = strdup(source->location);
-                source->parent_dir = strdup(dirname(tmp));
+                char *tmp = xstrdup(source->location);
+                source->parent_dir = xstrdup(dirname(tmp));
                 free (tmp);
 
                 source->parent_wd = inotify_add_watch(inotify_fd,
