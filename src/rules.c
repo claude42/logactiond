@@ -59,7 +59,7 @@ add_trigger(la_command_t *command)
 {
         assert_command(command);
 
-        la_debug("add_trigger(%s)", command->begin_string);
+        la_debug("add_trigger(%s)", command->name);
 
         command->n_triggers = 0;
         command->start_time = time(NULL);
@@ -108,7 +108,7 @@ handle_command_on_trigger_list(la_command_t *command)
 {
         assert_command(command);
 
-        la_debug("handle_command_on_trigger_list(%s)", command->begin_string);
+        la_debug("handle_command_on_trigger_list(%s)", command->name);
 
         /* new commands not on the trigger_list yet have n_triggers == 0 */
         if (command->n_triggers == 0)
@@ -126,9 +126,11 @@ handle_command_on_trigger_list(la_command_t *command)
                 if (command->n_triggers >= command->rule->threshold)
                 {
                         remove_node((kw_node_t *) command);
-                        la_log(LOG_INFO, "Host: %s, command fired for rule \"%s\".",
-                                command->host,
-                                command->rule->name);
+                        la_log(LOG_INFO, "Host: %s, action \"%s\" fired for "
+                                        "rule \"%s\".",
+                                        command->host,
+                                        command->name,
+                                        command->rule->name);
                         trigger_command(command);
                 }
         }
@@ -159,17 +161,19 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
         assert_rule(rule); assert_pattern(pattern);
         assert_command(template);
 
-        la_debug("trigger_single_command(%s)", template->begin_string);
+        la_debug("trigger_single_command(%s)", template->name);
 
         la_command_t *command = NULL;
 
         /* First check whether command still active on end_queue. In this
          * case, ignore new command */
-        if (find_end_command(rule, addr))
+        la_command_t *tmp = find_end_command(rule, addr);
+        if (tmp)
         {
                 char *host = addr_to_string(addr);
-                la_log(LOG_INFO, "Host: %s, ignored, command active for rule \"%s\".",
-                                        host, rule->name);
+                la_log(LOG_INFO, "Host: %s, ignored, action \"%s\" still "
+                                "active for rule \"%s\".", host, tmp->name,
+                                rule->name);
                 free(host);
                 return;
         }
@@ -186,8 +190,9 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
                  * property exists */
                 if (template->need_host && addr.s_addr == -1)
                 {
-                        la_log(LOG_ERR, "Missing required host token, command "
-                                        "not fired for rule \"%s\"!",
+                        la_log(LOG_ERR, "Missing required host token, action "
+                                        "\"%s\" not fired for rule \"%s\"!",
+                                        command->name,
                                         command->rule->name);
                         return;
                 }

@@ -34,37 +34,14 @@ assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned
 {
         if (!command)
                 die_hard("%s:%u: %s: Assertion 'command' failed. ", file, line, func);
+        if (!command->name)
+                die_hard("%s:%u: %s: Assertion 'command->name' failed.", file,
+                                line, func);
         if (!command->begin_string)
                 die_hard("%s:%u: %s: Assertion 'command->begin_string' "
                                 "failed.", file, line, func);
         assert_list_ffl(command->begin_properties, func, file, line);
         assert_list_ffl(command->end_properties, func, file, line);
-}
-
-static void
-exec_command(const char *command_string)
-{
-        assert(command_string);
-        la_debug("exec_command(%s)", command_string);
-
-        int result = system(command_string);
-        switch (result)
-        {
-                case 0:
-                        break;
-                case -1:
-                        la_log(LOG_ERR, "Could not create child process for "
-                                        "command \"%s\".", command_string);
-                        break;
-                case 127:
-                        la_log(LOG_ERR, "Could not execute shell for \"%s\".",
-                                        command_string);
-                        break;
-                default:
-                        la_log(LOG_ERR, "Command \"%s\" returned with error "
-                                        "code %d.", command_string, result);
-                        break;
-        }
 }
 
 static const char*
@@ -134,6 +111,8 @@ static size_t
 compute_converted_length(la_command_t *command, la_commandtype_t type,
                 size_t source_len)
 {
+        la_debug("compute_converted_length(%s)", command->name);
+
         size_t result = source_len;
 
         la_property_t  *action_property = ITERATE_PROPERTIES(
@@ -161,7 +140,8 @@ convert_command(la_command_t *command, la_commandtype_t type)
 
         const char *source_string = (type == LA_COMMANDTYPE_BEGIN) ?
                 command->begin_string : command->end_string;
-        la_debug("convert_command(%s)", source_string);
+        la_debug("convert_command(%s, %s)", command->name,
+                        type == LA_COMMANDTYPE_BEGIN ? "begin" : "end");
 
         size_t source_len = strlen(source_string);
         const char *string_ptr = source_string;
@@ -206,8 +186,34 @@ convert_command(la_command_t *command, la_commandtype_t type)
         else
                 *result_ptr = '\0';
 
-        la_debug("convert_command(%s)=%s", command->begin_string, result);
+        la_debug("convert_command(%s)=%s", command->name, result);
         return result;
+}
+
+static void
+exec_command(la_command_t *command, la_commandtype_t type)
+{
+        assert(command);
+        la_debug("exec_command(%s)", command->name);
+
+        int result = system(convert_command(command, type));
+        switch (result)
+        {
+                case 0:
+                        break;
+                case -1:
+                        la_log(LOG_ERR, "Could not create child process for "
+                                        "action \"%s\".", command->name);
+                        break;
+                case 127:
+                        la_log(LOG_ERR, "Could not execute shell for action "
+                                        "\"%s\".", command->name);
+                        break;
+                default:
+                        la_log(LOG_ERR, "Action \"%s\" returned with error "
+                                        "code %d.", command->name, result);
+                        break;
+        }
 }
 
 void
@@ -215,12 +221,12 @@ trigger_command(la_command_t *command)
 {
         assert_command(command);
 
-        la_debug("trigger_command(%s, %d)", command->begin_string,
+        la_debug("trigger_command(%s, %d)", command->name,
                         command->duration);
 
 #ifndef NOCOMMANDS
         /* TODO: can't we convert_command() earlier? */
-        exec_command(convert_command(command, LA_COMMANDTYPE_BEGIN));
+        exec_command(command, LA_COMMANDTYPE_BEGIN);
 
         if (command->end_string && command->duration > 0)
                 enqueue_end_command(command);
@@ -234,17 +240,18 @@ trigger_end_command(la_command_t *command)
 {
         assert_command(command);
 
-        la_debug("trigger_end_command(%s, %d)", command->end_string,
+        la_debug("trigger_end_command(%s, %d)", command->name,
                         command->duration);
 
         if (command->duration == INT_MAX)
                 la_log(LOG_INFO, "Shutting down rule \"%s\".",
                                 command->rule->name);
         else
-                la_log(LOG_INFO, "Host: %s, action ended for rule \"%s\".",
-                                command->host, command->rule->name);
+                la_log(LOG_INFO, "Host: %s, action \"%s\" ended for rule "
+                                "\"%s\".", command->host, command->name,
+                                command->rule->name);
 
-        exec_command(convert_command(command, LA_COMMANDTYPE_END));
+        exec_command(command, LA_COMMANDTYPE_END);
 }
 
 /*
@@ -312,12 +319,6 @@ dup_command(la_command_t *command)
 
         result->duration = command->duration;
         result->need_host = command->need_host;
-        //result->rule = command->rule;
-        //result->pattern = command->pattern;
-        //result->host = xstrdup(command->host);
-        //result->end_time = command->end_time;
-        //result->n_triggers = command->n_triggers;
-        //result->start_time = command->start_time;
 
         return result;
 }
@@ -334,11 +335,12 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
         assert_command(template); assert_rule(rule); assert_pattern(pattern);
         assert_list(pattern->properties);
 
-        la_debug("create_command_from_template(%s)", template->begin_string);
+        la_debug("create_command_from_template(%s)", template->name);
 
         la_command_t *result;
 
         result = dup_command(template);
+        result->is_template = false;
         result->rule = rule;
         result->pattern = pattern;
         result->pattern_properties = dup_property_list(pattern->properties);
@@ -366,16 +368,18 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
  */
 
 la_command_t *
-create_template(la_rule_t *rule, const char *begin_string,
+create_template(const char *name, la_rule_t *rule, const char *begin_string,
                 const char *end_string, int duration, bool need_host)
 {
         assert_rule(rule); assert(begin_string);
 
-        la_debug("create_command(%s, %d)", begin_string, duration);
+        la_debug("create_command(%s, %d)", name, duration);
 
         la_command_t *result = (la_command_t *) xmalloc(sizeof(la_command_t));
 
+        result->name = xstrdup(name);
         result->id = ++id_counter;
+        result->is_template = true;
 
         result->begin_string = xstrdup(begin_string);
         result->begin_properties = create_list();
@@ -407,12 +411,13 @@ void
 free_command(la_command_t *command)
 {
         assert_command(command);
-        la_debug("free_command(%s)", command->begin_string);
+        la_debug("free_command(%s)", command->name);
 
         free_property_list(command->begin_properties);
         free_property_list(command->end_properties);
         free_property_list(command->pattern_properties);
 
+        free(command->name);
         free(command->begin_string);
         free(command->end_string);
         free(command->host);

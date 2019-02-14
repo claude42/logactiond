@@ -234,7 +234,7 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
 
         la_debug("compile_actions(%s)", rule->name);
 
-        la_command_t *command;
+        const char *name = config_setting_name(action_def);
         const char *initialize = config_get_string_or_null(action_def,
                         LA_ACTION_INITIALIZE_LABEL);
         const char *shutdown = config_get_string_or_null(action_def,
@@ -256,12 +256,12 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
         }
 
         if (initialize)
-                trigger_command(create_template(rule, initialize, shutdown,
-                                        INT_MAX, false));
+                trigger_command(create_template(name, rule, initialize,
+                                        shutdown, INT_MAX, false));
 
         if (begin)
                 add_tail(rule->begin_commands, (kw_node_t *)
-                                create_template(rule, begin, end,
+                                create_template(name, rule, begin, end,
                                         rule->duration, need_host));
         else
                 die_semantic("Begin action always required!");

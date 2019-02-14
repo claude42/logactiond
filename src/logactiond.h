@@ -245,7 +245,9 @@ typedef struct la_rule_s
 typedef struct la_command_s
 {
         kw_node_t node;
+        char *name;       /* name of action */
         unsigned int id;        /* unique id */
+        bool is_template;       /* true for templates, false for derived commands */
         char *begin_string;        /* string with tokens */
         kw_list_t *begin_properties;        /* detected tokens */
         unsigned int n_begin_properties;/* number of detected tokens */
@@ -391,8 +393,9 @@ la_command_t * dup_command(la_command_t *command);
 la_command_t * create_command_from_template(la_command_t *template,
                 la_rule_t *rule, la_pattern_t *pattern, struct in_addr addr);
 
-la_command_t *create_template(la_rule_t *rule, const char *begin_string,
-                const char *end_string, int duration, bool need_host);
+la_command_t *create_template(const char *name, la_rule_t *rule,
+                const char *begin_string, const char *end_string,
+                int duration, bool need_host);
 
 void free_command(la_command_t *command);
 
