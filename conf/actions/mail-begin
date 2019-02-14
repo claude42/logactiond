@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# $1=HOST $2=RULENAME, $3=SENDER, $4=RECIPIENT
+
+if [ -n "$1" ]; then
+	HOST=" by host $1"
+fi
+
+mail -s "logactiond: $2 triggered$HOST" -r $3 $4 <<EOF
+This is logactiond@$(hostname).
+
+Rule $2 has been triggered$HOST.
+EOF

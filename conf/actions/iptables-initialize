@@ -4,7 +4,11 @@
 
 #echo "INITIALIZE $1"
 
+if [ -n "$4" ]; then
+	PORTS="-m multiport --dports $4"
+fi
+
 iptables -N "la-$1"
 iptables -A "la-$1" -j RETURN
-iptables -I $2 -p $3 -m multiport --dports $4 -j "la-$1"
+iptables -I $2 -p $3 $PORTS -j "la-$1"
 

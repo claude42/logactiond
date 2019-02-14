@@ -4,7 +4,11 @@
 
 #echo "SHUTDOWN $1"
 
-iptables -D $2 -p $3 -m multiport --dports $4 -j "la-$1"
+if [ -n "$4" ]; then
+	PORTS="-m multiport --dports $4"
+fi
+
+iptables -D $2 -p $3 $PORTS -j "la-$1"
 iptables -F "la-$1"
 iptables -X "la-$1"
 
