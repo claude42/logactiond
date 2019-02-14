@@ -40,6 +40,7 @@
 #include <assert.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
+#include <syslog.h>
 
 #include "logactiond.h"
 #include "nodelist.h"
@@ -80,7 +81,10 @@ string_to_addr(const char *host)
         struct in_addr result;
 
         if (inet_pton(AF_INET, host, &result) != 1)
-                die_err("Invalid IP address");
+        {
+                la_log(LOG_ERR, "Invalid IP address %s", host);
+                result.s_addr = -1;
+        }
 
         return result;
 }

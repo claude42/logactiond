@@ -79,11 +79,11 @@ find_trigger(la_rule_t *rule, la_command_t *template, struct in_addr addr)
 {
         assert_rule(rule); assert_command(template);
 
-        if (addr.s_addr == -1)
-                return NULL;
-
         la_debug("find_trigger(%s, %u, %s)", rule->name, template->id,
                         addr_to_string(addr));
+
+        if (addr.s_addr == -1)
+                return NULL;
 
         for (la_command_t *command = ITERATE_COMMANDS(rule->trigger_list);
                         (command = NEXT_COMMAND(command));)
@@ -178,13 +178,22 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
          * fired) by the same host before. Create new command if not found. If
          * host is not set, always create new command.
          */
-        // TODO: maybe add "need_host" config parameter. Don't trigger command
-        // at all w/o host in this case
         command = find_trigger(rule, template, addr);
 
         if (!command)
+        {
+                /* Don't trigger command if need_host=true but not host
+                 * property exists */
+                if (template->need_host && addr.s_addr == -1)
+                {
+                        la_log(LOG_ERR, "Missing required host token, command "
+                                        "not fired for rule \"%s\"!",
+                                        command->rule->name);
+                        return;
+                }
                 command = create_command_from_template(template, rule,
                                 pattern, addr);
+        }
 
         handle_command_on_trigger_list(command);
 #endif /* NOCOMMANDS */

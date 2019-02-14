@@ -73,6 +73,9 @@ check_for_special_names(la_command_t *command, la_property_t *action_property)
         assert_command(command), assert_property(action_property);
         la_debug("check_for_special_names(%s)", action_property->name);
 
+        if (!strcmp(action_property->name, LA_HOST_TOKEN))
+                return command->host;
+
         if (command->rule)
         {
                 if (!strcmp(action_property->name, LA_RULENAME_TOKEN))
@@ -308,6 +311,7 @@ dup_command(la_command_t *command)
         result->n_end_properties = command->n_end_properties;
 
         result->duration = command->duration;
+        result->need_host = command->need_host;
         //result->rule = command->rule;
         //result->pattern = command->pattern;
         //result->host = xstrdup(command->host);
@@ -339,7 +343,10 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
         result->pattern = pattern;
         result->pattern_properties = dup_property_list(pattern->properties);
         result->addr = addr;
-        result->host = addr_to_string(addr);
+        if (addr.s_addr != -1)
+                result->host = addr_to_string(addr);
+        else
+                result->host = NULL;
         result->end_time = result->n_triggers = result->start_time= 0;
 
         return result;
@@ -360,7 +367,7 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
 
 la_command_t *
 create_template(la_rule_t *rule, const char *begin_string,
-                const char *end_string, int duration)
+                const char *end_string, int duration, bool need_host)
 {
         assert_rule(rule); assert(begin_string);
 
@@ -385,6 +392,7 @@ create_template(la_rule_t *rule, const char *begin_string,
         result->pattern_properties = NULL;
         result->addr.s_addr = -1;
         result->host = NULL;
+        result->need_host = need_host;
 
         result->duration = duration;
         result->end_time = 0;

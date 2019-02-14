@@ -79,7 +79,7 @@ config_get_string_or_die(const config_setting_t *setting, const char *name)
         const char* result = config_get_string_or_null(setting, name);
 
         if (!result)
-                die_semantic("Config element %s missingn!", name);
+                die_semantic("Config element %s missing!", name);
 
         return result;
 }
@@ -98,7 +98,7 @@ config_setting_lookup_or_die(const config_setting_t *setting,
          * here but nowhere else */
         result = config_setting_lookup((config_setting_t *) setting, path);
         if (!result)
-                die_semantic("Missing element %s!", path);
+                die_semantic("Config element %s missing!", path);
 
         return result;
 }
@@ -244,14 +244,25 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
         const char *end = config_get_string_or_null(action_def,
                         LA_ACTION_END_LABEL);
 
+        int need_host = 0;
+        config_setting_t *tmp = config_setting_get_member(action_def,
+                        LA_ACTION_NEED_HOST_LABEL);
+        if (tmp)
+        {
+                if (config_setting_lookup_bool(action_def,
+                                        LA_ACTION_NEED_HOST_LABEL,
+                                        &need_host) == CONFIG_FALSE)
+                        die_semantic("Config element \"need_host\" is not boolean!");
+        }
+
         if (initialize)
                 trigger_command(create_template(rule, initialize, shutdown,
-                                        INT_MAX));
+                                        INT_MAX, false));
 
         if (begin)
                 add_tail(rule->begin_commands, (kw_node_t *)
                                 create_template(rule, begin, end,
-                                        rule->duration));
+                                        rule->duration, need_host));
         else
                 die_semantic("Begin action always required!");
 

@@ -56,6 +56,7 @@
 #define LA_ACTION_SHUTDOWN_LABEL "shutdown"
 #define LA_ACTION_BEGIN_LABEL "begin"
 #define LA_ACTION_END_LABEL "end"
+#define LA_ACTION_NEED_HOST_LABEL "need_host"
 
 #define LA_SOURCES_LABEL "sources"
 
@@ -252,6 +253,7 @@ typedef struct la_command_s
         kw_list_t *pattern_properties; /* properties from matched pattern */
         struct in_addr addr;     /* IP address */
         char *host;                /* IP address */
+        bool need_host;                 /* Command requires host */
         int duration;                /* duration how long command shall stay active,
                                    -1 if none */
 
@@ -382,7 +384,7 @@ la_command_t * create_command_from_template(la_command_t *template,
                 la_rule_t *rule, la_pattern_t *pattern, struct in_addr addr);
 
 la_command_t *create_template(la_rule_t *rule, const char *begin_string,
-                const char *end_string, int duration);
+                const char *end_string, int duration, bool need_host);
 
 void free_command(la_command_t *command);
 
