@@ -143,9 +143,7 @@ die_semantic(char *fmt, ...)
         log_message(LOG_ERR, fmt, myargs, NULL);
         va_end(myargs);
 
-        unload_la_config();
-        remove_pidfile();
-        exit(EXIT_FAILURE);
+        shutdown_daemon(EXIT_FAILURE);
 }
 
 void
@@ -157,9 +155,7 @@ die_hard(char *fmt, ...)
         log_message(LOG_ERR, fmt, myargs, NULL);
         va_end(myargs);
 
-        unload_la_config();
-        remove_pidfile();
-        exit(EXIT_FAILURE);
+        shutdown_daemon(EXIT_FAILURE);
 }
 
 void
@@ -171,9 +167,7 @@ die_err(char *fmt, ...)
         log_message(LOG_ERR, fmt, myargs, strerror(errno));
         va_end(myargs);
 
-        unload_la_config();
-        remove_pidfile();
-        exit(EXIT_FAILURE);
+        shutdown_daemon(EXIT_FAILURE);
 }
 
 void *

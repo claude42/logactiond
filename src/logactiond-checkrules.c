@@ -36,6 +36,13 @@ static char *cfg_filename = NULL;
 static char *log_filename = NULL;
 static char *rule_name = NULL;
 
+void
+shutdown_daemon(int status)
+{
+        unload_la_config();
+        exit(status);
+}
+
 static void
 print_usage(void)
 {
@@ -200,7 +207,7 @@ main(int argc, char *argv[])
                         iterate_through_all_rules(linebuffer);
         }
 
-        exit(EXIT_SUCCESS);
+        shutdown_daemon(EXIT_SUCCESS);
 }
 
 

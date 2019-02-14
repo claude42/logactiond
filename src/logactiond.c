@@ -41,24 +41,33 @@ la_runtype_t run_type = LA_DAEMON_BACKGROUND;
 unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
 unsigned int id_counter = 0;
 
+void
+shutdown_daemon(int status)
+{
+        /* TODO: once we have multiple threads watching sources, must ensure
+         * that threads are stopped before continuing */
+        empty_end_queue();
+        unload_la_config();
+        remove_pidfile();
+        exit(status);
+}
+
 static void
 handle_signal(int signal)
 {
         la_debug("handle_signal(%u)", signal);
         /* printf("Received signal %u\n", signal); */
-        /* TODO: once we have multiple threads watching sources, must ensure
-         * that threads are stopped before continuing */
-        empty_end_queue();
-        unload_la_config();
 
         if (signal == SIGHUP)
         {
-                load_la_config(cfg_filename);
+                // disabled for now as it doesn't work correctly
+                //empty_end_queue();
+                //unload_la_config();
+                //load_la_config(cfg_filename);
         }
         else
         {
-                remove_pidfile();
-                exit(0);
+                shutdown_daemon(EXIT_SUCCESS);
         }
 }
 

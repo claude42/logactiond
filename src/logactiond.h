@@ -318,6 +318,10 @@ extern unsigned int id_counter;
 
 /* Functions */
 
+/* main file */
+
+void shutdown_daemon(int status);
+
 /* misc.c */
 
 void remove_pidfile(void);
@@ -482,8 +486,6 @@ void watch_source_inotify(la_source_t *source);
 
 void init_watching_inotify(void);
 #endif /* HAVE_INOTIFY */
-
-/* log.c */
 
 void handle_new_content(la_source_t *source);
 
