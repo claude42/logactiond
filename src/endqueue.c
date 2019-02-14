@@ -83,6 +83,8 @@ find_end_command(la_rule_t *rule, struct in_addr addr)
 void
 empty_end_queue(void)
 {
+        /* Always remember: don't call die_xxx() from in here as this will
+         * call shutdown_daemon() again and we will end up in a fun loop... */
         la_debug("empty_end_queue()");
 
         if (!end_queue)
