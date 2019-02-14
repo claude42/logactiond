@@ -154,14 +154,14 @@ skeleton_daemon(void)
         create_pidfile();
 
         /* Open the log file */
-        openlog (NULL, 0, LOG_DAEMON);
+        openlog(NULL, LOG_PID, LOG_DAEMON);
 }
 
 static void
 print_usage(void)
 {
         fprintf(stderr,
-                "Usage: logactiond [-c configfile] [-d] [-f] [-p pidfile] [-v]\n");
+                "Usage: logactiond [-c configfile] [-d] [-f] [-p pidfile] [-s]\n");
 }
 
 static void
@@ -179,11 +179,11 @@ read_options(int argc, char *argv[])
                         {"configfile", required_argument, NULL, 'c'},
                         {"debug",      optional_argument, NULL, 'd'},
                         {"pidfile",    required_argument, NULL, 'p'},
-                        {"verbose",    no_argument,       NULL, 'v'},
+                        {"simulate",   no_argument,       NULL, 's'},
                         {0,            0,                 0,    0  }
                 };
 
-                int c = getopt_long(argc, argv, "fc:d::p:v", long_options, NULL);
+                int c = getopt_long(argc, argv, "fc:d::p:s", long_options, NULL);
 
                 if (c == -1)
                         break;
@@ -204,7 +204,8 @@ read_options(int argc, char *argv[])
                         case 'p':
                                 pid_file = optarg;
                                 break;
-                        case 'v': 
+                        case 's': 
+                                run_type = LA_UTIL_FOREGROUND;
                                 break;
                         case '?':
                                 print_usage();
@@ -261,6 +262,14 @@ main(int argc, char *argv[])
         chdir(CONF_DIR);
 
         read_options(argc, argv);
+
+        if (run_type == LA_UTIL_FOREGROUND)
+        {
+                load_la_config(cfg_filename);
+                unload_la_config();
+                fprintf(stderr, "Simulation successful.\n");
+                exit(EXIT_SUCCESS);
+        }
 
         la_log(LOG_INFO, "Starting up " PACKAGE_STRING);
 

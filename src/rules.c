@@ -158,6 +158,9 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
                 struct in_addr addr, la_command_t *template)
 {
 #ifndef NOCOMMANDS
+        if  (run_type == LA_UTIL_FOREGROUND)
+                return;
+
         assert_rule(rule); assert_pattern(pattern);
         assert_command(template);
 

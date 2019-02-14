@@ -219,12 +219,15 @@ exec_command(la_command_t *command, la_commandtype_t type)
 void
 trigger_command(la_command_t *command)
 {
+#ifndef NOCOMMANDS
+        if (run_type == LA_UTIL_FOREGROUND)
+                return;
+
         assert_command(command);
 
         la_debug("trigger_command(%s, %d)", command->name,
                         command->duration);
 
-#ifndef NOCOMMANDS
         /* TODO: can't we convert_command() earlier? */
         exec_command(command, LA_COMMANDTYPE_BEGIN);
 

@@ -318,6 +318,8 @@ extern unsigned int log_level;
 
 extern unsigned int id_counter;
 
+extern la_runtype_t run_type;
+
 /* Functions */
 
 /* main file */

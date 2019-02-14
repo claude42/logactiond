@@ -30,8 +30,6 @@
 
 #include "logactiond.h"
 
-extern la_runtype_t run_type;
-
 bool created_pidfile = false;
 
 void

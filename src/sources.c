@@ -115,6 +115,9 @@ handle_new_content(la_source_t *source)
 void
 watch_source(la_source_t *source, int whence)
 {
+        if (run_type == LA_UTIL_FOREGROUND)
+                return;
+
         assert_source(source);
         la_debug("watch_source(%s)", source->name);
 
@@ -139,6 +142,9 @@ watch_source(la_source_t *source, int whence)
 void
 unwatch_source(la_source_t *source)
 {
+        if (run_type == LA_UTIL_FOREGROUND)
+                return;
+
         assert(source);
         la_debug("unwatch_source(%s)", source->name);
 
