@@ -166,7 +166,7 @@ watched_file_created(la_source_t *source)
 {
         assert_source(source);
 
-        la_log(LOG_INFO, "watched_file_created(%s)", source->name);
+        la_log(LOG_INFO, "Source \"%s\" - file has ben re-created", source->name);
 
         /* unwatch not necessary in case of a previous IN_DELETE */
         if (source->file)
@@ -176,11 +176,24 @@ watched_file_created(la_source_t *source)
 }
 
 static void
+watched_file_moved_from(la_source_t *source)
+{
+        assert_source(source);
+
+        la_log(LOG_INFO, "Source \"%s\" - file has been moved away",
+                        source->name);
+
+        /* Keep watching original file in case daemons are still logging
+         * there. Switch only when new file is created. */
+}
+
+static void
 watched_file_moved_to(la_source_t *source)
 {
         assert_source(source);
 
-        la_log(LOG_INFO, "watched_file_moved_to(%s)", source->name);
+        la_log(LOG_INFO, "Source \"%s\" - file has been moved to watched "
+                        "location", source->name);
 
         /* unwatch not necessary in case of a previous IN_DELETE */
         if (source->file)
@@ -195,7 +208,7 @@ watched_file_deleted(la_source_t *source)
 {
         assert_source(source);
 
-        la_log(LOG_INFO, "watched_file_deleted(%s)", source->name);
+        la_log(LOG_INFO, "Source \"%s\" - file has been deleted", source->name);
 
         unwatch_source(source);
 }
@@ -215,6 +228,11 @@ handle_inotify_directory_event(struct inotify_event *event)
         {
                 la_debug("handle_inotify_directory_event(%s)", source->name);
                 watched_file_created(source);
+        }
+        else if (event->mask & IN_MOVED_FROM)
+        {
+                la_debug("handle_inotify_directory_event(%s)", source->name);
+                watched_file_moved_from(source);
         }
         else if (event->mask & IN_MOVED_TO)
         {
@@ -314,8 +332,8 @@ watch_source_inotify(la_source_t *source)
                 free (tmp);
 
                 source->parent_wd = inotify_add_watch(inotify_fd,
-                                source->parent_dir,
-                                IN_CREATE | IN_DELETE | IN_MOVED_TO);
+                                source->parent_dir, IN_CREATE | IN_DELETE |
+                                IN_MOVED_TO | IN_MOVED_FROM);
                 /* TODO: maybe this should not be a fatal error */
                 if (source->parent_wd == -1)
                         die_err("Can't add inotify watch for %s!", source->parent_dir);
