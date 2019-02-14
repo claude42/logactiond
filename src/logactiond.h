@@ -39,6 +39,10 @@
 //#define CONF_DIR "/etc/logactiond"
 #define CONFIG_FILE "logactiond.cfg"
 
+#define DEFAULT_THRESHOLD 3
+#define DEFAULT_PERIOD 600
+#define DEFAULT_DURATION 600
+
 #define PIDFILE "/var/run/logactiond.pid"
 
 

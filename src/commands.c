@@ -355,7 +355,7 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
 /*
  * Creates a new command template
  *
- * Duration = -1 prevents any end command
+ * Duration = 0 prevents any end command
  * Duration = INT_MAX will result that the end command will only be fired on shutdown
  *
  * Note: begin_properties, end_properties will be initialized with

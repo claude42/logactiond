@@ -567,12 +567,18 @@ load_defaults(void)
                 la_config->default_threshold =
                         config_get_unsigned_int_or_negative(defaults_section,
                                         LA_THRESHOLD_LABEL);
+                if (la_config->default_threshold == -1)
+                        la_config->default_threshold = DEFAULT_THRESHOLD;
                 la_config->default_period =
                         config_get_unsigned_int_or_negative(defaults_section,
                                         LA_PERIOD_LABEL);
+                if (la_config->default_period == -1)
+                        la_config->default_period = DEFAULT_PERIOD;
                 la_config->default_duration =
                         config_get_unsigned_int_or_negative(defaults_section,
                                         LA_DURATION_LABEL);
+                if (la_config->default_duration == -1)
+                        la_config->default_duration = DEFAULT_DURATION;
 
                 la_config->default_properties = create_list();
                 load_properties(la_config->default_properties, defaults_section);
@@ -580,9 +586,9 @@ load_defaults(void)
         }
         else
         {
-                la_config->default_threshold = -1;
-                la_config->default_period = -1;
-                la_config->default_duration = -1;
+                la_config->default_threshold = DEFAULT_THRESHOLD;
+                la_config->default_period = DEFAULT_PERIOD;
+                la_config->default_duration = DEFAULT_DURATION;
                 la_config->default_properties = NULL;
                 la_config->ignore_addresses = NULL;
         }
