@@ -312,6 +312,7 @@ dup_command(la_command_t *command)
 
         result->id = command->id;
 
+        result->name = xstrdup(command->name);
         result->begin_string = xstrdup(command->begin_string);
         result->begin_properties = dup_property_list(command->begin_properties);
         result->n_begin_properties = command->n_begin_properties;
