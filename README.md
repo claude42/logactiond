@@ -12,7 +12,7 @@ then I would like to spend on the task of getting rid of brute force attacks.
 
 Logactiond tries to be a lightweight daemon. At the moment in only supports
 observing logfiles via inotify only so is limited to Linux. Goal is to support
-additional backends (FSevents, systemd, simple polling for all other cases).
+additional backends (e.g. systemd, simple polling for all other cases).
 
 Right now, this should be considered alpha quality code and I don't suggest
 that you use it on production system. logactiond itself can't do too much harm
@@ -76,7 +76,7 @@ TODO
 
 - Github repository: https://github.com/claude42/logactiond
 - Issue tracker: https://github.com/claude42/logactiond/issues
-- There's currently no project homepage yet.
+- Project homepage: https://logactiond.org/
 - For anything else, you can reach me at kw@aw.net
 - logactiond uses libconfig for parsing its config file. More information on
   libconfig can be found at https://hyperrealm.com/libconfig/libconfig.html
