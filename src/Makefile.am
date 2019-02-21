@@ -1,6 +1,6 @@
 sbin_PROGRAMS = logactiond
 bin_PROGRAMS = logactiond-checkrules
-logactiond_SOURCES = logactiond.c logactiond.h configfile.c rules.c patterns.c sources.c misc.c inotify.c nodelist.c nodelist.h properties.c commands.c endqueue.c addresses.c
+logactiond_SOURCES = logactiond.c logactiond.h configfile.c rules.c patterns.c sources.c misc.c inotify.c nodelist.c nodelist.h properties.c commands.c endqueue.c addresses.c polling.c
 logactiond_LDADD = $(top_srcdir)/libconfig/lib/.libs/libconfig.a
 logactiond_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\""
 logactiond_CFLAGS = $(PTHREAD_CFLAGS)

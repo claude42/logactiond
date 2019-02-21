@@ -27,6 +27,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include <arpa/inet.h>
+#include <sys/stat.h>
 
 #include <libconfig.h>
 
@@ -63,15 +64,15 @@
 #define LA_ACTION_NEED_HOST_LABEL "need_host"
 
 #define LA_SOURCES_LABEL "sources"
+#define LA_SOURCE_TYPE_LABEL "type"
+#define LA_SOURCE_TYPE_FILE_OPTION "file"
+#define LA_SOURCE_TYPE_SYSTEMD_OPTION "systemd"
 
 #define LA_LOCAL_LABEL "local"
 #define LA_LOCAL_ENABLED_LABEL "enabled"
 
 #define LA_RULES_LABEL "rules"
 #define LA_RULE_SOURCE_LABEL "source"
-#define LA_RULE_TYPE_LABEL "type"
-#define LA_RULE_TYPE_FILE_OPTION "file"
-#define LA_RULE_TYPE_SYSTEMD_OPTION "systemd"
 #define LA_RULE_ACTION_LABEL "action"
 #define LA_RULE_PATTERNS_LABEL "pattern"
 
@@ -148,12 +149,15 @@ typedef struct la_rule_s la_rule_t;
 typedef struct la_command_s la_command_t;
 
 // TODO: add default type
-typedef enum la_sourcetype_s { LA_RULE_TYPE_FILE, LA_RULE_TYPE_SYSTEMD } la_sourcetype_t;
+typedef enum la_sourcetype_s { LA_SOURCE_TYPE_FILE, LA_SOURCE_TYPE_SYSTEMD } la_sourcetype_t;
 
 typedef enum la_commandtype_s { LA_COMMANDTYPE_BEGIN, LA_COMMANDTYPE_END } la_commandtype_t;
 
 typedef enum la_runtype_s { LA_DAEMON_BACKGROUND, LA_DAEMON_FOREGROUND,
         LA_UTIL_FOREGROUND, LA_UTIL_DEBUG } la_runtype_t;
+
+typedef enum la_watchbackend_s { LA_WATCHBACKEND_NONE,
+        LA_WATCHBACKEND_POLLING, LA_WATCHBACKEND_INOTIFY } la_watchbackend_t;
 
 /*
  * bla
@@ -290,6 +294,10 @@ typedef struct la_source_s
         kw_list_t *rules;
         /* File handle for log file */
         FILE *file;
+        /* stat() result for file */
+        struct stat stats;
+        /* File is currently "watchable" - only used by polling backend */
+        bool active;
 #if HAVE_INOTIFY
         /* Watch descriptor for log file itself */
         int wd;
@@ -492,7 +500,19 @@ void watch_source_inotify(la_source_t *source);
 void init_watching_inotify(void);
 #endif /* HAVE_INOTIFY */
 
-void handle_new_content(la_source_t *source);
+/* polling.c */
+
+void unwatch_source_polling(la_source_t *source);
+
+void watch_forever_polling(void);
+
+void watch_source_polling(la_source_t *source);
+
+void init_watching_polling(void);
+
+/* log.c */
+
+bool handle_new_content(la_source_t *source);
 
 
 #endif /* __logactiond_h */

@@ -40,6 +40,7 @@ char *pid_file = NULL;
 la_runtype_t run_type = LA_DAEMON_BACKGROUND;
 unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
 unsigned int id_counter = 0;
+la_watchbackend_t watchbackend = LA_WATCHBACKEND_NONE;
 
 void
 shutdown_daemon(int status)
@@ -230,6 +231,8 @@ watch_forever(void)
 #ifndef NOWATCH
 #if HAVE_INOTIFY
         watch_forever_inotify();
+#else /* HAVE_INOTIFY */
+        watch_forever_polling();
 #endif /* HAVE_INOTIFY */
 #endif /* NOWATCH */
 }
@@ -247,8 +250,10 @@ init_watching(void)
 #ifndef NOWATCH
 #if HAVE_INOTIFY
         init_watching_inotify();
+        watchbackend = LA_WATCHBACKEND_INOTIFY;
 #else /* HAVE_INOTIFY */
-        die_hard("Don't have inotify!");
+        init_watching_polling();
+        watchbackend = LA_WATCHBACKEND_POLLING;
 #endif /* HAVE_INOTIFY */
 #endif /* NOWATCH */
 }
@@ -284,6 +289,9 @@ main(int argc, char *argv[])
         load_la_config(cfg_filename);
 
         watch_forever();
+
+        unload_la_config();
+        empty_end_queue();
 
         assert(false);
 }
