@@ -166,7 +166,8 @@ watched_file_created(la_source_t *source)
         if (source->file)
                 unwatch_source(source);
         watch_source(source, SEEK_SET);
-        handle_new_content(source);
+        if (!handle_new_content(source))
+                la_log(LOG_ERR, "Reading from source \"%s\" failed", source->name);
 }
 
 static void
@@ -238,7 +239,8 @@ handle_inotify_file_event(struct inotify_event *event)
                 return;
 
         la_debug("handle_inotify_file_event(%s)", source->name);
-        handle_new_content(source);
+        if (!handle_new_content(source))
+                die_err("Reading from source \"%s\" failed", source->name);
 }
 
 static void
@@ -298,6 +300,7 @@ watch_source_inotify(la_source_t *source)
         la_debug("watch_source_inotify(%s)", source->name);
 
         source->wd  = inotify_add_watch(inotify_fd, source->location, IN_MODIFY);
+        /* TODO: really die_err() here (and below)? */
         if (source->wd  == -1)
                 die_err("Can't add inotify watch for %s!", source->location);
 

@@ -210,12 +210,12 @@ get_source_type(const config_setting_t *rule)
         if (!source_def)
                 die_semantic("Source not found!");
 
-        type = config_get_string_or_die(source_def, LA_RULE_TYPE_LABEL);
+        type = config_get_string_or_die(source_def, LA_SOURCE_TYPE_LABEL);
 
-        if (!strcmp(type, LA_RULE_TYPE_FILE_OPTION))
-                return LA_RULE_TYPE_FILE;
-        else if (!strcmp(type, LA_RULE_TYPE_SYSTEMD_OPTION))
-                return LA_RULE_TYPE_SYSTEMD;
+        if (!strcmp(type, LA_SOURCE_TYPE_FILE_OPTION))
+                return LA_SOURCE_TYPE_FILE;
+        else if (!strcmp(type, LA_SOURCE_TYPE_SYSTEMD_OPTION))
+                return LA_SOURCE_TYPE_SYSTEMD;
         else
                 die_semantic("Wrong source type \"%s\" specified!", type);
 
@@ -473,9 +473,9 @@ load_single_rule(const config_setting_t *rule_def,
         {
                 source = create_source(get_source_name(rule_def),
                                 get_source_type(rule_def), location);
-                watch_source(source, SEEK_END);
-
                 add_tail(la_config->sources, (kw_node_t *) source);
+
+                watch_source(source, SEEK_END);
         }
 
         assert_source(source);

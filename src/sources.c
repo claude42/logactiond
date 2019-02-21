@@ -23,6 +23,9 @@
 #include <syslog.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <sys/stat.h>
 
 #include <libconfig.h>
 
@@ -62,9 +65,12 @@ handle_log_line(la_source_t *source, char *line)
 
 /*
  * Read new content from file and hand over to handle_log_line()
+ *
+ * Reads until feof. Returns true if ended with feof, false if ended with
+ * another error.
  */
 
-void
+bool
 handle_new_content(la_source_t *source)
 {
         assert_source(source);
@@ -81,14 +87,14 @@ handle_new_content(la_source_t *source)
         {
                 if (feof(source->file))
                 {
+                        /* What was the reason for this? I can't remember :-O */
                         fseek(source->file, 0, SEEK_END);
-                        return;
+                        return true;
                 }
                 else
-                        die_err("Reading from source \"%s\" failed", source->name);
+                        return false;
         }
         handle_log_line(source, linebuffer);
-
 
         for (;;)
         {
@@ -96,9 +102,9 @@ handle_new_content(la_source_t *source)
                 if (num_read==-1)
                 {
                         if (feof(source->file))
-                                break;
+                                return true;
                         else
-                                die_err("Reading from source \"%s\" failed", source->name);
+                                return false;
                 }
                 handle_log_line(source, linebuffer);
         }
@@ -122,11 +128,17 @@ watch_source(la_source_t *source, int whence)
         source->file = fopen(source->location, "r");
         if (!source->file)
                 die_err("Opening source \"%s\" failed", source->name);
+        if (fstat(fileno(source->file), &(source->stats)) == -1)
+                die_err("Stating source \"%s\" failed", source->name);
         if (fseek(source->file, 0, whence))
                 die_err("Seeking in source \"%s\" failed", source->name);
 
+        source->active = true;
+
 #if HAVE_INOTIFY
         watch_source_inotify(source);
+#else /* HAVE_INOTIFY */
+        watch_source_polling(source);
 #endif /* HAVE_INOTIFY */
 
 #endif /* NOWATCH */
@@ -139,20 +151,25 @@ watch_source(la_source_t *source, int whence)
 void
 unwatch_source(la_source_t *source)
 {
-        assert(source);
+        assert_source(source); assert(source->file); assert(source->active);
         la_debug("unwatch_source(%s)", source->name);
 
 #ifndef NOWATCH
-        if (fclose(source->file))
-                die_err("Closing source \"%s\" failed", source->name);
-        source->file = NULL;
 
 #if HAVE_INOTIFY
         unwatch_source_inotify(source);
+#else /* HAVE_INOTIFY */
+        unwatch_source_polling(source);
 #endif /* HAVE_INOTIFY */
+
+        if (fclose(source->file))
+                die_err("Closing source \"%s\" failed", source->name);
+        source->file = NULL;
+        source->active = false;
 
 #endif /* NOWATCH */
 }
+
 
 /*
  * Create a new la_source for the given filename, wd. But don't add to
@@ -170,6 +187,8 @@ create_source(const char *name, la_sourcetype_t type, const char *location)
         result->parent_dir = NULL;
         result->type = type;
         result->rules = create_list();
+        result->file = NULL;
+        result->active = false;
 
         return result;
 }
@@ -179,7 +198,8 @@ free_source(la_source_t *source)
 {
         assert_source(source);
 
-        unwatch_source(source);
+        if (source->file)
+                unwatch_source(source);
 
         free_rule_list(source->rules);
 
