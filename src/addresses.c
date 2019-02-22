@@ -168,6 +168,8 @@ create_address6(const char *ip, la_address_t *address)
         {
                 die_err("Problem converting IP address %s.", ip);
         }
+
+        return 0; // avoid warning
 }
 
 /*
