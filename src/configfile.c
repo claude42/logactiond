@@ -244,15 +244,26 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
         const char *end = config_get_string_or_null(action_def,
                         LA_ACTION_END_LABEL);
 
-        int need_host = 0;
-        config_setting_t *tmp = config_setting_get_member(action_def,
+        const char *tmp = config_get_string_or_null(action_def,
                         LA_ACTION_NEED_HOST_LABEL);
+        la_need_host_t need_host;
         if (tmp)
         {
-                if (config_setting_lookup_bool(action_def,
-                                        LA_ACTION_NEED_HOST_LABEL,
-                                        &need_host) == CONFIG_FALSE)
-                        die_semantic("Config element \"need_host\" is not boolean!");
+                if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_NO_LABEL))
+                        need_host = LA_NEED_HOST_NO;
+                else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_ANY_LABEL))
+                        need_host = LA_NEED_HOST_ANY;
+                else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_IP4_LABEL))
+                        need_host = LA_NEED_HOST_IP4;
+                else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_IP6_LABEL))
+                        need_host = LA_NEED_HOST_IP6;
+                else
+                        die_semantic("Invalid value \"%s\" for need_host "
+                                        "parameter!", tmp);
+        }
+        else
+        {
+                need_host = LA_NEED_HOST_NO;
         }
 
         if (initialize)
@@ -388,9 +399,11 @@ load_ignore_addresses(const config_setting_t *section)
                         die_hard("Only strings allowed for ignore addresses!");
 
                 la_address_t *address = create_address(ip);
+                if (!address)
+                        die_err("Invalid IP address %s!", ip);
 
                 la_debug("load_ignore_addresses(%s)=%s",
-                                config_setting_name(section), ip);
+                                config_setting_name(section), address->text);
                 add_tail(result, (kw_node_t *) address);
         }
         assert_list(result);

@@ -61,6 +61,10 @@
 #define LA_ACTION_BEGIN_LABEL "begin"
 #define LA_ACTION_END_LABEL "end"
 #define LA_ACTION_NEED_HOST_LABEL "need_host"
+#define LA_ACTION_NEED_HOST_NO_LABEL "no"
+#define LA_ACTION_NEED_HOST_ANY_LABEL "any"
+#define LA_ACTION_NEED_HOST_IP4_LABEL "4"
+#define LA_ACTION_NEED_HOST_IP6_LABEL "6"
 
 #define LA_SOURCES_LABEL "sources"
 
@@ -87,6 +91,7 @@
 #define LA_RULENAME_TOKEN "rulename"
 #define LA_SOURCENAME_TOKEN "sourcename"
 #define LA_PATTERNNAME_TOKEN "patternname"
+#define LA_IPVERSION_TOKEN "ipversion"
 
 // maximum number of tokens that can be matched
 
@@ -152,6 +157,9 @@ typedef enum la_sourcetype_s { LA_RULE_TYPE_FILE, LA_RULE_TYPE_SYSTEMD } la_sour
 
 typedef enum la_commandtype_s { LA_COMMANDTYPE_BEGIN, LA_COMMANDTYPE_END } la_commandtype_t;
 
+typedef enum la_need_host_s { LA_NEED_HOST_NO, LA_NEED_HOST_ANY,
+        LA_NEED_HOST_IP4, LA_NEED_HOST_IP6 } la_need_host_t;
+
 typedef enum la_runtype_s { LA_DAEMON_BACKGROUND, LA_DAEMON_FOREGROUND,
         LA_UTIL_FOREGROUND, LA_UTIL_DEBUG } la_runtype_t;
 
@@ -162,8 +170,11 @@ typedef enum la_runtype_s { LA_DAEMON_BACKGROUND, LA_DAEMON_FOREGROUND,
 typedef struct la_address_s
 {
         kw_node_t node;
+        int af;
         struct in_addr addr;
+        struct in6_addr addr6;
         int prefix;
+        char *text;
 } la_address_t;
 
 /*
@@ -257,9 +268,8 @@ typedef struct la_command_s
         la_rule_t *rule;        /* related rule */
         la_pattern_t *pattern;        /* related pattern*/
         kw_list_t *pattern_properties; /* properties from matched pattern */
-        struct in_addr addr;     /* IP address */
-        char *host;                /* IP address */
-        bool need_host;                 /* Command requires host */
+        la_address_t *address;     /* IP address */
+        la_need_host_t need_host;    /* Command requires host */
         int duration;                /* duration how long command shall stay active,
                                    -1 if none */
 
@@ -360,21 +370,21 @@ void unload_la_config(void);
 
 /* addresses.c */
 
+la_address_t *dup_address(la_address_t *address);
+
 void free_address(la_address_t *address);
 
 void free_address_list(kw_list_t *list);
 
-struct in_addr string_to_addr(const char *host);
+int adrcmp(la_address_t *a1, la_address_t *a2);
 
-char *addr_to_string(struct in_addr addr);
-
-bool address_on_ignore_list(struct in_addr addr);
+bool address_on_ignore_list(la_address_t *address);
 
 la_address_t *create_address(const char *ip);
 
 /* endqueue.c */
 
-la_command_t *find_end_command(la_rule_t *rule, struct in_addr addr);
+la_command_t *find_end_command(la_rule_t *rule, la_address_t *address);
 
 void empty_end_queue(void);
 
@@ -393,11 +403,11 @@ void trigger_end_command(la_command_t *command);
 la_command_t * dup_command(la_command_t *command);
 
 la_command_t * create_command_from_template(la_command_t *template,
-                la_rule_t *rule, la_pattern_t *pattern, struct in_addr addr);
+                la_rule_t *rule, la_pattern_t *pattern, la_address_t *address);
 
 la_command_t *create_template(const char *name, la_rule_t *rule,
                 const char *begin_string, const char *end_string,
-                int duration, bool need_host);
+                int duration, la_need_host_t need_host);
 
 void free_command(la_command_t *command);
 

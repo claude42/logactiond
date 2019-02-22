@@ -12,3 +12,7 @@ iptables -N "la-$1"
 iptables -A "la-$1" -j RETURN
 iptables -I $2 -p $3 $PORTS -j "la-$1"
 
+ip6tables -N "la-$1"
+ip6tables -A "la-$1" -j RETURN
+ip6tables -I $2 -p $3 $PORTS -j "la-$1"
+

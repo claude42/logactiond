@@ -50,8 +50,8 @@ check_for_special_names(la_command_t *command, la_property_t *action_property)
         assert_command(command), assert_property(action_property);
         la_debug("check_for_special_names(%s)", action_property->name);
 
-        if (!strcmp(action_property->name, LA_HOST_TOKEN))
-                return command->host;
+        if (!strcmp(action_property->name, LA_HOST_TOKEN) && command->address)
+                return command->address->text;
 
         if (command->rule)
         {
@@ -60,6 +60,19 @@ check_for_special_names(la_command_t *command, la_property_t *action_property)
 
                 if (!strcmp(action_property->name, LA_SOURCENAME_TOKEN))
                         return command->rule->source->name;
+        }
+
+        if (command->address)
+        {
+                if (!strcmp(action_property->name, LA_IPVERSION_TOKEN))
+                {
+                        if (command->address->af == AF_INET)
+                                return "4";
+                        else if (command->address->af == AF_INET6)
+                                return "6";
+                        else
+                                return "unknown";
+                }
         }
 
         return NULL;
@@ -121,8 +134,12 @@ compute_converted_length(la_command_t *command, la_commandtype_t type,
                         command->end_properties);
 
         while ((action_property = NEXT_PROPERTY(action_property)))
-                result += strlen(get_value_for_action_property(command,
-                                        action_property));
+        {
+                const char *tmp = get_value_for_action_property(command,
+                                action_property);
+                if (tmp)
+                        result += strlen(tmp);
+        }
 
         return result;
 }
@@ -247,12 +264,22 @@ trigger_end_command(la_command_t *command)
                         command->duration);
 
         if (command->duration == INT_MAX)
+        {
                 la_log(LOG_INFO, "Shutting down rule \"%s\".",
                                 command->rule->name);
+        }
         else
-                la_log(LOG_INFO, "Host: %s, action \"%s\" ended for rule "
-                                "\"%s\".", command->host, command->name,
-                                command->rule->name);
+        {
+                if (command->address)
+                        la_log(LOG_INFO, "Host: %s, action \"%s\" ended for "
+                                        "rule \"%s\".",
+                                        command->address->text, command->name,
+                                        command->rule->name);
+                else
+                        la_log(LOG_INFO, "Action \"%s\" ended for rule "
+                                        "\"%s\".", command->name,
+                                        command->rule->name);
+        }
 
         exec_command(command, LA_COMMANDTYPE_END);
 }
@@ -330,16 +357,25 @@ dup_command(la_command_t *command)
 
 /*
  * Create command from template. Duplicate template and add add'l information
+ *
+ * Returns NULL if if ip address does not match template->need_host setting.
  */
 
 la_command_t *
 create_command_from_template(la_command_t *template, la_rule_t *rule,
-                la_pattern_t *pattern, struct in_addr addr)
+                la_pattern_t *pattern, la_address_t *address)
 {
         assert_command(template); assert_rule(rule); assert_pattern(pattern);
         assert_list(pattern->properties);
 
+        /* Return if action can't handle type of IP address */
         la_debug("create_command_from_template(%s)", template->name);
+
+        if ((address->af == AF_INET && template->need_host ==
+                                LA_NEED_HOST_IP6) ||
+                        (address->af ==AF_INET6 && template->need_host ==
+                         LA_NEED_HOST_IP4))
+                return NULL;
 
         la_command_t *result;
 
@@ -348,11 +384,7 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
         result->rule = rule;
         result->pattern = pattern;
         result->pattern_properties = dup_property_list(pattern->properties);
-        result->addr = addr;
-        if (addr.s_addr != -1)
-                result->host = addr_to_string(addr);
-        else
-                result->host = NULL;
+        result->address = dup_address(address);
         result->end_time = result->n_triggers = result->start_time= 0;
 
         return result;
@@ -373,7 +405,7 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
 
 la_command_t *
 create_template(const char *name, la_rule_t *rule, const char *begin_string,
-                const char *end_string, int duration, bool need_host)
+                const char *end_string, int duration, la_need_host_t need_host)
 {
         assert_rule(rule); assert(begin_string);
 
@@ -398,8 +430,7 @@ create_template(const char *name, la_rule_t *rule, const char *begin_string,
         result->rule = rule;
         result->pattern = NULL;
         result->pattern_properties = NULL;
-        result->addr.s_addr = -1;
-        result->host = NULL;
+        result->address = NULL;
         result->need_host = need_host;
 
         result->duration = duration;
@@ -424,7 +455,8 @@ free_command(la_command_t *command)
         free(command->name);
         free(command->begin_string);
         free(command->end_string);
-        free(command->host);
+        if (command->address)
+                free_address(command->address);
         free(command);
 }
 

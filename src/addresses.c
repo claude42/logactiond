@@ -41,11 +41,14 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <syslog.h>
+#include <errno.h>
 
 #include "logactiond.h"
 #include "nodelist.h"
 
 /*
+ * Check whether addr is in net (with prefix).
+ *
  * From https://stackoverflow.com/questions/7213995/ip-cidr-match-function
  */
 bool
@@ -60,51 +63,57 @@ cidr_match(struct in_addr addr, struct in_addr net, int prefix)
 }
 
 /*
- * Convert address to string. Returned string must be freed
+ * Compare to addresses. Return 0 if addresses are the same, return 1
+ * otherwise.
  */
-char *
-addr_to_string(struct in_addr addr)
+
+int
+adrcmp(la_address_t *a1, la_address_t *a2)
 {
-        char *result = (char *) xmalloc(INET_ADDRSTRLEN);
+        if (!a1 && !a2)
+                return 0;
 
-        if (!inet_ntop(AF_INET, &addr, result, INET_ADDRSTRLEN))
-                die_err("Invalid IP address!");
+        if (!a1 || !a2)
+                return 1;
 
-        return result;
-}
-
-struct in_addr
-string_to_addr(const char *host)
-{
-        assert(host);
-
-        struct in_addr result;
-
-        if (inet_pton(AF_INET, host, &result) != 1)
+        if (a1->af == a2->af)
         {
-                la_log(LOG_ERR, "Invalid IP address %s", host);
-                result.s_addr = -1;
+                if (a1->af == AF_INET && a1->addr.s_addr == a2->addr.s_addr)
+                        return 0;
+                else if (a1->af == AF_INET6 &&
+                                !memcmp(&(a1->addr6), &(a2->addr6),
+                                        sizeof(struct in6_addr)))
+                        return 0;
         }
 
-        return result;
+        return 1;
 }
 
-
 /*
- * Check whether ip address is on ignore list. Returns false if ip==NULL
+ * Check whether ip address is on ignore list. Returns false if address==NULL
  */
 
 bool
-address_on_ignore_list(struct in_addr addr)
+address_on_ignore_list(la_address_t *address)
 {
-        char *host = addr_to_string(addr);
-        la_debug("address_on_ignore_list(%s)", host);
-        free(host);
+        if (!address)
+                return false;
 
-        for (la_address_t *address = ITERATE_ADDRESSES(la_config->ignore_addresses);
-                        (address = NEXT_ADDRESS(address));)
+        la_debug("address_on_ignore_list(%s)", address->text);
+
+        for (la_address_t *ign_address = ITERATE_ADDRESSES(la_config->ignore_addresses);
+                        (ign_address = NEXT_ADDRESS(ign_address));)
         {
-                if (cidr_match(addr, address->addr, address->prefix))
+                if (address->af != ign_address->af)
+                        continue;
+                else if (address->af == AF_INET &&
+                                cidr_match(address->addr, ign_address->addr,
+                                        ign_address->prefix))
+                                return true;
+                else if (address->af == AF_INET6 &&
+                                memcmp(&(address->addr6),
+                                        &(ign_address->addr6), sizeof(struct
+                                                in6_addr)))
                         return true;
         }
 
@@ -112,7 +121,60 @@ address_on_ignore_list(struct in_addr addr)
 }
 
 /*
+ * Create an IPv4 address from string
+ */
+
+bool
+create_address4(const char *ip, la_address_t *address)
+{
+        address->prefix = inet_net_pton(AF_INET, ip, &(address->addr),
+                        sizeof(in_addr_t));
+
+        if (address->prefix != -1)
+        {
+                address->af = AF_INET;
+                return true;
+        }
+        else
+        {
+                if (errno != ENOENT)
+                        die_err("Problem converting IP address %s.", ip);
+                return false;
+        }
+}
+
+/*
+ * Create an IPv6 address from string
+ */
+
+bool
+create_address6(const char *ip, la_address_t *address)
+{
+        assert(ip);
+
+        /* TODO: does not support prefix for IPv6 */
+        int tmp = inet_pton(AF_INET6, ip, &(address->addr6));
+        if (tmp == 1)
+        {
+                address->prefix = 128;
+                address->af = AF_INET6;
+                return true;
+        }
+        else if (tmp == 0)
+        {
+                return false;
+        }
+        else
+        {
+                die_err("Problem converting IP address %s.", ip);
+        }
+}
+
+/*
  * Create new la_address_t. ip must not be NULL
+ *
+ * Returns NULL in case of an invalid (textual representation of an) IP
+ * address.
  */
 
 la_address_t *
@@ -122,22 +184,55 @@ create_address(const char *ip)
 
         la_address_t *result = (la_address_t *) xmalloc(sizeof(la_address_t));
 
-        result->prefix = inet_net_pton(AF_INET, ip, &(result->addr.s_addr),
-                        sizeof(in_addr_t));
+        if (!create_address4(ip, result))
+        {
+                if (!create_address6(ip, result))
+                {
+                        free(result);
+                        return NULL;
+                }
+        }
+        result->text = xstrdup(ip);
+        return result;
+}
 
-        if (result->prefix == -1)
-                die_err("Invalid IP address %s", ip);
+/*
+ * Duplicate address
+ */
 
-        la_debug("create_address(%s)=%u", ip, result->prefix);
+la_address_t *
+dup_address(la_address_t *address)
+{
+        assert(address);
+        la_debug("dup_address(%s)", address->text);
+
+        la_address_t *result = (la_address_t *) xmalloc(sizeof(la_address_t));
+
+        result->af = address->af;
+        result->addr = address->addr;
+        memcpy(&(result->addr6), &(address->addr6), sizeof(struct in6_addr));
+        result->prefix = address->prefix;
+        result->text = xstrdup(address->text);
 
         return result;
 }
 
+/*
+ * Free single address. Must not be called with NULL argument
+ */
+
 void
 free_address(la_address_t *address)
 {
+        assert(address);
+
+        free(address->text);
         free(address);
 }
+
+/*
+ * Free all addresses in list
+ */
 
 void
 free_address_list(kw_list_t *list)
@@ -145,8 +240,7 @@ free_address_list(kw_list_t *list)
         if (!list)
                 return;
 
-        for (la_address_t *tmp;
-                        (tmp = REM_ADDRESSES_HEAD(list));)
+        for (la_address_t *tmp; (tmp = REM_ADDRESSES_HEAD(list));)
                 free_address(tmp);
 
         free(list);

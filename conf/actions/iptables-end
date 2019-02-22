@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# $1=RULE-NAME, $2=HOST, $3=IPVERSION
+
+if [ "$3" = "6" ]; then
+	COMMAND="ip6tables"
+else
+	COMMAND="iptables"
+fi
+
+$COMMAND -D "la-$1" -s $2 -j REJECT
+

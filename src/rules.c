@@ -75,21 +75,20 @@ add_trigger(la_command_t *command)
  */
 
 static la_command_t *
-find_trigger(la_rule_t *rule, la_command_t *template, struct in_addr addr)
+find_trigger(la_rule_t *rule, la_command_t *template, la_address_t *address)
 {
         assert_rule(rule); assert_command(template);
 
-        la_debug("find_trigger(%s, %u, %s)", rule->name, template->id,
-                        addr_to_string(addr));
+        la_debug("find_trigger(%s, %u)", rule->name, template->id);
 
-        if (addr.s_addr == -1)
+        if (!address)
                 return NULL;
 
         for (la_command_t *command = ITERATE_COMMANDS(rule->trigger_list);
                         (command = NEXT_COMMAND(command));)
         {
                 if (command->id == template->id &&
-                                command->addr.s_addr == addr.s_addr)
+                                !adrcmp(command->address, address))
                         return command;
         }
 
@@ -120,7 +119,7 @@ handle_command_on_trigger_list(la_command_t *command)
                  * trigger if necessary */
                 command->n_triggers++;
                 la_log(LOG_INFO, "Host: %s, trigger %u for rule \"%s\".",
-                                command->host,
+                                command->address->text,
                                 command->n_triggers,
                                 command->rule->name);
                 if (command->n_triggers >= command->rule->threshold)
@@ -128,7 +127,7 @@ handle_command_on_trigger_list(la_command_t *command)
                         remove_node((kw_node_t *) command);
                         la_log(LOG_INFO, "Host: %s, action \"%s\" fired for "
                                         "rule \"%s\".",
-                                        command->host,
+                                        command->address->text,
                                         command->name,
                                         command->rule->name);
                         trigger_command(command);
@@ -140,7 +139,7 @@ handle_command_on_trigger_list(la_command_t *command)
                 command->start_time = time(NULL);
                 command->n_triggers = 1;
                 la_log(LOG_INFO, "Host: %s, trigger 1 for rule \"%s\".",
-                                command->host,
+                                command->address->text,
                                 command->rule->name);
         }
 }
@@ -155,7 +154,7 @@ handle_command_on_trigger_list(la_command_t *command)
 
 static void
 trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
-                struct in_addr addr, la_command_t *template)
+                la_address_t *address, la_command_t *template)
 {
 #ifndef NOCOMMANDS
         if  (run_type == LA_UTIL_FOREGROUND)
@@ -170,14 +169,17 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
 
         /* First check whether command still active on end_queue. In this
          * case, ignore new command */
-        la_command_t *tmp = find_end_command(rule, addr);
+        la_command_t *tmp = find_end_command(rule, address);
         if (tmp)
         {
-                char *host = addr_to_string(addr);
-                la_log(LOG_INFO, "Host: %s, ignored, action \"%s\" still "
-                                "active for rule \"%s\".", host, tmp->name,
-                                rule->name);
-                free(host);
+                if (address)
+                        la_log(LOG_INFO, "Host: %s, ignored, action \"%s\" still "
+                                        "active for rule \"%s\".", address->text,
+                                        tmp->name, rule->name);
+                else
+                        la_log(LOG_INFO, "Ignored, action \"%s\" still active "
+                                        "for rule \"%s\".", tmp->name,
+                                        rule->name);
                 return;
         }
 
@@ -185,13 +187,14 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
          * fired) by the same host before. Create new command if not found. If
          * host is not set, always create new command.
          */
-        command = find_trigger(rule, template, addr);
+        command = find_trigger(rule, template, address);
 
         if (!command)
         {
                 /* Don't trigger command if need_host=true but not host
                  * property exists */
-                if (template->need_host && addr.s_addr == -1)
+                if (template->need_host != LA_NEED_HOST_NO &&
+                                !address)
                 {
                         la_log(LOG_ERR, "Missing required host token, action "
                                         "\"%s\" not fired for rule \"%s\"!",
@@ -200,7 +203,12 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
                         return;
                 }
                 command = create_command_from_template(template, rule,
-                                pattern, addr);
+                                pattern, address);
+                if (!command)
+                {
+                        la_debug("IP doesn't match what action can do");
+                        return;
+                }
         }
 
         handle_command_on_trigger_list(command);
@@ -223,25 +231,35 @@ trigger_all_commands(la_rule_t *rule, la_pattern_t *pattern)
         la_debug("trigger_all_commands()");
 
         const char *host = get_host_property_value(pattern->properties);
-        /* TODO improve */
-        struct in_addr addr;
+
+        la_address_t *address = NULL;
         if (host)
-                addr = string_to_addr(host);
-        else
-                addr.s_addr = -1;
+        {
+                address = create_address(host);
+                /* in case IP address cannot be converted, ignore trigger
+                 * altogether */
+                if (!address)
+                {
+                        la_log(LOG_ERR, "Invalid IP address \"%s\", trigger "
+                                        "ignored!", host);
+                        return;
+                }
+        }
 
         /* Do nothing if on ignore list */
-        if (address_on_ignore_list(addr))
+        if (address_on_ignore_list(address))
         {
                 la_log(LOG_INFO, "Host: %s, always ignored.", host);
-                return;
+        }
+        else
+        {
+                for (la_command_t *template =
+                                ITERATE_COMMANDS(rule->begin_commands);
+                                (template = NEXT_COMMAND(template));)
+                        trigger_single_command(rule, pattern, address, template);
         }
 
-        for (la_command_t *template = ITERATE_COMMANDS(rule->begin_commands);
-                        (template = NEXT_COMMAND(template));)
-        {
-                trigger_single_command(rule, pattern, addr, template);
-        }
+        free_address(address);
 }
 
 /*

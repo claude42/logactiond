@@ -45,13 +45,16 @@ pthread_cond_t end_queue_condition = PTHREAD_COND_INITIALIZER;
  */
 
 la_command_t *
-find_end_command(la_rule_t *rule, struct in_addr addr)
+find_end_command(la_rule_t *rule, la_address_t *address)
 {
         assert_rule(rule);
 
         la_debug("find_end_command(%s)", rule->name);
 
         if (!end_queue)
+                return NULL;
+
+        if (!address)
                 return NULL;
 
         la_command_t *result = NULL;
@@ -63,7 +66,7 @@ find_end_command(la_rule_t *rule, struct in_addr addr)
         {
                 if (command->rule == rule)
                 {
-                        if (command->addr.s_addr == addr.s_addr)
+                        if (!adrcmp(command->address, address))
                         {
                                 result = command;
                                 break;
