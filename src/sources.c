@@ -246,9 +246,8 @@ la_source_t
         la_source_t *la_source;
         la_source_t *result = NULL;
 
-        kw_node_t *i = get_list_iterator(la_config->sources);
-
-        while ((la_source = (la_source_t *) get_next_node(&i)))
+        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+                        (source = NEXT_SOURCE(source));)
         {
                 if (!strcmp(location, la_source->location))
                 {

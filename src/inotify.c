@@ -107,10 +107,8 @@ find_source_by_parent_wd(int parent_wd, char *file_name)
 
         la_debug("find_source_by_parent_wd(%s)", file_name);
 
-        kw_node_t *i = get_list_iterator(la_config->sources);
-
-        la_source_t *source;
-        while (source = (la_source_t *) get_next_node(&i))
+        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+                        (source = NEXT_SOURCE(source));)
         {
                 if (source->parent_wd == parent_wd)
                 {
@@ -145,10 +143,8 @@ find_source_by_file_wd(int file_wd)
 
         la_debug("find_source_by_file_wd(%u)", file_wd);
 
-        kw_node_t *i = get_list_iterator(la_config->sources);
-
-        la_source_t *source;
-        while (source = (la_source_t *) get_next_node(&i))
+        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+                        (source = NEXT_SOURCE(source));)
         {
                 if (source->wd == file_wd)
                         return source;

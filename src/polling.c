@@ -57,10 +57,8 @@ find_source_by_fd(int fd)
 
         la_debug("find_source_by_fd(%d)", fd);
 
-        kw_node_t *i = get_list_iterator(la_config->sources);
-
-        la_source_t *source;
-        while ((source = (la_source_t *) get_next_node(&i)))
+        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+                        (source = NEXT_SOURCE(source));)
         {
                 if (fileno(source->file) == fd)
                         return source;
