@@ -167,8 +167,7 @@ la_property_t *
 create_property_from_token(const char *name, size_t length, unsigned int pos,
                 unsigned int subexpression)
 {
-        la_property_t *result = (la_property_t *)
-                xmalloc(sizeof(la_property_t));
+        la_property_t *result = xmalloc(sizeof(la_property_t));
 
         result->name = xstrndup(name+1, length-2);
         convert_property_name(result->name);
@@ -208,7 +207,7 @@ scan_single_token(kw_list_t *property_list, const char *string, unsigned int pos
 la_property_t *
 create_property_from_config(const char *name, const char *value)
 {
-        la_property_t *result = (la_property_t *) xmalloc(sizeof(la_property_t));
+        la_property_t *result = xmalloc(sizeof(la_property_t));
 
         result->name = xstrdup(name);
         convert_property_name(result->name);
@@ -232,8 +231,7 @@ create_property_from_action_token(const char *name, size_t length,
 static la_property_t *
 duplicate_property(la_property_t *property)
 {
-        la_property_t *result = (la_property_t *)
-                xmalloc(sizeof(la_property_t));
+        la_property_t *result = xmalloc(sizeof(la_property_t));
 
         result->name = xstrdup(property->name);
         result->is_host_property = property->is_host_property;

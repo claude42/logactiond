@@ -56,8 +56,7 @@ convert_regex(const char *string, kw_list_t *property_list, unsigned int n_prope
 
         size_t len = strlen(string);
         /* definitely an upper bound */
-        char *result = (char *) xmalloc(len +
-                        n_properties * LA_HOST_TOKEN_REPL_LEN + 1);
+        char *result = xmalloc(len + n_properties * LA_HOST_TOKEN_REPL_LEN + 1);
         char *result_ptr = result;
         const char *string_ptr = string;
 
@@ -158,7 +157,7 @@ create_pattern(const char *string_from_configfile, unsigned int num,
 
         unsigned int n_properties;
 
-        la_pattern_t *result = (la_pattern_t *) xmalloc(sizeof(la_pattern_t));
+        la_pattern_t *result = xmalloc(sizeof(la_pattern_t));
 
         result->num = num;
         result->rule = rule;
@@ -167,7 +166,7 @@ create_pattern(const char *string_from_configfile, unsigned int num,
         result->string = convert_regex(string_from_configfile,
                         result->properties, n_properties);
 
-        result->regex = (regex_t *) xmalloc(sizeof(regex_t));
+        result->regex = xmalloc(sizeof(regex_t));
         int r = regcomp(result->regex, result->string, REG_EXTENDED | REG_NEWLINE);
         if (r)
         {

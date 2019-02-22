@@ -78,7 +78,7 @@ handle_new_content(la_source_t *source)
 
         /* TODO: less random number? */
         if (!linebuffer)
-                linebuffer = (char *) xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
+                linebuffer = xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
 
         /* TODO: can't remember why this extra read before the loop could be
          * necessary?!? */
@@ -188,7 +188,7 @@ create_source(const char *name, la_sourcetype_t type, const char *location)
 {
         la_source_t *result;
 
-        result = (la_source_t *) xmalloc(sizeof(la_source_t));
+        result = xmalloc(sizeof(la_source_t));
         result->name = xstrdup(name);
         result->location = xstrdup(location);
         result->parent_dir = NULL;

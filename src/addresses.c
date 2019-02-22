@@ -182,7 +182,7 @@ create_address(const char *ip)
 {
         assert(ip);
 
-        la_address_t *result = (la_address_t *) xmalloc(sizeof(la_address_t));
+        la_address_t *result = xmalloc(sizeof(la_address_t));
 
         if (!create_address4(ip, result))
         {
@@ -206,7 +206,7 @@ dup_address(la_address_t *address)
         assert(address);
         la_debug("dup_address(%s)", address->text);
 
-        la_address_t *result = (la_address_t *) xmalloc(sizeof(la_address_t));
+        la_address_t *result = xmalloc(sizeof(la_address_t));
 
         result->af = address->af;
         result->addr = address->addr;

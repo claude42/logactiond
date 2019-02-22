@@ -73,7 +73,7 @@ assert_list_ffl(kw_list_t *list, const char *func, char *file, unsigned int line
 kw_list_t *
 create_list(void)
 {
-        kw_list_t *result = (kw_list_t *) malloc(sizeof (kw_list_t));
+        kw_list_t *result = malloc(sizeof (kw_list_t));
         if (!result)
         {
                 fprintf(stderr, "Memory exhausted\n");
@@ -328,7 +328,7 @@ void testerli(void)
         printf("mylist->tail.pred=%u\n", mylist->tail.pred);
         printf("---\n");
 
-        foo_t *result = (foo_t *) malloc(sizeof(foo_t));
+        foo_t *result = malloc(sizeof(foo_t));
         result->text = "bla";
 
         add_tail(mylist, (kw_node_t *) result);
@@ -346,7 +346,7 @@ void testerli(void)
         printf("mylist->tail.pred=%u\n", mylist->tail.pred);
         printf("---\n");
 
-        result = (foo_t *) malloc(sizeof(foo_t));
+        result = malloc(sizeof(foo_t));
         result->text = "blub";
 
         add_tail(mylist, (kw_node_t *) result);

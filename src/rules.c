@@ -356,7 +356,7 @@ la_rule_t *
 create_rule(char *name, la_source_t *source, int threshold, int period, int
                 duration)
 {
-        la_rule_t *result = (la_rule_t *) xmalloc(sizeof(la_rule_t));
+        la_rule_t *result = xmalloc(sizeof(la_rule_t));
 
         result->name = xstrdup(name);
         result->source = source;

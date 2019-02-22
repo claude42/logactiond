@@ -187,7 +187,7 @@ main(int argc, char *argv[])
                 one_rule = find_rule(rule_name);
         
 
-        char *linebuffer = (char *) xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
+        char *linebuffer = xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
         size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE*sizeof(char);
 
         for (;;)
