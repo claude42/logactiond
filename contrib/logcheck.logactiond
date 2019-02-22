@@ -1,12 +1,9 @@
 ^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Starting up logactiond [[:digit:]]\.[[:digit:]]$
 ^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Loading configuration from ".*"\.$
-^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Initializing rule "[^[:space:]]+" for source "[^[:space:]]+"\.$
-^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Shutting down rule "[^[:space:]]+"\.$
+^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Initializing rule "[_[:alnum:]-]+" for source "[_[:alnum:]-]+"\.$
+^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Shutting down rule "[_[:alnum:]-]+"\.$
 ^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Host: [.:[:xdigit:]]+, always ignored\.$
-^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Host: [.:[:xdigit:]]+, trigger [[:digit:]]+ for rule "[^[:space:]]+"\.$
-^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Host: [.:[:xdigit:]]+, action fired for rule "[^[:space:]]+"\.$
-^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Host: [.:[:xdigit:]]+, ignored, action still active for rule "[^[:space:]]+"\.$
-^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Host: [.:[:xdigit:]]+, action ended for rule "[^[:space:]]+"\.$
-
-
-
+^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Host: [.:[:xdigit:]]+, trigger [[:digit:]]+ for rule "[_[:alnum:]-]+"\.$
+^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Host: [.:[:xdigit:]]+, action "[_[:alnum:]-]+" fired for rule "[_[:alnum:]-]+"\.$
+^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Host: [.:[:xdigit:]]+, ignored, action "[_[:alnum:]-]+" still active for rule "[_[:alnum:]-]+"\.$
+^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Host: [.:[:xdigit:]]+, action "[_[:alnum:]-]+" ended for rule "[_[:alnum:]-]+"\.$
