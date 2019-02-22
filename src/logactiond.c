@@ -139,8 +139,7 @@ skeleton_daemon(void)
         /* Set new file permissions */
         umask(0);
 
-        /* Change the working directory to the root directory */
-        /* or another appropriated directory */
+        /* Change the working directory */
         chdir(CONF_DIR);
 
         /* Close all open file descriptors */
