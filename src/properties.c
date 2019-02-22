@@ -53,7 +53,7 @@ token_length(const char *string)
                 ptr++;
         }
 
-        die_semantic("Closing '\%' of token missing!");
+        die_semantic("Closing '%%' of token missing!");
 
         return 0; // avoid warning
 }
