@@ -9,4 +9,5 @@ TODOs in no particular order
 * die correctly with threads (join...)
 * error message if log file is lost for longer time
 * check for root / add option to run as non-root
-* create_command - switch back from addr to host
+* better NDEBUG support for la_debug() - how varargs with macro?
+* remove la_debug()s from endqueue.c
