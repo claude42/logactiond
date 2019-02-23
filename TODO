@@ -1,20 +1,12 @@
 TODOs in no particular order
 
-* create a pidfile
-* create documentation (esp. config file) and manpages
-* implement a check action (similar to what fail2ban does)
-* implement the possibility to permanently ban a host
 * make the thing thread safe. Although it's using threads already, many of the
   parts are still not thread safe (which isn't a problem in the current
   implementation but will be when multiple backends will be implemented)
-* FSEvents backend
-* Polling backend
-* systemd backend
 * Limit regexes to one instance per token
-* IPv6 support
-* problems when doing autoreconf -v -i
 * Add logactiond -L
 * Make "make distcheck work"
 * die correctly with threads (join...)
-* better NDEBUG support for la_debug()
-* remove la_debug()s from endqueue.c
+* error message if log file is lost for longer time
+* check for root / add option to run as non-root
+* create_command - switch back from addr to host
