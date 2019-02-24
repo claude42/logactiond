@@ -243,20 +243,17 @@ free_source_list(kw_list_t *list)
 la_source_t
 *find_source_by_location(const char *location)
 {
-        la_source_t *la_source;
-        la_source_t *result = NULL;
+        assert(location);
+        la_debug("find_source_by_location(%s)", location);
 
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                         (source = NEXT_SOURCE(source));)
         {
-                if (!strcmp(location, la_source->location))
-                {
-                        result = la_source;
-                        break;
-                }
+                if (!strcmp(location, source->location))
+                        return source;
         }
 
-        return result;
+        return NULL;
 }
 
 /* vim: set autowrite expandtab: */
