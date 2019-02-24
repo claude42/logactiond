@@ -177,8 +177,8 @@ watched_file_moved_from(la_source_t *source)
 {
         assert_source(source);
 
-        la_log(LOG_INFO, "Source \"%s\" - file has been moved away",
-                        source->name);
+        la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been moved away",
+                        source->name, source->location);
 
         /* Keep watching original file in case daemons are still logging
          * there. Switch only when new file is created. */
@@ -189,8 +189,8 @@ watched_file_moved_to(la_source_t *source)
 {
         assert_source(source);
 
-        la_log(LOG_INFO, "Source \"%s\" - file has been moved to watched "
-                        "location", source->name);
+        la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been moved to watched "
+                        "location", source->name, source->location);
 
         /* unwatch not necessary in case of a previous IN_DELETE */
         if (source->file)
@@ -205,7 +205,8 @@ watched_file_deleted(la_source_t *source)
 {
         assert_source(source);
 
-        la_log(LOG_INFO, "Source \"%s\" - file has been deleted", source->name);
+        la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been deleted",
+                        source->name, source->location);
 
         unwatch_source(source);
 }
