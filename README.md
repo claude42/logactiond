@@ -1,18 +1,11 @@
 # logactiond
-> Trigger actions based on logfile contents
+>Logactiond can trigger actions based on logfile contents. It's basically a
+very lightweight alternative to fail2ban (written in C instead of Python) which
+can handle heavy load without using significant resources itself.
 
-Logactiond started as a clone of fail2ban. What I observed was that under
-heavey load of brute force or DOS attacks, fail2ban seemed to be unable to
-immediately block incoming attacks. Instead, 1000s of logfile entries
-accumulated before fail2ban started detecting them. Which it then tried to
-work of one by one every second it woke up.
-
-In addition my feeling was that fail2ban generally consumes more resources
-then I would like to spend on the task of getting rid of brute force attacks.
-
-Logactiond tries to be a lightweight daemon. At the moment in only supports
-observing logfiles via inotify only so is limited to Linux. Goal is to support
-additional backends (e.g. systemd, simple polling for all other cases).
+At the moment in only supports observing logfiles via inotify and a polling
+backend. Goal is to support additional methods (systemd etc.) and platofrms
+(kqueue) as well.
 
 Right now, this should be considered alpha quality code and I don't suggest
 that you use it on production system. logactiond itself can't do too much harm
