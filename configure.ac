@@ -2,8 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([logactiond], 0.1, [logactiond@aw.net])
-#AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AC_INIT([logactiond], 0.2, [info@logactiond.org])
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([src/logactiond.c])
 AC_CONFIG_HEADERS([config.h])
@@ -18,10 +17,12 @@ AC_PROG_CC
 
 # Checks for libraries.
 #AC_CHECK_LIB([config], [config_init], , [AC_MSG_ERROR([LIBCONFIG NOT FOUND])])
+AC_CHECK_LIB([config], [config_set_include_func])
+AM_CONDITIONAL([USE_LIBCONFIG], [test "$ac_cv_lib_config_config_set_include_func" = yes])
 AC_CHECK_LIB([resolv], [inet_net_pton])
 
 # Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h limits.h stdlib.h string.h syslog.h unistd.h])
+AC_CHECK_HEADERS([arpa/inet.h limits.h stdlib.h string.h syslog.h unistd.h fcntl.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_CHECK_HEADER_STDBOOL
@@ -36,7 +37,7 @@ AC_FUNC_FORK
 AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([regcomp strdup strerror strndup strrchr])
+AC_CHECK_FUNCS([regcomp strdup strerror strndup strrchr ftruncate strcasecmp fcntl])
 
 ACX_PTHREAD
 
