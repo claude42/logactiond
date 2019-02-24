@@ -616,7 +616,8 @@ load_la_config(char *filename)
         if (!filename)
                 filename = CONFIG_FILE;
 
-        la_log(LOG_INFO, "Loading configuration from \"%s\".", filename);
+        la_log(LOG_INFO, "Loading configuration from \"%s/%s\".", CONF_DIR,
+                        filename);
 
         la_config = xmalloc(sizeof(la_config_t));
 
