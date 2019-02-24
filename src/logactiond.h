@@ -348,9 +348,9 @@ void xfree (void *ptr);
 
 void la_debug(char *fmt, ...);
 
-void la_log_errno(int priority, char *fmt, ...);
+void la_log_errno(unsigned int priority, char *fmt, ...);
 
-void la_log(int priority, char *fmt, ...);
+void la_log(unsigned int priority, char *fmt, ...);
 
 void die_semantic(char *fmt, ...);
 

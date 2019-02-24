@@ -48,6 +48,7 @@ create_pidfile(void)
 {
         int fd;
         char buf[20]; /* should be enough - I think */
+        int len;
 
         fd = open(PIDFILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
         if (fd == -1)
@@ -59,7 +60,6 @@ create_pidfile(void)
                 die_err("Unable to truncate pidfile");
 
         snprintf(buf, 20, "%ld\n", (long) getpid());
-        int len = strlen(buf);
         if (write(fd, buf, len) != len)
                 die_err("Unable to write pid to pidfile");
 
@@ -68,7 +68,7 @@ create_pidfile(void)
 }
 
 static void
-log_message(int priority, char *fmt, va_list gp, char *add)
+log_message(unsigned int priority, char *fmt, va_list gp, char *add)
 {
         if (priority >= log_level ||
                         (run_type == LA_UTIL_FOREGROUND && priority >= LOG_INFO))
@@ -113,7 +113,7 @@ la_debug(char *fmt, ...)
 }
 
 void
-la_log_errno(int priority, char *fmt, ...)
+la_log_errno(unsigned int priority, char *fmt, ...)
 {
         va_list myargs;
 
@@ -123,7 +123,7 @@ la_log_errno(int priority, char *fmt, ...)
 }
 
 void
-la_log(int priority, char *fmt, ...)
+la_log(unsigned int priority, char *fmt, ...)
 {
         va_list myargs;
 
