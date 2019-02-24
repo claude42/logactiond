@@ -5,12 +5,10 @@ can handle heavy load without using significant resources itself.
 
 At the moment in only supports observing logfiles via inotify and a polling
 backend. Goal is to support additional methods (systemd etc.) and platofrms
-(kqueue) as well.
-
-Right now, this should be considered alpha quality code and I don't suggest
-that you use it on production system. logactiond itself can't do too much harm
-but as it very likely will run iptables and the like, there's definitely
-potential for stuff to go wrong.
+(kqueue) as well. Right now, the code  should be considered alpha quality code
+and I don't suggest that you use it on production system. logactiond itself
+can't do too much harm but as it very likely will run iptables and the like,
+there's definitely potential for stuff to go wrong.
 
 ## Installing / Getting started
 
