@@ -117,14 +117,10 @@ libconfig/ac_config.h
 libconfig/aclocal.m4
 libconfig/aux-build
 libconfig/configure
-libconfig/lib/grammar.c
-libconfig/lib/grammar.h
 libconfig/lib/libconfig++.pc
 libconfig/lib/libconfig++Config.cmake
 libconfig/lib/libconfig.pc
 libconfig/lib/libconfigConfig.cmake
-libconfig/lib/scanner.c
-libconfig/lib/scanner.h
 libconfig/lib/.deps/
 libconfig/lib/.libs/
 libconfig/libconfig.spec
