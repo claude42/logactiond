@@ -85,7 +85,6 @@ get_value_for_action_property(la_command_t *command,
         assert_command(command); assert_property(action_property);
         la_debug("get_value_for_action_property(%s)", action_property->name);
 
-        la_property_t *property;
         const char *result = NULL;
 
         /* try some standard names first */
@@ -405,7 +404,7 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
 
 la_command_t *
 create_template(const char *name, la_rule_t *rule, const char *begin_string,
-                const char *end_string, int duration, la_need_host_t need_host)
+                const char *end_string, unsigned int duration, la_need_host_t need_host)
 {
         assert_rule(rule); assert(begin_string);
 

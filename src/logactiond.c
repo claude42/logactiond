@@ -73,26 +73,33 @@ handle_signal(int signal)
 }
 
 static void
-register_signal_handler(void)
+set_signal(struct sigaction new_act, int signum)
 {
-        la_debug("register_signal_handler()");
-
-        struct sigaction new_act;
         struct sigaction old_act;
 
+        if (sigaction(signum, NULL, &old_act) == -1)
+                die_err("Error setting signals!");
+        if (old_act.sa_handler != SIG_IGN)
+                if (sigaction(signum, &new_act, NULL) == -1)
+                        die_err("Error setting signals!");
+
+}
+
+static void
+register_signal_handler(void)
+{
+        //la_debug("register_signal_handler()");
+
+        struct sigaction new_act;
+
         new_act.sa_handler = handle_signal;
-        sigemptyset(&new_act.sa_mask);
+        if (sigemptyset(&new_act.sa_mask) == -1)
+                die_err("Error setting signals!");
         new_act.sa_flags = 0;
 
-        sigaction(SIGINT, NULL, &old_act);
-        if (old_act.sa_handler != SIG_IGN)
-                sigaction(SIGINT, &new_act, NULL);
-        sigaction(SIGTERM, NULL, &old_act);
-        if (old_act.sa_handler != SIG_IGN)
-                sigaction(SIGTERM, &new_act, NULL);
-        sigaction(SIGHUP, NULL, &old_act);
-        if (old_act.sa_handler != SIG_IGN)
-                sigaction(SIGHUP, &new_act, NULL);
+        set_signal(new_act, SIGINT);
+        set_signal(new_act, SIGTERM);
+        set_signal(new_act, SIGHUP);
 }
 
 /*
@@ -123,7 +130,8 @@ skeleton_daemon(void)
                 exit(EXIT_FAILURE);
 
         /* Catch, ignore and handle signals */
-        signal(SIGCHLD, SIG_IGN);
+        if (signal(SIGCHLD, SIG_IGN) == SIG_ERR)
+                die_err("Error setting signals!");
         register_signal_handler();
 
         /* Fork off for the second time*/
@@ -138,10 +146,11 @@ skeleton_daemon(void)
                 exit(EXIT_SUCCESS);
 
         /* Set new file permissions */
-        umask(0);
+        (void) umask(0);
 
         /* Change the working directory */
-        chdir(CONF_DIR);
+        if (chdir(CONF_DIR) == -1)
+                die_err("Can't change to configuration directory!");
 
         /* Close all open file descriptors */
         int x;

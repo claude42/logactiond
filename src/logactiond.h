@@ -147,12 +147,6 @@
 #define assert_pattern(PATTERN) assert_pattern_ffl(PATTERN, __func__, __FILE__, __LINE__)
 #endif /* NDEBUG */
 
-/* Types */
-
-typedef struct la_source_s la_source_t;
-typedef struct la_rule_s la_rule_t;
-typedef struct la_command_s la_command_t;
-
 // TODO: add default type
 typedef enum la_sourcetype_s { LA_SOURCE_TYPE_FILE, LA_SOURCE_TYPE_SYSTEMD } la_sourcetype_t;
 
@@ -237,7 +231,7 @@ typedef struct la_pattern_s
 {
         kw_node_t node;
         unsigned int num;
-        la_rule_t *rule;
+        struct la_rule_s *rule;
         char *string; /* already converted regex, doesn't contain tokens anymore */
         regex_t *regex; /* compiled regex */
         kw_list_t *properties; /* list of la_property_t */
@@ -247,7 +241,7 @@ typedef struct la_rule_s
 {
         kw_node_t node;
         char *name;
-        la_source_t *source;
+        struct la_source_s *source;
         kw_list_t *patterns;
         kw_list_t *begin_commands;
         unsigned int threshold;
@@ -269,7 +263,7 @@ typedef struct la_command_s
         char *end_string;        /* string with tokens */
         kw_list_t *end_properties;        /* detected tokens */
         unsigned int n_end_properties;/* number of detected tokens */
-        la_rule_t *rule;        /* related rule */
+        struct la_rule_s *rule;        /* related rule */
         la_pattern_t *pattern;        /* related pattern*/
         kw_list_t *pattern_properties; /* properties from matched pattern */
         la_address_t *address;     /* IP address */
@@ -415,7 +409,7 @@ la_command_t * create_command_from_template(la_command_t *template,
 
 la_command_t *create_template(const char *name, la_rule_t *rule,
                 const char *begin_string, const char *end_string,
-                int duration, la_need_host_t need_host);
+                unsigned int duration, la_need_host_t need_host);
 
 void free_command(la_command_t *command);
 

@@ -40,7 +40,9 @@
 #include <assert.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
+# ifndef S_SPLINT_S
 #include <syslog.h>
+# endif
 #include <errno.h>
 
 #include "logactiond.h"
@@ -55,8 +57,13 @@ bool
 cidr_match(struct in_addr addr, struct in_addr net, int prefix)
 {
         if (prefix == 0) {
-                // C99 6.5.7 (3): u32 << 32 is undefined behaviour
+                /* C99 6.5.7 (3): u32 << 32 is undefined behaviour */
                 return true;
+        }
+        if (prefix >32) {
+                /* make sure that we don't bitshift with a negative number
+                 * below */
+                return false;
         }
 
         return !((addr.s_addr ^ net.s_addr) & htonl(0xFFFFFFFFu << (32 - prefix)));

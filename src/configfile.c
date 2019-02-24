@@ -290,7 +290,7 @@ compile_list_of_actions(la_rule_t *rule,
 
         int n_items = config_setting_length(action_def);
 
-        for (int i=0; i<n_items; i++)
+        for (unsigned int i=0; i<n_items; i++)
         {
                 config_setting_t *list_item =
                         config_setting_get_elem(action_def, i);
@@ -362,7 +362,7 @@ load_patterns(la_rule_t *rule, const config_setting_t *rule_def,
                 die_semantic("No patterns specified for %s!",
                                 config_setting_name(rule_def));
 
-        for (int i=0; i<n; i++)
+        for (unsigned int i=0; i<n; i++)
         {
                 const char *item = config_setting_get_string_elem(patterns, i);
 
@@ -390,7 +390,7 @@ load_ignore_addresses(const config_setting_t *section)
                 return result;
 
         int n = config_setting_length(ignore_section);
-        for (int i=0; i<n; i++)
+        for (unsigned int i=0; i<n; i++)
         {
                 config_setting_t *elem =
                         config_setting_get_elem(ignore_section, i);
@@ -431,7 +431,7 @@ load_properties(kw_list_t *properties, const config_setting_t *section)
                 return;
 
         int n = config_setting_length(properties_section);
-        for (int i=0; i<n; i++)
+        for (unsigned int i=0; i<n; i++)
         {
                 config_setting_t *elem =
                         config_setting_get_elem(properties_section, i);

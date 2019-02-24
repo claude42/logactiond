@@ -33,11 +33,9 @@
  * findname
  */
 
-typedef struct kw_node_s kw_node_t;
-
 typedef struct kw_node_s {
-        kw_node_t *succ;
-        kw_node_t *pred;
+        struct kw_node_s *succ;
+        struct kw_node_s *pred;
         int pri;
         char *name;
 } kw_node_t;
