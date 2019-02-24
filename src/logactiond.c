@@ -61,10 +61,9 @@ handle_signal(int signal)
 
         if (signal == SIGHUP)
         {
-                // disabled for now as it doesn't work correctly
-                //empty_end_queue();
-                //unload_la_config();
-                //load_la_config(cfg_filename);
+                empty_end_queue();
+                unload_la_config();
+                load_la_config(cfg_filename);
         }
         else
         {

@@ -29,6 +29,7 @@
 #include <assert.h>
 #include <syslog.h>
 #include <libgen.h>
+#include <errno.h>
 
 #include <libconfig.h>
 
@@ -90,6 +91,15 @@ unwatch_source_inotify(la_source_t *source)
         if (inotify_rm_watch(inotify_fd, source->wd))
                 la_log_errno(LOG_ERR, "Unable to unwatch source \"%s\".",
                                 source->name);
+
+        if (source->parent_wd)
+        {
+                if (inotify_rm_watch(inotify_fd, source->parent_wd))
+                        la_log_errno(LOG_ERR, "Unable to unwatch source "
+                                        "parnet dir \"%s\".",
+                                        source->parent_dir);
+                source->parent_wd = 0;
+        }
         source->wd = 0;
 }
 
@@ -293,7 +303,12 @@ watch_forever_inotify(void)
         {
                 num_read = read(inotify_fd, buffer, BUF_LEN);
                 if (num_read == -1)
-                        die_err("Error reading from inotify!");
+                {
+                        if (errno == EINTR)
+                                continue;
+                        else
+                                die_err("Error reading from inotify!");
+                }
 
                 int i=0;
                 while (i<num_read)
@@ -325,7 +340,8 @@ watch_source_inotify(la_source_t *source)
         if (source->wd  == -1)
                 die_err("Can't add inotify watch for %s!", source->location);
 
-        if (!source->parent_wd) {
+        if (!source->parent_wd)
+        {
                 /* all praise basename/dirname */
                 char *tmp = xstrdup(source->location);
                 source->parent_dir = xstrdup(dirname(tmp));
@@ -339,7 +355,6 @@ watch_source_inotify(la_source_t *source)
                         die_err("Can't add inotify watch for %s!", source->parent_dir);
         }
 }
-
 
 void
 init_watching_inotify(void)
