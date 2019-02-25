@@ -53,8 +53,8 @@
  *
  * From https://stackoverflow.com/questions/7213995/ip-cidr-match-function
  */
-bool
-cidr_match(struct in_addr addr, struct in_addr net, int prefix)
+static bool
+cidr4_match(struct in_addr addr, struct in_addr net, int prefix)
 {
         if (prefix == 0) {
                 /* C99 6.5.7 (3): u32 << 32 is undefined behaviour */
@@ -68,6 +68,33 @@ cidr_match(struct in_addr addr, struct in_addr net, int prefix)
 
         return !((addr.s_addr ^ net.s_addr) & htonl(0xFFFFFFFFu << (32 - prefix)));
 }
+
+static bool
+cidr6_match(struct in6_addr address, struct in6_addr network, uint8_t prefix)
+{
+	const uint32_t *a = address.s6_addr32;
+	const uint32_t *n = network.s6_addr32;
+//	const uint32_t *a = address.__u6_addr.__u6_addr32;
+//	const uint32_t *n = network.__u6_addr.__u6_addr32;
+
+	int bits_whole, bits_incomplete;
+	bits_whole = prefix >> 5;         // number of whole u32
+	bits_incomplete = prefix & 0x1F;  // number of bits in incomplete u32
+	if (bits_whole) {
+		if (memcmp(a, n, bits_whole << 2)) {
+			return false;
+		}
+	}
+	if (bits_incomplete) {
+		uint32_t mask = htonl((0xFFFFFFFFu) << (32 - bits_incomplete));
+		if ((a[bits_whole] ^ n[bits_whole]) & mask) {
+			return false;
+		}
+	}
+	return true;
+}
+
+
 
 /*
  * Compare to addresses. Return 0 if addresses are the same, return 1
@@ -114,7 +141,7 @@ address_on_ignore_list(la_address_t *address)
                 if (address->af != ign_address->af)
                         continue;
                 else if (address->af == AF_INET &&
-                                cidr_match(address->addr, ign_address->addr,
+                                cidr4_match(address->addr, ign_address->addr,
                                         ign_address->prefix))
                                 return true;
                 else if (address->af == AF_INET6 &&
@@ -151,6 +178,37 @@ create_address4(const char *ip, la_address_t *address)
 }
 
 /*
+ * Compute CIDR prefix
+ *
+ * returns 0 on error.
+ */
+
+static unsigned int
+get_prefix(int af, const char *ip)
+{
+        assert(af == AF_INET || af == AF_INET6); assert(ip);
+
+        char *ptr = strchr(ip, '/');
+        if (!ptr)
+        {
+                if (af == AF_INET)
+                        return 32;
+                else if (af == AF_INET6)
+                        return 128;
+        }
+
+        errno = 0;
+        long result = strtol(ptr+1, NULL, 10);
+        if (!errno ||
+                        (af == AF_INET && result > 32) ||
+                        (af == AF_INET6 && result > 128))
+                return 0;
+
+        return result;
+}
+
+
+/*
  * Create an IPv6 address from string
  */
 
@@ -163,7 +221,7 @@ create_address6(const char *ip, la_address_t *address)
         int tmp = inet_pton(AF_INET6, ip, &(address->addr6));
         if (tmp == 1)
         {
-                address->prefix = 128;
+                address->prefix = get_prefix(AF_INET6, ip);
                 address->af = AF_INET6;
                 return true;
         }

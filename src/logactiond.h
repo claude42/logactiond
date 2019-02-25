@@ -171,7 +171,7 @@ typedef struct la_address_s
         int af;
         struct in_addr addr;
         struct in6_addr addr6;
-        int prefix;
+        unsigned int prefix;
         char *text;
 } la_address_t;
 
