@@ -231,7 +231,7 @@ read_options(int argc, char *argv[])
  * Abstract event loop
  */
 
-void
+static void
 watch_forever(void)
 {
         la_debug("watch_forever()");
@@ -249,7 +249,7 @@ watch_forever(void)
  * used, no such steps might be necessary at all.
  */
 
-void
+static void
 init_watching(void)
 {
         la_debug("init_watching()");
