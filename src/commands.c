@@ -321,9 +321,9 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
 
 /*
  * Clones command from a command template.
- * - Clones begin_string / end_string.
  * - Duplicates begin_properties / end_properties lists
- * - Don't clone rule, pattern, host, end_time, n_triggers, start_time
+ * - Don't clone begin_string, end_string, rule, pattern, host, end_time,
+ *   n_triggers, start_time
  * Must be free()d after use.
  */
 
@@ -338,12 +338,14 @@ dup_command(la_command_t *command)
 
         result->id = command->id;
 
-        result->name = xstrdup(command->name);
-        result->begin_string = xstrdup(command->begin_string);
+        result->is_template = false;
+
+        result->name = command->name;
+        result->begin_string = command->begin_string;
         result->begin_properties = dup_property_list(command->begin_properties);
         result->n_begin_properties = command->n_begin_properties;
 
-        result->end_string = xstrdup(command->end_string);
+        result->end_string = command->end_string;
         result->end_properties = dup_property_list(command->end_properties);
         result->n_end_properties = command->n_end_properties;
 
@@ -379,7 +381,6 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
         la_command_t *result;
 
         result = dup_command(template);
-        result->is_template = false;
         result->rule = rule;
         result->pattern = pattern;
         result->pattern_properties = dup_property_list(pattern->properties);
@@ -451,9 +452,12 @@ free_command(la_command_t *command)
         free_property_list(command->end_properties);
         free_property_list(command->pattern_properties);
 
-        free(command->name);
-        free(command->begin_string);
-        free(command->end_string);
+        if (command->is_template)
+        {
+                free(command->name);
+                free(command->begin_string);
+                free(command->end_string);
+        }
         if (command->address)
                 free_address(command->address);
         free(command);
