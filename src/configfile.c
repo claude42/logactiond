@@ -649,7 +649,8 @@ unload_la_config(void)
 {
         la_debug("unload_la_config()");
 
-        assert (la_config);
+        if (!la_config)
+                return;
 
         free_source_list(la_config->sources);
         free_property_list(la_config->default_properties);
