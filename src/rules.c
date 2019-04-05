@@ -62,7 +62,7 @@ add_trigger(la_command_t *command)
         la_debug("add_trigger(%s)", command->name);
 
         command->n_triggers = 0;
-        command->start_time = time(NULL);
+        command->start_time = xtime(NULL);
 
         add_head(command->rule->trigger_list, (kw_node_t *) command);
 
@@ -113,7 +113,7 @@ handle_command_on_trigger_list(la_command_t *command)
         if (command->n_triggers == 0)
                 add_trigger(command);
 
-        if (time(NULL) - command->start_time < command->rule->period)
+        if (xtime(NULL) - command->start_time < command->rule->period)
         {
                 /* still within current period - increase counter,
                  * trigger if necessary */
@@ -136,7 +136,7 @@ handle_command_on_trigger_list(la_command_t *command)
         else
         {
                 /* if not, reset counter and period */
-                command->start_time = time(NULL);
+                command->start_time = xtime(NULL);
                 command->n_triggers = 1;
                 la_log(LOG_INFO, "Host: %s, trigger 1 for rule \"%s\".",
                                 command->address->text,

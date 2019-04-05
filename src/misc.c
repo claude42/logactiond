@@ -27,6 +27,7 @@
 #include <stdarg.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "logactiond.h"
 
@@ -91,6 +92,16 @@ log_message(unsigned int priority, char *fmt, va_list gp, char *add)
                         fprintf(stderr, "\n");
                         break;
         }
+}
+
+time_t
+xtime(time_t *tloc)
+{
+        time_t result = time(tloc);
+        if (result == -1)
+                die_hard("Can't get time!");
+
+        return result;
 }
 
 void xfree(void *ptr)
