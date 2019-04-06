@@ -5,9 +5,8 @@ TODOs in no particular order
   implementation but will be when multiple backends will be implemented)
 * Limit regexes to one instance per token
 * Add logactiond -L
-* Make "make distcheck work"
 * die correctly with threads (join...)
 * error message if log file is lost for longer time
 * check for root / add option to run as non-root
 * better NDEBUG support for la_debug() - how varargs with macro?
-* remove la_debug()s from endqueue.c
+* Debian package

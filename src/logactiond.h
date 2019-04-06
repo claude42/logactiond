@@ -488,12 +488,6 @@ void free_source(la_source_t *source);
 
 void free_source_list(kw_list_t *list);
 
-/* watch.c */
-
-void init_watching(void);
-
-void watch_forever(void);
-
 #if HAVE_INOTIFY
 /* inotify.c */
 

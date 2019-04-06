@@ -29,6 +29,7 @@
 #include <signal.h>
 #include <assert.h>
 #include <getopt.h>
+#include <pwd.h>
 #if HAVE_INOTIFY
 #include <sys/inotify.h>
 #endif /* HAVE_INOTIFY */
@@ -41,6 +42,7 @@ la_runtype_t run_type = LA_DAEMON_BACKGROUND;
 unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
 unsigned int id_counter = 0;
 la_watchbackend_t watchbackend = LA_WATCHBACKEND_NONE;
+char *run_uid_s = NULL;
 
 void
 shutdown_daemon(int status)
@@ -188,10 +190,11 @@ read_options(int argc, char *argv[])
                         {"debug",      optional_argument, NULL, 'd'},
                         {"pidfile",    required_argument, NULL, 'p'},
                         {"simulate",   no_argument,       NULL, 's'},
+                        {"user",       required_argument, NULL, 'u'},
                         {0,            0,                 0,    0  }
                 };
 
-                int c = getopt_long(argc, argv, "fc:d::p:s", long_options, NULL);
+                int c = getopt_long(argc, argv, "fc:d::p:su:", long_options, NULL);
 
                 if (c == -1)
                         break;
@@ -215,6 +218,9 @@ read_options(int argc, char *argv[])
                         case 's': 
                                 run_type = LA_UTIL_FOREGROUND;
                                 break;
+                        case 'u':
+                                run_uid_s = optarg;
+                                break;
                         case '?':
                                 print_usage();
                                 exit(0);
@@ -231,7 +237,7 @@ read_options(int argc, char *argv[])
  * Abstract event loop
  */
 
-void
+static void
 watch_forever(void)
 {
         la_debug("watch_forever()");
@@ -249,7 +255,7 @@ watch_forever(void)
  * used, no such steps might be necessary at all.
  */
 
-void
+static void
 init_watching(void)
 {
         la_debug("init_watching()");
@@ -263,6 +269,51 @@ init_watching(void)
         watchbackend = LA_WATCHBACKEND_POLLING;
 #endif /* HAVE_INOTIFY */
 #endif /* NOWATCH */
+}
+
+static uid_t
+getrunuid(const char *uid_s)
+{
+        if (!uid_s)
+                return 0;
+
+        char *endptr;
+        int value = strtol(uid_s,  &endptr, 10);
+        if (endptr != uid_s)
+                return value;
+
+        struct passwd *pw = getpwnam(uid_s);
+        if (pw)
+                return pw->pw_uid;
+
+        return -1;
+}
+
+static void
+use_correct_uid(void)
+{
+        uid_t cur_uid = geteuid();
+        uid_t run_uid = getrunuid(run_uid_s);
+
+        la_debug("uid=%d, runuid=%d", cur_uid, run_uid);
+
+        if (cur_uid == run_uid)
+                return;
+
+        if (!cur_uid)
+        {
+                if (!setuid(run_uid))
+                        return;
+                else
+                        die_err("Can't change to \"%s\".", run_uid_s);
+        }
+        else
+        {
+                if (run_uid_s)
+                        die_hard("Can't change uid for non-root user.");
+                else
+                        die_hard("Trying to run as non-root user.");
+        }
 }
 
 int
@@ -282,6 +333,8 @@ main(int argc, char *argv[])
                 fprintf(stderr, "Simulation successful.\n");
                 exit(EXIT_SUCCESS);
         }
+
+        use_correct_uid();
 
         la_log(LOG_INFO, "Starting up " PACKAGE_STRING);
 
