@@ -304,12 +304,16 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
         {
                 if (*ptr == '%')
                 {
-                        size_t length = scan_single_token(property_list, ptr,
-                                        ptr-string, 0);
-                        if (length > 2)
-                                n_tokens++;
+                        la_property_t *new_prop = scan_single_token(ptr,
+                                        ptr-string);
 
-                        ptr += length-1;
+                        if (new_prop)
+                        {
+                                add_tail(property_list, (kw_node_t *) new_prop);
+                                n_tokens++;
+                        }
+
+                        ptr += strlen(new_prop->name)+1;
                 }
 
                 ptr++; /* also skips over second '%' of a token */
@@ -451,16 +455,20 @@ free_command(la_command_t *command)
         free_property_list(command->begin_properties);
         free_property_list(command->end_properties);
         free_property_list(command->pattern_properties);
+        la_debug("free_command() 1");
 
         if (command->is_template)
         {
+                la_debug("free_command() 2");
                 free(command->name);
                 free(command->begin_string);
                 free(command->end_string);
         }
+        la_debug("free_command() 3");
         if (command->address)
                 free_address(command->address);
         free(command);
+        la_debug("free_command() 4");
 }
 
 void

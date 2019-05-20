@@ -208,6 +208,11 @@ typedef struct la_property_s
          * BTW: strings will be strdup()ed - take care to free again */
         char *value;
 
+        /* Only for tokings matching a log line. Specifies the regex that the
+         * %token% should be replaced with.
+         */
+        char *replacement;
+
         /* The following  members will only be used when properties are
          * obtained from log lines matching tokens or in action strings.
          */
@@ -215,7 +220,7 @@ typedef struct la_property_s
         /* Position in original string. Points to innitial '<'!.
          * Only for use in convert_regex() */
         unsigned int pos;
-        /* Length of token including '<' and '>'. Save us a few strlen() calls in
+        /* Length of token including the two '%'. Saves us a few strlen() calls in
          * convert_regex()... */
         size_t length;
 
@@ -421,8 +426,7 @@ void assert_property(la_property_t *property);
 
 size_t token_length(const char *string);
 
-size_t scan_single_token(kw_list_t *property_list, const char *string,
-                unsigned int pos, unsigned int subexpression);
+la_property_t *scan_single_token(const char *string, unsigned int pos);
 
 const char *get_host_property_value(kw_list_t *property_list);
 
@@ -437,8 +441,8 @@ la_property_t *create_property_from_config(const char *name, const char *value);
 la_property_t *create_property_from_action_token(const char *name, size_t length,
                 unsigned int pos);
 
-la_property_t *create_property_from_token(const char *name, size_t length, unsigned
-                int pos, unsigned int subexpression);
+la_property_t *create_property_from_token(const char *name, size_t length,
+                unsigned int pos);
 
 kw_list_t *dup_property_list(kw_list_t *list);
 

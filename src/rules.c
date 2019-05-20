@@ -302,8 +302,7 @@ clear_property_values(kw_list_t *property_list)
         for (la_property_t *property = ITERATE_PROPERTIES(property_list);
                         (property = NEXT_PROPERTY(property));)
         {
-                if (property->value)
-                        free(property->value);
+                free(property->value);
                 property->value = NULL;
         }
 }
@@ -319,22 +318,35 @@ handle_log_line_for_rule(la_rule_t *rule, char *line)
 {
         assert_rule(rule); assert(line);
 
-        la_debug("handle_log_line_for_rule()");
+        la_debug("handle_log_line_for_rule(%s)", rule->name);
 
+        unsigned int count = 0;
         for (la_pattern_t *pattern = ITERATE_PATTERNS(rule->patterns);
                         (pattern = NEXT_PATTERN(pattern));)
         {
+                la_debug("pattern: %s", pattern->string);
                 /* TODO: make this dynamic based on detected tokens */
-                regmatch_t pmatch[MAX_NMATCH];
-                if (!regexec(pattern->regex, line, MAX_NMATCH, pmatch, 0))
+                regmatch_t pmatch[100*MAX_NMATCH];
+                la_debug("-- 0: %u, %u, %u", count, pattern,
+                                pattern->regex);
+                la_debug("-- %s", line);
+                int x = regexec(pattern->regex, line, MAX_NMATCH, pmatch, 0);
+                //int x = regexec(pattern->regex, line, 0, 0, 0);
+                la_debug("pattern: 1");
+                if (!x)
                 {
                         assign_value_to_properties(pattern->properties, line,
                                         pmatch);
-                        trigger_all_commands(rule, pattern);
+                        la_debug("pattern: 2");
+                        /*trigger_all_commands(rule, pattern);
+                        la_debug("pattern: 3");*/
                         clear_property_values(pattern->properties);
+                        la_debug("pattern: 4");
                         return;
                 }
+                count++;
         }
+        la_debug("end handle_log_line_for_rule()");
 }
 
 /*

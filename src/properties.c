@@ -136,9 +136,7 @@ static void convert_property_name(char *name)
         assert(name);
         la_debug("convert_property_name(%s)", name);
 
-        char *ptr = name;
-
-        for (; *ptr; ptr++)
+        for (char *ptr=name; *ptr; ptr++)
         {
                 if (!isalnum(*ptr))
                         /* will print out partially converted name :-/ */
@@ -164,44 +162,49 @@ static void convert_property_name(char *name)
  */
 
 la_property_t *
-create_property_from_token(const char *name, size_t length, unsigned int pos,
-                unsigned int subexpression)
+create_property_from_token(const char *name, size_t length, unsigned int pos)
 {
+        la_debug("create_property_from_token(%s)", name);
         la_property_t *result = xmalloc(sizeof(la_property_t));
 
         result->name = xstrndup(name+1, length-2);
         convert_property_name(result->name);
         result->value = NULL;
-        result->is_host_property = !strcmp(result->name, LA_HOST_TOKEN);
+        if (!strcmp(result->name, LA_HOST_TOKEN))
+        {
+                result->is_host_property = true;
+                // TODO: why are we strdup()in this constant?!
+                result->replacement = xstrdup(LA_HOST_TOKEN_REPL);
+        }
+        else
+        {
+                result->is_host_property = false;
+                result->replacement = xstrdup(LA_TOKEN_REPL);
+        }
         result->length = length;
         result->pos = pos;
-        result->subexpression = subexpression;
+        result->subexpression = 0;
 
         return result;
 }
 
 /*
- * Creates a new property from token at *string with pos and subexpression.
+ * Creates a new property from token at *string with pos
  * Adds property to property list.
  *
  * String must point to first '%'
- * Set subexpression=0 in case of action tokens.
  */
 
-size_t
-scan_single_token(kw_list_t *property_list, const char *string, unsigned int pos,
-                unsigned int subexpression)
+la_property_t *
+scan_single_token(const char *string, unsigned int pos)
 {
+        la_debug("scan_single_token(%s)", string);
         size_t length = token_length(string);
 
         if (length > 2) /* so it's NOT just "%%" */
-        {
-                add_tail(property_list, (kw_node_t *)
-                                create_property_from_token(string, length, pos,
-                                        subexpression));
-        }
-
-        return length;
+                return create_property_from_token(string, length, pos);
+        else
+                return NULL;
 }
 
 la_property_t *
@@ -213,6 +216,7 @@ create_property_from_config(const char *name, const char *value)
         convert_property_name(result->name);
         result->is_host_property = !strcmp(result->name, LA_HOST_TOKEN);
         result->value = xstrdup(value);
+        result->replacement = NULL;
         
         return result;
 }
@@ -221,7 +225,10 @@ la_property_t *
 create_property_from_action_token(const char *name, size_t length,
                 unsigned int pos)
 {
-        return create_property_from_token(name, length, pos, 0);
+        la_property_t *result = create_property_from_token(name, length, pos);
+        result->replacement = NULL;
+
+        return result;
 }
 
 /*
@@ -262,19 +269,27 @@ free_property(la_property_t *property)
 
         free(property->name);
         free(property->value);
+        free(property->replacement);
 }
 
 void
 free_property_list(kw_list_t *list)
 {
+        la_debug("free_property_list()");
         if (!list)
+        {
+                la_debug("free_property_list() returning");
                 return;
+        }
 
+        la_debug("free_property_list() 1");
         for (la_property_t *tmp;
                         (tmp = REM_PROPERTIES_HEAD(list));)
                 free_property(tmp);
 
+        la_debug("free_property_list() 2");
         free(list);
+        la_debug("end free_property_list()");
 }
 
 
