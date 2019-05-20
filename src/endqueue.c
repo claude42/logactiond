@@ -133,9 +133,7 @@ consume_end_queue(void *ptr)
 
         for (;;)
         {
-                time_t now = time(NULL);
-                if (now == -1)
-                        die_hard("Can't get current time!");
+                time_t now = xtime(NULL);
 
                 la_command_t *command = (la_command_t *) end_queue->head.succ;
 
@@ -193,9 +191,7 @@ set_end_time(la_command_t *command)
         }
         else
         {
-                command->end_time = time(NULL);
-                if (command->end_time == -1)
-                        die_hard("Can't get current time!");
+                command->end_time = xtime(NULL);
                 command->end_time += command->duration;
         }
 }

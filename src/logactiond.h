@@ -349,6 +349,8 @@ void remove_pidfile(void);
 
 void create_pidfile(void);
 
+time_t xtime(time_t *tloc);
+
 void xfree (void *ptr);
 
 void la_debug(char *fmt, ...);
