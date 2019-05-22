@@ -133,12 +133,8 @@ compute_converted_length(la_command_t *command, la_commandtype_t type,
                         command->end_properties);
 
         while ((action_property = NEXT_PROPERTY(action_property)))
-        {
-                const char *tmp = get_value_for_action_property(command,
-                                action_property);
-                if (tmp)
-                        result += strlen(tmp);
-        }
+                result += xstrlen(get_value_for_action_property(command,
+                                        action_property));
 
         return result;
 }
@@ -455,20 +451,17 @@ free_command(la_command_t *command)
         free_property_list(command->begin_properties);
         free_property_list(command->end_properties);
         free_property_list(command->pattern_properties);
-        la_debug("free_command() 1");
 
         if (command->is_template)
         {
-                la_debug("free_command() 2");
                 free(command->name);
                 free(command->begin_string);
                 free(command->end_string);
         }
-        la_debug("free_command() 3");
+
         if (command->address)
                 free_address(command->address);
         free(command);
-        la_debug("free_command() 4");
 }
 
 void
