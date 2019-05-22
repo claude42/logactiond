@@ -164,6 +164,8 @@ static void convert_property_name(char *name)
 la_property_t *
 create_property_from_token(const char *name, size_t length, unsigned int pos)
 {
+        assert(name);
+
         la_debug("create_property_from_token(%s)", name);
         la_property_t *result = xmalloc(sizeof(la_property_t));
 
@@ -198,6 +200,8 @@ create_property_from_token(const char *name, size_t length, unsigned int pos)
 la_property_t *
 scan_single_token(const char *string, unsigned int pos)
 {
+        assert(string);
+
         la_debug("scan_single_token(%s)", string);
         size_t length = token_length(string);
 
@@ -210,6 +214,9 @@ scan_single_token(const char *string, unsigned int pos)
 la_property_t *
 create_property_from_config(const char *name, const char *value)
 {
+        assert(name); assert(value);
+
+        la_debug("create_property_from_config(%s, %s)", name, value);
         la_property_t *result = xmalloc(sizeof(la_property_t));
 
         result->name = xstrdup(name);
@@ -225,6 +232,9 @@ la_property_t *
 create_property_from_action_token(const char *name, size_t length,
                 unsigned int pos)
 {
+        assert(name);
+
+        la_debug("create_property_from_action_token(%s)", name);
         la_property_t *result = create_property_from_token(name, length, pos);
         result->replacement = NULL;
 
@@ -243,6 +253,7 @@ duplicate_property(la_property_t *property)
         result->name = xstrdup(property->name);
         result->is_host_property = property->is_host_property;
         result->value = xstrdup(property->value);
+        result->replacement = xstrdup(property->replacement);
         result->pos = property->pos;
         result->length = property->length;
         result->subexpression = property->subexpression;
@@ -266,10 +277,13 @@ void
 free_property(la_property_t *property)
 {
         assert_property(property);
+        la_debug("free_property(%s, %s, %s)", property->name, property->value,
+                        property->replacement);
 
         free(property->name);
         free(property->value);
         free(property->replacement);
+        free(property);
 }
 
 void
@@ -285,7 +299,11 @@ free_property_list(kw_list_t *list)
         la_debug("free_property_list() 1");
         for (la_property_t *tmp;
                         (tmp = REM_PROPERTIES_HEAD(list));)
+        {
+                la_debug("free_property_list() 1.1");
                 free_property(tmp);
+                la_debug("free_property_list() 1.2");
+        }
 
         la_debug("free_property_list() 2");
         free(list);
