@@ -63,33 +63,6 @@ count_open_braces(const char *string)
         return result;
 }
 
-/*
- * Checks whether the replacement string for a property contains braces or not.
- * If it does, add property to the pattern's property list.
- *
- * Returns number of detected opening braces.
- *
- * TODO: right now this doesn't make a lot of sense as the only two possible
- * replacements are the LA_TOKEN_REPL and LA_HOST_TOKEN_REPL constants but this
- * might change in the future.
- *
- * Use case: logactiond has special, builtin %SOMETHING% variables which can be
- * used in pattern definitions, e.g. think %HOSTNAME% being replaced by the local
- * hostname.
- */
-
-static void
-add_prop(la_property_t *property, la_pattern_t *pattern,
-                unsigned int subexpression)
-{
-        if (subexpression + 1 >= MAX_NMATCH)
-                die_hard("subexpression > MAX_NMATCH");
-
-        property->subexpression = subexpression + 1;
-        add_tail(pattern->properties, (kw_node_t *) property);
-}
-
-
 void
 assert_pattern_ffl(la_pattern_t *pattern, const char *func, char *file, unsigned int line)
 {
@@ -170,14 +143,30 @@ convert_regex(const char *string, la_pattern_t *pattern)
                                 // we need this property for scanning at all
                                 // and b.) to correctly update the subexpression
                                 // count.
+                                //
+                                // a.) currently doesn't make to much sense, as
+                                // the only two possible replacements always
+                                // contain braces but this might change in the
+                                // future.
+                                //
+                                // Use case Use case: logactiond has special,
+                                // builtin %SOMETHING% variables which can be
+                                // used in pattern definitions, e.g. think
+                                // %HOSTNAME% being replaced by the local
+                                // hostname.
                                 unsigned int braces = count_open_braces(
                                                 new_prop->replacement);
 
                                 if (braces)
-                                        add_prop(new_prop, pattern,
-                                                        subexpression);
+                                {
+                                        if (subexpression + 1 >= MAX_NMATCH)
+                                                die_hard("subexpression > MAX_NMATCH");
 
-                                subexpression += braces;
+                                        new_prop->subexpression = subexpression + 1;
+                                        add_tail(pattern->properties, (kw_node_t *)
+                                                        new_prop);
+                                        subexpression += braces;
+                                }
 
                                 // Finally replace the token by the
                                 // corresponding replacement in the result
