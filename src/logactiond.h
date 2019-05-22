@@ -191,7 +191,7 @@ typedef struct la_address_s
 typedef struct la_property_s
 {
         kw_node_t node;
-        /* name of the property (for matched tokens: without '<' and '>') */
+        /* name of the property (for matched tokens: without the '%'s) */
         char *name;
         /* Property created from HOST token */
         bool is_host_property;
@@ -208,7 +208,7 @@ typedef struct la_property_s
          * BTW: strings will be strdup()ed - take care to free again */
         char *value;
 
-        /* Only for tokings matching a log line. Specifies the regex that the
+        /* Only for tokens matching a log line. Specifies the regex that the
          * %token% should be replaced with.
          */
         char *replacement;
@@ -370,6 +370,8 @@ void *xmalloc(size_t n);
 char *xstrdup(const char *s);
 
 char *xstrndup(const char *s, size_t n);
+
+size_t xstrlen(const char *s);
 
 /* configfile.c */
 

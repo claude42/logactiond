@@ -212,4 +212,13 @@ xstrndup(const char *s, size_t n)
         return result;
 }
 
+size_t
+xstrlen(const char *s)
+{
+        if (s)
+                return strlen(s);
+        else
+                return 0;
+}
+
 /* vim: set autowrite expandtab: */
