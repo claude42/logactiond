@@ -324,29 +324,20 @@ handle_log_line_for_rule(la_rule_t *rule, char *line)
         for (la_pattern_t *pattern = ITERATE_PATTERNS(rule->patterns);
                         (pattern = NEXT_PATTERN(pattern));)
         {
-                la_debug("pattern: %s", pattern->string);
                 /* TODO: make this dynamic based on detected tokens */
-                regmatch_t pmatch[100*MAX_NMATCH];
-                la_debug("-- 0: %u, %u, %u", count, pattern,
-                                pattern->regex);
-                la_debug("-- %s", line);
+                regmatch_t pmatch[MAX_NMATCH];
                 int x = regexec(pattern->regex, line, MAX_NMATCH, pmatch, 0);
                 //int x = regexec(pattern->regex, line, 0, 0, 0);
-                la_debug("pattern: 1");
                 if (!x)
                 {
                         assign_value_to_properties(pattern->properties, line,
                                         pmatch);
-                        la_debug("pattern: 2");
-                        /*trigger_all_commands(rule, pattern);
-                        la_debug("pattern: 3");*/
+                        trigger_all_commands(rule, pattern);
                         clear_property_values(pattern->properties);
-                        la_debug("pattern: 4");
                         return;
                 }
                 count++;
         }
-        la_debug("end handle_log_line_for_rule()");
 }
 
 /*
