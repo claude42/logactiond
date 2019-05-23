@@ -101,6 +101,9 @@
 // buffer size for reading log lines
 #define DEFAULT_LINEBUFFER_SIZE 8192
 
+// verbose debugging loglevel
+#define LOG_VDEBUG (LOG_DEBUG+1)
+
 /* List macros */
 
 #define ITERATE_ADDRESSES(ADDRESSES) (la_address_t *) &(ADDRESSES)->head
@@ -140,11 +143,15 @@
 #define assert_rule(RULE) (void)(0)
 #define assert_source(SOURCE) (void)(0)
 #define assert_pattern(PATTERN) (void)(0)
+#define assert_address(ADDRESS) (void)(0)
+#define assert_property(PROPERTY) (void)(0)
 #else /* NDEBUG */
 #define assert_command(COMMAND) assert_command_ffl(COMMAND, __func__, __FILE__, __LINE__)
 #define assert_rule(RULE) assert_rule_ffl(RULE, __func__, __FILE__, __LINE__)
 #define assert_source(SOURCE) assert_source_ffl(SOURCE, __func__, __FILE__, __LINE__)
 #define assert_pattern(PATTERN) assert_pattern_ffl(PATTERN, __func__, __FILE__, __LINE__)
+#define assert_address(ADDRESS) assert_address_ffl(ADDRESS, __func__, __FILE__, __LINE__)
+#define assert_property(PROPERTY) assert_property_ffl(PROPERTY, __func__, __FILE__, __LINE__)
 #endif /* NDEBUG */
 
 // TODO: add default type
@@ -355,6 +362,8 @@ void xfree (void *ptr);
 
 void la_debug(char *fmt, ...);
 
+void la_vdebug(char *fmt, ...);
+
 void la_log_errno(unsigned int priority, char *fmt, ...);
 
 void la_log(unsigned int priority, char *fmt, ...);
@@ -380,6 +389,9 @@ void load_la_config(char *filename);
 void unload_la_config(void);
 
 /* addresses.c */
+
+void assert_address_ffl(la_address_t *address, const char *func, char *file,
+                unsigned int line);
 
 la_address_t *dup_address(la_address_t *address);
 
@@ -426,7 +438,8 @@ void free_command_list(kw_list_t *list);
 
 /* properties.c */
 
-void assert_property(la_property_t *property);
+void assert_property_ffl(la_property_t *property, const char *func, char *file,
+                unsigned int line);
 
 size_t token_length(const char *string);
 

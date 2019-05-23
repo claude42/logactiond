@@ -48,14 +48,30 @@
 #include "logactiond.h"
 #include "nodelist.h"
 
+void
+assert_address_ffl(la_address_t *address, const char *func, char *file, unsigned int line)
+{
+        if (!address)
+                die_hard("%s:%u: %s: Assertion 'address' failed. ", file, line,
+                                func);
+        if (address->af != AF_INET && address->af != AF_INET6)
+                die_hard("%s:%u: %s: Assertion 'address->af' failed.", file,
+                                line, func);
+        if (!address->text)
+                die_hard("%s:%u: %s: Assertion 'address->text' failed.", file,
+                                line, func);
+}
+
 /*
  * Check whether addr is in net (with prefix).
  *
  * From https://stackoverflow.com/questions/7213995/ip-cidr-match-function
  */
-bool
+static bool
 cidr_match(struct in_addr addr, struct in_addr net, int prefix)
 {
+        la_vdebug("cidr_match()");
+
         if (prefix == 0) {
                 /* C99 6.5.7 (3): u32 << 32 is undefined behaviour */
                 return true;
@@ -77,6 +93,8 @@ cidr_match(struct in_addr addr, struct in_addr net, int prefix)
 int
 adrcmp(la_address_t *a1, la_address_t *a2)
 {
+        la_vdebug("adrcmp()");
+
         if (!a1 && !a2)
                 return 0;
 
@@ -106,7 +124,9 @@ address_on_ignore_list(la_address_t *address)
         if (!address)
                 return false;
 
-        la_debug("address_on_ignore_list(%s)", address->text);
+        assert_address(address);
+
+        la_vdebug("address_on_ignore_list(%s)", address->text);
 
         for (la_address_t *ign_address = ITERATE_ADDRESSES(la_config->ignore_addresses);
                         (ign_address = NEXT_ADDRESS(ign_address));)
@@ -134,6 +154,8 @@ address_on_ignore_list(la_address_t *address)
 bool
 create_address4(const char *ip, la_address_t *address)
 {
+        assert(ip); assert(address); // can't do assert_address() just yet
+        la_vdebug("create_address4(%s)", ip);
         address->prefix = inet_net_pton(AF_INET, ip, &(address->addr),
                         sizeof(in_addr_t));
 
@@ -157,7 +179,8 @@ create_address4(const char *ip, la_address_t *address)
 bool
 create_address6(const char *ip, la_address_t *address)
 {
-        assert(ip);
+        assert(ip); assert(address); // can't do assert_address() just yet
+        la_vdebug("create_address6(%s)", ip);
 
         /* TODO: does not support prefix for IPv6 */
         int tmp = inet_pton(AF_INET6, ip, &(address->addr6));
@@ -190,6 +213,7 @@ la_address_t *
 create_address(const char *ip)
 {
         assert(ip);
+        la_vdebug("create_address(%s)", ip);
 
         la_address_t *result = xmalloc(sizeof(la_address_t));
 
@@ -202,6 +226,8 @@ create_address(const char *ip)
                 }
         }
         result->text = xstrdup(ip);
+
+        assert_address(result);
         return result;
 }
 
@@ -212,8 +238,8 @@ create_address(const char *ip)
 la_address_t *
 dup_address(la_address_t *address)
 {
-        assert(address);
-        la_debug("dup_address(%s)", address->text);
+        assert_address(address);
+        la_vdebug("dup_address(%s)", address->text);
 
         la_address_t *result = xmalloc(sizeof(la_address_t));
 
@@ -223,6 +249,7 @@ dup_address(la_address_t *address)
         result->prefix = address->prefix;
         result->text = xstrdup(address->text);
 
+        assert_address(result);
         return result;
 }
 
@@ -233,7 +260,8 @@ dup_address(la_address_t *address)
 void
 free_address(la_address_t *address)
 {
-        assert(address);
+        assert_address(address);
+        la_vdebug("free_address(%s)", address->text);
 
         free(address->text);
         free(address);
@@ -246,6 +274,7 @@ free_address(la_address_t *address)
 void
 free_address_list(kw_list_t *list)
 {
+        la_vdebug("free_address_list()");
         if (!list)
                 return;
 

@@ -54,7 +54,7 @@ static void
 handle_log_line(la_source_t *source, char *line)
 {
         assert(line); assert_source(source);
-        la_debug("handle_log_line(%s)", line);
+        la_vdebug("handle_log_line(%s)", line);
 
         for (la_rule_t *rule = ITERATE_RULES(source->rules);
                         (rule = NEXT_RULE(rule));)
@@ -74,7 +74,7 @@ bool
 handle_new_content(la_source_t *source)
 {
         assert_source(source);
-        la_debug("handle_new_content(%s)", source->name);
+        la_vdebug("handle_new_content(%s)", source->name);
 
         /* TODO: less random number? */
         if (!linebuffer)
@@ -186,6 +186,9 @@ unwatch_source(la_source_t *source)
 la_source_t *
 create_source(const char *name, la_sourcetype_t type, const char *location)
 {
+        assert(name);
+        la_debug("create_source(%s)", name);
+
         la_source_t *result;
 
         result = xmalloc(sizeof(la_source_t));
@@ -203,6 +206,7 @@ create_source(const char *name, la_sourcetype_t type, const char *location)
 #endif /* HAVE_INOTIFY */
 
 
+        assert_source(result);
         return result;
 }
 
@@ -210,6 +214,7 @@ void
 free_source(la_source_t *source)
 {
         assert_source(source);
+        la_vdebug("free_source(%s)", source->name);
 
         if (source->file)
                 unwatch_source(source);
@@ -226,6 +231,8 @@ free_source(la_source_t *source)
 void
 free_source_list(kw_list_t *list)
 {
+        la_vdebug("free_source_list()");
+
         if (!list)
                 return;
 

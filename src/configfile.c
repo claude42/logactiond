@@ -247,24 +247,20 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
         const char *tmp = config_get_string_or_null(action_def,
                         LA_ACTION_NEED_HOST_LABEL);
         la_need_host_t need_host;
-        if (tmp)
-        {
-                if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_NO_LABEL))
-                        need_host = LA_NEED_HOST_NO;
-                else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_ANY_LABEL))
-                        need_host = LA_NEED_HOST_ANY;
-                else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_IP4_LABEL))
-                        need_host = LA_NEED_HOST_IP4;
-                else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_IP6_LABEL))
-                        need_host = LA_NEED_HOST_IP6;
-                else
-                        die_semantic("Invalid value \"%s\" for need_host "
-                                        "parameter!", tmp);
-        }
-        else
-        {
+
+        if (!tmp)
                 need_host = LA_NEED_HOST_NO;
-        }
+        else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_NO_LABEL))
+                need_host = LA_NEED_HOST_NO;
+        else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_ANY_LABEL))
+                need_host = LA_NEED_HOST_ANY;
+        else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_IP4_LABEL))
+                need_host = LA_NEED_HOST_IP4;
+        else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_IP6_LABEL))
+                need_host = LA_NEED_HOST_IP6;
+        else
+                die_semantic("Invalid value \"%s\" for need_host "
+                                "parameter!", tmp);
 
         if (initialize)
                 trigger_command(create_template(name, rule, initialize,
@@ -402,7 +398,7 @@ load_ignore_addresses(const config_setting_t *section)
                 if (!address)
                         die_err("Invalid IP address %s!", ip);
 
-                la_debug("load_ignore_addresses(%s)=%s",
+                la_vdebug("load_ignore_addresses(%s)=%s",
                                 config_setting_name(section), address->text);
                 add_tail(result, (kw_node_t *) address);
         }
@@ -448,7 +444,7 @@ load_properties(kw_list_t *properties, const config_setting_t *section)
 
                 la_property_t *property = create_property_from_config(name, value);
 
-                la_debug("load_properties(%s)=%s", config_setting_name(section), name);
+                la_vdebug("load_properties(%s)=%s", config_setting_name(section), name);
                 add_tail(properties, (kw_node_t *) property);
         }
         assert_list(properties);
@@ -503,9 +499,6 @@ load_single_rule(const config_setting_t *rule_def,
         }
 
         assert_source(source);
-
-        la_log(LOG_INFO, "Initializing rule \"%s\" for source \"%s\".",
-                        name, source->name);
 
         /* get parameters either from rule or uc_rule */
         int threshold = get_rule_parameter(rule_def, uc_rule_def,

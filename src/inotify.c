@@ -42,7 +42,7 @@
 static int inotify_fd;
 
 static void
-la_debug_inotify_event(struct inotify_event *event, uint32_t monitored)
+la_vdebug_inotify_event(struct inotify_event *event, uint32_t monitored)
 {
         char *str;
 
@@ -72,9 +72,9 @@ la_debug_inotify_event(struct inotify_event *event, uint32_t monitored)
                 str = "IN_OPEN";
 
         if (event->mask & monitored)
-                la_debug("%u: %s (%s)%s", event->wd, str, event->name, "");
+                la_vdebug("%u: %s (%s)%s", event->wd, str, event->name, "");
         else
-                la_debug("%u: %s (%s)%s", event->wd, str, event->name, " - ignored");
+                la_vdebug("%u: %s (%s)%s", event->wd, str, event->name, " - ignored");
 }
 
 /*
@@ -85,13 +85,14 @@ void
 unwatch_source_inotify(la_source_t *source)
 {
         assert_source(source); assert(inotify_fd != 0);
-
         la_debug("unwatch_source_inotify(%s)", source->name);
 
+        /* Remove watch for file itself */
         if (inotify_rm_watch(inotify_fd, source->wd))
                 la_log_errno(LOG_ERR, "Unable to unwatch source \"%s\".",
                                 source->name);
 
+        /* Remove watch for parent directory */
         if (source->parent_wd)
         {
                 if (inotify_rm_watch(inotify_fd, source->parent_wd))
@@ -114,8 +115,7 @@ static la_source_t *
 find_source_by_parent_wd(int parent_wd, char *file_name)
 {
         assert(parent_wd); assert(file_name);
-
-        la_debug("find_source_by_parent_wd(%s)", file_name);
+        la_vdebug("find_source_by_parent_wd(%s)", file_name);
 
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                         (source = NEXT_SOURCE(source));)
@@ -150,8 +150,7 @@ static la_source_t *
 find_source_by_file_wd(int file_wd)
 {
         assert(file_wd);
-
-        la_debug("find_source_by_file_wd(%u)", file_wd);
+        la_vdebug("find_source_by_file_wd(%u)", file_wd);
 
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                         (source = NEXT_SOURCE(source));)
@@ -164,7 +163,8 @@ find_source_by_file_wd(int file_wd)
 }
 
 /*
- *
+ * Watched file has been recreated (after it had been previously deleted).
+ * Start watching again.
  */
 
 static void
@@ -177,10 +177,16 @@ watched_file_created(la_source_t *source)
         /* unwatch not necessary in case of a previous IN_DELETE */
         if (source->file)
                 unwatch_source(source);
+
         watch_source(source, SEEK_SET);
         if (!handle_new_content(source))
                 la_log(LOG_ERR, "Reading from source \"%s\" failed", source->name);
 }
+
+/*
+ * Watched file has been moved away. Keep watching as there might be still some
+ * events coming.
+ */
 
 static void
 watched_file_moved_from(la_source_t *source)
@@ -193,6 +199,10 @@ watched_file_moved_from(la_source_t *source)
         /* Keep watching original file in case daemons are still logging
          * there. Switch only when new file is created. */
 }
+
+/*
+ * A file has been moved to the watched location. Start watching.
+ */
 
 static void
 watched_file_moved_to(la_source_t *source)
@@ -210,6 +220,10 @@ watched_file_moved_to(la_source_t *source)
         watch_source(source, SEEK_END);
 }
 
+/*
+ * Watched file has been deleted - stop watching.
+ */
+
 static void
 watched_file_deleted(la_source_t *source)
 {
@@ -225,8 +239,9 @@ watched_file_deleted(la_source_t *source)
 static void
 handle_inotify_directory_event(struct inotify_event *event)
 {
-        la_debug("handle_inotify_directory_event()");
-        la_debug_inotify_event(event, IN_CREATE | IN_DELETE | IN_MOVED_TO);
+        assert(event);
+        la_vdebug("handle_inotify_directory_event()");
+        la_vdebug_inotify_event(event, IN_CREATE | IN_DELETE | IN_MOVED_TO);
 
         la_source_t *source = find_source_by_parent_wd(event->wd, event->name);
         if (!source)
@@ -259,8 +274,9 @@ handle_inotify_directory_event(struct inotify_event *event)
 static void
 handle_inotify_file_event(struct inotify_event *event)
 {
-        la_debug("handle_inotify_file_event()");
-        la_debug_inotify_event(event, IN_MODIFY);
+        assert(event);
+        la_vdebug("handle_inotify_file_event()");
+        la_vdebug_inotify_event(event, IN_MODIFY);
 
         la_source_t *source = find_source_by_file_wd(event->wd);
         if (!source)
@@ -277,6 +293,7 @@ handle_inotify_file_event(struct inotify_event *event)
 static void
 handle_inotify_event(struct inotify_event *event)
 {
+        assert(event);
         la_debug("handle_inotify_event()");
 
         if (event->len) /* only directory have a name (and thus a length) */

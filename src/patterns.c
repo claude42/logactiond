@@ -29,20 +29,13 @@
 #include "logactiond.h"
 #include "nodelist.h"
 
-static bool
-is_host_token(la_property_t *property, bool has_host_token)
+void
+assert_pattern_ffl(la_pattern_t *pattern, const char *func, char *file, unsigned int line)
 {
-        if (property->is_host_property)
-        {
-                if (has_host_token)
-                        die_hard("Only one %HOST% token allowed per pattern!");
-                else
-                        return true;
-        }
-        else
-        {
-                return false;
-        }
+        if (!pattern)
+                die_hard("%s:%u: %s: Assertion 'pattern' failed. ", file, line, func);
+        assert_rule_ffl(pattern->rule, func, file, line);
+        assert_list_ffl(pattern->properties, func, file, line);
 }
 
 /* 
@@ -52,6 +45,9 @@ is_host_token(la_property_t *property, bool has_host_token)
 static unsigned int
 count_open_braces(const char *string)
 {
+        assert(string);
+        la_vdebug("count_open_braces(%s)", string);
+
         unsigned int result = 0;
 
         for (const char *ptr = string; *ptr; ptr++)
@@ -61,15 +57,6 @@ count_open_braces(const char *string)
         }
 
         return result;
-}
-
-void
-assert_pattern_ffl(la_pattern_t *pattern, const char *func, char *file, unsigned int line)
-{
-        if (!pattern)
-                die_hard("%s:%u: %s: Assertion 'pattern' failed. ", file, line, func);
-        assert_rule_ffl(pattern->rule, func, file, line);
-        assert_list_ffl(pattern->properties, func, file, line);
 }
 
 /*
@@ -84,7 +71,7 @@ assert_pattern_ffl(la_pattern_t *pattern, const char *func, char *file, unsigned
 
 static void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, size_t on_top)
 {
-        la_debug("realloc_buffer(%u, %u)", *dst_len, on_top);
+        la_vdebug("realloc_buffer(%u, %u)", *dst_len, on_top);
 
         if (*dst_ptr + on_top >= *dst + *dst_len)
         {
@@ -113,8 +100,7 @@ static char*
 convert_regex(const char *string, la_pattern_t *pattern)
 {
         assert(string);
-
-        la_debug("convert_regex(%s)", string);
+        la_vdebug("convert_regex(%s)", string);
 
         size_t dst_len = 2 * strlen(string);
         char *result = xmalloc(dst_len);
@@ -136,8 +122,14 @@ convert_regex(const char *string, la_pattern_t *pattern)
 
                                 // Make sure we only have one %HOST% token per
                                 // pattern. Die otherwise.
-                                has_host_token = is_host_token(new_prop,
-                                                has_host_token);
+
+                                if (new_prop->is_host_property)
+                                {
+                                        if (has_host_token)
+                                                die_hard("Only one %HOST% token "
+                                                                "allowed er pattern!");
+                                        has_host_token = true;
+                                }
 
                                 // Count open braces a.) to determine whether
                                 // we need this property for scanning at all
@@ -224,7 +216,6 @@ create_pattern(const char *string_from_configfile, unsigned int num,
                 la_rule_t *rule)
 {
         assert(string_from_configfile); assert_rule(rule);
-
         la_debug("create_pattern(%s)", string_from_configfile);
 
         la_pattern_t *result = xmalloc(sizeof(la_pattern_t));
@@ -249,6 +240,7 @@ void
 free_pattern(la_pattern_t *pattern)
 {
         assert_pattern(pattern);
+        la_vdebug("free_pattern(%s)", pattern->string);
 
         free_property_list(pattern->properties);
 
@@ -256,12 +248,13 @@ free_pattern(la_pattern_t *pattern)
         free(pattern->regex);
 
         free(pattern);
-
 }
 
 void
 free_pattern_list(kw_list_t *list)
 {
+        la_vdebug("free_pattern_list()");
+
         if (!list)
                 return;
 

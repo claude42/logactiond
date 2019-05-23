@@ -36,6 +36,8 @@ bool created_pidfile = false;
 void
 remove_pidfile(void)
 {
+        la_debug("remove_pidfile()");
+
         if (created_pidfile)
         {
                 if (unlink(PIDFILE) && errno != ENOENT)
@@ -47,6 +49,8 @@ remove_pidfile(void)
 void
 create_pidfile(void)
 {
+        la_debug("create_pidfile()");
+
         int fd;
         char buf[20]; /* should be enough - I think */
         int len;
@@ -74,6 +78,9 @@ log_message(unsigned int priority, char *fmt, va_list gp, char *add)
         if (priority >= log_level ||
                         (run_type == LA_UTIL_FOREGROUND && priority >= LOG_INFO))
                 return;
+
+        if (priority == LOG_VDEBUG)
+                priority = LOG_DEBUG;
 
         switch (run_type)
         {
@@ -118,6 +125,19 @@ la_debug(char *fmt, ...)
 
         va_start(myargs, fmt);
         log_message(LOG_DEBUG, fmt, myargs, NULL);
+        va_end(myargs);
+
+#endif /* NDEBUG */
+}
+
+void
+la_vdebug(char *fmt, ...)
+{
+#ifndef NDEBUG
+        va_list myargs;
+
+        va_start(myargs, fmt);
+        log_message(LOG_VDEBUG, fmt, myargs, NULL);
         va_end(myargs);
 
 #endif /* NDEBUG */
