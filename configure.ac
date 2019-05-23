@@ -16,7 +16,6 @@ AC_PROG_CC
 #gl_INIT
 
 # Checks for libraries.
-#AC_CHECK_LIB([config], [config_init], , [AC_MSG_ERROR([LIBCONFIG NOT FOUND])])
 AC_CHECK_LIB([config], [config_set_include_func])
 AM_CONDITIONAL([USE_LIBCONFIG], [test "$ac_cv_lib_config_config_set_include_func" = yes])
 AC_CHECK_LIB([resolv], [inet_net_pton])
