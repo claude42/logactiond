@@ -487,9 +487,16 @@ create_template(const char *name, la_rule_t *rule, const char *begin_string,
         return result;
 }
 
+/*
+ * Free single command. Does nothing when argument is NULL
+ */
+
 void
 free_command(la_command_t *command)
 {
+        if (!command)
+                return;
+
         assert_command(command);
         la_vdebug("free_command(%s)", command->name);
 
@@ -504,10 +511,13 @@ free_command(la_command_t *command)
                 free(command->end_string);
         }
 
-        if (command->address)
-                free_address(command->address);
+        free_address(command->address);
         free(command);
 }
+
+/*
+ * Free all commands in list
+ */
 
 void
 free_command_list(kw_list_t *list)

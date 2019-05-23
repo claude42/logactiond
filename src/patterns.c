@@ -236,9 +236,16 @@ create_pattern(const char *string_from_configfile, unsigned int num,
         return result;
 }
 
+/*
+ * Free single pattern. Does nothing when argument is NULL
+ */
+
 void
 free_pattern(la_pattern_t *pattern)
 {
+        if (!pattern)
+                return;
+
         assert_pattern(pattern);
         la_vdebug("free_pattern(%s)", pattern->string);
 
@@ -249,6 +256,10 @@ free_pattern(la_pattern_t *pattern)
 
         free(pattern);
 }
+
+/*
+ * Free all patterns in list
+ */
 
 void
 free_pattern_list(kw_list_t *list)

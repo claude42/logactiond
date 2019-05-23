@@ -254,12 +254,15 @@ dup_address(la_address_t *address)
 }
 
 /*
- * Free single address. Must not be called with NULL argument
+ * Free single address. Does nothing when argument is NULL
  */
 
 void
 free_address(la_address_t *address)
 {
+        if (!address)
+                return;
+
         assert_address(address);
         la_vdebug("free_address(%s)", address->text);
 

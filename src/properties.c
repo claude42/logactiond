@@ -291,9 +291,16 @@ dup_property_list(kw_list_t *list)
         return result;
 }
 
+/*
+ * Free single property. Does nothing when argument is NULL
+ */
+
 void
 free_property(la_property_t *property)
 {
+        if (!property)
+                return;
+
         assert_property(property);
         la_vdebug("free_property(%s, %s, %s)", property->name, property->value,
                         property->replacement);
@@ -303,6 +310,10 @@ free_property(la_property_t *property)
         free(property->replacement);
         free(property);
 }
+
+/*
+ * Free all properties in list
+ */
 
 void
 free_property_list(kw_list_t *list)

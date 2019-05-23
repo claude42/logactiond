@@ -368,9 +368,16 @@ create_rule(char *name, la_source_t *source, int threshold, int period, int
         return result;
 }
 
+/*
+ * Free single rule. Does nothing when argument is NULL
+ */
+
 void
 free_rule(la_rule_t *rule)
 {
+        if (!rule)
+                return;
+
         assert_rule(rule);
         la_vdebug("free_rule(%s)", rule->name);
 
@@ -383,6 +390,10 @@ free_rule(la_rule_t *rule)
 
         free(rule);
 }
+
+/*
+ * Free all rules in list
+ */
 
 void
 free_rule_list(kw_list_t *list)

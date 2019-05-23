@@ -210,9 +210,16 @@ create_source(const char *name, la_sourcetype_t type, const char *location)
         return result;
 }
 
+/*
+ * Free single source. Does nothing when argument is NULL
+ */
+
 void
 free_source(la_source_t *source)
 {
+        if (!source)
+                return;
+
         assert_source(source);
         la_vdebug("free_source(%s)", source->name);
 
@@ -227,6 +234,10 @@ free_source(la_source_t *source)
 
         free(source);
 }
+
+/*
+ * Free all sources in list
+ */
 
 void
 free_source_list(kw_list_t *list)
