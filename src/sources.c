@@ -184,16 +184,18 @@ unwatch_source(la_source_t *source)
  */
 
 la_source_t *
-create_source(const char *name, la_sourcetype_t type, const char *location)
+create_source(const char *name, la_sourcetype_t type, const char *location,
+                const char *prefix)
 {
         assert(name);
-        la_debug("create_source(%s)", name);
+        la_debug("create_source(%s, %s, %s)", name, location, prefix);
 
         la_source_t *result;
 
         result = xmalloc(sizeof(la_source_t));
         result->name = xstrdup(name);
         result->location = xstrdup(location);
+        result->prefix = xstrdup(prefix);
         result->parent_dir = NULL;
         result->type = type;
         result->rules = create_list();
@@ -230,6 +232,7 @@ free_source(la_source_t *source)
 
         free(source->name);
         free(source->location);
+        free(source->prefix);
         free(source->parent_dir);
 
         free(source);

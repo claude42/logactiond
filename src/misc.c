@@ -209,6 +209,30 @@ xmalloc(size_t n)
         return result;
 }
 
+/*
+ * Concatenates the two strings and creates a newly malloc()ed string. If
+ * one string is NULL, returns a duplicate of the other string. If both are
+ * NULL, returns NULL.
+ */
+
+char *
+concat(const char *s1, const char *s2)
+{
+        if (!s1)
+                return xstrdup(s2);
+        if (!s2)
+                return xstrdup(s1);
+
+        size_t len1 = strlen(s1);
+        size_t len2 = strlen(s2);
+        char *result = xmalloc(len1 + len2 + 1);
+
+        memcpy(result, s1, len1);
+        memcpy(result + len1, s2, len2 + 1); /* also copy terminating 0 byte */
+
+        return result;
+}
+
 char *
 xstrdup(const char *s)
 {

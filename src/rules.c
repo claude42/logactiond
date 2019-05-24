@@ -301,7 +301,7 @@ void
 handle_log_line_for_rule(la_rule_t *rule, char *line)
 {
         assert_rule(rule); assert(line);
-        la_debug("handle_log_line_for_rule(%s)", rule->name);
+        la_vdebug("handle_log_line_for_rule(%s)", rule->name);
 
         unsigned int count = 0;
         for (la_pattern_t *pattern = ITERATE_PATTERNS(rule->patterns);
@@ -339,8 +339,8 @@ handle_log_line_for_rule(la_rule_t *rule, char *line)
  */
 
 la_rule_t *
-create_rule(char *name, la_source_t *source, int threshold, int period, int
-                duration)
+create_rule(char *name, la_source_t *source, int threshold, int period,
+                int duration, const char *service)
 {
         assert_source(source);
         la_debug("create_rule(%s)", name);
@@ -359,6 +359,8 @@ create_rule(char *name, la_source_t *source, int threshold, int period, int
 
         result->duration = duration!=-1 ? duration : la_config->default_duration;
         result->period = period!=-1 ? period : la_config->default_period;
+
+        result->service = xstrdup(service);
 
         result->patterns = create_list();
         result->begin_commands = create_list();
@@ -380,6 +382,8 @@ free_rule(la_rule_t *rule)
 
         assert_rule(rule);
         la_vdebug("free_rule(%s)", rule->name);
+
+        free(rule->service);
 
         free_pattern_list(rule->patterns);
         free_command_list(rule->begin_commands);

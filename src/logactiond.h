@@ -54,6 +54,7 @@
 #define LA_THRESHOLD_LABEL "threshold"
 #define LA_PERIOD_LABEL "period"
 #define LA_DURATION_LABEL "duration"
+#define LA_SERVICE_LABEL "service"
 
 
 #define LA_ACTIONS_LABEL "actions"
@@ -80,7 +81,8 @@
 #define LA_RULE_ACTION_LABEL "action"
 #define LA_RULE_PATTERNS_LABEL "pattern"
 
-#define LA_LOCATION "location"
+#define LA_SOURCE_LOCATION "location"
+#define LA_SOURCE_PREFIX "prefix"
 
 #define LA_TOKEN_REPL "(.+)"
 #define LA_TOKEN_REPL_LEN 4
@@ -88,6 +90,7 @@
 #define LA_HOST_TOKEN "host"
 #define LA_HOST_TOKEN_REPL "([.:[:xdigit:]]+)"
 #define LA_HOST_TOKEN_REPL_LEN 17
+#define LA_SERVICE_TOKEN "service"
 
 #define LA_RULENAME_TOKEN "rulename"
 #define LA_SOURCENAME_TOKEN "sourcename"
@@ -254,6 +257,7 @@ typedef struct la_rule_s
         kw_node_t node;
         char *name;
         struct la_source_s *source;
+        char *service;
         kw_list_t *patterns;
         kw_list_t *begin_commands;
         unsigned int threshold;
@@ -308,6 +312,8 @@ typedef struct la_source_s
         char *parent_dir;
         /* Rules assigned to log file */
         kw_list_t *rules;
+        /* Prefix to prepend before rule patterns */
+        char *prefix;
         /* File handle for log file */
         FILE *file;
         /* stat() result for file */
@@ -382,6 +388,8 @@ char *xstrndup(const char *s, size_t n);
 
 size_t xstrlen(const char *s);
 
+char *concat(const char *s1, const char *s2);
+
 /* configfile.c */
 
 void load_la_config(char *filename);
@@ -443,7 +451,8 @@ void assert_property_ffl(la_property_t *property, const char *func, char *file,
 
 size_t token_length(const char *string);
 
-la_property_t *scan_single_token(const char *string, unsigned int pos);
+la_property_t *scan_single_token(const char *string, unsigned int pos,
+                la_rule_t *rule);
 
 const char *get_host_property_value(kw_list_t *property_list);
 
@@ -455,11 +464,11 @@ const char *get_value_from_property_list(kw_list_t *property_list,
 
 la_property_t *create_property_from_config(const char *name, const char *value);
 
-la_property_t *create_property_from_action_token(const char *name, size_t length,
-                unsigned int pos);
+/*la_property_t *create_property_from_action_token(const char *name, size_t length,
+                unsigned int pos);*/
 
 la_property_t *create_property_from_token(const char *name, size_t length,
-                unsigned int pos);
+                unsigned int pos, la_rule_t *rule);
 
 kw_list_t *dup_property_list(kw_list_t *list);
 
@@ -485,7 +494,7 @@ void assert_rule_ffl(la_rule_t *rule, const char *func, char *file, unsigned int
 void handle_log_line_for_rule(la_rule_t *rule, char *line);
 
 la_rule_t * create_rule(char *name, la_source_t *source, int threshold,
-                int period, int duration);
+                int period, int duration, const char *service);
 
 void free_rule(la_rule_t *rule);
 
@@ -501,7 +510,8 @@ void watch_source(la_source_t *source, int whence);
 
 la_source_t *find_source_by_location(const char *location);
 
-la_source_t *create_source(const char *name, la_sourcetype_t type, const char *location);
+la_source_t *create_source(const char *name, la_sourcetype_t type, const char *location,
+                const char *prefix);
 
 void free_source(la_source_t *source);
 

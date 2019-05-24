@@ -344,7 +344,7 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
                 if (*ptr == '%')
                 {
                         la_property_t *new_prop = scan_single_token(ptr,
-                                        ptr-string);
+                                        ptr-string, NULL);
 
                         if (new_prop)
                         {

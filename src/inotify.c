@@ -285,7 +285,7 @@ handle_inotify_file_event(struct inotify_event *event)
                  * case" */
                 return;
 
-        la_debug("handle_inotify_file_event(%s)", source->name);
+        la_vdebug("handle_inotify_file_event(%s)", source->name);
         if (!handle_new_content(source))
                 die_err("Reading from source \"%s\" failed", source->name);
 }
@@ -294,7 +294,7 @@ static void
 handle_inotify_event(struct inotify_event *event)
 {
         assert(event);
-        la_debug("handle_inotify_event()");
+        la_vdebug("handle_inotify_event()");
 
         if (event->len) /* only directory have a name (and thus a length) */
                 handle_inotify_directory_event(event);

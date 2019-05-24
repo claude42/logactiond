@@ -175,7 +175,8 @@ static void convert_property_name(char *name)
  */
 
 la_property_t *
-create_property_from_token(const char *name, size_t length, unsigned int pos)
+create_property_from_token(const char *name, size_t length, unsigned int pos,
+                la_rule_t *rule)
 {
         assert(name);
         la_vdebug("create_property_from_token(%s)", name);
@@ -185,17 +186,23 @@ create_property_from_token(const char *name, size_t length, unsigned int pos)
         result->name = xstrndup(name+1, length-2);
         convert_property_name(result->name);
         result->value = NULL;
+
+        result->is_host_property = false;
         if (!strcmp(result->name, LA_HOST_TOKEN))
         {
                 result->is_host_property = true;
-                // TODO: why are we strdup()in this constant?!
+                // TODO: why are we strdup()in these constants?!
                 result->replacement = xstrdup(LA_HOST_TOKEN_REPL);
+        }
+        else if (rule && rule->service && !strcmp(result->name, LA_SERVICE_TOKEN))
+        {
+                result->replacement = xstrdup(rule->service);
         }
         else
         {
-                result->is_host_property = false;
                 result->replacement = xstrdup(LA_TOKEN_REPL);
         }
+
         result->length = length;
         result->pos = pos;
         result->subexpression = 0;
@@ -211,7 +218,7 @@ create_property_from_token(const char *name, size_t length, unsigned int pos)
  */
 
 la_property_t *
-scan_single_token(const char *string, unsigned int pos)
+scan_single_token(const char *string, unsigned int pos, la_rule_t *rule)
 {
         assert(string);
         la_vdebug("scan_single_token(%s)", string);
@@ -219,7 +226,7 @@ scan_single_token(const char *string, unsigned int pos)
         size_t length = token_length(string);
 
         if (length > 2) /* so it's NOT just "%%" */
-                return create_property_from_token(string, length, pos);
+                return create_property_from_token(string, length, pos, rule);
         else
                 return NULL;
 }
@@ -248,7 +255,7 @@ create_property_from_action_token(const char *name, size_t length,
         assert(name);
         la_debug("create_property_from_action_token(%s)", name);
 
-        la_property_t *result = create_property_from_token(name, length, pos);
+        la_property_t *result = create_property_from_token(name, length, pos, NULL);
         result->replacement = NULL;
 
         return result;

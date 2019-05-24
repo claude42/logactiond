@@ -113,8 +113,8 @@ convert_regex(const char *string, la_pattern_t *pattern)
         {
                 if (*src_ptr == '%')
                 {
-                        la_property_t *new_prop =
-                                scan_single_token(src_ptr, src_ptr-string);
+                        la_property_t *new_prop = scan_single_token(src_ptr,
+                                        src_ptr-string, pattern->rule);
                         if (new_prop)
                         {
                                 // If we are here, we've detected a real token
@@ -218,12 +218,17 @@ create_pattern(const char *string_from_configfile, unsigned int num,
         assert(string_from_configfile); assert_rule(rule);
         la_debug("create_pattern(%s)", string_from_configfile);
 
+        char *full_string = concat(rule->source->prefix,
+                        string_from_configfile);
+        la_vdebug("full_string=%s", full_string);
+
         la_pattern_t *result = xmalloc(sizeof(la_pattern_t));
 
         result->num = num;
         result->rule = rule;
         result->properties = create_list();
-        result->string = convert_regex(string_from_configfile, result);
+        result->string = convert_regex(full_string, result);
+        free(full_string);
 
         result->regex = xmalloc(sizeof(regex_t));
         int r = regcomp(result->regex, result->string, REG_EXTENDED | REG_NEWLINE);
