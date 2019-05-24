@@ -225,6 +225,8 @@ create_address(const char *ip)
                         return NULL;
                 }
         }
+        /* only reached in case IP address could be converted correctly. Thus
+         * ip does point to a string and is therefore not NULL */
         result->text = xstrdup(ip);
 
         assert_address(result);
