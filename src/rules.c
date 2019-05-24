@@ -310,7 +310,6 @@ handle_log_line_for_rule(la_rule_t *rule, char *line)
                 /* TODO: make this dynamic based on detected tokens */
                 regmatch_t pmatch[MAX_NMATCH];
                 int x = regexec(pattern->regex, line, MAX_NMATCH, pmatch, 0);
-                //int x = regexec(pattern->regex, line, 0, 0, 0);
                 if (!x)
                 {
                         assign_value_to_properties(pattern->properties, line,
