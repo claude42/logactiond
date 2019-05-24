@@ -252,6 +252,7 @@ typedef struct la_pattern_s
         char *string; /* already converted regex, doesn't contain tokens anymore */
         regex_t *regex; /* compiled regex */
         kw_list_t *properties; /* list of la_property_t */
+        unsigned long int detection_count;
 } la_pattern_t;
 
 typedef struct la_rule_s
@@ -267,6 +268,8 @@ typedef struct la_rule_s
         unsigned int duration;
         kw_list_t *trigger_list;
         kw_list_t *properties;
+        unsigned long int detection_count;
+        unsigned long int invocation_count;
 } la_rule_t;
 
 typedef struct la_command_s
@@ -525,6 +528,8 @@ void free_source(la_source_t *source);
 
 void free_source_list(kw_list_t *list);
 
+bool handle_new_content(la_source_t *source);
+
 #if HAVE_INOTIFY
 /* inotify.c */
 
@@ -547,9 +552,9 @@ void watch_source_polling(la_source_t *source);
 
 void init_watching_polling(void);
 
-/* log.c */
+/* status.c */
 
-bool handle_new_content(la_source_t *source);
+void dump_queue_status(kw_list_t *queue);
 
 
 #endif /* __logactiond_h */

@@ -76,63 +76,6 @@ find_end_command(la_rule_t *rule, la_address_t *address)
         return result;
 }
 
-static char
-human_readable_duration(unsigned int *duration)
-{
-        char unit = 's';
-        if (*duration > 60)
-        {
-                *duration /= 60;
-                unit = 'm';
-                if (*duration > 60)
-                {
-                        *duration /= 60;
-                        unit = 'h';
-                        if (*duration > 24)
-                        {
-                                *duration /= 24;
-                                unit = 'd';
-                        }
-                }
-        }
-        return unit;
-}
-
-static void
-output_status_to_file(void)
-{
-        if (!output_status)
-                return;
-
-        FILE *status_file = fopen(STATUSFILE, "w");
-        if (!status_file)
-                die_hard("Can't create \" STATUSFILE \"!");
-
-        fprintf(status_file, "IP address                                       "
-                        "Time   Rule         Action\n"
-                        "================================================="
-                        "==========================\n");
-
-        /* INET6_ADDRSTRLEN 46 + "/123*/
-
-        for (la_command_t *command = ITERATE_COMMANDS(end_queue);
-                        (command = NEXT_COMMAND(command));)
-        {
-                unsigned int duration = command->duration;
-                //char unit = human_readable_duration(&duration);
-
-                char end_time[9];
-                strftime(end_time, 8, "%T", localtime(&(command->end_time)));
-
-                fprintf(status_file,
-                                "%-50.50s  %-8.8s  %-10.10s  %-10.10s\n",
-                                command->address->text, end_time,
-                                command->name, command->rule->name);
-        }
-        if (fclose(status_file))
-                die_hard("Can't close \" STATUSFILE \"!");
-}
-
 /*
  * Remove and trigger all remaining end and shutdown commands in the queue
  */
@@ -156,7 +99,7 @@ empty_end_queue(void)
                 free_command(tmp);
         }
 
-        output_status_to_file();
+        dump_queue_status(end_queue);
 
         pthread_mutex_unlock(&end_queue_mutex);
 }
@@ -226,7 +169,7 @@ consume_end_queue(void *ptr)
                         remove_node((kw_node_t *) command);
                         trigger_end_command(command);
                         free_command(command);
-                        output_status_to_file();
+                        dump_queue_status(end_queue);
                 }
         }
 }
@@ -242,7 +185,7 @@ init_end_queue(void)
 
         end_queue = create_list();
 
-        output_status_to_file();
+        dump_queue_status(end_queue);
 
         pthread_t end_queue_thread;
 
@@ -299,7 +242,7 @@ enqueue_end_command(la_command_t *end_command)
 
         insert_node_before((kw_node_t *) tmp, (kw_node_t *) end_command);
 
-        output_status_to_file();
+        dump_queue_status(end_queue);
 
         pthread_cond_signal(&end_queue_condition);
 

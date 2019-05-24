@@ -89,7 +89,7 @@ set_signal(struct sigaction new_act, int signum)
 static void
 register_signal_handler(void)
 {
-        //la_debug("register_signal_handler()");
+        la_debug("register_signal_handler()");
 
         struct sigaction new_act;
 
@@ -171,7 +171,7 @@ static void
 print_usage(void)
 {
         fprintf(stderr,
-                "Usage: logactiond [-c configfile] [-d] [-f] [-p pidfile] [-s]\n");
+                "Usage: logactiond [-c configfile] [-d] [-f] [-p pidfile] [-s] [-t]\n");
 }
 
 static void

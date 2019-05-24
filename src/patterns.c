@@ -238,6 +238,8 @@ create_pattern(const char *string_from_configfile, unsigned int num,
                 die_err("Error %d compiling regex: %s!", r, result->string);
         }
 
+        result->detection_count = 0;
+
         return result;
 }
 

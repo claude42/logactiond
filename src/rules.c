@@ -23,6 +23,7 @@
 #include <stdbool.h>
 #include <syslog.h>
 #include <assert.h>
+#include <limits.h>
 
 #include <libconfig.h>
 
@@ -118,6 +119,8 @@ handle_command_on_trigger_list(la_command_t *command)
                 if (command->n_triggers >= command->rule->threshold)
                 {
                         remove_node((kw_node_t *) command);
+                        if (command->rule->invocation_count < ULONG_MAX)
+                                command->rule->invocation_count++;
                         trigger_command(command);
                 }
         }
@@ -291,7 +294,6 @@ clear_property_values(kw_list_t *property_list)
         }
 }
 
-
 /*
  * Matches line to all patterns assigned to rule. Does regexec() with all
  * patterns. Does trigger_all_commands() for those that match.
@@ -311,6 +313,10 @@ handle_log_line_for_rule(la_rule_t *rule, char *line)
                 regmatch_t pmatch[MAX_NMATCH];
                 if (!regexec(pattern->regex, line, MAX_NMATCH, pmatch, 0))
                 {
+                        if (pattern->detection_count < ULONG_MAX)
+                                pattern->detection_count++;
+                        if (pattern->rule->detection_count < ULONG_MAX)
+                                pattern->rule->detection_count++;
                         assign_value_to_properties(pattern->properties, line,
                                         pmatch);
                         trigger_all_commands(rule, pattern);
@@ -364,6 +370,8 @@ create_rule(char *name, la_source_t *source, int threshold, int period,
         result->begin_commands = create_list();
         result->trigger_list = create_list();
         result->properties = create_list();
+
+        result->detection_count = result->invocation_count = 0;
 
         return result;
 }
