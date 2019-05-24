@@ -43,6 +43,7 @@ unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
 unsigned int id_counter = 0;
 la_watchbackend_t watchbackend = LA_WATCHBACKEND_NONE;
 char *run_uid_s = NULL;
+bool output_status = false;
 
 void
 shutdown_daemon(int status)
@@ -191,10 +192,11 @@ read_options(int argc, char *argv[])
                         {"pidfile",    required_argument, NULL, 'p'},
                         {"simulate",   no_argument,       NULL, 's'},
                         {"user",       required_argument, NULL, 'u'},
+                        {"status",     no_argument,       NULL, 't'},
                         {0,            0,                 0,    0  }
                 };
 
-                int c = getopt_long(argc, argv, "fc:d::p:su:", long_options, NULL);
+                int c = getopt_long(argc, argv, "fc:d::p:su:t", long_options, NULL);
 
                 if (c == -1)
                         break;
@@ -220,6 +222,9 @@ read_options(int argc, char *argv[])
                                 break;
                         case 'u':
                                 run_uid_s = optarg;
+                                break;
+                        case 't':
+                                output_status = true;
                                 break;
                         case '?':
                                 print_usage();
@@ -294,6 +299,8 @@ use_correct_uid(void)
 {
         uid_t cur_uid = geteuid();
         uid_t run_uid = getrunuid(run_uid_s);
+        if (run_uid == -1)
+                die_hard("Can't determine uid!");
 
         la_debug("uid=%d, runuid=%d", cur_uid, run_uid);
 

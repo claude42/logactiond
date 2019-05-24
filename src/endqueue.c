@@ -59,7 +59,7 @@ find_end_command(la_rule_t *rule, la_address_t *address)
 
         la_command_t *result = NULL;
 
-        pthread_mutex_lock(&end_queue_mutex);
+        xpthread_mutex_lock(&end_queue_mutex);
 
         for (la_command_t *command = ITERATE_COMMANDS(end_queue);
                         (command = NEXT_COMMAND(command));)
@@ -79,6 +79,63 @@ find_end_command(la_rule_t *rule, la_address_t *address)
         return result;
 }
 
+static char
+human_readable_duration(unsigned int *duration)
+{
+        char unit = 's';
+        if (*duration > 60)
+        {
+                *duration /= 60;
+                unit = 'm';
+                if (*duration > 60)
+                {
+                        *duration /= 60;
+                        unit = 'h';
+                        if (*duration > 24)
+                        {
+                                *duration /= 24;
+                                unit = 'd';
+                        }
+                }
+        }
+        return unit;
+}
+
+static void
+output_status_to_file(void)
+{
+        if (!output_status)
+                return;
+
+        FILE *status_file = fopen(STATUSFILE, "w");
+        if (!status_file)
+                die_hard("Can't create \" STATUSFILE \"!");
+
+        fprintf(status_file, "IP address                                       "
+                        "Time   Rule         Action\n"
+                        "================================================="
+                        "==========================\n");
+
+        /* INET6_ADDRSTRLEN 46 + "/123*/
+
+        for (la_command_t *command = ITERATE_COMMANDS(end_queue);
+                        (command = NEXT_COMMAND(command));)
+        {
+                unsigned int duration = command->duration;
+                //char unit = human_readable_duration(&duration);
+
+                char end_time[9];
+                strftime(end_time, 8, "%T", localtime(&(command->end_time)));
+
+                fprintf(status_file,
+                                "%-50.50s  %-8.8s  %-10.10s  %-10.10s\n",
+                                command->address->text, end_time,
+                                command->name, command->rule->name);
+        }
+        if (fclose(status_file))
+                die_hard("Can't close \" STATUSFILE \"!");
+}
+
 /*
  * Remove and trigger all remaining end and shutdown commands in the queue
  */
@@ -93,7 +150,7 @@ empty_end_queue(void)
         if (!end_queue)
                 return;
 
-        pthread_mutex_lock(&end_queue_mutex);
+        xpthread_mutex_lock(&end_queue_mutex);
 
         for (la_command_t *tmp;
                         (tmp = REM_COMMANDS_HEAD(end_queue));)
@@ -101,6 +158,8 @@ empty_end_queue(void)
                 trigger_end_command(tmp);
                 free_command(tmp);
         }
+
+        output_status_to_file();
 
         pthread_mutex_unlock(&end_queue_mutex);
 }
@@ -113,7 +172,7 @@ wait_for_next_end_command(la_command_t *command)
         if (command->end_time == INT_MAX)
         {
                 /* next command is a shutdown command, wait indefinitely */
-                pthread_cond_wait(&end_queue_condition, &end_queue_mutex);
+                xpthread_cond_wait(&end_queue_condition, &end_queue_mutex);
         }
         else
         {
@@ -129,7 +188,7 @@ wait_for_next_end_command(la_command_t *command)
 static void *
 consume_end_queue(void *ptr)
 {
-        pthread_mutex_lock(&end_queue_mutex);
+        xpthread_mutex_lock(&end_queue_mutex);
 
         for (;;)
         {
@@ -140,7 +199,7 @@ consume_end_queue(void *ptr)
                 if (is_list_empty(end_queue))
                 {
                         /* list is empty, wait indefinitely */
-                        pthread_cond_wait(&end_queue_condition, &end_queue_mutex);
+                        xpthread_cond_wait(&end_queue_condition, &end_queue_mutex);
                 }
                 else if (now < command->end_time)
                 {
@@ -155,6 +214,7 @@ consume_end_queue(void *ptr)
                         remove_node((kw_node_t *) command);
                         trigger_end_command(command);
                         free_command(command);
+                        output_status_to_file();
                 }
         }
 }
@@ -166,6 +226,8 @@ init_end_queue(void)
         la_debug("init_end_queue()");
 
         end_queue = create_list();
+
+        output_status_to_file();
 
         pthread_t end_queue_thread;
 
@@ -186,14 +248,9 @@ set_end_time(la_command_t *command)
         la_debug("set_end_time(%s)", command->end_string);
 
         if (command->duration == INT_MAX)
-        {
                 command->end_time = INT_MAX;
-        }
         else
-        {
-                command->end_time = xtime(NULL);
-                command->end_time += command->duration;
-        }
+                command->end_time = xtime(NULL) + command->duration;
 }
 
 void
@@ -209,7 +266,7 @@ enqueue_end_command(la_command_t *end_command)
 
         set_end_time(end_command);
 
-        pthread_mutex_lock(&end_queue_mutex);
+        xpthread_mutex_lock(&end_queue_mutex);
 
         /* We don't use the ITERATE_COMMANDS, NEXT_COMMAND here for a
          * reason... */
@@ -223,6 +280,9 @@ enqueue_end_command(la_command_t *end_command)
         }
 
         insert_node_before((kw_node_t *) tmp, (kw_node_t *) end_command);
+
+        output_status_to_file();
+
         pthread_cond_signal(&end_queue_condition);
 
         pthread_mutex_unlock(&end_queue_mutex);

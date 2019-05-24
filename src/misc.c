@@ -28,6 +28,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
+#include <pthread.h>
 
 #include "logactiond.h"
 
@@ -92,6 +93,34 @@ log_message(unsigned int priority, char *fmt, va_list gp, char *add)
                         fprintf(stderr, "\n");
                         break;
         }
+}
+
+/*
+ * Wait for condition, die if pthread_cond_wait() fails
+ */
+
+int
+xpthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
+{
+        int result = pthread_cond_wait(cond, mutex);
+        if (result)
+                die_hard("Failed to wait for condition!");
+
+        return result;
+}
+
+/*
+ * Lock mutex, die if pthread_mutex_lock() fails
+ */
+
+int
+xpthread_mutex_lock(pthread_mutex_t *mutex)
+{
+        int result = pthread_mutex_lock(mutex);
+        if (result)
+                die_hard("Failed to lock mutex!");
+
+        return result;
 }
 
 time_t

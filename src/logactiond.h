@@ -28,6 +28,7 @@
 #include <time.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>
+#include <pthread.h>
 
 #include <libconfig.h>
 
@@ -45,6 +46,7 @@
 #define DEFAULT_DURATION 600
 
 #define PIDFILE "/var/run/logactiond.pid"
+#define STATUSFILE "/var/run/logactiond.status"
 
 
 #define LA_DEFAULTS_LABEL "defaults"
@@ -332,6 +334,8 @@ extern unsigned int id_counter;
 
 extern la_runtype_t run_type;
 
+extern bool output_status;
+
 /* Functions */
 
 /* main file */
@@ -343,6 +347,10 @@ void shutdown_daemon(int status);
 void remove_pidfile(void);
 
 void create_pidfile(void);
+
+int xpthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
+
+int xpthread_mutex_lock(pthread_mutex_t *mutex);
 
 time_t xtime(time_t *tloc);
 
