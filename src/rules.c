@@ -47,10 +47,6 @@ assert_rule_ffl(la_rule_t *rule, const char *func, char *file, unsigned int line
 }
 
 /*
- * Remove command from triggr list
- */
-
-/*
  * Add command to trigger list of rule it belongs to.
  */
 
@@ -58,7 +54,6 @@ static void
 add_trigger(la_command_t *command)
 {
         assert_command(command);
-
         la_debug("add_trigger(%s)", command->name);
 
         command->n_triggers = 0;
@@ -78,7 +73,6 @@ static la_command_t *
 find_trigger(la_rule_t *rule, la_command_t *template, la_address_t *address)
 {
         assert_rule(rule); assert_command(template);
-
         la_debug("find_trigger(%s, %u)", rule->name, template->id);
 
         if (!address)
@@ -106,7 +100,6 @@ static void
 handle_command_on_trigger_list(la_command_t *command)
 {
         assert_command(command);
-
         la_debug("handle_command_on_trigger_list(%s)", command->name);
 
         /* new commands not on the trigger_list yet have n_triggers == 0 */
@@ -125,11 +118,6 @@ handle_command_on_trigger_list(la_command_t *command)
                 if (command->n_triggers >= command->rule->threshold)
                 {
                         remove_node((kw_node_t *) command);
-                        la_log(LOG_INFO, "Host: %s, action \"%s\" fired for "
-                                        "rule \"%s\".",
-                                        command->address->text,
-                                        command->name,
-                                        command->rule->name);
                         trigger_command(command);
                 }
         }
@@ -162,7 +150,6 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
 
         assert_rule(rule); assert_pattern(pattern);
         assert_command(template);
-
         la_debug("trigger_single_command(%s)", template->name);
 
         la_command_t *command = NULL;
@@ -227,8 +214,7 @@ static void
 trigger_all_commands(la_rule_t *rule, la_pattern_t *pattern)
 {
         assert_rule(rule); assert_pattern(pattern);
-
-        la_debug("trigger_all_commands()");
+        la_debug("trigger_all_commands(%s)", rule->name);
 
         const char *host = get_host_property_value(pattern->properties);
 
@@ -276,7 +262,6 @@ assign_value_to_properties(kw_list_t *property_list, char *line,
                 regmatch_t pmatch[])
 {
         assert_list(property_list); assert(line);
-
         la_debug("assign_value_to_properties()");
 
         for (la_property_t *property = ITERATE_PROPERTIES(property_list);
@@ -296,14 +281,12 @@ static void
 clear_property_values(kw_list_t *property_list)
 {
         assert_list(property_list);
-
         la_debug("clear_property_values()");
 
         for (la_property_t *property = ITERATE_PROPERTIES(property_list);
                         (property = NEXT_PROPERTY(property));)
         {
-                if (property->value)
-                        free(property->value);
+                free(property->value);
                 property->value = NULL;
         }
 }
@@ -318,15 +301,17 @@ void
 handle_log_line_for_rule(la_rule_t *rule, char *line)
 {
         assert_rule(rule); assert(line);
+        la_vdebug("handle_log_line_for_rule(%s)", rule->name);
 
-        la_debug("handle_log_line_for_rule()");
-
+        unsigned int count = 0;
         for (la_pattern_t *pattern = ITERATE_PATTERNS(rule->patterns);
                         (pattern = NEXT_PATTERN(pattern));)
         {
                 /* TODO: make this dynamic based on detected tokens */
                 regmatch_t pmatch[MAX_NMATCH];
-                if (!regexec(pattern->regex, line, MAX_NMATCH, pmatch, 0))
+                int x = regexec(pattern->regex, line, MAX_NMATCH, pmatch, 0);
+                //int x = regexec(pattern->regex, line, 0, 0, 0);
+                if (!x)
                 {
                         assign_value_to_properties(pattern->properties, line,
                                         pmatch);
@@ -334,6 +319,7 @@ handle_log_line_for_rule(la_rule_t *rule, char *line)
                         clear_property_values(pattern->properties);
                         return;
                 }
+                count++;
         }
 }
 
@@ -353,9 +339,12 @@ handle_log_line_for_rule(la_rule_t *rule, char *line)
  */
 
 la_rule_t *
-create_rule(char *name, la_source_t *source, int threshold, int period, int
-                duration)
+create_rule(char *name, la_source_t *source, int threshold, int period,
+                int duration, const char *service)
 {
+        assert_source(source);
+        la_debug("create_rule(%s)", name);
+
         la_rule_t *result = xmalloc(sizeof(la_rule_t));
 
         result->name = xstrdup(name);
@@ -371,6 +360,8 @@ create_rule(char *name, la_source_t *source, int threshold, int period, int
         result->duration = duration!=-1 ? duration : la_config->default_duration;
         result->period = period!=-1 ? period : la_config->default_period;
 
+        result->service = xstrdup(service);
+
         result->patterns = create_list();
         result->begin_commands = create_list();
         result->trigger_list = create_list();
@@ -379,10 +370,20 @@ create_rule(char *name, la_source_t *source, int threshold, int period, int
         return result;
 }
 
+/*
+ * Free single rule. Does nothing when argument is NULL
+ */
+
 void
 free_rule(la_rule_t *rule)
 {
+        if (!rule)
+                return;
+
         assert_rule(rule);
+        la_vdebug("free_rule(%s)", rule->name);
+
+        free(rule->service);
 
         free_pattern_list(rule->patterns);
         free_command_list(rule->begin_commands);
@@ -394,9 +395,15 @@ free_rule(la_rule_t *rule)
         free(rule);
 }
 
+/*
+ * Free all rules in list
+ */
+
 void
 free_rule_list(kw_list_t *list)
 {
+        la_vdebug("free_rule_list()");
+
         if (!list)
                 return;
 

@@ -37,6 +37,8 @@ bool created_pidfile = false;
 void
 remove_pidfile(void)
 {
+        la_debug("remove_pidfile()");
+
         if (created_pidfile)
         {
                 if (unlink(PIDFILE) && errno != ENOENT)
@@ -48,6 +50,8 @@ remove_pidfile(void)
 void
 create_pidfile(void)
 {
+        la_debug("create_pidfile()");
+
         int fd;
         char buf[20]; /* should be enough - I think */
         int len;
@@ -75,6 +79,9 @@ log_message(unsigned int priority, char *fmt, va_list gp, char *add)
         if (priority >= log_level ||
                         (run_type == LA_UTIL_FOREGROUND && priority >= LOG_INFO))
                 return;
+
+        if (priority == LOG_VDEBUG)
+                priority = LOG_DEBUG;
 
         switch (run_type)
         {
@@ -153,6 +160,19 @@ la_debug(char *fmt, ...)
 }
 
 void
+la_vdebug(char *fmt, ...)
+{
+#ifndef NDEBUG
+        va_list myargs;
+
+        va_start(myargs, fmt);
+        log_message(LOG_VDEBUG, fmt, myargs, NULL);
+        va_end(myargs);
+
+#endif /* NDEBUG */
+}
+
+void
 la_log_errno(unsigned int priority, char *fmt, ...)
 {
         va_list myargs;
@@ -218,6 +238,30 @@ xmalloc(size_t n)
         return result;
 }
 
+/*
+ * Concatenates the two strings and creates a newly malloc()ed string. If
+ * one string is NULL, returns a duplicate of the other string. If both are
+ * NULL, returns NULL.
+ */
+
+char *
+concat(const char *s1, const char *s2)
+{
+        if (!s1)
+                return xstrdup(s2);
+        if (!s2)
+                return xstrdup(s1);
+
+        size_t len1 = strlen(s1);
+        size_t len2 = strlen(s2);
+        char *result = xmalloc(len1 + len2 + 1);
+
+        memcpy(result, s1, len1);
+        memcpy(result + len1, s2, len2 + 1); /* also copy terminating 0 byte */
+
+        return result;
+}
+
 char *
 xstrdup(const char *s)
 {
@@ -239,6 +283,15 @@ xstrndup(const char *s, size_t n)
                 die_hard("Memory exhausted\n");
 
         return result;
+}
+
+size_t
+xstrlen(const char *s)
+{
+        if (s)
+                return strlen(s);
+        else
+                return 0;
 }
 
 /* vim: set autowrite expandtab: */

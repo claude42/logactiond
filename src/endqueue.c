@@ -48,7 +48,6 @@ la_command_t *
 find_end_command(la_rule_t *rule, la_address_t *address)
 {
         assert_rule(rule);
-
         la_debug("find_end_command(%s)", rule->name);
 
         if (!end_queue)
@@ -64,13 +63,11 @@ find_end_command(la_rule_t *rule, la_address_t *address)
         for (la_command_t *command = ITERATE_COMMANDS(end_queue);
                         (command = NEXT_COMMAND(command));)
         {
-                if (command->rule == rule)
+                if (command->rule == rule &&
+                                !adrcmp(command->address, address))
                 {
-                        if (!adrcmp(command->address, address))
-                        {
-                                result = command;
-                                break;
-                        }
+                        result = command;
+                        break;
                 }
         }
 
@@ -164,11 +161,19 @@ empty_end_queue(void)
         pthread_mutex_unlock(&end_queue_mutex);
 }
 
+/*
+ * Will wait until the next end command has to be executed. In case the next
+ * command is not an end command but a shutdown command, wait indefinitely (or
+ * rather until daemon is stopped).
+ */
+
 static void
 wait_for_next_end_command(la_command_t *command)
 {
         assert_command(command);
-        la_debug("wait_for_next_end_command(%s)", command->end_string);
+        la_vdebug("wait_for_next_end_command(%s, %u)", command->end_string,
+                        command->end_time);
+
         if (command->end_time == INT_MAX)
         {
                 /* next command is a shutdown command, wait indefinitely */
@@ -185,9 +190,16 @@ wait_for_next_end_command(la_command_t *command)
         }
 }
 
+/*
+ * Consumes next end command from end queue and triggers it (if any) then waits
+ * appropriate amount of time.
+ */
+
 static void *
 consume_end_queue(void *ptr)
 {
+        la_debug("consume_end_queue()");
+
         xpthread_mutex_lock(&end_queue_mutex);
 
         for (;;)
@@ -219,6 +231,9 @@ consume_end_queue(void *ptr)
         }
 }
 
+/*
+ * Initializes end que structure and then launches end queue thread.
+ */
 
 void
 init_end_queue(void)
@@ -244,8 +259,7 @@ static void
 set_end_time(la_command_t *command)
 {
         assert_command(command);
-
-        la_debug("set_end_time(%s)", command->end_string);
+        la_vdebug("set_end_time(%s, %u)", command->end_string, command->duration);
 
         if (command->duration == INT_MAX)
                 command->end_time = INT_MAX;
@@ -253,11 +267,15 @@ set_end_time(la_command_t *command)
                 command->end_time = xtime(NULL) + command->duration;
 }
 
+/*
+ * Adds command to correct position in end queue (only if duration is
+ * non-negative). Sets end time.
+ */
+
 void
 enqueue_end_command(la_command_t *end_command)
 {
         assert_command(end_command);
-
         la_debug("enqueue_end_command(%s, %u)", end_command->end_string,
                         end_command->duration);
 

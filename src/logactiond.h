@@ -56,6 +56,7 @@
 #define LA_THRESHOLD_LABEL "threshold"
 #define LA_PERIOD_LABEL "period"
 #define LA_DURATION_LABEL "duration"
+#define LA_SERVICE_LABEL "service"
 
 
 #define LA_ACTIONS_LABEL "actions"
@@ -82,7 +83,8 @@
 #define LA_RULE_ACTION_LABEL "action"
 #define LA_RULE_PATTERNS_LABEL "pattern"
 
-#define LA_LOCATION "location"
+#define LA_SOURCE_LOCATION "location"
+#define LA_SOURCE_PREFIX "prefix"
 
 #define LA_TOKEN_REPL "(.+)"
 #define LA_TOKEN_REPL_LEN 4
@@ -90,6 +92,7 @@
 #define LA_HOST_TOKEN "host"
 #define LA_HOST_TOKEN_REPL "([.:[:xdigit:]]+)"
 #define LA_HOST_TOKEN_REPL_LEN 17
+#define LA_SERVICE_TOKEN "service"
 
 #define LA_RULENAME_TOKEN "rulename"
 #define LA_SOURCENAME_TOKEN "sourcename"
@@ -102,6 +105,9 @@
 
 // buffer size for reading log lines
 #define DEFAULT_LINEBUFFER_SIZE 8192
+
+// verbose debugging loglevel
+#define LOG_VDEBUG (LOG_DEBUG+1)
 
 /* List macros */
 
@@ -142,11 +148,15 @@
 #define assert_rule(RULE) (void)(0)
 #define assert_source(SOURCE) (void)(0)
 #define assert_pattern(PATTERN) (void)(0)
+#define assert_address(ADDRESS) (void)(0)
+#define assert_property(PROPERTY) (void)(0)
 #else /* NDEBUG */
 #define assert_command(COMMAND) assert_command_ffl(COMMAND, __func__, __FILE__, __LINE__)
 #define assert_rule(RULE) assert_rule_ffl(RULE, __func__, __FILE__, __LINE__)
 #define assert_source(SOURCE) assert_source_ffl(SOURCE, __func__, __FILE__, __LINE__)
 #define assert_pattern(PATTERN) assert_pattern_ffl(PATTERN, __func__, __FILE__, __LINE__)
+#define assert_address(ADDRESS) assert_address_ffl(ADDRESS, __func__, __FILE__, __LINE__)
+#define assert_property(PROPERTY) assert_property_ffl(PROPERTY, __func__, __FILE__, __LINE__)
 #endif /* NDEBUG */
 
 // TODO: add default type
@@ -193,7 +203,7 @@ typedef struct la_address_s
 typedef struct la_property_s
 {
         kw_node_t node;
-        /* name of the property (for matched tokens: without '<' and '>') */
+        /* name of the property (for matched tokens: without the '%'s) */
         char *name;
         /* Property created from HOST token */
         bool is_host_property;
@@ -210,6 +220,11 @@ typedef struct la_property_s
          * BTW: strings will be strdup()ed - take care to free again */
         char *value;
 
+        /* Only for tokens matching a log line. Specifies the regex that the
+         * %token% should be replaced with.
+         */
+        char *replacement;
+
         /* The following  members will only be used when properties are
          * obtained from log lines matching tokens or in action strings.
          */
@@ -217,7 +232,7 @@ typedef struct la_property_s
         /* Position in original string. Points to innitial '<'!.
          * Only for use in convert_regex() */
         unsigned int pos;
-        /* Length of token including '<' and '>'. Save us a few strlen() calls in
+        /* Length of token including the two '%'. Saves us a few strlen() calls in
          * convert_regex()... */
         size_t length;
 
@@ -244,6 +259,7 @@ typedef struct la_rule_s
         kw_node_t node;
         char *name;
         struct la_source_s *source;
+        char *service;
         kw_list_t *patterns;
         kw_list_t *begin_commands;
         unsigned int threshold;
@@ -298,6 +314,8 @@ typedef struct la_source_s
         char *parent_dir;
         /* Rules assigned to log file */
         kw_list_t *rules;
+        /* Prefix to prepend before rule patterns */
+        char *prefix;
         /* File handle for log file */
         FILE *file;
         /* stat() result for file */
@@ -358,6 +376,8 @@ void xfree (void *ptr);
 
 void la_debug(char *fmt, ...);
 
+void la_vdebug(char *fmt, ...);
+
 void la_log_errno(unsigned int priority, char *fmt, ...);
 
 void la_log(unsigned int priority, char *fmt, ...);
@@ -374,6 +394,10 @@ char *xstrdup(const char *s);
 
 char *xstrndup(const char *s, size_t n);
 
+size_t xstrlen(const char *s);
+
+char *concat(const char *s1, const char *s2);
+
 /* configfile.c */
 
 void load_la_config(char *filename);
@@ -381,6 +405,9 @@ void load_la_config(char *filename);
 void unload_la_config(void);
 
 /* addresses.c */
+
+void assert_address_ffl(la_address_t *address, const char *func, char *file,
+                unsigned int line);
 
 la_address_t *dup_address(la_address_t *address);
 
@@ -427,12 +454,13 @@ void free_command_list(kw_list_t *list);
 
 /* properties.c */
 
-void assert_property(la_property_t *property);
+void assert_property_ffl(la_property_t *property, const char *func, char *file,
+                unsigned int line);
 
 size_t token_length(const char *string);
 
-size_t scan_single_token(kw_list_t *property_list, const char *string,
-                unsigned int pos, unsigned int subexpression);
+la_property_t *scan_single_token(const char *string, unsigned int pos,
+                la_rule_t *rule);
 
 const char *get_host_property_value(kw_list_t *property_list);
 
@@ -444,11 +472,11 @@ const char *get_value_from_property_list(kw_list_t *property_list,
 
 la_property_t *create_property_from_config(const char *name, const char *value);
 
-la_property_t *create_property_from_action_token(const char *name, size_t length,
-                unsigned int pos);
+/*la_property_t *create_property_from_action_token(const char *name, size_t length,
+                unsigned int pos);*/
 
-la_property_t *create_property_from_token(const char *name, size_t length, unsigned
-                int pos, unsigned int subexpression);
+la_property_t *create_property_from_token(const char *name, size_t length,
+                unsigned int pos, la_rule_t *rule);
 
 kw_list_t *dup_property_list(kw_list_t *list);
 
@@ -474,7 +502,7 @@ void assert_rule_ffl(la_rule_t *rule, const char *func, char *file, unsigned int
 void handle_log_line_for_rule(la_rule_t *rule, char *line);
 
 la_rule_t * create_rule(char *name, la_source_t *source, int threshold,
-                int period, int duration);
+                int period, int duration, const char *service);
 
 void free_rule(la_rule_t *rule);
 
@@ -490,7 +518,8 @@ void watch_source(la_source_t *source, int whence);
 
 la_source_t *find_source_by_location(const char *location);
 
-la_source_t *create_source(const char *name, la_sourcetype_t type, const char *location);
+la_source_t *create_source(const char *name, la_sourcetype_t type, const char *location,
+                const char *prefix);
 
 void free_source(la_source_t *source);
 

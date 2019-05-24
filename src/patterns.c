@@ -38,109 +38,173 @@ assert_pattern_ffl(la_pattern_t *pattern, const char *func, char *file, unsigned
         assert_list_ffl(pattern->properties, func, file, line);
 }
 
-/* TODO: refactor */
+/* 
+ * Returns number of '(' in string
+ */
+
+static unsigned int
+count_open_braces(const char *string)
+{
+        assert(string);
+        la_vdebug("count_open_braces(%s)", string);
+
+        unsigned int result = 0;
+
+        for (const char *ptr = string; *ptr; ptr++)
+        {
+                if (*ptr == '(')
+                        result++;
+        }
+
+        return result;
+}
+
+/*
+ * dst is a block of previously allocated memory
+ * dst_len is the length of the previously allocated memory
+ * dst_ptr points somewhere within that memory
+ *
+ * realloc_buffer() allocates additional memory in case dst_ptr + on_top
+ * exceeds the previously allocated block of memory. New size will be
+ * 2 * dst_len + on_topsize
+ */
+
+static void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, size_t on_top)
+{
+        la_vdebug("realloc_buffer(%u, %u)", *dst_len, on_top);
+
+        if (*dst_ptr + on_top >= *dst + *dst_len)
+        {
+                *dst_len = *dst_len * 2 + on_top;
+                la_debug("realloc_buffer()=%u", *dst_len);
+
+                void *tmp_ptr;
+                tmp_ptr = realloc(*dst, *dst_len);
+                *dst_ptr = *dst_ptr - *dst + tmp_ptr;
+                *dst = tmp_ptr;
+        }
+}
 
 /*
  * Replaces first occurance of "%HOST%" in string by "([.:[:xdigit:]]+)".
  * Replaces all other "%SOMETHING%" tokens by "(.+)".
  *
  * Returns newly allocated string, doesn't modify original.
+ *
+ * TODO 1: really no error handling necessary?
+ * TODO 2: clumsy code, better directly assign converted string to
+ * pattern->string instead of returning it
  */
 
-static char *
-convert_regex(const char *string, kw_list_t *property_list, unsigned int n_properties)
+static char*
+convert_regex(const char *string, la_pattern_t *pattern)
 {
-        assert(string); assert_list(property_list);
+        assert(string);
+        la_vdebug("convert_regex(%s)", string);
 
-        la_debug("convert_regex(%s)", string);
+        size_t dst_len = 2 * strlen(string);
+        char *result = xmalloc(dst_len);
+        char *dst_ptr = result;
+        const char *src_ptr = string;
+        unsigned int subexpression = 0;
+        bool has_host_token = false;
 
-        size_t len = strlen(string);
-        /* definitely an upper bound */
-        char *result = xmalloc(len + n_properties * LA_HOST_TOKEN_REPL_LEN + 1);
-        char *result_ptr = result;
-        const char *string_ptr = string;
-
-        unsigned int start_pos = 0; /* position after last token */
-        unsigned int num_host_tokens = 0;
-
-        for (la_property_t *property = ITERATE_PROPERTIES(property_list);
-                        (property = NEXT_PROPERTY(property));)
+        while (*src_ptr)
         {
-                /* copy string before next token */
-                result_ptr = stpncpy(result_ptr, string_ptr, property->pos - start_pos);
-                /* copy corresponding regular expression for token */
-                if (property->is_host_property)
+                if (*src_ptr == '%')
                 {
-                        num_host_tokens++;
-                        if (num_host_tokens>1)
-                                die_hard("Only one %HOST% token allowed per pattern!");
-                        result_ptr = stpncpy(result_ptr, LA_HOST_TOKEN_REPL,
-                                        LA_HOST_TOKEN_REPL_LEN);
+                        la_property_t *new_prop = scan_single_token(src_ptr,
+                                        src_ptr-string, pattern->rule);
+                        if (new_prop)
+                        {
+                                // If we are here, we've detected a real token
+                                // (and not just "%%").
+
+                                // Make sure we only have one %HOST% token per
+                                // pattern. Die otherwise.
+
+                                if (new_prop->is_host_property)
+                                {
+                                        if (has_host_token)
+                                                die_hard("Only one %HOST% token "
+                                                                "allowed er pattern!");
+                                        has_host_token = true;
+                                }
+
+                                // Count open braces a.) to determine whether
+                                // we need this property for scanning at all
+                                // and b.) to correctly update the subexpression
+                                // count.
+                                //
+                                // a.) currently doesn't make to much sense, as
+                                // the only two possible replacements always
+                                // contain braces but this might change in the
+                                // future.
+                                //
+                                // Use case Use case: logactiond has special,
+                                // builtin %SOMETHING% variables which can be
+                                // used in pattern definitions, e.g. think
+                                // %HOSTNAME% being replaced by the local
+                                // hostname.
+                                unsigned int braces = count_open_braces(
+                                                new_prop->replacement);
+
+                                if (braces)
+                                {
+                                        if (subexpression + 1 >= MAX_NMATCH)
+                                                die_hard("subexpression > MAX_NMATCH");
+
+                                        new_prop->subexpression = subexpression + 1;
+                                        add_tail(pattern->properties, (kw_node_t *)
+                                                        new_prop);
+                                        subexpression += braces;
+                                }
+
+                                // Finally replace the token by the
+                                // corresponding replacement in the result
+                                // string and increment src_ptr and dst_ptr
+                                // accordingly (and of course make sure we have
+                                // enough space...)
+                                size_t repl_len = strlen(new_prop->replacement);
+                                realloc_buffer(&result, &dst_ptr, &dst_len,
+                                                repl_len);
+                                dst_ptr = stpncpy(dst_ptr, new_prop->replacement,
+                                                repl_len);
+                                src_ptr += new_prop->length;
+
+                                // Get rid of property if won't be needed
+                                // anymore.
+                                if (!braces)
+                                        free(new_prop);
+                        }
+                        else
+                        {
+                                // In this case, we've only detected "%%", so
+                                // copy one % and skip the other one
+                                realloc_buffer(&result, &dst_ptr, &dst_len, 1);
+                                *dst_ptr++ = '%';
+                                src_ptr += 2;
+                        }
                 }
                 else
                 {
-                        result_ptr = stpncpy(result_ptr, LA_TOKEN_REPL, LA_TOKEN_REPL_LEN);
-                }
+                        // Character other than "%" detected
 
-                start_pos = property->pos + property->length;
-                string_ptr = string + start_pos;
+                        // In case of '(', count sub expression
+                        if (*src_ptr == '(')
+                                subexpression++;
+
+                        // In call cases copy character (and make sure we've
+                        // enough space).
+                        realloc_buffer(&result, &dst_ptr, &dst_len, 1);
+                        *dst_ptr++ = *src_ptr++;
+                }
         }
 
-        /* Copy remainder of string - only if there's something left.
-         * Double-check just to bes sure we don't overrun any buffer */
-        if (string_ptr - string < strlen(string))
-        {
-                /* strcpy() ok here because we definitley reserved enough space
-                 */
-                strcpy(result_ptr, string_ptr);
-        }
-        la_debug("convert_regex(%s)=%s", string, result);
+        *dst_ptr = 0;
+        la_debug("convert_regex()=%s, subexpression=%u", result, subexpression);
 
-        return result; 
-}
-
-/*
- * Scans pattern string for tokens. Tokens have the form %NAME%.  Adds each
- * found token to property_list (incl. # of subexpression).
- *
- * If string contains %% this is ignored.
- *
- * Return number of found tokens.
- */
-
-static unsigned int
-scan_tokens(kw_list_t *property_list, const char *string)
-{
-        assert_list(property_list); assert(string);
-
-        la_debug("scan_tokens(%s)", string);
-
-        const char *ptr = string;
-        unsigned int subexpression = 0;
-        unsigned int n_tokens = 0;
-
-        if (!property_list || !string)
-                die_hard("No property list or no string submitted!");
-
-        while (*ptr) {
-                if (*ptr == '(')
-                {
-                        subexpression++;
-                }
-                else if (*ptr == '%')
-                {
-                        size_t length = scan_single_token(property_list, ptr,
-                                        ptr-string, ++subexpression);
-                        if (length > 2)
-                                n_tokens++;
-
-                        ptr += length;
-                }
-
-                ptr++; /* also skips over second '%' */
-        }
-
-        return n_tokens;
+        return result;
 }
 
 /*
@@ -152,19 +216,19 @@ create_pattern(const char *string_from_configfile, unsigned int num,
                 la_rule_t *rule)
 {
         assert(string_from_configfile); assert_rule(rule);
-
         la_debug("create_pattern(%s)", string_from_configfile);
 
-        unsigned int n_properties;
+        char *full_string = concat(rule->source->prefix,
+                        string_from_configfile);
+        la_vdebug("full_string=%s", full_string);
 
         la_pattern_t *result = xmalloc(sizeof(la_pattern_t));
 
         result->num = num;
         result->rule = rule;
         result->properties = create_list();
-        n_properties = scan_tokens(result->properties, string_from_configfile);
-        result->string = convert_regex(string_from_configfile,
-                        result->properties, n_properties);
+        result->string = convert_regex(full_string, result);
+        free(full_string);
 
         result->regex = xmalloc(sizeof(regex_t));
         int r = regcomp(result->regex, result->string, REG_EXTENDED | REG_NEWLINE);
@@ -177,10 +241,18 @@ create_pattern(const char *string_from_configfile, unsigned int num,
         return result;
 }
 
+/*
+ * Free single pattern. Does nothing when argument is NULL
+ */
+
 void
 free_pattern(la_pattern_t *pattern)
 {
+        if (!pattern)
+                return;
+
         assert_pattern(pattern);
+        la_vdebug("free_pattern(%s)", pattern->string);
 
         free_property_list(pattern->properties);
 
@@ -188,12 +260,17 @@ free_pattern(la_pattern_t *pattern)
         free(pattern->regex);
 
         free(pattern);
-
 }
+
+/*
+ * Free all patterns in list
+ */
 
 void
 free_pattern_list(kw_list_t *list)
 {
+        la_vdebug("free_pattern_list()");
+
         if (!list)
                 return;
 

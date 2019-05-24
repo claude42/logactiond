@@ -159,6 +159,31 @@ get_source(const char *source)
 }
 
 /*
+ * Return config_setting_t for given rule. Look first in uc_rule, then rule.
+ * Die if not found in either definition.
+ */
+
+static config_setting_t *
+get_source_uc_rule_or_rule(const config_setting_t *rule,
+                const config_setting_t *uc_rule)
+{
+        config_setting_t *result;
+
+        result = get_source(config_get_string_or_null(uc_rule,
+                                LA_RULE_SOURCE_LABEL));
+
+        if (!result)
+                result = get_source(config_get_string_or_null(rule,
+                                        LA_RULE_SOURCE_LABEL));
+
+        if (!result)
+                die_semantic("Source not found for rule %s!",
+                                config_setting_name(rule));
+
+        return result;
+}
+
+/*
  * Returns name of source - i.e. label reference by "source" item in a rule
  * section.
  */
@@ -169,6 +194,25 @@ get_source_name(const config_setting_t *rule)
         assert(rule);
 
         return config_get_string_or_die(rule, LA_RULE_SOURCE_LABEL);
+}
+
+/*
+ * Return the common prefix for the source corresponding to the given rule,
+ * NULL if none specified in config file.
+ */
+
+const char *
+get_source_prefix(const config_setting_t *rule, const config_setting_t *uc_rule)
+{
+        assert(rule), assert(uc_rule);
+
+        const char *result;
+        config_setting_t *source_def = get_source_uc_rule_or_rule(rule, uc_rule);
+
+        if (!config_setting_lookup_string(source_def, LA_SOURCE_PREFIX, &result))
+                result = NULL;
+
+        return result;
 }
 
 /*
@@ -184,17 +228,9 @@ get_source_location(const config_setting_t *rule, const config_setting_t *uc_rul
         config_setting_t *source_def;
         const char *result;
 
-        source_def = get_source(config_get_string_or_null(uc_rule, LA_RULE_SOURCE_LABEL));
-        if (!source_def)
-        {
-                source_def = get_source(config_get_string_or_null(rule,
-                                        LA_RULE_SOURCE_LABEL));
-                if (!source_def)
-                        die_semantic("Source not found for rule %s!",
-                                        config_setting_name(rule));
-        }
+        source_def = get_source_uc_rule_or_rule(rule, uc_rule);
 
-        if (!config_setting_lookup_string(source_def, LA_LOCATION, &result))
+        if (!config_setting_lookup_string(source_def, LA_SOURCE_LOCATION, &result))
                 die_semantic("Source location missing!");
 
         return result;
@@ -247,24 +283,20 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
         const char *tmp = config_get_string_or_null(action_def,
                         LA_ACTION_NEED_HOST_LABEL);
         la_need_host_t need_host;
-        if (tmp)
-        {
-                if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_NO_LABEL))
-                        need_host = LA_NEED_HOST_NO;
-                else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_ANY_LABEL))
-                        need_host = LA_NEED_HOST_ANY;
-                else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_IP4_LABEL))
-                        need_host = LA_NEED_HOST_IP4;
-                else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_IP6_LABEL))
-                        need_host = LA_NEED_HOST_IP6;
-                else
-                        die_semantic("Invalid value \"%s\" for need_host "
-                                        "parameter!", tmp);
-        }
-        else
-        {
+
+        if (!tmp)
                 need_host = LA_NEED_HOST_NO;
-        }
+        else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_NO_LABEL))
+                need_host = LA_NEED_HOST_NO;
+        else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_ANY_LABEL))
+                need_host = LA_NEED_HOST_ANY;
+        else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_IP4_LABEL))
+                need_host = LA_NEED_HOST_IP4;
+        else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_IP6_LABEL))
+                need_host = LA_NEED_HOST_IP6;
+        else
+                die_semantic("Invalid value \"%s\" for need_host "
+                                "parameter!", tmp);
 
         if (initialize)
                 trigger_command(create_template(name, rule, initialize,
@@ -402,7 +434,7 @@ load_ignore_addresses(const config_setting_t *section)
                 if (!address)
                         die_err("Invalid IP address %s!", ip);
 
-                la_debug("load_ignore_addresses(%s)=%s",
+                la_vdebug("load_ignore_addresses(%s)=%s",
                                 config_setting_name(section), address->text);
                 add_tail(result, (kw_node_t *) address);
         }
@@ -448,15 +480,40 @@ load_properties(kw_list_t *properties, const config_setting_t *section)
 
                 la_property_t *property = create_property_from_config(name, value);
 
-                la_debug("load_properties(%s)=%s", config_setting_name(section), name);
+                la_vdebug("load_properties(%s)=%s", config_setting_name(section), name);
                 add_tail(properties, (kw_node_t *) property);
         }
         assert_list(properties);
 }
 
+/*
+ * Returns a rule parameter. Always tries local ("uc_rule") definition first.
+ * If that doesn't exist, tries the normal rules ("rule") definition. Returns
+ * NULL in case neither exists.
+ */
+
+static const char *
+get_rule_string(const config_setting_t *rule_def,
+                const config_setting_t *uc_rule_def, const char *name)
+{
+        assert(rule_def); assert(uc_rule_def); assert(name);
+
+        const char *result = config_get_string_or_null(uc_rule_def, name);
+
+        if (!result)
+                result = config_get_string_or_null(rule_def, name);
+
+        return result;
+}
+
+/*
+ * Returns a rule parameter. Always tries local ("uc_rule") definition first.
+ * If that doesn't exist, tries the normal rules ("rule") definition. Returns
+ * NULL in case neither exists.
+ */
 
 static int
-get_rule_parameter(const config_setting_t *rule_def,
+get_rule_unsigned_int(const config_setting_t *rule_def,
                 const config_setting_t *uc_rule_def, const char *name)
 {
         assert(rule_def); assert(uc_rule_def); assert(name);
@@ -465,6 +522,27 @@ get_rule_parameter(const config_setting_t *rule_def,
 
         if (result < 0)
                 result = config_get_unsigned_int_or_negative(rule_def, name);
+
+        return result;
+}
+
+/*
+ * Create new source, add it to list of sources, begin watching.
+ */
+
+static la_source_t *
+create_file_source(const config_setting_t *rule_def,
+                const config_setting_t *uc_rule_def)
+{
+        const char *location = get_source_location(rule_def, uc_rule_def);
+        const char *prefix = get_source_prefix(rule_def, uc_rule_def);
+
+        la_source_t *result = create_source(get_source_name(rule_def),
+                        get_source_type(rule_def), location, prefix);
+        assert_source(result);
+        add_tail(la_config->sources, (kw_node_t *) result);
+
+        watch_source(result, SEEK_END);
 
         return result;
 }
@@ -484,38 +562,31 @@ load_single_rule(const config_setting_t *rule_def,
         assert(rule_def); assert(uc_rule_def);
         la_rule_t *new_rule;
         la_source_t *source;
-        const char *location;
         la_sourcetype_t type;
 
         char *name = config_setting_name(rule_def);
         la_debug("load_single_rule(%s)", name);
 
-        location = get_source_location(rule_def, uc_rule_def);
-        source = find_source_by_location(location);
+        source = find_source_by_location(get_source_location(rule_def,
+                                uc_rule_def));
 
         if (!source)
-        {
-                source = create_source(get_source_name(rule_def),
-                                get_source_type(rule_def), location);
-                add_tail(la_config->sources, (kw_node_t *) source);
-
-                watch_source(source, SEEK_END);
-        }
-
+                source = create_file_source(rule_def, uc_rule_def);
         assert_source(source);
 
-        la_log(LOG_INFO, "Initializing rule \"%s\" for source \"%s\".",
-                        name, source->name);
-
         /* get parameters either from rule or uc_rule */
-        int threshold = get_rule_parameter(rule_def, uc_rule_def,
+        int threshold = get_rule_unsigned_int(rule_def, uc_rule_def,
                         LA_THRESHOLD_LABEL);
-        int period = get_rule_parameter(rule_def, uc_rule_def,
+        int period = get_rule_unsigned_int(rule_def, uc_rule_def,
                         LA_PERIOD_LABEL);
-        int duration = get_rule_parameter(rule_def, uc_rule_def,
+        int duration = get_rule_unsigned_int(rule_def, uc_rule_def,
                         LA_DURATION_LABEL);
+        const char *service = get_rule_string(rule_def, uc_rule_def,
+                        LA_SERVICE_LABEL);
 
-        new_rule = create_rule(name, source, threshold, period, duration);
+        la_log(LOG_INFO, "Enabling rule \"%s\".", name);
+        new_rule = create_rule(name, source, threshold, period, duration, service);
+        assert_rule(new_rule);
 
         /* Properties from uc_rule_def have priority over those from
          * rule_def */

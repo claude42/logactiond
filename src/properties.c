@@ -28,10 +28,15 @@
 #include "nodelist.h"
 
 void
-assert_property(la_property_t *property)
+assert_property_ffl(la_property_t *property, const char *func, char *file,
+                unsigned int line)
 {
-        assert(property);
-        assert(property->name);
+        if (!property)
+                die_hard("%s:%u: %s: Assertion 'property' failed. ", file,
+                                line, func);
+        if (!property->name)
+                die_hard("%s:%u: %s: Assertion 'property->name' failed.", file,
+                                line, func);
 }
 
 /*
@@ -44,6 +49,9 @@ assert_property(la_property_t *property)
 size_t
 token_length(const char *string)
 {
+        assert(string);
+        la_vdebug("token_length(%s)", string);
+
         const char *ptr = string+1;
 
         while (*ptr)
@@ -66,6 +74,9 @@ token_length(const char *string)
 const char *
 get_host_property_value(kw_list_t *property_list)
 {
+        assert_list(property_list);
+        la_vdebug("get_host_property_value()");
+
         for (la_property_t *property = ITERATE_PROPERTIES(property_list);
                         (property = NEXT_PROPERTY(property));)
         {
@@ -86,6 +97,7 @@ la_property_t *
 get_property_from_property_list(kw_list_t *property_list, const char *name)
 {
         assert(name);
+        la_vdebug("get_property_from_property_list(%s)", name);
 
         if (!property_list)
                 return NULL;
@@ -112,6 +124,7 @@ get_value_from_property_list(kw_list_t *property_list, la_property_t *property)
         /* not sure whether property_list can't get NULL under normal
          * circumstances */
         assert_property(property);
+        la_vdebug("get_property_from_property_list(%s)", property->name);
 
         if (!property_list)
                 return NULL;
@@ -134,11 +147,9 @@ get_value_from_property_list(kw_list_t *property_list, la_property_t *property)
 static void convert_property_name(char *name)
 {
         assert(name);
-        la_debug("convert_property_name(%s)", name);
+        la_vdebug("convert_property_name(%s)", name);
 
-        char *ptr = name;
-
-        for (; *ptr; ptr++)
+        for (char *ptr=name; *ptr; ptr++)
         {
                 if (!isalnum(*ptr))
                         /* will print out partially converted name :-/ */
@@ -165,54 +176,74 @@ static void convert_property_name(char *name)
 
 la_property_t *
 create_property_from_token(const char *name, size_t length, unsigned int pos,
-                unsigned int subexpression)
+                la_rule_t *rule)
 {
+        assert(name);
+        la_vdebug("create_property_from_token(%s)", name);
+
         la_property_t *result = xmalloc(sizeof(la_property_t));
 
         result->name = xstrndup(name+1, length-2);
         convert_property_name(result->name);
         result->value = NULL;
-        result->is_host_property = !strcmp(result->name, LA_HOST_TOKEN);
+
+        result->is_host_property = false;
+        if (!strcmp(result->name, LA_HOST_TOKEN))
+        {
+                result->is_host_property = true;
+                // TODO: why are we strdup()in these constants?!
+                result->replacement = xstrdup(LA_HOST_TOKEN_REPL);
+        }
+        else if (rule && rule->service && !strcmp(result->name, LA_SERVICE_TOKEN))
+        {
+                result->replacement = xstrdup(rule->service);
+        }
+        else
+        {
+                result->replacement = xstrdup(LA_TOKEN_REPL);
+        }
+
         result->length = length;
         result->pos = pos;
-        result->subexpression = subexpression;
+        result->subexpression = 0;
 
         return result;
 }
 
 /*
- * Creates a new property from token at *string with pos and subexpression.
+ * Creates a new property from token at *string with pos
  * Adds property to property list.
  *
  * String must point to first '%'
- * Set subexpression=0 in case of action tokens.
  */
 
-size_t
-scan_single_token(kw_list_t *property_list, const char *string, unsigned int pos,
-                unsigned int subexpression)
+la_property_t *
+scan_single_token(const char *string, unsigned int pos, la_rule_t *rule)
 {
+        assert(string);
+        la_vdebug("scan_single_token(%s)", string);
+
         size_t length = token_length(string);
 
         if (length > 2) /* so it's NOT just "%%" */
-        {
-                add_tail(property_list, (kw_node_t *)
-                                create_property_from_token(string, length, pos,
-                                        subexpression));
-        }
-
-        return length;
+                return create_property_from_token(string, length, pos, rule);
+        else
+                return NULL;
 }
 
 la_property_t *
 create_property_from_config(const char *name, const char *value)
 {
+        assert(name); assert(value);
+        la_vdebug("create_property_from_config(%s, %s)", name, value);
+
         la_property_t *result = xmalloc(sizeof(la_property_t));
 
         result->name = xstrdup(name);
         convert_property_name(result->name);
         result->is_host_property = !strcmp(result->name, LA_HOST_TOKEN);
         result->value = xstrdup(value);
+        result->replacement = NULL;
         
         return result;
 }
@@ -221,7 +252,13 @@ la_property_t *
 create_property_from_action_token(const char *name, size_t length,
                 unsigned int pos)
 {
-        return create_property_from_token(name, length, pos, 0);
+        assert(name);
+        la_debug("create_property_from_action_token(%s)", name);
+
+        la_property_t *result = create_property_from_token(name, length, pos, NULL);
+        result->replacement = NULL;
+
+        return result;
 }
 
 /*
@@ -231,11 +268,14 @@ create_property_from_action_token(const char *name, size_t length,
 static la_property_t *
 duplicate_property(la_property_t *property)
 {
+        assert_property(property);
+        la_vdebug("duplicate_property(%s)", property->name);
         la_property_t *result = xmalloc(sizeof(la_property_t));
 
         result->name = xstrdup(property->name);
         result->is_host_property = property->is_host_property;
         result->value = xstrdup(property->value);
+        result->replacement = xstrdup(property->replacement);
         result->pos = property->pos;
         result->length = property->length;
         result->subexpression = property->subexpression;
@@ -246,6 +286,9 @@ duplicate_property(la_property_t *property)
 kw_list_t *
 dup_property_list(kw_list_t *list)
 {
+        assert_list(list);
+        la_vdebug("dup_property_list()");
+
         kw_list_t *result = create_list();
 
         for (la_property_t *property = ITERATE_PROPERTIES(list);
@@ -255,18 +298,34 @@ dup_property_list(kw_list_t *list)
         return result;
 }
 
+/*
+ * Free single property. Does nothing when argument is NULL
+ */
+
 void
 free_property(la_property_t *property)
 {
+        if (!property)
+                return;
+
         assert_property(property);
+        la_vdebug("free_property(%s, %s, %s)", property->name, property->value,
+                        property->replacement);
 
         free(property->name);
         free(property->value);
+        free(property->replacement);
+        free(property);
 }
+
+/*
+ * Free all properties in list
+ */
 
 void
 free_property_list(kw_list_t *list)
 {
+        la_vdebug("free_property_list()");
         if (!list)
                 return;
 

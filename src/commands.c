@@ -44,26 +44,28 @@ assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned
         assert_list_ffl(command->end_properties, func, file, line);
 }
 
+/* Checks wether the specified property matches one of the special names and
+ * returns the corresponding value if yes. Returns NULL otherwise
+ *
+ * - HOST
+ * - RULE
+ * - SOURCE
+ * - IPVERSION
+ */
+
 static const char*
 check_for_special_names(la_command_t *command, la_property_t *action_property)
 {
         assert_command(command), assert_property(action_property);
-        la_debug("check_for_special_names(%s)", action_property->name);
-
-        if (!strcmp(action_property->name, LA_HOST_TOKEN) && command->address)
-                return command->address->text;
-
-        if (command->rule)
-        {
-                if (!strcmp(action_property->name, LA_RULENAME_TOKEN))
-                        return command->rule->name;
-
-                if (!strcmp(action_property->name, LA_SOURCENAME_TOKEN))
-                        return command->rule->source->name;
-        }
+        la_vdebug("check_for_special_names(%s)", action_property->name);
 
         if (command->address)
         {
+                /* HOST */
+                if (!strcmp(action_property->name, LA_HOST_TOKEN))
+                        return command->address->text;
+
+                /* IPVERSION */
                 if (!strcmp(action_property->name, LA_IPVERSION_TOKEN))
                 {
                         if (command->address->af == AF_INET)
@@ -75,26 +77,46 @@ check_for_special_names(la_command_t *command, la_property_t *action_property)
                 }
         }
 
+        if (command->rule)
+        {
+                /* RULE */
+                if (!strcmp(action_property->name, LA_RULENAME_TOKEN))
+                        return command->rule->name;
+
+                /* SOURCE */
+                if (!strcmp(action_property->name, LA_SOURCENAME_TOKEN))
+                        return command->rule->source->name;
+        }
+
         return NULL;
 }
+
+/*
+ * Returns the value of the specified property. Will look into
+ *
+ * - special property names (such as HOST, RULE, SOURCE, IPVERSION
+ * - matched tokens in the pattern
+ * - definitions in the config file rule section
+ * - definitions in the config file default section
+ *
+ * Will return NULL if nothing is found.
+ */
 
 static const char *
 get_value_for_action_property(la_command_t *command,
                 la_property_t *action_property)
 {
         assert_command(command); assert_property(action_property);
-        la_debug("get_value_for_action_property(%s)", action_property->name);
+        la_vdebug("get_value_for_action_property(%s)", action_property->name);
 
         const char *result = NULL;
 
         /* try some standard names first */
-
         result = check_for_special_names(command, action_property);
         if (result)
                 return result;
 
         /* next search among tokens from matched line */
-
         result = get_value_from_property_list(
                         command->pattern_properties,
                         action_property);
@@ -102,7 +124,6 @@ get_value_for_action_property(la_command_t *command,
                 return result;
 
         /* next search in config file rule section */
-
         if (command->rule)
         {
                 result = get_value_from_property_list(command->rule->properties,
@@ -113,17 +134,20 @@ get_value_for_action_property(la_command_t *command,
 
         /* lastly search in config file default section, return NULL if
          * nothing is there either */
-
         return get_value_from_property_list(la_config->default_properties,
                         action_property);
-
 }
+
+/*
+ * Basically adds the length of all property values in begin_properties or
+ * end_properties (depending on command type) to source_len.
+ */
 
 static size_t
 compute_converted_length(la_command_t *command, la_commandtype_t type,
                 size_t source_len)
 {
-        la_debug("compute_converted_length(%s)", command->name);
+        la_vdebug("compute_converted_length(%s)", command->name);
 
         size_t result = source_len;
 
@@ -133,12 +157,8 @@ compute_converted_length(la_command_t *command, la_commandtype_t type,
                         command->end_properties);
 
         while ((action_property = NEXT_PROPERTY(action_property)))
-        {
-                const char *tmp = get_value_for_action_property(command,
-                                action_property);
-                if (tmp)
-                        result += strlen(tmp);
-        }
+                result += xstrlen(get_value_for_action_property(command,
+                                        action_property));
 
         return result;
 }
@@ -202,9 +222,13 @@ convert_command(la_command_t *command, la_commandtype_t type)
         else
                 *result_ptr = '\0';
 
-        la_debug("convert_command(%s)=%s", command->name, result);
+        la_vdebug("convert_command(%s)=%s", command->name, result);
         return result;
 }
+
+/*
+ * Executes command string via system() and logs result.
+ */
 
 static void
 exec_command(la_command_t *command, la_commandtype_t type)
@@ -232,17 +256,30 @@ exec_command(la_command_t *command, la_commandtype_t type)
         }
 }
 
+/*
+ * Executes a begin_command and enqueues an end_command into the queue (if one
+ * hase been defined).
+ */
+
 void
 trigger_command(la_command_t *command)
 {
 #ifndef NOCOMMANDS
+        assert_command(command);
+        la_debug("trigger_command(%s, %d)", command->name, command->duration);
+
         if (run_type == LA_UTIL_FOREGROUND)
                 return;
 
-        assert_command(command);
-
-        la_debug("trigger_command(%s, %d)", command->name,
-                        command->duration);
+        if (command->is_template)
+                la_log(LOG_INFO, "Initializing action \"%s\" for rule \"%s\", "
+                                "source \"%s\".", command->name,
+                                command->rule->name,
+                                command->rule->source->name);
+        else
+                la_log(LOG_INFO, "Host: %s, action \"%s\" fired for rule \"%s\".",
+                                command->address->text, command->name,
+                                command->rule->name);
 
         /* TODO: can't we convert_command() earlier? */
         exec_command(command, LA_COMMANDTYPE_BEGIN);
@@ -254,12 +291,15 @@ trigger_command(la_command_t *command)
 #endif /* NOCOMMANDS */
 }
 
+/*
+ * Executes an end_command.
+ */
+
 void
 trigger_end_command(la_command_t *command)
 {
         assert_command(command);
-
-        la_debug("trigger_end_command(%s, %d)", command->name,
+        la_vdebug("trigger_end_command(%s, %d)", command->name,
                         command->duration);
 
         if (command->duration == INT_MAX)
@@ -294,7 +334,6 @@ static unsigned int
 scan_action_tokens(kw_list_t *property_list, const char *string)
 {
         assert_list(property_list); assert(string);
-
         la_debug("scan_action_tokens(%s)", string);
 
         const char *ptr = string;
@@ -304,12 +343,16 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
         {
                 if (*ptr == '%')
                 {
-                        size_t length = scan_single_token(property_list, ptr,
-                                        ptr-string, 0);
-                        if (length > 2)
-                                n_tokens++;
+                        la_property_t *new_prop = scan_single_token(ptr,
+                                        ptr-string, NULL);
 
-                        ptr += length-1;
+                        if (new_prop)
+                        {
+                                add_tail(property_list, (kw_node_t *) new_prop);
+                                n_tokens++;
+                        }
+
+                        ptr += strlen(new_prop->name)+1;
                 }
 
                 ptr++; /* also skips over second '%' of a token */
@@ -322,18 +365,20 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
 /*
  * Clones command from a command template.
  * - Duplicates begin_properties / end_properties lists
- * - Don't clone begin_string, end_string, rule, pattern, host, end_time,
+ * - Doesn't clone begin_string, end_string, rule, pattern, host, end_time,
  *   n_triggers, start_time
  * Must be free()d after use.
  */
 
-/* FIXME: when are we call dup_command()? e.g. does the property list have
+/* FIXME: when are we calling dup_command()? e.g. does the property list have
  * content ever? */
 
 la_command_t *
 dup_command(la_command_t *command)
 {
         assert_command(command);
+        la_vdebug("dup_command(%s)", command->name);
+
         la_command_t *result = xmalloc(sizeof(la_command_t));
 
         result->id = command->id;
@@ -352,6 +397,7 @@ dup_command(la_command_t *command)
         result->duration = command->duration;
         result->need_host = command->need_host;
 
+        assert_command(result);
         return result;
 }
 
@@ -368,25 +414,24 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
 {
         assert_command(template); assert_rule(rule); assert_pattern(pattern);
         assert_list(pattern->properties);
-
-        /* Return if action can't handle type of IP address */
         la_debug("create_command_from_template(%s)", template->name);
 
+        /* Return if action can't handle type of IP address */
         if ((address->af == AF_INET && template->need_host ==
                                 LA_NEED_HOST_IP6) ||
                         (address->af ==AF_INET6 && template->need_host ==
                          LA_NEED_HOST_IP4))
                 return NULL;
 
-        la_command_t *result;
+        la_command_t *result = dup_command(template);
 
-        result = dup_command(template);
         result->rule = rule;
         result->pattern = pattern;
         result->pattern_properties = dup_property_list(pattern->properties);
         result->address = dup_address(address);
         result->end_time = result->n_triggers = result->start_time= 0;
 
+        assert_command(result);
         return result;
 }
 
@@ -408,8 +453,7 @@ create_template(const char *name, la_rule_t *rule, const char *begin_string,
                 const char *end_string, unsigned int duration, la_need_host_t need_host)
 {
         assert_rule(rule); assert(begin_string);
-
-        la_debug("create_command(%s, %d)", name, duration);
+        la_debug("create_template(%s, %d)", name, duration);
 
         la_command_t *result = xmalloc(sizeof(la_command_t));
 
@@ -439,14 +483,22 @@ create_template(const char *name, la_rule_t *rule, const char *begin_string,
         result->n_triggers = 0;
         result->start_time = 0;
 
+        assert_command(result);
         return result;
 }
+
+/*
+ * Free single command. Does nothing when argument is NULL
+ */
 
 void
 free_command(la_command_t *command)
 {
+        if (!command)
+                return;
+
         assert_command(command);
-        la_debug("free_command(%s)", command->name);
+        la_vdebug("free_command(%s)", command->name);
 
         free_property_list(command->begin_properties);
         free_property_list(command->end_properties);
@@ -458,14 +510,19 @@ free_command(la_command_t *command)
                 free(command->begin_string);
                 free(command->end_string);
         }
-        if (command->address)
-                free_address(command->address);
+
+        free_address(command->address);
         free(command);
 }
+
+/*
+ * Free all commands in list
+ */
 
 void
 free_command_list(kw_list_t *list)
 {
+        la_vdebug("free_command_list()");
         if (!list)
                 return;
 

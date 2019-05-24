@@ -59,8 +59,7 @@ shutdown_daemon(int status)
 static void
 handle_signal(int signal)
 {
-        la_debug("handle_signal(%u)", signal);
-        /* printf("Received signal %u\n", signal); */
+        la_log(LOG_NOTICE, "Received signal %u", signal);
 
         if (signal == SIGHUP)
         {
@@ -302,7 +301,7 @@ use_correct_uid(void)
         if (run_uid == -1)
                 die_hard("Can't determine uid!");
 
-        la_debug("uid=%d, runuid=%d", cur_uid, run_uid);
+        la_debug("use_correct_uid() - uid=%d, runuid=%d", cur_uid, run_uid);
 
         if (cur_uid == run_uid)
                 return;

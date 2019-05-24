@@ -54,7 +54,7 @@ static void
 handle_log_line(la_source_t *source, char *line)
 {
         assert(line); assert_source(source);
-        la_debug("handle_log_line(%s)", line);
+        la_vdebug("handle_log_line(%s)", line);
 
         for (la_rule_t *rule = ITERATE_RULES(source->rules);
                         (rule = NEXT_RULE(rule));)
@@ -74,7 +74,7 @@ bool
 handle_new_content(la_source_t *source)
 {
         assert_source(source);
-        la_debug("handle_new_content(%s)", source->name);
+        la_vdebug("handle_new_content(%s)", source->name);
 
         /* TODO: less random number? */
         if (!linebuffer)
@@ -184,13 +184,18 @@ unwatch_source(la_source_t *source)
  */
 
 la_source_t *
-create_source(const char *name, la_sourcetype_t type, const char *location)
+create_source(const char *name, la_sourcetype_t type, const char *location,
+                const char *prefix)
 {
+        assert(name);
+        la_debug("create_source(%s, %s, %s)", name, location, prefix);
+
         la_source_t *result;
 
         result = xmalloc(sizeof(la_source_t));
         result->name = xstrdup(name);
         result->location = xstrdup(location);
+        result->prefix = xstrdup(prefix);
         result->parent_dir = NULL;
         result->type = type;
         result->rules = create_list();
@@ -203,13 +208,22 @@ create_source(const char *name, la_sourcetype_t type, const char *location)
 #endif /* HAVE_INOTIFY */
 
 
+        assert_source(result);
         return result;
 }
+
+/*
+ * Free single source. Does nothing when argument is NULL
+ */
 
 void
 free_source(la_source_t *source)
 {
+        if (!source)
+                return;
+
         assert_source(source);
+        la_vdebug("free_source(%s)", source->name);
 
         if (source->file)
                 unwatch_source(source);
@@ -218,14 +232,21 @@ free_source(la_source_t *source)
 
         free(source->name);
         free(source->location);
+        free(source->prefix);
         free(source->parent_dir);
 
         free(source);
 }
 
+/*
+ * Free all sources in list
+ */
+
 void
 free_source_list(kw_list_t *list)
 {
+        la_vdebug("free_source_list()");
+
         if (!list)
                 return;
 

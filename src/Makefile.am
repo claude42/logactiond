@@ -1,6 +1,7 @@
 if USE_LIBCONFIG
   logactiond_LDFLAGS = -Lconfig
 else
+  logactiond_LDFLAGS = 
   logactiond_LDADD = $(top_srcdir)/libconfig/lib/.libs/libconfig.a
   logactiond_checkrules_LDADD = $(top_srcdir)/libconfig/lib/.libs/libconfig.a
 endif

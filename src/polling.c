@@ -39,7 +39,6 @@ void
 unwatch_source_polling(la_source_t *source)
 {
         assert_source(source);
-
         la_debug("unwatch_source_polling(%s)", source->name);
 
         // anything?
@@ -54,7 +53,6 @@ static la_source_t *
 find_source_by_fd(int fd)
 {
         assert(fd);
-
         la_debug("find_source_by_fd(%d)", fd);
 
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
@@ -157,7 +155,6 @@ void
 watch_source_polling(la_source_t *source)
 {
         assert_source(source);
-
         la_debug("watch_source_polling(%s)", source->name);
 
         // anything?
