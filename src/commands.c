@@ -37,6 +37,10 @@ assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned
         if (!command->name)
                 die_hard("%s:%u: %s: Assertion 'command->name' failed.", file,
                                 line, func);
+        /* TODO: Not sure whether the next will break anything - let's see */
+        if (!command->rule)
+                die_hard("%s:%u: %s: Assertion 'command->rule' failed.", file,
+                                line, func);
         if (!command->begin_string)
                 die_hard("%s:%u: %s: Assertion 'command->begin_string' "
                                 "failed.", file, line, func);
@@ -397,7 +401,6 @@ dup_command(la_command_t *command)
         result->duration = command->duration;
         result->need_host = command->need_host;
 
-        assert_command(result);
         return result;
 }
 
@@ -431,7 +434,6 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
         result->address = dup_address(address);
         result->end_time = result->n_triggers = result->start_time= 0;
 
-        assert_command(result);
         return result;
 }
 
