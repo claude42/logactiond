@@ -163,9 +163,9 @@ dump_queue_status(kw_list_t *queue)
         if (!hosts_file)
                 die_err("Can't create \"" HOSTSFILE "\"!");
 
-        fprintf(hosts_file, "IP address                                         "
-                        "Time     Rule            Action\n"
-                        "============================================="
+        fprintf(hosts_file, "IP address                                     "
+                        "Time     Rule      Action\n"
+                        "======================================"
                         "=========================================\n");
 
         /* INET6_ADDRSTRLEN 46 + "/123*/
@@ -185,7 +185,7 @@ dump_queue_status(kw_list_t *queue)
                 strftime(end_time, 9, "%T", localtime(&(command->end_time)));
 
                 fprintf(hosts_file,
-                                "%-50.50s %-8.8s %-15.15s %-10.10s\n",
+                                "%-46.46s %-8.8s %-9.9s %-13.13s\n",
                                 adr, end_time, command->rule->name,
                                 command->name);
         }

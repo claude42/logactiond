@@ -39,7 +39,7 @@ assert_pattern_ffl(la_pattern_t *pattern, const char *func, char *file, unsigned
 }
 
 /* 
- * Returns number of '(' in string
+ * Returns number of '(' in a string. Will not count '\('.
  */
 
 static unsigned int
@@ -52,8 +52,16 @@ count_open_braces(const char *string)
 
         for (const char *ptr = string; *ptr; ptr++)
         {
-                if (*ptr == '(')
+                if (*ptr == '\\')
+                {
+                        ptr++;
+                        if (!*ptr)
+                                die_hard("String ends with \\0");
+                }
+                else if (*ptr == '(')
+                {
                         result++;
+                }
         }
 
         return result;
@@ -186,16 +194,23 @@ convert_regex(const char *string, la_pattern_t *pattern)
                                 src_ptr += 2;
                         }
                 }
+                else if (*src_ptr == '\\')
+                {
+                        // In case of '\', copy next character without any
+                        // interpretation
+                        realloc_buffer(&result, &dst_ptr, &dst_len, 2);
+                        *dst_ptr++ = *src_ptr++;
+                        *dst_ptr++ = *src_ptr++;
+                }
+                else if (*src_ptr == '(')
+                {
+                        // In case of '(', count sub expression
+                        subexpression++;
+                        realloc_buffer(&result, &dst_ptr, &dst_len, 1);
+                        *dst_ptr++ = *src_ptr++;
+                }
                 else
                 {
-                        // Character other than "%" detected
-
-                        // In case of '(', count sub expression
-                        if (*src_ptr == '(')
-                                subexpression++;
-
-                        // In call cases copy character (and make sure we've
-                        // enough space).
                         realloc_buffer(&result, &dst_ptr, &dst_len, 1);
                         *dst_ptr++ = *src_ptr++;
                 }
