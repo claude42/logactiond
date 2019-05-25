@@ -248,19 +248,6 @@ create_property_from_config(const char *name, const char *value)
         return result;
 }
 
-la_property_t *
-create_property_from_action_token(const char *name, size_t length,
-                unsigned int pos)
-{
-        assert(name);
-        la_debug("create_property_from_action_token(%s)", name);
-
-        la_property_t *result = create_property_from_token(name, length, pos, NULL);
-        result->replacement = NULL;
-
-        return result;
-}
-
 /*
  * Clones property. strdup()s name, value
  */

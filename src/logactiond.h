@@ -477,9 +477,6 @@ const char *get_value_from_property_list(kw_list_t *property_list,
 
 la_property_t *create_property_from_config(const char *name, const char *value);
 
-/*la_property_t *create_property_from_action_token(const char *name, size_t length,
-                unsigned int pos);*/
-
 la_property_t *create_property_from_token(const char *name, size_t length,
                 unsigned int pos, la_rule_t *rule);
 
