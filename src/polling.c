@@ -39,7 +39,7 @@ void
 unwatch_source_polling(la_source_t *source)
 {
         assert_source(source);
-        la_debug("unwatch_source_polling(%s)", source->name);
+        la_vdebug("unwatch_source_polling(%s)", source->name);
 
         // anything?
 }
@@ -53,7 +53,7 @@ static la_source_t *
 find_source_by_fd(int fd)
 {
         assert(fd);
-        la_debug("find_source_by_fd(%d)", fd);
+        la_vdebug("find_source_by_fd(%d)", fd);
 
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                         (source = NEXT_SOURCE(source));)
@@ -79,12 +79,10 @@ watch_forever_polling(void)
 
         for (;;)
         {
-                la_debug("polling");
-
                 for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                                 (source = NEXT_SOURCE(source));)
                 {
-                        la_debug("loop");
+                        la_vdebug("loop");
                         /* 1st case: file previously unaccessible
                          * 
                          * Try to open/stat, if it succeeds, great, go ahead
@@ -92,22 +90,22 @@ watch_forever_polling(void)
                          */
                         if (!source->active)
                         {
-                                la_debug("not active");
+                                la_vdebug("not active");
                                 source->file = fopen(source->location, "r");
                                 if (source->file)
                                 {
-                                        la_debug("now active again");
+                                        la_vdebug("now active again");
                                         source->active = true;
                                         if (fstat(fileno(source->file), &(source->stats)) == -1)
                                         {
-                                                la_debug("fstat failed, deactivating");
+                                                la_vdebug("fstat failed, deactivating");
                                                 unwatch_source(source);
                                         }
                                 } else
-                                        la_debug("still inactive");
+                                        la_vdebug("still inactive");
                                 continue;
                         }
-                        la_debug("active");
+                        la_vdebug("active");
 
                         /* 2nd case: file has been accessible and still is, but
                          * suddenly it's a different file
@@ -138,7 +136,7 @@ watch_forever_polling(void)
                          */
                         if (!handle_new_content(source))
                         {
-                                la_debug("handling content failed");
+                                la_vdebug("handling content failed");
                                 unwatch_source(source);
                         }
 
@@ -165,7 +163,7 @@ watch_source_polling(la_source_t *source)
 void
 init_watching_polling(void)
 {
-        la_debug("init_watching_poll()");
+        la_debug("init_watching_polling()");
 
 }
 
