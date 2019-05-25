@@ -99,8 +99,6 @@ empty_end_queue(void)
                 free_command(tmp);
         }
 
-        dump_queue_status(end_queue);
-
         pthread_mutex_unlock(&end_queue_mutex);
 }
 

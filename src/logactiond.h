@@ -46,7 +46,8 @@
 #define DEFAULT_DURATION 600
 
 #define PIDFILE "/var/run/logactiond.pid"
-#define STATUSFILE "/var/run/logactiond.status"
+#define HOSTSFILE "/var/run/logactiond.hosts"
+#define RULESFILE "/var/run/logactiond.rules"
 
 
 #define LA_DEFAULTS_LABEL "defaults"
@@ -253,6 +254,7 @@ typedef struct la_pattern_s
         regex_t *regex; /* compiled regex */
         kw_list_t *properties; /* list of la_property_t */
         unsigned long int detection_count;
+        unsigned long int invocation_count;
 } la_pattern_t;
 
 typedef struct la_rule_s
@@ -355,7 +357,7 @@ extern unsigned int id_counter;
 
 extern la_runtype_t run_type;
 
-extern bool output_status;
+extern bool status_monitoring;
 
 /* Functions */
 
@@ -553,6 +555,10 @@ void watch_source_polling(la_source_t *source);
 void init_watching_polling(void);
 
 /* status.c */
+
+void init_monitoring(void);
+
+void remove_status_files(void);
 
 void dump_queue_status(kw_list_t *queue);
 

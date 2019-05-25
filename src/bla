@@ -43,7 +43,7 @@ unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
 unsigned int id_counter = 0;
 la_watchbackend_t watchbackend = LA_WATCHBACKEND_NONE;
 char *run_uid_s = NULL;
-bool status_monitoring = false;
+bool output_status = false;
 
 void
 shutdown_daemon(int status)
@@ -52,7 +52,6 @@ shutdown_daemon(int status)
          * that threads are stopped before continuing */
         empty_end_queue();
         unload_la_config();
-        remove_status_files();
         remove_pidfile();
         exit(status);
 }
@@ -60,6 +59,7 @@ shutdown_daemon(int status)
 static void
 handle_signal(int signal)
 {
+        fprintf(stderr, "SIGNAL!\n");
         la_log(LOG_NOTICE, "Received signal %u", signal);
 
         if (signal == SIGHUP)
@@ -101,7 +101,11 @@ register_signal_handler(void)
 
         set_signal(new_act, SIGINT);
         set_signal(new_act, SIGTERM);
+        set_signal(new_act, SIGQUIT);
         set_signal(new_act, SIGHUP);
+
+        fprintf(stderr, "Done!\n");
+        sleep(10000);
 }
 
 /*
@@ -172,7 +176,7 @@ static void
 print_usage(void)
 {
         fprintf(stderr,
-                "Usage: logactiond [-c configfile] [-d] [-f] [-p pidfile] [-s] [-t]\n");
+                "Usage: logactiond [-c configfile] [-d] [-f] [-p pidfile] [-s]\n");
 }
 
 static void
@@ -224,7 +228,7 @@ read_options(int argc, char *argv[])
                                 run_uid_s = optarg;
                                 break;
                         case 't':
-                                status_monitoring = true;
+                                output_status = true;
                                 break;
                         case '?':
                                 print_usage();
@@ -329,7 +333,7 @@ main(int argc, char *argv[])
         int ifd;
         int wd;
 
-        chdir(CONF_DIR);
+        /*chdir(CONF_DIR);
 
         read_options(argc, argv);
 
@@ -347,12 +351,11 @@ main(int argc, char *argv[])
 
         if (run_type == LA_DAEMON_BACKGROUND)
                 skeleton_daemon();
-        else
+        else*/
                 register_signal_handler();
 
-        init_end_queue();
+        /*init_end_queue();
         init_watching();
-        init_monitoring();
 
         load_la_config(cfg_filename);
 
@@ -361,7 +364,7 @@ main(int argc, char *argv[])
         unload_la_config();
         empty_end_queue();
 
-        assert(false);
+        assert(false);*/
 }
 
 

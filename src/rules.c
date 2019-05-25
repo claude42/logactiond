@@ -121,6 +121,8 @@ handle_command_on_trigger_list(la_command_t *command)
                         remove_node((kw_node_t *) command);
                         if (command->rule->invocation_count < ULONG_MAX)
                                 command->rule->invocation_count++;
+                        if (command->pattern->invocation_count < ULONG_MAX)
+                                command->pattern->invocation_count++;
                         trigger_command(command);
                 }
         }
