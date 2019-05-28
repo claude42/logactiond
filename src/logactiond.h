@@ -38,6 +38,8 @@
 
 //#define NDEBUG
 
+#define SYSLOG_IDENT PACKAGE
+
 //#define CONF_DIR "/etc/logactiond"
 #define CONFIG_FILE "logactiond.cfg"
 

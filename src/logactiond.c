@@ -132,8 +132,6 @@ skeleton_daemon(void)
                 exit(EXIT_FAILURE);
 
         /* Catch, ignore and handle signals */
-        if (signal(SIGCHLD, SIG_IGN) == SIG_ERR)
-                die_err("Error setting signals!");
         register_signal_handler();
 
         /* Fork off for the second time*/
@@ -165,7 +163,7 @@ skeleton_daemon(void)
         create_pidfile();
 
         /* Open the log file */
-        openlog(NULL, LOG_PID, LOG_DAEMON);
+        openlog(SYSLOG_IDENT, LOG_PID, LOG_DAEMON);
 }
 
 static void
@@ -343,12 +341,12 @@ main(int argc, char *argv[])
 
         use_correct_uid();
 
-        la_log(LOG_INFO, "Starting up " PACKAGE_STRING);
-
         if (run_type == LA_DAEMON_BACKGROUND)
                 skeleton_daemon();
         else
                 register_signal_handler();
+
+        la_log(LOG_INFO, "Starting up " PACKAGE_STRING);
 
         init_end_queue();
         init_watching();
