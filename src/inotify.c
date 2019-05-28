@@ -39,7 +39,7 @@
 #define EVENT_SIZE  ( sizeof (struct inotify_event) )
 #define BUF_LEN     ( 1024 * ( EVENT_SIZE + 16 ) )
 
-static int inotify_fd;
+static int inotify_fd = 0;
 
 static void
 la_vdebug_inotify_event(struct inotify_event *event, uint32_t monitored)
