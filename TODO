@@ -10,3 +10,7 @@ TODOs in no particular order
 * check for root / add option to run as non-root
 * better NDEBUG support for la_debug() - how varargs with macro?
 * Debian package
+---
+* get rid of create_property_from_action_token()
+* ACX_PTHREAD?! outdated? works on MacOS?
+* End all threads gracefully
