@@ -68,6 +68,16 @@ handle_signal(int signal)
                 unload_la_config();
                 load_la_config(cfg_filename);
         }
+        else if (signal == SIGPIPE)
+        {
+                for (int x = sysconf(_SC_OPEN_MAX); x>=0; x--)
+                {
+                        close (x);
+                }
+                exit(0);
+                log_level = 0;
+                shutdown_daemon(EXIT_SUCCESS);
+        }
         else
         {
                 shutdown_daemon(EXIT_SUCCESS);
@@ -102,6 +112,7 @@ register_signal_handler(void)
         set_signal(new_act, SIGINT);
         set_signal(new_act, SIGTERM);
         set_signal(new_act, SIGHUP);
+        set_signal(new_act, SIGPIPE);
 }
 
 /*
