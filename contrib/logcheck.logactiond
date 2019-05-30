@@ -7,3 +7,4 @@
 ^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Host: [.:[:xdigit:]]+, action "[_[:alnum:]-]+" fired for rule "[_[:alnum:]-]+"\.$
 ^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Host: [.:[:xdigit:]]+, ignored, action "[_[:alnum:]-]+" still active for rule "[_[:alnum:]-]+"\.$
 ^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Host: [.:[:xdigit:]]+, action "[_[:alnum:]-]+" ended for rule "[_[:alnum:]-]+"\.$
+^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Source "[_[:alnum:]-]+" - file ".*" has been (moved away|re-created|moved to watched location)"

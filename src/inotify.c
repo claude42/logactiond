@@ -172,7 +172,7 @@ watched_file_created(la_source_t *source)
 {
         assert_source(source);
 
-        la_log(LOG_INFO, "Source \"%s\" - file has ben re-created", source->name);
+        la_log(LOG_INFO, "Source \"%s\" - file has been re-created", source->name);
 
         /* unwatch not necessary in case of a previous IN_DELETE */
         if (source->file)
