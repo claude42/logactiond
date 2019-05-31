@@ -96,7 +96,7 @@ get_host_property_value(kw_list_t *property_list)
 la_property_t *
 get_property_from_property_list(kw_list_t *property_list, const char *name)
 {
-        assert(name);
+        assert_list(property_list); assert(name);
         la_vdebug("get_property_from_property_list(%s)", name);
 
         if (!property_list)
@@ -119,24 +119,12 @@ get_property_from_property_list(kw_list_t *property_list, const char *name)
  */
 
 const char *
-get_value_from_property_list(kw_list_t *property_list, la_property_t *property)
+get_value_from_property_list(kw_list_t *property_list, const char *name)
 {
-        /* not sure whether property_list can't get NULL under normal
-         * circumstances */
-        assert_property(property);
-        la_vdebug("get_property_from_property_list(%s)", property->name);
+        la_property_t *property = get_property_from_property_list(
+                                property_list, name);
 
-        if (!property_list)
-                return NULL;
-
-        for (la_property_t *result = ITERATE_PROPERTIES(property_list);
-                        (result = NEXT_PROPERTY(result));)
-        {
-                if(!strncmp(property->name, result->name, property->length))
-                        return result->value;
-        }
-
-        return NULL;
+        return property ? property->value : NULL;
 }
 
 /*

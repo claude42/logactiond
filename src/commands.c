@@ -123,7 +123,7 @@ get_value_for_action_property(la_command_t *command,
         /* next search among tokens from matched line */
         result = get_value_from_property_list(
                         command->pattern_properties,
-                        action_property);
+                        action_property->name);
         if (result)
                 return result;
 
@@ -131,7 +131,7 @@ get_value_for_action_property(la_command_t *command,
         if (command->rule)
         {
                 result = get_value_from_property_list(command->rule->properties,
-                                action_property);
+                                action_property->name);
                 if (result)
                         return result;
         }
@@ -139,7 +139,7 @@ get_value_for_action_property(la_command_t *command,
         /* lastly search in config file default section, return NULL if
          * nothing is there either */
         return get_value_from_property_list(la_config->default_properties,
-                        action_property);
+                        action_property->name);
 }
 
 /*

@@ -475,7 +475,7 @@ la_property_t *get_property_from_property_list(kw_list_t *property_list,
                 const char *name);
 
 const char *get_value_from_property_list(kw_list_t *property_list,
-                la_property_t *property);
+                const char *name);
 
 la_property_t *create_property_from_config(const char *name, const char *value);
 
