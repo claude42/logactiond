@@ -278,6 +278,16 @@ die_err(char *fmt, ...)
 }
 
 void *
+xmalloc0(size_t n)
+{
+        void *result = calloc(n, 1);
+        if (!result && n!=0)
+                die_err("Memory exhausted");
+
+        return result;
+}
+
+void *
 xmalloc(size_t n)
 {
         void *result =  malloc(n);

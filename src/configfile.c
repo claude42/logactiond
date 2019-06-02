@@ -690,7 +690,7 @@ load_la_config(char *filename)
         la_log(LOG_INFO, "Loading configuration from \"%s/%s\".", CONF_DIR,
                         filename);
 
-        la_config = xmalloc(sizeof(la_config_t));
+        la_config = xmalloc0(sizeof(la_config_t));
 
         config_init(&la_config->config_file);
 
