@@ -353,6 +353,8 @@ typedef struct la_config_s
 
 extern la_config_t *la_config;
 
+extern pthread_mutex_t config_mutex;
+
 extern unsigned int log_level;
 
 extern unsigned int id_counter;

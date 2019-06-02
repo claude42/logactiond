@@ -109,6 +109,8 @@ empty_end_queue(void)
  * Will wait until the next end command has to be executed. In case the next
  * command is not an end command but a shutdown command, wait indefinitely (or
  * rather until daemon is stopped).
+ *
+ * Runs in end_queue_thread
  */
 
 static void
@@ -137,6 +139,8 @@ wait_for_next_end_command(la_command_t *command)
 /*
  * Consumes next end command from end queue and triggers it (if any) then waits
  * appropriate amount of time.
+ *
+ * Runs in end_queue_thread
  */
 
 static void *

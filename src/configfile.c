@@ -30,13 +30,16 @@
 #include <fnmatch.h>
 #include <limits.h>
 #include <sys/stat.h>
+#include <pthread.h>
 
 #include <libconfig.h>
 
 #include "logactiond.h"
 #include "nodelist.h"
 
-la_config_t *la_config;
+la_config_t *la_config = NULL;
+
+pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*
  * Return string for path relative to setting. Return NULL if element does not
@@ -687,6 +690,8 @@ load_la_config(char *filename)
         if (!filename)
                 filename = CONFIG_FILE;
 
+        xpthread_mutex_lock(&config_mutex);
+
         la_log(LOG_INFO, "Loading configuration from \"%s/%s\".", CONF_DIR,
                         filename);
 
@@ -713,6 +718,8 @@ load_la_config(char *filename)
         load_rules();
 
         config_destroy(&la_config->config_file);
+
+        xpthread_mutex_unlock(&config_mutex);
 }
 
 void
@@ -723,11 +730,15 @@ unload_la_config(void)
         if (!la_config)
                 return;
 
+        xpthread_mutex_lock(&config_mutex);
+
         free_source_list(la_config->sources);
         free_property_list(la_config->default_properties);
         free_address_list(la_config->ignore_addresses);
         free(la_config);
         la_config = NULL;
+
+        xpthread_mutex_unlock(&config_mutex);
 }
 
 /*

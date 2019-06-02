@@ -297,6 +297,8 @@ trigger_command(la_command_t *command)
 
 /*
  * Executes an end_command.
+ *
+ * Runs in end_queue_thread
  */
 
 void
@@ -491,6 +493,8 @@ create_template(const char *name, la_rule_t *rule, const char *begin_string,
 
 /*
  * Free single command. Does nothing when argument is NULL
+ *
+ * Runs in end_queue_thread
  */
 
 void

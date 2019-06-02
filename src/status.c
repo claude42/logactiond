@@ -84,6 +84,8 @@ dump_rules(void)
         fprintf(rules_file, "Rule          Service       Source        Detected  Invoked  \n");
         fprintf(rules_file, "===========================================================\n");
 
+        pthread_mutex_lock(&config_mutex);
+
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                         (source = NEXT_SOURCE(source));)
         {
@@ -91,6 +93,9 @@ dump_rules(void)
                                 (rule = NEXT_RULE(rule));)
                         dump_single_rule(rules_file, rule);
         }
+
+        pthread_mutex_unlock(&config_mutex);
+
         if (fclose(rules_file))
                 die_hard("Can't close \" HOSTSFILE \"!");
 }
@@ -106,7 +111,6 @@ dump_loop(void *ptr)
 
         for (;;)
         {
-                la_debug("looping");
                 sleep(5);
                 if (shutdown_ongoing)
                 {
@@ -155,6 +159,8 @@ remove_status_files(void)
  *
  * NOTE: must be called with end_queue_mutex locked when called for the end
  * queue.
+ *
+ * Runs in end_queue_thread
  */
 
 void
@@ -175,6 +181,8 @@ dump_queue_status(kw_list_t *queue)
 
         /* INET6_ADDRSTRLEN 46 + "/123*/
 
+        pthread_mutex_lock(&config_mutex);
+
         for (la_command_t *command = ITERATE_COMMANDS(queue);
                         (command = NEXT_COMMAND(command));)
         {
@@ -194,6 +202,9 @@ dump_queue_status(kw_list_t *queue)
                                 adr, end_time, command->rule->name,
                                 command->name);
         }
+
+        pthread_mutex_unlock(&config_mutex);
+
         if (fclose(hosts_file))
                 die_hard("Can't close \" HOSTSFILE \"!");
 }

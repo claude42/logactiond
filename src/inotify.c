@@ -117,6 +117,8 @@ find_source_by_parent_wd(int parent_wd, char *file_name)
         assert(parent_wd); assert(file_name);
         la_vdebug("find_source_by_parent_wd(%s)", file_name);
 
+        pthread_mutex_lock(&config_mutex);
+
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                         (source = NEXT_SOURCE(source));)
         {
@@ -129,6 +131,7 @@ find_source_by_parent_wd(int parent_wd, char *file_name)
                         if (!strcmp(file_name, base_name))
                         {
                                 free(tmp);
+                                xpthread_mutex_unlock(&config_mutex);
                                 return source;
                         }
                         else
@@ -137,6 +140,8 @@ find_source_by_parent_wd(int parent_wd, char *file_name)
                         }
                 }
         }
+
+        pthread_mutex_unlock(&config_mutex);
 
         return NULL;
 }
@@ -152,12 +157,19 @@ find_source_by_file_wd(int file_wd)
         assert(file_wd);
         la_vdebug("find_source_by_file_wd(%u)", file_wd);
 
+        pthread_mutex_lock(&config_mutex);
+
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                         (source = NEXT_SOURCE(source));)
         {
                 if (source->wd == file_wd)
+                {
+                        pthread_mutex_unlock(&config_mutex);
                         return source;
+                }
         }
+
+        pthread_mutex_unlock(&config_mutex);
 
         return NULL;
 }
@@ -287,8 +299,13 @@ handle_inotify_file_event(struct inotify_event *event)
                 return;
 
         la_vdebug("handle_inotify_file_event(%s)", source->name);
+
+        pthread_mutex_lock(&config_mutex);
+
         if (!handle_new_content(source))
                 die_err("Reading from source \"%s\" failed", source->name);
+
+        pthread_mutex_unlock(&config_mutex);
 }
 
 static void
