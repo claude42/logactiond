@@ -96,7 +96,7 @@ get_host_property_value(kw_list_t *property_list)
 la_property_t *
 get_property_from_property_list(kw_list_t *property_list, const char *name)
 {
-        assert_list(property_list); assert(name);
+        assert(name);
         la_vdebug("get_property_from_property_list(%s)", name);
 
         if (!property_list)
