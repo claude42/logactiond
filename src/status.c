@@ -108,6 +108,12 @@ dump_loop(void *ptr)
         {
                 la_debug("looping");
                 sleep(5);
+                if (shutdown_ongoing)
+                {
+                        la_debug("Shutting down monitoring thread.");
+                        pthread_exit(NULL);
+                }
+
                 dump_rules();
         }
 }
@@ -125,9 +131,7 @@ init_monitoring(void)
 
         pthread_t monitoring_thread;
 
-        if (pthread_create(&monitoring_thread, NULL, dump_loop, NULL))
-                die_hard("Couldn't create monitoring thread!");
-
+        xpthread_create(&monitoring_thread, NULL, dump_loop, NULL);
 }
 
 /*
@@ -156,7 +160,8 @@ remove_status_files(void)
 void
 dump_queue_status(kw_list_t *queue)
 {
-        if (!status_monitoring)
+        la_vdebug("dump_queue_status()");
+        if (!status_monitoring || shutdown_ongoing)
                 return;
 
         FILE *hosts_file = fopen(HOSTSFILE, "w");
@@ -174,7 +179,7 @@ dump_queue_status(kw_list_t *queue)
                         (command = NEXT_COMMAND(command));)
         {
                 assert_command(command);
-                /* not interested in shutdown commands */
+                // not interested in shutdown commands (or anything beyond...)
                 if (command->end_time == INT_MAX)
                         break;
                 la_debug("printing %s", command->name);
