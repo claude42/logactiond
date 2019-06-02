@@ -14,6 +14,7 @@ logactiond_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/
 logactiond_CFLAGS = $(PTHREAD_CFLAGS)
 logactiond_checkrules_SOURCES = logactiond-checkrules.c logactiond.h addresses.c commands.c configfile.c misc.c nodelist.c nodelist.h patterns.c properties.c rules.c sources.c
 logactiond_checkrules_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\"" -DNOCOMMANDS -DNOWATCH
+logactiond_checkrules_CFLAGS = $(PTHREAD_CFLAGS)
 
 
 

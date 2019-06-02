@@ -103,31 +103,71 @@ log_message(unsigned int priority, char *fmt, va_list gp, char *add)
 }
 
 /*
+ * Create thread, die if it fails
+ */
+
+void
+xpthread_create(pthread_t *thread, const pthread_attr_t *attr,
+                void *(*start_routine)(void *), void *arg)
+{
+        if (pthread_create(thread, attr, start_routine, arg))
+                die_err("Failed to create thread!");
+}
+
+/*
  * Wait for condition, die if pthread_cond_wait() fails
  */
 
-int
+void
 xpthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
-        int result = pthread_cond_wait(cond, mutex);
-        if (result)
-                die_hard("Failed to wait for condition!");
+        if (pthread_cond_wait(cond, mutex))
+                die_err("Failed to wait for condition!");
+}
 
-        return result;
+/*
+ * Wait for condition, die if pthread_cond_timedwait() fails
+ */
+
+void
+xpthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
+                const struct timespec *abstime)
+{
+        if (pthread_cond_timedwait(cond, mutex, abstime))
+                die_err("Failed to wait for condition!");
+}
+
+/*
+ * Signal condition, die if it fails
+ */
+
+void
+xpthread_cond_signal(pthread_cond_t *cond)
+{
+        if (pthread_cond_signal(cond))
+                die_err("Failed to signal thread!");
 }
 
 /*
  * Lock mutex, die if pthread_mutex_lock() fails
  */
 
-int
+void
 xpthread_mutex_lock(pthread_mutex_t *mutex)
 {
-        int result = pthread_mutex_lock(mutex);
-        if (result)
-                die_hard("Failed to lock mutex!");
+        if (pthread_mutex_lock(mutex))
+                die_err("Failed to lock mutex!");
+}
 
-        return result;
+/*
+ * Unlock mutex, die if pthread_mutex_lock() fails
+ */
+
+void
+xpthread_mutex_unlock(pthread_mutex_t *mutex)
+{
+        if (pthread_mutex_unlock(mutex))
+                die_err("Failed to unlock mutex!");
 }
 
 time_t
@@ -201,7 +241,10 @@ die_semantic(char *fmt, ...)
         log_message(LOG_ERR, fmt, myargs, NULL);
         va_end(myargs);
 
-        shutdown_daemon(EXIT_FAILURE);
+        if (!shutdown_ongoing)
+                shutdown_daemon(EXIT_FAILURE);
+        else
+                exit(EXIT_FAILURE);
 }
 
 void
@@ -213,7 +256,10 @@ die_hard(char *fmt, ...)
         log_message(LOG_ERR, fmt, myargs, NULL);
         va_end(myargs);
 
-        shutdown_daemon(EXIT_FAILURE);
+        if (!shutdown_ongoing)
+                shutdown_daemon(EXIT_FAILURE);
+        else
+                exit(EXIT_FAILURE);
 }
 
 void
@@ -225,7 +271,10 @@ die_err(char *fmt, ...)
         log_message(LOG_ERR, fmt, myargs, strerror(errno));
         va_end(myargs);
 
-        shutdown_daemon(EXIT_FAILURE);
+        if (!shutdown_ongoing)
+                shutdown_daemon(EXIT_FAILURE);
+        else
+                exit(EXIT_FAILURE);
 }
 
 void *

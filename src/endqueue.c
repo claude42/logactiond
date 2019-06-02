@@ -71,7 +71,7 @@ find_end_command(la_rule_t *rule, la_address_t *address)
                 }
         }
 
-        pthread_mutex_unlock(&end_queue_mutex);
+        xpthread_mutex_unlock(&end_queue_mutex);
 
         return result;
 }
@@ -99,7 +99,10 @@ empty_end_queue(void)
                 free_command(tmp);
         }
 
-        pthread_mutex_unlock(&end_queue_mutex);
+        if (shutdown_ongoing)
+                xpthread_cond_signal(&end_queue_condition);
+
+        xpthread_mutex_unlock(&end_queue_mutex);
 }
 
 /*
@@ -126,7 +129,7 @@ wait_for_next_end_command(la_command_t *command)
                 struct timespec wait_interval;
                 wait_interval.tv_nsec = 0;
                 wait_interval.tv_sec = command->end_time;
-                pthread_cond_timedwait(&end_queue_condition, &end_queue_mutex,
+                xpthread_cond_timedwait(&end_queue_condition, &end_queue_mutex,
                                 &wait_interval);
         }
 }
@@ -145,7 +148,11 @@ consume_end_queue(void *ptr)
 
         for (;;)
         {
-                time_t now = xtime(NULL);
+                if (shutdown_ongoing)
+                {
+                        la_debug("Shutting down end queue thread.");
+                        pthread_exit(NULL);
+                }
 
                 la_command_t *command = (la_command_t *) end_queue->head.succ;
 
@@ -154,7 +161,7 @@ consume_end_queue(void *ptr)
                         /* list is empty, wait indefinitely */
                         xpthread_cond_wait(&end_queue_condition, &end_queue_mutex);
                 }
-                else if (now < command->end_time)
+                else if (xtime(NULL) < command->end_time)
                 {
                         /* non-empty list, but end_time of first command not
                          * reached yet */
@@ -187,8 +194,7 @@ init_end_queue(void)
 
         pthread_t end_queue_thread;
 
-        if (pthread_create(&end_queue_thread, NULL, consume_end_queue, NULL))
-                die_hard("Couldn't create end_queue thread!");
+        xpthread_create(&end_queue_thread, NULL, consume_end_queue, NULL);
 }
 
 /*
@@ -242,9 +248,9 @@ enqueue_end_command(la_command_t *end_command)
 
         dump_queue_status(end_queue);
 
-        pthread_cond_signal(&end_queue_condition);
+        xpthread_cond_signal(&end_queue_condition);
 
-        pthread_mutex_unlock(&end_queue_mutex);
+        xpthread_mutex_unlock(&end_queue_mutex);
 }
 
 /* vim: set autowrite expandtab: */

@@ -35,6 +35,7 @@ unsigned int id_counter = 0;
 static char *cfg_filename = NULL;
 static char *log_filename = NULL;
 static char *rule_name = NULL;
+bool shutdown_ongoing = false;
 
 void
 shutdown_daemon(int status)

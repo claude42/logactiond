@@ -44,12 +44,14 @@ unsigned int id_counter = 0;
 la_watchbackend_t watchbackend = LA_WATCHBACKEND_NONE;
 char *run_uid_s = NULL;
 bool status_monitoring = false;
+bool shutdown_ongoing = false;
 
 void
 shutdown_daemon(int status)
 {
         /* TODO: once we have multiple threads watching sources, must ensure
          * that threads are stopped before continuing */
+        shutdown_ongoing = true;
         empty_end_queue();
         unload_la_config();
         remove_status_files();
@@ -367,6 +369,7 @@ main(int argc, char *argv[])
 
         watch_forever();
 
+        /* Should never get here */
         unload_la_config();
         empty_end_queue();
 

@@ -361,6 +361,8 @@ extern la_runtype_t run_type;
 
 extern bool status_monitoring;
 
+extern bool shutdown_ongoing;
+
 /* Functions */
 
 /* main file */
@@ -373,9 +375,19 @@ void remove_pidfile(void);
 
 void create_pidfile(void);
 
-int xpthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
+void xpthread_create(pthread_t *thread, const pthread_attr_t *attr,
+                void *(*start_routine)(void *), void *arg);
 
-int xpthread_mutex_lock(pthread_mutex_t *mutex);
+void xpthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
+
+void xpthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
+                const struct timespec *abstime);
+
+void xpthread_cond_signal(pthread_cond_t *cond);
+
+void xpthread_mutex_lock(pthread_mutex_t *mutex);
+
+void xpthread_mutex_unlock(pthread_mutex_t *mutex);
 
 time_t xtime(time_t *tloc);
 
@@ -432,7 +444,7 @@ la_address_t *create_address(const char *ip);
 
 la_command_t *find_end_command(la_rule_t *rule, la_address_t *address);
 
-void empty_end_queue(void);
+void empty_end_queue();
 
 void enqueue_end_command(la_command_t *end_command);
 
