@@ -87,7 +87,8 @@ log_message(unsigned int priority, char *fmt, va_list gp, char *add)
         {
                 case LA_DAEMON_BACKGROUND:
                         vsyslog(priority, fmt, gp);
-                        // FIXME: must print "add" as well
+                        if (add)
+                                syslog(priority, "%s", add);
                         break;
                 case LA_DAEMON_FOREGROUND:
                         fprintf(stderr, "<%u>", priority);
@@ -134,7 +135,7 @@ xpthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
                 const struct timespec *abstime)
 {
         if (pthread_cond_timedwait(cond, mutex, abstime))
-                die_err("Failed to wait for condition!");
+                die_err("Failed to timed wait for condition!");
 }
 
 /*
