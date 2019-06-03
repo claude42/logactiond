@@ -52,11 +52,13 @@ shutdown_daemon(int status)
         /* TODO: once we have multiple threads watching sources, must ensure
          * that threads are stopped before continuing */
         shutdown_ongoing = true;
+        shutdown_monitoring();
         empty_end_queue();
         unload_la_config();
         remove_status_files();
         remove_pidfile();
-        exit(status);
+        pthread_exit(NULL);
+        //exit(status);
 }
 
 static void

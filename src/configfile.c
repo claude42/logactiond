@@ -684,11 +684,34 @@ load_defaults(void)
 const char ** include_func(config_t *config, const char *include_dir, const
                 char *path, const char **error);
 
+/*
+ * Initializes the config_mutex as recursive mutex (thus making it possible to
+ * lock it multiple times from within the same thread without blocking it).
+ *
+ * Commented out, as it's currently not needed but left here in case I'll need
+ * it at some later point.
+ *
+ * TODO: make sure this only gets called once, even when config is reloaded.
+ */
+
+/*static void
+init_config_mutex(void)
+{
+        pthread_mutexattr_t config_mutex_attr;
+
+        pthread_mutexattr_init(&config_mutex_attr);
+        if (pthread_mutexattr_settype(&config_mutex_attr, PTHREAD_MUTEX_RECURSIVE))
+                die_err("Can't set mutex attributes!");
+        pthread_mutex_init(&config_mutex, &config_mutex_attr);
+}*/
+
 void
 load_la_config(char *filename)
 {
         if (!filename)
                 filename = CONFIG_FILE;
+
+        //init_config_mutex();
 
         xpthread_mutex_lock(&config_mutex);
 

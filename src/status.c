@@ -26,11 +26,15 @@
 #include <limits.h>
 #include <stdio.h>
 #include <errno.h>
+#include <syslog.h>
 
 //#include <libconfig.h>
 
 #include "logactiond.h"
 #include "nodelist.h"
+
+static pthread_mutex_t monitoring_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t monitoring_condition = PTHREAD_COND_INITIALIZER;
 
 /*static void *
 dump_single_pattern(FILE *rules_file, la_pattern_t *pattern)
@@ -109,12 +113,20 @@ dump_loop(void *ptr)
 {
         la_debug("dump_loop()");
 
+        xpthread_mutex_lock(&monitoring_mutex);
+
+        struct timespec wait_interval;
+        wait_interval.tv_nsec = 0;
+        wait_interval.tv_sec = xtime(NULL) + 5*60;
+
         for (;;)
         {
-                sleep(5);
+                xpthread_cond_timedwait(&monitoring_condition, &monitoring_mutex,
+                                &wait_interval);
                 if (shutdown_ongoing)
                 {
                         la_debug("Shutting down monitoring thread.");
+                        xpthread_mutex_unlock(&monitoring_mutex);
                         pthread_exit(NULL);
                 }
 
@@ -136,6 +148,12 @@ init_monitoring(void)
         pthread_t monitoring_thread;
 
         xpthread_create(&monitoring_thread, NULL, dump_loop, NULL);
+}
+
+void
+shutdown_monitoring(void)
+{
+        xpthread_cond_signal(&monitoring_condition);
 }
 
 /*
@@ -181,8 +199,6 @@ dump_queue_status(kw_list_t *queue)
 
         /* INET6_ADDRSTRLEN 46 + "/123*/
 
-        pthread_mutex_lock(&config_mutex);
-
         for (la_command_t *command = ITERATE_COMMANDS(queue);
                         (command = NEXT_COMMAND(command));)
         {
@@ -202,8 +218,6 @@ dump_queue_status(kw_list_t *queue)
                                 adr, end_time, command->rule->name,
                                 command->name);
         }
-
-        pthread_mutex_unlock(&config_mutex);
 
         if (fclose(hosts_file))
                 die_hard("Can't close \" HOSTSFILE \"!");

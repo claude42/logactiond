@@ -573,6 +573,8 @@ void init_watching_polling(void);
 
 void init_monitoring(void);
 
+void shutdown_monitoring(void);
+
 void remove_status_files(void);
 
 void dump_queue_status(kw_list_t *queue);

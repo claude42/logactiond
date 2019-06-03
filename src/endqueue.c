@@ -178,7 +178,9 @@ consume_end_queue(void *ptr)
                         remove_node((kw_node_t *) command);
                         trigger_end_command(command);
                         free_command(command);
+                        pthread_mutex_lock(&config_mutex);
                         dump_queue_status(end_queue);
+                        pthread_mutex_unlock(&config_mutex);
                 }
         }
 }
