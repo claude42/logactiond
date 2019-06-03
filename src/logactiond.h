@@ -436,6 +436,8 @@ la_address_t *dup_address(la_address_t *address);
 
 void free_address(la_address_t *address);
 
+void empty_address_list(kw_list_t *list);
+
 void free_address_list(kw_list_t *list);
 
 int adrcmp(la_address_t *a1, la_address_t *a2);
@@ -502,6 +504,8 @@ kw_list_t *dup_property_list(kw_list_t *list);
 
 void free_property(la_property_t *property);
 
+void empty_property_list(kw_list_t *list);
+
 void free_property_list(kw_list_t *list);
 
 /* patterns.c */
@@ -542,6 +546,8 @@ la_source_t *create_source(const char *name, la_sourcetype_t type, const char *l
                 const char *prefix);
 
 void free_source(la_source_t *source);
+
+void empty_source_list(kw_list_t *list);
 
 void free_source_list(kw_list_t *list);
 

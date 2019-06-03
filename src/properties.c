@@ -298,7 +298,7 @@ free_property(la_property_t *property)
  */
 
 void
-free_property_list(kw_list_t *list)
+empty_property_list(kw_list_t *list)
 {
         la_vdebug("free_property_list()");
         if (!list)
@@ -307,6 +307,13 @@ free_property_list(kw_list_t *list)
         for (la_property_t *tmp;
                         (tmp = REM_PROPERTIES_HEAD(list));)
                 free_property(tmp);
+
+}
+
+void
+free_property_list(kw_list_t *list)
+{
+        empty_property_list(list);
 
         free(list);
 }

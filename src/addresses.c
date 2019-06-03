@@ -277,7 +277,7 @@ free_address(la_address_t *address)
  */
 
 void
-free_address_list(kw_list_t *list)
+empty_address_list(kw_list_t *list)
 {
         la_vdebug("free_address_list()");
         if (!list)
@@ -285,6 +285,13 @@ free_address_list(kw_list_t *list)
 
         for (la_address_t *tmp; (tmp = REM_ADDRESSES_HEAD(list));)
                 free_address(tmp);
+
+}
+
+void
+free_address_list(kw_list_t *list)
+{
+        empty_address_list(list);
 
         free(list);
 }

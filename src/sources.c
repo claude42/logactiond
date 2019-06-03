@@ -243,7 +243,7 @@ free_source(la_source_t *source)
  */
 
 void
-free_source_list(kw_list_t *list)
+empty_source_list(kw_list_t *list)
 {
         la_vdebug("free_source_list()");
 
@@ -253,6 +253,12 @@ free_source_list(kw_list_t *list)
         for (la_source_t *tmp;
                         (tmp = REM_SOURCES_HEAD(list));)
                 free_source(tmp);
+}
+
+void
+free_source_list(kw_list_t *list)
+{
+        empty_source_list(list);
 
         free(list);
 }
