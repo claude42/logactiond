@@ -217,7 +217,7 @@ convert_regex(const char *string, la_pattern_t *pattern)
         }
 
         *dst_ptr = 0;
-        la_debug("convert_regex()=%s, subexpression=%u", result, subexpression);
+        la_vdebug("convert_regex()=%s, subexpression=%u", result, subexpression);
 
         return result;
 }
@@ -231,7 +231,7 @@ create_pattern(const char *string_from_configfile, unsigned int num,
                 la_rule_t *rule)
 {
         assert(string_from_configfile); assert_rule(rule);
-        la_debug("create_pattern(%s)", string_from_configfile);
+        la_vdebug("create_pattern(%s)", string_from_configfile);
 
         char *full_string = concat(rule->source->prefix,
                         string_from_configfile);
