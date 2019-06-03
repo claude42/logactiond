@@ -64,8 +64,8 @@ static void *
 dump_single_rule(FILE *rules_file, la_rule_t *rule)
 {
         assert(rules_file), assert_rule(rule);
-        la_debug("dump_single_rule(%s)", rule->name);
-        la_debug("%-13.13s %-9.9s %-9.9s %9u %9u\n",
+        la_vdebug("dump_single_rule(%s)", rule->name);
+        la_vdebug("%-13.13s %-9.9s %-9.9s %9u %9u\n",
                         rule->name, rule->service, rule->source->name,
                         rule->detection_count, rule->invocation_count);
         fprintf(rules_file, "%-13.13s %-13.13s %-13.13s %8u %8u\n",
@@ -116,11 +116,12 @@ dump_loop(void *ptr)
         xpthread_mutex_lock(&monitoring_mutex);
 
         struct timespec wait_interval;
-        wait_interval.tv_nsec = 0;
-        wait_interval.tv_sec = xtime(NULL) + 5*60;
 
         for (;;)
         {
+                la_vdebug("dump_loop() looping");
+                wait_interval.tv_nsec = 0;
+                wait_interval.tv_sec = xtime(NULL) + 5;
                 xpthread_cond_timedwait(&monitoring_condition, &monitoring_mutex,
                                 &wait_interval);
                 if (shutdown_ongoing)
