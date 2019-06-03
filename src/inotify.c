@@ -30,6 +30,8 @@
 #include <syslog.h>
 #include <libgen.h>
 #include <errno.h>
+#include <pthread.h>
+#include <signal.h>
 
 #include <libconfig.h>
 
@@ -40,6 +42,10 @@
 #define BUF_LEN     ( 1024 * ( EVENT_SIZE + 16 ) )
 
 static int inotify_fd = 0;
+
+static pthread_t inotify_thread;
+static pthread_mutex_t inotify_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t inotify_condition = PTHREAD_COND_INITIALIZER;
 
 static void
 la_vdebug_inotify_event(struct inotify_event *event, uint32_t monitored)
@@ -117,8 +123,6 @@ find_source_by_parent_wd(int parent_wd, char *file_name)
         assert(parent_wd); assert(file_name);
         la_vdebug("find_source_by_parent_wd(%s)", file_name);
 
-        pthread_mutex_lock(&config_mutex);
-
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                         (source = NEXT_SOURCE(source));)
         {
@@ -131,7 +135,6 @@ find_source_by_parent_wd(int parent_wd, char *file_name)
                         if (!strcmp(file_name, base_name))
                         {
                                 free(tmp);
-                                xpthread_mutex_unlock(&config_mutex);
                                 return source;
                         }
                         else
@@ -140,8 +143,6 @@ find_source_by_parent_wd(int parent_wd, char *file_name)
                         }
                 }
         }
-
-        pthread_mutex_unlock(&config_mutex);
 
         return NULL;
 }
@@ -157,19 +158,12 @@ find_source_by_file_wd(int file_wd)
         assert(file_wd);
         la_vdebug("find_source_by_file_wd(%u)", file_wd);
 
-        pthread_mutex_lock(&config_mutex);
-
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                         (source = NEXT_SOURCE(source));)
         {
                 if (source->wd == file_wd)
-                {
-                        pthread_mutex_unlock(&config_mutex);
                         return source;
-                }
         }
-
-        pthread_mutex_unlock(&config_mutex);
 
         return NULL;
 }
@@ -300,12 +294,8 @@ handle_inotify_file_event(struct inotify_event *event)
 
         la_vdebug("handle_inotify_file_event(%s)", source->name);
 
-        pthread_mutex_lock(&config_mutex);
-
         if (!handle_new_content(source))
                 die_err("Reading from source \"%s\" failed", source->name);
-
-        pthread_mutex_unlock(&config_mutex);
 }
 
 static void
@@ -314,19 +304,22 @@ handle_inotify_event(struct inotify_event *event)
         assert(event);
         la_vdebug("handle_inotify_event()");
 
+        pthread_mutex_lock(&config_mutex);
+
         if (event->len) /* only directory have a name (and thus a length) */
                 handle_inotify_directory_event(event);
         else
                 handle_inotify_file_event(event);
 
+        pthread_mutex_unlock(&config_mutex);
 }
 
 /*
  * Event loop for inotify mechanism
  */
 
-void
-watch_forever_inotify(void)
+static void *
+watch_forever_inotify(void *ptr)
 {
         la_debug("watch_forever_inotify()");
 
@@ -334,18 +327,28 @@ watch_forever_inotify(void)
         ssize_t num_read;
         struct inotify_event *event;
 
+        xpthread_mutex_lock(&inotify_mutex);
+
         for (;;)
         {
                 num_read = read(inotify_fd, buffer, BUF_LEN);
                 if (num_read == -1)
                 {
                         if (errno == EINTR)
-                                continue;
+                                la_debug("read interrupted!");
                         else
                                 die_err("Error reading from inotify!");
                 }
 
+                if (shutdown_ongoing)
+                {
+                        la_debug("Shutting down inotify thread.");
+                        xpthread_mutex_unlock(&inotify_mutex);
+                        pthread_exit(NULL);
+                }
+
                 int i=0;
+                /* Loop will not be entered if read() failed with -1 */
                 while (i<num_read)
                 {
                         event = (struct inotify_event *) &buffer[i];
@@ -399,6 +402,15 @@ init_watching_inotify(void)
         inotify_fd = inotify_init();
         if (inotify_fd == -1)
                 die_hard("Can't initialize inotify!");
+
+        xpthread_create(&inotify_thread, NULL, watch_forever_inotify, NULL);
+}
+
+void
+shutdown_watching_inotify(void)
+{
+        la_debug("shutdown_watching_inotify()");
+        // currently not needed
 }
 
 #endif /* HAVE_INOTIFY */

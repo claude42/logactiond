@@ -30,6 +30,7 @@
 #include <assert.h>
 #include <getopt.h>
 #include <pwd.h>
+#include <limits.h>
 #if HAVE_INOTIFY
 #include <sys/inotify.h>
 #endif /* HAVE_INOTIFY */
@@ -46,12 +47,31 @@ char *run_uid_s = NULL;
 bool status_monitoring = false;
 bool shutdown_ongoing = false;
 
+/*
+ * TODO
+ */
+
+static void
+shutdown_watching(void)
+{
+        la_debug("shutdown_watching()");
+
+#ifndef NOWATCH
+#if HAVE_INOTIFY
+        shutdown_watching_inotify();
+#else /* HAVE_INOTIFY */
+        shutdown_watching_polling();
+#endif /* HAVE_INOTIFY */
+#endif /* NOWATCH */
+}
+
 void
 shutdown_daemon(int status)
 {
         /* TODO: once we have multiple threads watching sources, must ensure
          * that threads are stopped before continuing */
         shutdown_ongoing = true;
+        shutdown_watching();
         shutdown_monitoring();
         empty_end_queue();
         unload_la_config();
@@ -252,23 +272,6 @@ read_options(int argc, char *argv[])
 }
 
 /*
- * Abstract event loop
- */
-
-static void
-watch_forever(void)
-{
-        la_debug("watch_forever()");
-#ifndef NOWATCH
-#if HAVE_INOTIFY
-        watch_forever_inotify();
-#else /* HAVE_INOTIFY */
-        watch_forever_polling();
-#endif /* HAVE_INOTIFY */
-#endif /* NOWATCH */
-}
-
-/*
  * Do all steps necessary before files can be watched. Depending on the method
  * used, no such steps might be necessary at all.
  */
@@ -369,11 +372,9 @@ main(int argc, char *argv[])
 
         load_la_config(cfg_filename);
 
-        watch_forever();
-
-        /* Should never get here */
-        unload_la_config();
-        empty_end_queue();
+        la_debug("Main thread going to sleep.");
+        while (true)
+                sleep(INT_MAX);
 
         assert(false);
 }

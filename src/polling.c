@@ -167,5 +167,12 @@ init_watching_polling(void)
 
 }
 
+void
+shutdown_watching_polling(void)
+{
+        la_debug("shutdown_watching_polling()");
+        // currently not needed
+}
+
 
 /* vim: set autowrite expandtab: */

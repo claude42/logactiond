@@ -558,11 +558,11 @@ bool handle_new_content(la_source_t *source);
 
 void unwatch_source_inotify(la_source_t *source);
 
-void watch_forever_inotify(void);
-
 void watch_source_inotify(la_source_t *source);
 
 void init_watching_inotify(void);
+
+void shutdown_watching_inotify(void);
 #endif /* HAVE_INOTIFY */
 
 /* polling.c */
@@ -574,6 +574,8 @@ void watch_forever_polling(void);
 void watch_source_polling(la_source_t *source);
 
 void init_watching_polling(void);
+
+void shutdown_watching_polling(void);
 
 /* status.c */
 
