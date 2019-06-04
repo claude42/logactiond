@@ -42,28 +42,9 @@ char *pid_file = NULL;
 la_runtype_t run_type = LA_DAEMON_BACKGROUND;
 unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
 unsigned int id_counter = 0;
-la_watchbackend_t watchbackend = LA_WATCHBACKEND_NONE;
 char *run_uid_s = NULL;
 bool status_monitoring = false;
 bool shutdown_ongoing = false;
-
-/*
- * TODO
- */
-
-static void
-shutdown_watching(void)
-{
-        la_debug("shutdown_watching()");
-
-#ifndef NOWATCH
-#if HAVE_INOTIFY
-        shutdown_watching_inotify();
-#else /* HAVE_INOTIFY */
-        shutdown_watching_polling();
-#endif /* HAVE_INOTIFY */
-#endif /* NOWATCH */
-}
 
 void
 shutdown_daemon(int status)
@@ -269,27 +250,6 @@ read_options(int argc, char *argv[])
 
                 }
         }
-}
-
-/*
- * Do all steps necessary before files can be watched. Depending on the method
- * used, no such steps might be necessary at all.
- */
-
-static void
-init_watching(void)
-{
-        la_debug("init_watching()");
-
-#ifndef NOWATCH
-#if HAVE_INOTIFY
-        init_watching_inotify();
-        watchbackend = LA_WATCHBACKEND_INOTIFY;
-#else /* HAVE_INOTIFY */
-        init_watching_polling();
-        watchbackend = LA_WATCHBACKEND_POLLING;
-#endif /* HAVE_INOTIFY */
-#endif /* NOWATCH */
 }
 
 static uid_t

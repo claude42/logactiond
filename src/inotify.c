@@ -43,7 +43,6 @@
 
 static int inotify_fd = 0;
 
-static pthread_t inotify_thread;
 static pthread_mutex_t inotify_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t inotify_condition = PTHREAD_COND_INITIALIZER;
 
@@ -318,8 +317,8 @@ handle_inotify_event(struct inotify_event *event)
  * Event loop for inotify mechanism
  */
 
-static void *
-watch_forever_inotify(void *ptr)
+void
+watch_forever_inotify(void)
 {
         la_debug("watch_forever_inotify()");
 
@@ -402,8 +401,6 @@ init_watching_inotify(void)
         inotify_fd = inotify_init();
         if (inotify_fd == -1)
                 die_hard("Can't initialize inotify!");
-
-        xpthread_create(&inotify_thread, NULL, watch_forever_inotify, NULL);
 }
 
 void

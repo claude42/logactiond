@@ -563,19 +563,22 @@ void watch_source_inotify(la_source_t *source);
 void init_watching_inotify(void);
 
 void shutdown_watching_inotify(void);
+
+void watch_forever_inotify(void);
+
 #endif /* HAVE_INOTIFY */
 
 /* polling.c */
 
 void unwatch_source_polling(la_source_t *source);
 
-void watch_forever_polling(void);
-
 void watch_source_polling(la_source_t *source);
 
 void init_watching_polling(void);
 
 void shutdown_watching_polling(void);
+
+void watch_forever_polling();
 
 /* status.c */
 
@@ -586,6 +589,12 @@ void shutdown_monitoring(void);
 void remove_status_files(void);
 
 void dump_queue_status(kw_list_t *queue);
+
+/* watch.c */
+
+void init_watching(void);
+
+void shutdown_watching(void);
 
 
 #endif /* __logactiond_h */

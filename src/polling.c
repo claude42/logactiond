@@ -45,28 +45,6 @@ unwatch_source_polling(la_source_t *source)
 }
 
 /*
- * Find existing la_source for a given  fd, return NULL if no la_source
- * exists.
- */
-
-static la_source_t *
-find_source_by_fd(int fd)
-{
-        assert(fd);
-        la_vdebug("find_source_by_fd(%d)", fd);
-
-        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
-                        (source = NEXT_SOURCE(source));)
-        {
-                if (fileno(source->file) == fd)
-                        return source;
-        }
-
-        return NULL;
-}
-
-
-/*
  * Event loop for poll mechanism
  */
 
@@ -77,8 +55,17 @@ watch_forever_polling(void)
 
         struct stat sb;
 
+
         for (;;)
         {
+                if (shutdown_ongoing)
+                {
+                        la_debug("Shutting down polling thread.");
+                        pthread_exit(NULL);
+                }
+
+                pthread_mutex_lock(&config_mutex);
+
                 for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                                 (source = NEXT_SOURCE(source));)
                 {
@@ -141,6 +128,9 @@ watch_forever_polling(void)
                         }
 
                 }
+
+                pthread_mutex_unlock(&config_mutex);
+
                 usleep(2500000);
         }
 }
