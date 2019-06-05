@@ -154,6 +154,7 @@ init_monitoring(void)
 void
 shutdown_monitoring(void)
 {
+        la_debug("shutdown_monitoring()");
         xpthread_cond_signal(&monitoring_condition);
 }
 

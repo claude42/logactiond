@@ -53,8 +53,8 @@ shutdown_daemon(int status)
          * that threads are stopped before continuing */
         shutdown_ongoing = true;
         shutdown_watching();
-        shutdown_monitoring();
         empty_end_queue();
+        shutdown_monitoring();
         unload_la_config();
         remove_status_files();
         remove_pidfile();
@@ -326,11 +326,11 @@ main(int argc, char *argv[])
 
         la_log(LOG_INFO, "Starting up " PACKAGE_STRING);
 
+        load_la_config(cfg_filename);
+
         init_end_queue();
         init_watching();
         init_monitoring();
-
-        load_la_config(cfg_filename);
 
         la_debug("Main thread going to sleep.");
         while (true)

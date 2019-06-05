@@ -728,6 +728,7 @@ load_la_config(char *filename)
         {
                 const char *config_error_file =
                         config_error_file(&la_config->config_file);
+                xpthread_mutex_unlock(&config_mutex);
                 if (config_error_file)
                         die_hard("%s:%d - %s!",
                                         config_error_file(&la_config->config_file),
