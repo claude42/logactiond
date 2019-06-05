@@ -112,70 +112,6 @@ handle_new_content(la_source_t *source)
 
 
 
-/*
- * Add general watch for given filename.
- *
- * Returns la_watch_t
- */
-
-void
-watch_source(la_source_t *source, int whence)
-{
-        if (run_type == LA_UTIL_FOREGROUND)
-                return;
-
-        assert_source(source);
-        la_debug("watch_source(%s)", source->name);
-
-#ifndef NOWATCH
-        source->file = fopen(source->location, "r");
-        if (!source->file)
-                die_err("Opening source \"%s\" failed", source->name);
-        if (fstat(fileno(source->file), &(source->stats)) == -1)
-                die_err("Stating source \"%s\" failed", source->name);
-        if (fseek(source->file, 0, whence))
-                die_err("Seeking in source \"%s\" failed", source->name);
-
-        source->active = true;
-
-#if HAVE_INOTIFY
-        watch_source_inotify(source);
-#else /* HAVE_INOTIFY */
-        watch_source_polling(source);
-#endif /* HAVE_INOTIFY */
-
-#endif /* NOWATCH */
-}
-
-/*
- * Unwatch a previously watched file
- */
-
-void
-unwatch_source(la_source_t *source)
-{
-        if (run_type == LA_UTIL_FOREGROUND)
-                return;
-
-        assert_source(source); assert(source->file); assert(source->active);
-
-        la_debug("unwatch_source(%s)", source->name);
-
-#ifndef NOWATCH
-
-#if HAVE_INOTIFY
-        unwatch_source_inotify(source);
-#else /* HAVE_INOTIFY */
-        unwatch_source_polling(source);
-#endif /* HAVE_INOTIFY */
-
-        if (fclose(source->file))
-                die_err("Closing source \"%s\" failed", source->name);
-        source->file = NULL;
-        source->active = false;
-
-#endif /* NOWATCH */
-}
 
 
 /*
@@ -213,7 +149,8 @@ create_source(const char *name, la_sourcetype_t type, const char *location,
 }
 
 /*
- * Free single source. Does nothing when argument is NULL
+ * Free single source. Does nothing when argument is NULL. Expects source->file
+ * to be NULL, i.e. source file must be unwatch_source()ed manually.
  */
 
 void
@@ -222,11 +159,8 @@ free_source(la_source_t *source)
         if (!source)
                 return;
 
-        assert_source(source);
+        assert_source(source); assert(!source->file);
         la_vdebug("free_source(%s)", source->name);
-
-        if (source->file)
-                unwatch_source(source);
 
         free_rule_list(source->rules);
 

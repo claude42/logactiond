@@ -18,6 +18,7 @@
 
 
 #include <config.h>
+#include <assert.h>
 
 #include "logactiond.h"
 
@@ -31,6 +32,71 @@ static void *watch_forever(void *ptr)
 #else /* HAVE_INOTIFY */
         watch_forever_polling();
 #endif /* HAVE_INOTIFY */
+}
+
+/*
+ * Add general watch for given filename.
+ *
+ * Returns la_watch_t
+ */
+
+void
+watch_source(la_source_t *source, int whence)
+{
+        if (run_type == LA_UTIL_FOREGROUND)
+                return;
+
+        assert_source(source);
+        la_debug("watch_source(%s)", source->name);
+
+#ifndef NOWATCH
+        source->file = fopen(source->location, "r");
+        if (!source->file)
+                die_err("Opening source \"%s\" failed", source->name);
+        if (fstat(fileno(source->file), &(source->stats)) == -1)
+                die_err("Stating source \"%s\" failed", source->name);
+        if (fseek(source->file, 0, whence))
+                die_err("Seeking in source \"%s\" failed", source->name);
+
+        source->active = true;
+
+#if HAVE_INOTIFY
+        watch_source_inotify(source);
+#else /* HAVE_INOTIFY */
+        watch_source_polling(source);
+#endif /* HAVE_INOTIFY */
+
+#endif /* NOWATCH */
+}
+
+/*
+ * Unwatch a previously watched file
+ */
+
+void
+unwatch_source(la_source_t *source)
+{
+        if (run_type == LA_UTIL_FOREGROUND)
+                return;
+
+        assert_source(source); assert(source->file); assert(source->active);
+
+        la_debug("unwatch_source(%s)", source->name);
+
+#ifndef NOWATCH
+
+#if HAVE_INOTIFY
+        unwatch_source_inotify(source);
+#else /* HAVE_INOTIFY */
+        unwatch_source_polling(source);
+#endif /* HAVE_INOTIFY */
+
+        if (fclose(source->file))
+                die_err("Closing source \"%s\" failed", source->name);
+        source->file = NULL;
+        source->active = false;
+
+#endif /* NOWATCH */
 }
 
 /*
@@ -59,6 +125,7 @@ init_watching(void)
         xpthread_mutex_unlock(&config_mutex);
 
         xpthread_create(&watch_thread, NULL, watch_forever, NULL);
+
 #endif /* NOWATCH */
 }
 
@@ -77,6 +144,15 @@ shutdown_watching(void)
 #else /* HAVE_INOTIFY */
         shutdown_watching_polling();
 #endif /* HAVE_INOTIFY */
+
+        xpthread_mutex_lock(&config_mutex);
+        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+                        (source = NEXT_SOURCE(source));)
+        {
+                unwatch_source(source);
+        }
+        xpthread_mutex_unlock(&config_mutex);
+
 #endif /* NOWATCH */
 }
 
