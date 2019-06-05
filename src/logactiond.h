@@ -47,9 +47,9 @@
 #define DEFAULT_PERIOD 600
 #define DEFAULT_DURATION 600
 
-#define PIDFILE "/var/run/logactiond.pid"
-#define HOSTSFILE "/var/run/logactiond.hosts"
-#define RULESFILE "/var/run/logactiond.rules"
+#define PIDFILE "logactiond.pid"
+#define HOSTSFILE "logactiond.hosts"
+#define RULESFILE "logactiond.rules"
 
 
 #define LA_DEFAULTS_LABEL "defaults"

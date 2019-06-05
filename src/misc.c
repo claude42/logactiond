@@ -43,8 +43,8 @@ remove_pidfile(void)
         {
                 if (unlink(PIDFILE) && errno != ENOENT)
                         la_log(LOG_ERR, "Unable to remove pidfile");
+                created_pidfile = false;
         }
-        created_pidfile = false;
 }
 
 void
@@ -56,7 +56,7 @@ create_pidfile(void)
         char buf[20]; /* should be enough - I think */
         int len;
 
-        fd = open(PIDFILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+        fd = open(RUN_DIR "/" PIDFILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
         if (fd == -1)
                 die_err("Unable to open pidfile");
 

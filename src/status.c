@@ -83,7 +83,7 @@ dump_rules(void)
 {
         la_debug("dump_rules()");
 
-        FILE *rules_file = fopen(RULESFILE, "w");
+        FILE *rules_file = fopen(RUN_DIR "/" RULESFILE, "w");
         if (!rules_file)
                 die_err("Can't create \"" RULESFILE "\"!");
         fprintf(rules_file, "Rule          Service       Source        Detected  Invoked  \n");
@@ -167,9 +167,9 @@ remove_status_files(void)
         if (!status_monitoring)
                 return;
 
-        if (remove(HOSTSFILE) && errno != ENOENT)
+        if (remove(RUN_DIR "/" HOSTSFILE) && errno != ENOENT)
                 die_err("Can't remove host status file!");
-        if (remove(RULESFILE) && errno != ENOENT)
+        if (remove(RUN_DIR "/" RULESFILE) && errno != ENOENT)
                 die_err("Can't remove rule status file!");
 }
 
@@ -189,7 +189,7 @@ dump_queue_status(kw_list_t *queue)
         if (!status_monitoring || shutdown_ongoing)
                 return;
 
-        FILE *hosts_file = fopen(HOSTSFILE, "w");
+        FILE *hosts_file = fopen(RUN_DIR "/" HOSTSFILE, "w");
         if (!hosts_file)
                 die_err("Can't create \"" HOSTSFILE "\"!");
 
