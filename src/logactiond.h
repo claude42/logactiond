@@ -329,13 +329,13 @@ typedef struct la_source_s
         struct stat stats;
         /* File is currently "watchable" - only used by polling backend */
         bool active;
-#if HAVE_INOTIFY
+
+        /* Next two are only used in inotify.c */
+
         /* Watch descriptor for log file itself */
         int wd;
         /* Watch descriptor for parent directory */
         int parent_wd;
-#endif /* HAVE_INOTIFY */
-
 } la_source_t;
 
 typedef struct la_config_s

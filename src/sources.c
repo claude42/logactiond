@@ -138,11 +138,9 @@ create_source(const char *name, la_sourcetype_t type, const char *location,
         result->file = NULL;
         result->active = false;
 
-#if HAVE_INOTIFY
+        /* Only used by inotify.c */
         result->wd = 0;
         result->parent_wd = 0;
-#endif /* HAVE_INOTIFY */
-
 
         assert_source(result);
         return result;
