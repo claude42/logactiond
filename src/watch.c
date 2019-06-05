@@ -32,6 +32,8 @@ static void *watch_forever(void *ptr)
 #else /* HAVE_INOTIFY */
         watch_forever_polling();
 #endif /* HAVE_INOTIFY */
+
+        return NULL;
 }
 
 /*
