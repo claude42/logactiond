@@ -13,4 +13,8 @@ TODOs in no particular order
 ---
 * get rid of create_property_from_action_token()
 * ACX_PTHREAD?! outdated? works on MacOS?
-* End all threads gracefully
+* Status files in correct loation? (/var/run)
+* find_end_command with address==NULL alsays returns NULL but
+  trigger_single_command expects otherwise
+* can create_command with address==NULL happen?
+* is code right to expect that command->address is never NULL?
