@@ -38,7 +38,7 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([regcomp strdup strerror strndup strrchr ftruncate strcasecmp fcntl])
 
-ACX_PTHREAD
+AX_PTHREAD
 
 AC_CHECK_FUNCS([inotify_init],
   [AC_DEFINE([HAVE_INOTIFY], [1],
