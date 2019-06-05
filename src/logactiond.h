@@ -353,6 +353,10 @@ typedef struct la_config_s
 
 extern la_config_t *la_config;
 
+extern pthread_t watch_thread;
+extern pthread_t end_queue_thread;
+extern pthread_t monitoring_thread;
+
 extern pthread_mutex_t config_mutex;
 
 extern unsigned int log_level;
@@ -364,6 +368,8 @@ extern la_runtype_t run_type;
 extern bool status_monitoring;
 
 extern bool shutdown_ongoing;
+
+extern int exit_status;
 
 /* Functions */
 

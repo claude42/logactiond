@@ -34,6 +34,7 @@
 #include "nodelist.h"
 
 static kw_list_t *end_queue = NULL;
+pthread_t end_queue_thread;
 pthread_mutex_t end_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t end_queue_condition = PTHREAD_COND_INITIALIZER;
 
@@ -206,8 +207,6 @@ init_queue_processing(void)
         la_debug("init_queue_processing()");
 
         assert(end_queue);
-
-        pthread_t end_queue_thread;
 
         xpthread_create(&end_queue_thread, NULL, consume_end_queue, NULL);
 }

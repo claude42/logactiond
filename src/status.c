@@ -33,6 +33,7 @@
 #include "logactiond.h"
 #include "nodelist.h"
 
+pthread_t monitoring_thread;
 static pthread_mutex_t monitoring_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t monitoring_condition = PTHREAD_COND_INITIALIZER;
 
@@ -145,8 +146,6 @@ init_monitoring(void)
         la_debug("init_monitoring()");
         if (!status_monitoring)
                 return;
-
-        pthread_t monitoring_thread;
 
         xpthread_create(&monitoring_thread, NULL, dump_loop, NULL);
 }

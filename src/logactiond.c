@@ -45,12 +45,14 @@ unsigned int id_counter = 0;
 char *run_uid_s = NULL;
 bool status_monitoring = false;
 bool shutdown_ongoing = false;
+int exit_status = EXIT_SUCCESS;
 
 void
 shutdown_daemon(int status)
 {
         /* TODO: once we have multiple threads watching sources, must ensure
          * that threads are stopped before continuing */
+        exit_status = status;
         shutdown_ongoing = true;
         shutdown_watching();
         empty_end_queue();
@@ -58,8 +60,7 @@ shutdown_daemon(int status)
         unload_la_config();
         remove_status_files();
         remove_pidfile();
-        pthread_exit(NULL);
-        //exit(status);
+        la_debug("shutdown_daemon() ending");
 }
 
 static void
@@ -334,10 +335,13 @@ main(int argc, char *argv[])
         init_monitoring();
 
         la_debug("Main thread going to sleep.");
-        while (true)
-                sleep(INT_MAX);
 
-        assert(false);
+        pthread_join(watch_thread, NULL);
+        pthread_join(end_queue_thread, NULL);
+        if (status_monitoring)
+                pthread_join(monitoring_thread, NULL);
+
+        exit(exit_status);
 }
 
 

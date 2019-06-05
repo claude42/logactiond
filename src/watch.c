@@ -22,7 +22,7 @@
 
 #include "logactiond.h"
 
-static pthread_t watch_thread;
+pthread_t watch_thread;
 
 static void *watch_forever(void *ptr)
 {
