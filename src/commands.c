@@ -191,8 +191,10 @@ convert_command(la_command_t *command, la_commandtype_t type)
                 if (*src_ptr == '%')
                 {
                         size_t length = token_length(src_ptr);
-                        if (length > 2) /* so it's NOT just "%%" */
+                        if (length > 2)
                         {
+                                /* We've detected a token - not just "%%"
+                                 */
                                 action_property = NEXT_PROPERTY(action_property);
                                 if (!action_property)
                                         die_hard("Ran out of properties?!?");
@@ -201,6 +203,8 @@ convert_command(la_command_t *command, la_commandtype_t type)
                                                         action_property);
                                 if (repl)
                                 {
+                                        /* Copy over value of action property
+                                         * */
                                         size_t repl_len = strlen(repl);
                                         realloc_buffer(&result, &dst_ptr,
                                                         &dst_len, repl_len);
@@ -217,8 +221,9 @@ convert_command(la_command_t *command, la_commandtype_t type)
                         }
                         else
                         {
-                                realloc_buffer(&result, &dst_ptr, &dst_len, 2);
-                                *dst_ptr++ = '%';
+                                /* In this case, we've only detected "%%", so
+                                 * copy one % and skip the other one*/
+                                realloc_buffer(&result, &dst_ptr, &dst_len, 1);
                                 *dst_ptr++ = '%';
                                 src_ptr += 2;
                         }
@@ -233,6 +238,7 @@ convert_command(la_command_t *command, la_commandtype_t type)
                 }
                 else
                 {
+                        /* simply copy all other characters */
                         realloc_buffer(&result, &dst_ptr, &dst_len, 1);
                         *dst_ptr++ = *src_ptr++;
                 }

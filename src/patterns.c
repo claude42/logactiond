@@ -163,8 +163,7 @@ convert_regex(const char *string, la_pattern_t *pattern)
                         {
                                 // In this case, we've only detected "%%", so
                                 // copy one % and skip the other one
-                                realloc_buffer(&result, &dst_ptr, &dst_len, 2);
-                                *dst_ptr++ = '%';
+                                realloc_buffer(&result, &dst_ptr, &dst_len, 1);
                                 *dst_ptr++ = '%';
                                 src_ptr += 2;
                         }
@@ -186,6 +185,7 @@ convert_regex(const char *string, la_pattern_t *pattern)
                 }
                 else
                 {
+                        // simply copy all other characters
                         realloc_buffer(&result, &dst_ptr, &dst_len, 1);
                         *dst_ptr++ = *src_ptr++;
                 }
