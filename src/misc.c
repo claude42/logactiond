@@ -337,6 +337,35 @@ concat(const char *s1, const char *s2)
         return result;
 }
 
+
+/*
+ * dst is a block of previously allocated memory
+ * dst_len is the length of the previously allocated memory
+ * dst_ptr points somewhere within that memory
+ * on_top is the amount of bytes that comes on top of dst_ptr
+ *
+ * realloc_buffer() allocates additional memory in case dst_ptr + on_top
+ * exceeds the previously allocated block of memory. New size will be
+ * 2 * dst_len + on_topsize
+ */
+
+void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, size_t on_top)
+{
+        la_vdebug("realloc_buffer(%u, %u)", *dst_len, on_top);
+
+        if (*dst_ptr + on_top >= *dst + *dst_len)
+        {
+                *dst_len = *dst_len * 2 + on_top;
+                la_debug("realloc_buffer()=%u", *dst_len);
+
+                void *tmp_ptr;
+                tmp_ptr = realloc(*dst, *dst_len);
+                *dst_ptr = *dst_ptr - *dst + tmp_ptr;
+                *dst = tmp_ptr;
+        }
+}
+
+
 char *
 xstrdup(const char *s)
 {

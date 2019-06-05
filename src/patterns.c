@@ -68,32 +68,6 @@ count_open_braces(const char *string)
 }
 
 /*
- * dst is a block of previously allocated memory
- * dst_len is the length of the previously allocated memory
- * dst_ptr points somewhere within that memory
- *
- * realloc_buffer() allocates additional memory in case dst_ptr + on_top
- * exceeds the previously allocated block of memory. New size will be
- * 2 * dst_len + on_topsize
- */
-
-static void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, size_t on_top)
-{
-        la_vdebug("realloc_buffer(%u, %u)", *dst_len, on_top);
-
-        if (*dst_ptr + on_top >= *dst + *dst_len)
-        {
-                *dst_len = *dst_len * 2 + on_top;
-                la_debug("realloc_buffer()=%u", *dst_len);
-
-                void *tmp_ptr;
-                tmp_ptr = realloc(*dst, *dst_len);
-                *dst_ptr = *dst_ptr - *dst + tmp_ptr;
-                *dst = tmp_ptr;
-        }
-}
-
-/*
  * Replaces first occurance of "%HOST%" in string by "([.:[:xdigit:]]+)".
  * Replaces all other "%SOMETHING%" tokens by "(.+)".
  *
@@ -189,7 +163,8 @@ convert_regex(const char *string, la_pattern_t *pattern)
                         {
                                 // In this case, we've only detected "%%", so
                                 // copy one % and skip the other one
-                                realloc_buffer(&result, &dst_ptr, &dst_len, 1);
+                                realloc_buffer(&result, &dst_ptr, &dst_len, 2);
+                                *dst_ptr++ = '%';
                                 *dst_ptr++ = '%';
                                 src_ptr += 2;
                         }

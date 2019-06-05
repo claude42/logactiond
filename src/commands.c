@@ -167,14 +167,93 @@ compute_converted_length(la_command_t *command, la_commandtype_t type,
         return result;
 }
 
+static char *
+convert_command(la_command_t *command, la_commandtype_t type)
+{
+        assert (command);
+        la_debug("convert_command(%s, %s)", command->name,
+                        type == LA_COMMANDTYPE_BEGIN ? "begin" : "end");
+
+        const char *source_string = (type == LA_COMMANDTYPE_BEGIN) ?
+                command->begin_string : command->end_string;
+        const char *src_ptr = source_string;
+        size_t dst_len = 2 * strlen(source_string);
+        char *result = xmalloc(dst_len);
+        char *dst_ptr = result;
+
+        la_property_t *action_property = ITERATE_PROPERTIES(
+                        type == LA_COMMANDTYPE_BEGIN ?
+                        command->begin_properties :
+                        command->end_properties);
+
+        while (*src_ptr)
+        {
+                if (*src_ptr == '%')
+                {
+                        size_t length = token_length(src_ptr);
+                        if (length > 2) /* so it's NOT just "%%" */
+                        {
+                                action_property = NEXT_PROPERTY(action_property);
+                                if (!action_property)
+                                        die_hard("Ran out of properties?!?");
+                                const char *repl =
+                                        get_value_for_action_property(command,
+                                                        action_property);
+                                if (repl)
+                                {
+                                        size_t repl_len = strlen(repl);
+                                        realloc_buffer(&result, &dst_ptr,
+                                                        &dst_len, repl_len);
+                                        dst_ptr = stpncpy(dst_ptr, repl, repl_len);
+                                        src_ptr += length;
+                                }
+                                else
+                                {
+                                        /* in case there's no value found, we
+                                         * now copy nothing - still TBD whether
+                                         * this is a good idea */
+                                        ;
+                                }
+                        }
+                        else
+                        {
+                                realloc_buffer(&result, &dst_ptr, &dst_len, 2);
+                                *dst_ptr++ = '%';
+                                *dst_ptr++ = '%';
+                                src_ptr += 2;
+                        }
+                }
+                else if (*src_ptr == '\\')
+                {
+                        /* In case of '\', copy next character without any
+                         * interpretation. */
+                        realloc_buffer(&result, &dst_ptr, &dst_len, 2);
+                        *dst_ptr++ = *src_ptr++;
+                        *dst_ptr++ = *src_ptr++;
+                }
+                else
+                {
+                        realloc_buffer(&result, &dst_ptr, &dst_len, 1);
+                        *dst_ptr++ = *src_ptr++;
+                }
+        }
+
+        *dst_ptr = 0;
+        la_vdebug("convert_command()=%s", result);
+
+        return result;
+}
+
 /* TODO: refactor */
-/* TODO: current implementation leads to calling
+/*
+ * 
+ * TODO: current implementation leads to calling
  * get_value_for_action_property() twice per property which is unnecessarily
  * expensive. Let's find a better solution
  */
 
 static char *
-convert_command(la_command_t *command, la_commandtype_t type)
+convert_command2(la_command_t *command, la_commandtype_t type)
 {
         assert_command(command);
 

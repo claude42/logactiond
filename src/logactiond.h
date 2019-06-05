@@ -427,6 +427,8 @@ size_t xstrlen(const char *s);
 
 char *concat(const char *s1, const char *s2);
 
+void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, size_t on_top);
+
 /* configfile.c */
 
 void load_la_config(char *filename);
