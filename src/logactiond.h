@@ -456,6 +456,8 @@ void enqueue_end_command(la_command_t *end_command);
 
 void init_end_queue(void);
 
+void init_queue_processing(void);
+
 /* commands.c */
 
 void assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned int line);

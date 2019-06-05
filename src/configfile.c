@@ -545,8 +545,6 @@ create_file_source(const config_setting_t *rule_def,
         assert_source(result);
         add_tail(la_config->sources, (kw_node_t *) result);
 
-        watch_source(result, SEEK_END);
-
         return result;
 }
 

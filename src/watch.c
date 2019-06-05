@@ -49,6 +49,15 @@ init_watching(void)
 #else /* HAVE_INOTIFY */
         init_watching_polling();
 #endif /* HAVE_INOTIFY */
+
+        xpthread_mutex_lock(&config_mutex);
+        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+                        (source = NEXT_SOURCE(source));)
+        {
+                watch_source(source, SEEK_END);
+        }
+        xpthread_mutex_unlock(&config_mutex);
+
         xpthread_create(&watch_thread, NULL, watch_forever, NULL);
 #endif /* NOWATCH */
 }

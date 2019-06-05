@@ -198,10 +198,21 @@ init_end_queue(void)
 
         dump_queue_status(end_queue);
 
+}
+
+void
+init_queue_processing(void)
+{
+        la_debug("init_queue_processing()");
+
+        assert(end_queue);
+
         pthread_t end_queue_thread;
 
         xpthread_create(&end_queue_thread, NULL, consume_end_queue, NULL);
 }
+
+
 
 /*
  * Set end time to current time + duration. Set to INT_MAX in case duration ==
@@ -228,7 +239,7 @@ set_end_time(la_command_t *command)
 void
 enqueue_end_command(la_command_t *end_command)
 {
-        assert_command(end_command);
+        assert_command(end_command); assert(end_queue);
         la_debug("enqueue_end_command(%s, %u)", end_command->end_string,
                         end_command->duration);
 

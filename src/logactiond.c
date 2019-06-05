@@ -326,10 +326,11 @@ main(int argc, char *argv[])
 
         la_log(LOG_INFO, "Starting up " PACKAGE_STRING);
 
+        init_end_queue();
         load_la_config(cfg_filename);
 
-        init_end_queue();
         init_watching();
+        init_queue_processing();
         init_monitoring();
 
         la_debug("Main thread going to sleep.");
