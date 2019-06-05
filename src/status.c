@@ -61,7 +61,7 @@ dump_single_rule(FILE *rules_file, la_rule_t *rule)
  * Write single line to the rule status file.
  */
 
-static void *
+static void
 dump_single_rule(FILE *rules_file, la_rule_t *rule)
 {
         assert(rules_file), assert_rule(rule);
@@ -69,7 +69,7 @@ dump_single_rule(FILE *rules_file, la_rule_t *rule)
         la_vdebug("%-13.13s %-9.9s %-9.9s %9u %9u\n",
                         rule->name, rule->service, rule->source->name,
                         rule->detection_count, rule->invocation_count);
-        fprintf(rules_file, "%-13.13s %-13.13s %-13.13s %8u %8u\n",
+        fprintf(rules_file, "%-13.13s %-13.13s %-13.13s %8lu %8lu\n",
                         rule->name, rule->service, rule->source->name,
                         rule->detection_count, rule->invocation_count);
 }
@@ -78,7 +78,7 @@ dump_single_rule(FILE *rules_file, la_rule_t *rule)
  * Write rule status file to disc
  */
 
-static void *
+static void
 dump_rules(void)
 {
         la_debug("dump_rules()");
