@@ -373,7 +373,6 @@ watch_source_inotify(la_source_t *source)
         la_debug("watch_source_inotify(%s)", source->name);
 
         source->wd  = inotify_add_watch(inotify_fd, source->location, IN_MODIFY);
-        /* TODO: really die_err() here (and below)? */
         if (source->wd  == -1)
                 die_err("Can't add inotify watch for %s!", source->location);
 
