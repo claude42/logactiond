@@ -3,7 +3,7 @@ Description=logactiond triggers actions based on logfile contents
 After=syslog.target
 
 [Service]
-ExecStart=/usr/local/sbin/logactiond -f
+ExecStart=/usr/local/sbin/logactiond -f -t
 Restart=no
 ExecReload=/bin/kill -HUP $MAINPID
 
