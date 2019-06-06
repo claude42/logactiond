@@ -138,7 +138,7 @@ address_on_ignore_list(la_address_t *address)
                                         ign_address->prefix))
                                 return true;
                 else if (address->af == AF_INET6 &&
-                                memcmp(&(address->addr6),
+                                !memcmp(&(address->addr6),
                                         &(ign_address->addr6), sizeof(struct
                                                 in6_addr)))
                         return true;
