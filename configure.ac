@@ -44,6 +44,10 @@ AC_CHECK_FUNCS([inotify_init],
   [AC_DEFINE([HAVE_INOTIFY], [1],
     [Define to 1 if you have usable inotify support.])])
 
+AC_CHECK_FILE([/run],
+  [AC_DEFINE([HAVE_RUN], [1],
+    [Define to 1 if you have /run.])])
+
 AC_CONFIG_FILES([Makefile
                  src/Makefile])
 #lib/Makefile

@@ -50,13 +50,13 @@ remove_pidfile(void)
 void
 create_pidfile(void)
 {
-        la_debug("create_pidfile()");
+        la_debug("create_pidfile(" PIDFILE ")");
 
         int fd;
         char buf[20]; /* should be enough - I think */
         int len;
 
-        fd = open(RUN_DIR "/" PIDFILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+        fd = open(PIDFILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
         if (fd == -1)
                 die_err("Unable to open pidfile");
 

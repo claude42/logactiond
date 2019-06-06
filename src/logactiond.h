@@ -47,9 +47,16 @@
 #define DEFAULT_PERIOD 600
 #define DEFAULT_DURATION 600
 
-#define PIDFILE "logactiond.pid"
-#define HOSTSFILE "logactiond.hosts"
-#define RULESFILE "logactiond.rules"
+
+#if HAVE_RUN
+#define RUNDIR "/run"
+#else
+#define RUNDIR "/var/run"
+#endif
+
+#define PIDFILE RUNDIR "/logactiond.pid"
+#define HOSTSFILE RUNDIR "/logactiond.hosts"
+#define RULESFILE RUNDIR "/logactiond.rules"
 
 
 #define LA_DEFAULTS_LABEL "defaults"
