@@ -551,12 +551,12 @@ create_template(const char *name, la_rule_t *rule, const char *begin_string,
         result->is_template = true;
 
         result->begin_string = xstrdup(begin_string);
-        result->begin_properties = create_list();
+        result->begin_properties = xcreate_list();
         result->n_begin_properties = begin_string ?
                 scan_action_tokens(result->begin_properties, begin_string) : 0;
 
         result->end_string = xstrdup(end_string);
-        result->end_properties = create_list();
+        result->end_properties = xcreate_list();
         result->n_end_properties = end_string ?
                 scan_action_tokens(result->end_properties, end_string) : 0;
 

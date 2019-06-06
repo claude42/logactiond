@@ -1,20 +1,13 @@
 TODOs in no particular order
 
-* make the thing thread safe. Although it's using threads already, many of the
-  parts are still not thread safe (which isn't a problem in the current
-  implementation but will be when multiple backends will be implemented)
 * Limit regexes to one instance per token
-* Add logactiond -L
-* die correctly with threads (join...)
 * error message if log file is lost for longer time
 * check for root / add option to run as non-root
 * better NDEBUG support for la_debug() - how varargs with macro?
 * Debian package
 ---
-* get rid of create_property_from_action_token()
-* ACX_PTHREAD?! outdated? works on MacOS?
-* Status files in correct loation? (/var/run)
 * find_end_command with address==NULL alsays returns NULL but
   trigger_single_command expects otherwise
 * can create_command with address==NULL happen?
 * is code right to expect that command->address is never NULL?
+* SIGPIPE not handled correctly!

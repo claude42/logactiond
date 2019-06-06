@@ -195,7 +195,7 @@ init_end_queue(void)
 {
         la_debug("init_end_queue()");
 
-        end_queue = create_list();
+        end_queue = xcreate_list();
 
         dump_queue_status(end_queue);
 

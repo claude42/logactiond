@@ -368,10 +368,10 @@ create_rule(char *name, la_source_t *source, int threshold, int period,
 
         result->service = xstrdup(service);
 
-        result->patterns = create_list();
-        result->begin_commands = create_list();
-        result->trigger_list = create_list();
-        result->properties = create_list();
+        result->patterns = xcreate_list();
+        result->begin_commands = xcreate_list();
+        result->trigger_list = xcreate_list();
+        result->properties = xcreate_list();
 
         result->detection_count = result->invocation_count = 0;
 

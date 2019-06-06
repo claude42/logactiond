@@ -398,4 +398,20 @@ xstrlen(const char *s)
                 return 0;
 }
 
+kw_list_t *
+xcreate_list(void)
+{
+        kw_list_t *result = xmalloc(sizeof (kw_list_t));
+
+        result->head.succ = (kw_node_t *) &result->tail;
+        result->head.pred = NULL;
+        result->tail.succ = NULL;
+        result->tail.pred = (kw_node_t *) &result->head;
+
+        assert_list(result);
+
+        return result;
+}
+
+
 /* vim: set autowrite expandtab: */

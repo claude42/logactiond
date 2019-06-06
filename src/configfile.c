@@ -416,7 +416,7 @@ load_ignore_addresses(const config_setting_t *section)
 
         la_debug("load_ignore_addresses(%s)", config_setting_name(section));
 
-        kw_list_t *result = create_list();
+        kw_list_t *result = xcreate_list();
 
         config_setting_t *ignore_section =
                 config_setting_get_member(section, "ignore");
@@ -611,7 +611,7 @@ load_rules(void)
         config_setting_t *local_section = 
                 config_lookup(&la_config->config_file, LA_LOCAL_LABEL);
 
-        la_config->sources = create_list();
+        la_config->sources = xcreate_list();
 
         int n = config_setting_length(local_section);
         if (n < 0)
@@ -665,7 +665,7 @@ load_defaults(void)
                 if (la_config->default_duration == -1)
                         la_config->default_duration = DEFAULT_DURATION;
 
-                la_config->default_properties = create_list();
+                la_config->default_properties = xcreate_list();
                 load_properties(la_config->default_properties, defaults_section);
                 la_config->ignore_addresses = load_ignore_addresses(defaults_section);
         }

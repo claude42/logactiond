@@ -134,7 +134,7 @@ create_source(const char *name, la_sourcetype_t type, const char *location,
         result->prefix = xstrdup(prefix);
         result->parent_dir = NULL;
         result->type = type;
-        result->rules = create_list();
+        result->rules = xcreate_list();
         result->file = NULL;
         result->active = false;
 

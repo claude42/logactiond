@@ -216,7 +216,7 @@ create_pattern(const char *string_from_configfile, unsigned int num,
 
         result->num = num;
         result->rule = rule;
-        result->properties = create_list();
+        result->properties = xcreate_list();
         result->string = convert_regex(full_string, result);
         free(full_string);
 
