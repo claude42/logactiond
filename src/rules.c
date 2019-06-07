@@ -159,9 +159,9 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
 
         la_command_t *command = NULL;
 
-        /* First check whether command still active on end_queue. In this
-         * case, ignore new command */
-        la_command_t *tmp = find_end_command(rule, address);
+        /* First check whether a command for this host is still active on
+         * end_queue. In this case, ignore new command */
+        la_command_t *tmp = find_end_command(address);
         if (tmp)
         {
                 if (address)
@@ -183,7 +183,7 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
 
         if (!command)
         {
-                /* Don't trigger command if need_host=true but not host
+                /* Don't trigger command if need_host==true but no host
                  * property exists */
                 if (template->need_host != LA_NEED_HOST_NO &&
                                 !address)

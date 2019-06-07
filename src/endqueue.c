@@ -46,10 +46,9 @@ pthread_cond_t end_queue_condition = PTHREAD_COND_INITIALIZER;
  */
 
 la_command_t *
-find_end_command(la_rule_t *rule, la_address_t *address)
+find_end_command(la_address_t *address)
 {
-        assert_rule(rule);
-        la_debug("find_end_command(%s)", rule->name);
+        la_debug("find_end_command(%s)", address->text);
 
         if (!end_queue)
                 return NULL;
@@ -64,8 +63,7 @@ find_end_command(la_rule_t *rule, la_address_t *address)
         for (la_command_t *command = ITERATE_COMMANDS(end_queue);
                         (command = NEXT_COMMAND(command));)
         {
-                if (command->rule == rule &&
-                                !adrcmp(command->address, address))
+                if (!adrcmp(command->address, address))
                 {
                         result = command;
                         break;

@@ -465,7 +465,7 @@ la_address_t *create_address(const char *ip);
 
 /* endqueue.c */
 
-la_command_t *find_end_command(la_rule_t *rule, la_address_t *address);
+la_command_t *find_end_command(la_address_t *address);
 
 void empty_end_queue();
 
