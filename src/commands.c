@@ -360,26 +360,19 @@ trigger_command(la_command_t *command)
         if (run_type == LA_UTIL_FOREGROUND)
                 return;
 
-        /* The following is a kludge. If done properly, a command should not
-         * get onto a trigger list in the first place when any end command for
-         * the host is on the end_queue. But for now, this will fix it.
-         *
-         * TODO: fix it!
-         */
+        /* Don't trigger command if another command (no matter from which
+         * template) is still active */
         if (command->address)
         {
                 la_command_t *tmp = find_end_command(command->address);
                 if (tmp)
                 {
-                        if (tmp->address)
-                                la_log(LOG_INFO, "Host: %s, ignored, action \"%s\" still "
-                                                "active for rule \"%s\".", tmp->address->text,
-                                                tmp->name, tmp->rule->name);
-                        else
-                                la_log(LOG_INFO, "Ignored, action \"%s\" still active "
-                                                "for rule \"%s\".", tmp->name,
+                                la_log(LOG_INFO, "Host: %s, ignored, action "
+                                                "\"%s\" still " "active for "
+                                                "rule \"%s\".",
+                                                tmp->address->text, tmp->name,
                                                 tmp->rule->name);
-                        return;
+                                return;
                 }
         }
 
