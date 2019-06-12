@@ -38,10 +38,10 @@ static char *rule_name = NULL;
 bool shutdown_ongoing = false;
 
 void
-shutdown_daemon(int status)
+shutdown_daemon(int exit_status, int exit_errno)
 {
         unload_la_config();
-        exit(status);
+        exit(exit_status);
 }
 
 static void
@@ -208,7 +208,7 @@ main(int argc, char *argv[])
                         iterate_through_all_rules(linebuffer);
         }
 
-        shutdown_daemon(EXIT_SUCCESS);
+        shutdown_daemon(EXIT_SUCCESS, 0);
 }
 
 

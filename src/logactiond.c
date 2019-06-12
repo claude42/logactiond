@@ -34,6 +34,9 @@
 #if HAVE_INOTIFY
 #include <sys/inotify.h>
 #endif /* HAVE_INOTIFY */
+#if HAVE_LIBSYSTEMD
+#include <systemd/sd-daemon.h>
+#endif /* HAVE_LIBSYSTEMD */
 
 #include "logactiond.h"
 
@@ -46,13 +49,15 @@ char *run_uid_s = NULL;
 bool status_monitoring = false;
 bool shutdown_ongoing = false;
 int exit_status = EXIT_SUCCESS;
+static int exit_errno = 0;
 
 void
-shutdown_daemon(int status)
+shutdown_daemon(int status, int saved_errno)
 {
         /* TODO: once we have multiple threads watching sources, must ensure
          * that threads are stopped before continuing */
         exit_status = status;
+        exit_errno = saved_errno;
         shutdown_ongoing = true;
         shutdown_watching();
         empty_end_queue();
@@ -82,11 +87,11 @@ handle_signal(int signal)
                 }
                 exit(0);
                 log_level = 0;
-                shutdown_daemon(EXIT_SUCCESS);
+                shutdown_daemon(EXIT_SUCCESS, 0);
         }
         else
         {
-                shutdown_daemon(EXIT_SUCCESS);
+                shutdown_daemon(EXIT_SUCCESS, 0);
         }
 }
 
@@ -334,9 +339,21 @@ main(int argc, char *argv[])
         init_queue_processing();
         init_monitoring();
 
+#if HAVE_LIBSYSTEMD
+        sd_notify(0, "READY=1\n"
+                        "STATUS=logactiond started - monitoring log files.\n");
+#endif /* HAVE_LIBSYSTEMD */
+
         la_debug("Main thread going to sleep.");
 
         pthread_join(watch_thread, NULL);
+        /* TODO: log errno */
+        la_log(LOG_INFO, "Exiting (status=%u, errno=%u).", exit_status, exit_errno);
+#if HAVE_LIBSYSTEMD
+        sd_notifyf(0, "STOPPING=1\n"
+                        "STATUS=Exiting (status=%u, errno%u)\n"
+                        "ERRNO=%u\n", exit_status, exit_errno, exit_errno);
+#endif /* HAVE_LIBSYSTEMD */
         pthread_join(end_queue_thread, NULL);
         if (status_monitoring)
                 pthread_join(monitoring_thread, NULL);

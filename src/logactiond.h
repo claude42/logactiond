@@ -382,7 +382,7 @@ extern int exit_status;
 
 /* main file */
 
-void shutdown_daemon(int status);
+void shutdown_daemon(int status, int saved_errno);
 
 /* misc.c */
 

@@ -1,11 +1,14 @@
 [Unit]
-Description=logactiond triggers actions based on logfile contents
+Description=logactiond daemon
+Documentation=https://logactiond.org/
 After=syslog.target
 
 [Service]
-ExecStart=/usr/local/sbin/logactiond -f -t
+EnvironmentFile=/etc/default/logactiond
+ExecStart=/usr/local/sbin/logactiond -f $OPTIONS
 Restart=no
 ExecReload=/bin/kill -HUP $MAINPID
+Type=notify
 
 [Install]
 WantedBy=multi-user.target
