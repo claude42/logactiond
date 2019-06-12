@@ -132,7 +132,7 @@ init_watching(void)
 }
 
 /*
- * TODO
+ * Shutdown everything related to watching.
  */
 
 void
