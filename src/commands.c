@@ -411,7 +411,7 @@ trigger_end_command(la_command_t *command)
 
         if (command->duration == INT_MAX)
         {
-                la_log(LOG_INFO, "Shutting down rule \"%s\".",
+                la_log(LOG_INFO, "Disabling rule \"%s\".",
                                 command->rule->name);
         }
         else

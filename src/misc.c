@@ -253,12 +253,14 @@ die_semantic(char *fmt, ...)
 {
         va_list myargs;
 
+        int save_errno = errno;
+
         va_start(myargs, fmt);
         log_message(LOG_ERR, fmt, myargs, NULL);
         va_end(myargs);
 
         if (!shutdown_ongoing)
-                shutdown_daemon(EXIT_FAILURE);
+                shutdown_daemon(EXIT_FAILURE, save_errno);
         else
                 exit(EXIT_FAILURE);
 }
@@ -268,12 +270,14 @@ die_hard(char *fmt, ...)
 {
         va_list myargs;
 
+        int save_errno = errno;
+
         va_start(myargs, fmt);
         log_message(LOG_ERR, fmt, myargs, NULL);
         va_end(myargs);
 
         if (!shutdown_ongoing)
-                shutdown_daemon(EXIT_FAILURE);
+                shutdown_daemon(EXIT_FAILURE, save_errno);
         else
                 exit(EXIT_FAILURE);
 }
@@ -283,12 +287,14 @@ die_err(char *fmt, ...)
 {
         va_list myargs;
 
+        int save_errno = errno;
+
         va_start(myargs, fmt);
         log_message(LOG_ERR, fmt, myargs, strerror(errno));
         va_end(myargs);
 
         if (!shutdown_ongoing)
-                shutdown_daemon(EXIT_FAILURE);
+                shutdown_daemon(EXIT_FAILURE, save_errno);
         else
                 exit(EXIT_FAILURE);
 }

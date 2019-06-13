@@ -111,7 +111,10 @@ watch_forever_polling(void)
                                                         sizeof(struct stat));
                                 else
                                 {
-                                        la_log_errno(LOG_INFO, "Can't reopen");
+                                        la_log_errno(LOG_ERR, "Can't reopen source "
+                                                        "\"%s\" - file \"%s\".",
+                                                        source->name,
+                                                        source->location);
                                         source->active = false;
                                 }
                                 continue;
