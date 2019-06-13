@@ -70,9 +70,20 @@ handle_signal(int signal)
 
         if (signal == SIGHUP)
         {
+#if HAVE_LIBSYSTEMD
+                sd_notify(0, "RELOADING=1\n"
+                                "STATUS=Reloading configuration.\n");
+#endif /* HAVE_LIBSYSTEMD */
+                shutdown_watching();
                 empty_end_queue();
                 unload_la_config();
                 load_la_config(cfg_filename);
+                init_watching();
+#if HAVE_LIBSYSTEMD
+                sd_notify(0, "READY=1\n"
+                                "RELOADING=0\n"
+                                "STATUS=Configuration reloaded - monitoring log files.\n");
+#endif /* HAVE_LIBSYSTEMD */
         }
         else if (signal == SIGPIPE)
         {

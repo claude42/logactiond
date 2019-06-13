@@ -96,6 +96,7 @@ unwatch_source_inotify(la_source_t *source)
         if (inotify_rm_watch(inotify_fd, source->wd))
                 la_log_errno(LOG_ERR, "Unable to unwatch source \"%s\".",
                                 source->name);
+        source->wd = 0;
 
         /* Remove watch for parent directory */
         if (source->parent_wd)
@@ -106,7 +107,6 @@ unwatch_source_inotify(la_source_t *source)
                                         source->parent_dir);
                 source->parent_wd = 0;
         }
-        source->wd = 0;
 }
 
 
@@ -397,9 +397,13 @@ init_watching_inotify(void)
 {
         la_debug("init_watching_inotify()");
 
-        inotify_fd = inotify_init();
-        if (inotify_fd == -1)
-                die_hard("Can't initialize inotify!");
+        /* Calling inotify_init() twice will do funny stuff... */
+        if (!inotify_fd)
+        {
+                inotify_fd = inotify_init();
+                if (inotify_fd == -1)
+                        die_hard("Can't initialize inotify!");
+        }
 }
 
 void
