@@ -164,14 +164,9 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
         la_command_t *tmp = find_end_command(address);
         if (tmp)
         {
-                if (address)
-                        la_log(LOG_INFO, "Host: %s, ignored, action \"%s\" still "
-                                        "active for rule \"%s\".", address->text,
-                                        tmp->name, rule->name);
-                else
-                        la_log(LOG_INFO, "Ignored, action \"%s\" still active "
-                                        "for rule \"%s\".", tmp->name,
-                                        rule->name);
+                la_log(LOG_INFO, "Host: %s, ignored, action \"%s\" still "
+                                "active for rule \"%s\".", address->text,
+                                tmp->name, rule->name);
                 return;
         }
 

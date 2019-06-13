@@ -96,17 +96,17 @@ unwatch_source_inotify(la_source_t *source)
         if (inotify_rm_watch(inotify_fd, source->wd))
                 la_log_errno(LOG_ERR, "Unable to unwatch source \"%s\".",
                                 source->name);
+        source->wd = 0;
 
         /* Remove watch for parent directory */
         if (source->parent_wd)
         {
                 if (inotify_rm_watch(inotify_fd, source->parent_wd))
                         la_log_errno(LOG_ERR, "Unable to unwatch source "
-                                        "parnet dir \"%s\".",
+                                        "parent dir \"%s\".",
                                         source->parent_dir);
                 source->parent_wd = 0;
         }
-        source->wd = 0;
 }
 
 
@@ -177,7 +177,7 @@ watched_file_created(la_source_t *source)
 {
         assert_source(source);
 
-        la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been re-created",
+        la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been re-created.",
                         source->name, source->location);
 
         /* unwatch not necessary in case of a previous IN_DELETE */
@@ -186,7 +186,7 @@ watched_file_created(la_source_t *source)
 
         watch_source(source, SEEK_SET);
         if (!handle_new_content(source))
-                la_log(LOG_ERR, "Reading from source \"%s\" failed", source->name);
+                la_log(LOG_ERR, "Reading from source \"%s\" failed.", source->name);
 }
 
 /*
@@ -199,7 +199,7 @@ watched_file_moved_from(la_source_t *source)
 {
         assert_source(source);
 
-        la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been moved away",
+        la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been moved away.",
                         source->name, source->location);
 
         /* Keep watching original file in case daemons are still logging
@@ -216,7 +216,7 @@ watched_file_moved_to(la_source_t *source)
         assert_source(source);
 
         la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been moved to watched "
-                        "location", source->name, source->location);
+                        "location.", source->name, source->location);
 
         /* unwatch not necessary in case of a previous IN_DELETE */
         if (source->file)
@@ -235,7 +235,7 @@ watched_file_deleted(la_source_t *source)
 {
         assert_source(source);
 
-        la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been deleted",
+        la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been deleted.",
                         source->name, source->location);
 
         unwatch_source(source);
@@ -397,9 +397,13 @@ init_watching_inotify(void)
 {
         la_debug("init_watching_inotify()");
 
-        inotify_fd = inotify_init();
-        if (inotify_fd == -1)
-                die_hard("Can't initialize inotify!");
+	/* Calling inotify_init() twice will do funny stuff... */
+        if (!inotify_fd)
+        {
+                inotify_fd = inotify_init();
+                if (inotify_fd == -1)
+                        die_err("Can't initialize inotify!");
+        }
 }
 
 void

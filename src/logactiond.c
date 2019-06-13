@@ -71,13 +71,24 @@ shutdown_daemon(int status, int saved_errno)
 static void
 handle_signal(int signal)
 {
-        la_log(LOG_NOTICE, "Received signal %u", signal);
+        la_debug("handle_signal(%u)", signal);
 
         if (signal == SIGHUP)
         {
+#if HAVE_LIBSYSTEMD
+                sd_notify(0, "RELOADING=1\n"
+                                "STATUS=Reloading configuration.\n");
+#endif /* HAVE_LIBSYSTEMD */
+                shutdown_watching();
                 empty_end_queue();
                 unload_la_config();
                 load_la_config(cfg_filename);
+                init_watching();
+#if HAVE_LIBSYSTEMD
+                sd_notify(0, "READY=1\n"
+                                "RELOADING=0\n"
+                                "STATUS=Configuration reloaded - monitoring log files.\n");
+#endif /* HAVE_LIBSYSTEMD */
         }
         else if (signal == SIGPIPE)
         {
@@ -330,7 +341,7 @@ main(int argc, char *argv[])
         else
                 register_signal_handler();
 
-        la_log(LOG_INFO, "Starting up " PACKAGE_STRING);
+        la_log(LOG_INFO, "Starting up " PACKAGE_STRING ".");
 
         init_end_queue();
         load_la_config(cfg_filename);
@@ -347,7 +358,6 @@ main(int argc, char *argv[])
         la_debug("Main thread going to sleep.");
 
         pthread_join(watch_thread, NULL);
-        /* TODO: log errno */
         la_log(LOG_INFO, "Exiting (status=%u, errno=%u).", exit_status, exit_errno);
 #if HAVE_LIBSYSTEMD
         sd_notifyf(0, "STOPPING=1\n"
