@@ -26,7 +26,6 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/stat.h>
-#include <pthread.h>
 
 #include <libconfig.h>
 
@@ -57,15 +56,11 @@ handle_log_line(la_source_t *source, char *line)
         assert(line); assert_source(source);
         la_vdebug("handle_log_line(%s)", line);
 
-        pthread_mutex_lock(&config_mutex);
-
         for (la_rule_t *rule = ITERATE_RULES(source->rules);
                         (rule = NEXT_RULE(rule));)
         {
                 handle_log_line_for_rule(rule, line);
         }
-
-        pthread_mutex_unlock(&config_mutex);
 }
 
 /*
