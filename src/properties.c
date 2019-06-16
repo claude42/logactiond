@@ -61,7 +61,7 @@ token_length(const char *string)
                 ptr++;
         }
 
-        die_semantic("Closing '%%' of token missing!");
+        die_hard("Closing '%%' of token missing!");
 
         return 0; // avoid warning
 }
@@ -162,7 +162,7 @@ static void convert_property_name(char *name)
  * '%'
  */
 
-la_property_t *
+static la_property_t *
 create_property_from_token(const char *name, size_t length, unsigned int pos,
                 la_rule_t *rule)
 {

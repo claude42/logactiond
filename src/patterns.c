@@ -84,7 +84,7 @@ convert_regex(const char *string, la_pattern_t *pattern)
         assert(string);
         la_vdebug("convert_regex(%s)", string);
 
-        size_t dst_len = 2 * strlen(string);
+        size_t dst_len = 2 * xstrlen(string);
         char *result = xmalloc(dst_len);
         char *dst_ptr = result;
         const char *src_ptr = string;
@@ -147,7 +147,7 @@ convert_regex(const char *string, la_pattern_t *pattern)
                                 // string and increment src_ptr and dst_ptr
                                 // accordingly (and of course make sure we have
                                 // enough space...)
-                                size_t repl_len = strlen(new_prop->replacement);
+                                size_t repl_len = xstrlen(new_prop->replacement);
                                 realloc_buffer(&result, &dst_ptr, &dst_len,
                                                 repl_len);
                                 dst_ptr = stpncpy(dst_ptr, new_prop->replacement,

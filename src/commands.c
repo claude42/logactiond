@@ -177,7 +177,7 @@ convert_command(la_command_t *command, la_commandtype_t type)
         const char *source_string = (type == LA_COMMANDTYPE_BEGIN) ?
                 command->begin_string : command->end_string;
         const char *src_ptr = source_string;
-        size_t dst_len = 2 * strlen(source_string);
+        size_t dst_len = 2 * xstrlen(source_string);
         char *result = xmalloc(dst_len);
         char *dst_ptr = result;
 
@@ -205,7 +205,7 @@ convert_command(la_command_t *command, la_commandtype_t type)
                                 {
                                         /* Copy over value of action property
                                          * */
-                                        size_t repl_len = strlen(repl);
+                                        size_t repl_len = xstrlen(repl);
                                         realloc_buffer(&result, &dst_ptr,
                                                         &dst_len, repl_len);
                                         dst_ptr = stpncpy(dst_ptr, repl, repl_len);
@@ -268,7 +268,7 @@ convert_command2(la_command_t *command, la_commandtype_t type)
         la_debug("convert_command(%s, %s)", command->name,
                         type == LA_COMMANDTYPE_BEGIN ? "begin" : "end");
 
-        size_t source_len = strlen(source_string);
+        size_t source_len = xstrlen(source_string);
         const char *string_ptr = source_string;
 
         char *result = xmalloc(compute_converted_length(command, type,
@@ -291,7 +291,7 @@ convert_command2(la_command_t *command, la_commandtype_t type)
                 const char *repl = get_value_for_action_property(command,
                                 action_property);
                 if (repl)
-                        result_ptr = stpncpy(result_ptr, repl, strlen(repl));
+                        result_ptr = stpncpy(result_ptr, repl, xstrlen(repl));
                 else
                         /* in case there's no value found, we now copy nothing
                          * - still TBD whether this is a good idea */
@@ -459,7 +459,7 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
                                 n_tokens++;
                         }
 
-                        ptr += strlen(new_prop->name)+1;
+                        ptr += xstrlen(new_prop->name) + 1;
                 }
 
                 ptr++; /* also skips over second '%' of a token */
@@ -480,7 +480,7 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
 /* FIXME: when are we calling dup_command()? e.g. does the property list have
  * content ever? */
 
-la_command_t *
+static la_command_t *
 dup_command(la_command_t *command)
 {
         assert_command(command);

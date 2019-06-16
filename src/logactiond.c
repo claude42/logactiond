@@ -63,6 +63,7 @@ shutdown_daemon(int status, int saved_errno)
         empty_end_queue();
         shutdown_monitoring();
         unload_la_config();
+        free(la_config->sources);
         remove_status_files();
         remove_pidfile();
         la_debug("shutdown_daemon() ending");

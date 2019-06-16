@@ -379,7 +379,7 @@ extern int exit_status;
 
 /* Functions */
 
-/* main file */
+/* logactiond.c */
 
 void shutdown_daemon(int status, int saved_errno);
 
@@ -417,8 +417,6 @@ void la_log_errno(unsigned int priority, char *fmt, ...);
 
 void la_log(unsigned int priority, char *fmt, ...);
 
-void die_semantic(char *fmt, ...);
-
 void die_hard(char *fmt, ...);
 
 void die_err(char *fmt, ...);
@@ -450,6 +448,12 @@ void unload_la_config(void);
 void assert_address_ffl(la_address_t *address, const char *func, char *file,
                 unsigned int line);
 
+int adrcmp(la_address_t *a1, la_address_t *a2);
+
+bool address_on_ignore_list(la_address_t *address);
+
+la_address_t *create_address(const char *ip);
+
 la_address_t *dup_address(la_address_t *address);
 
 void free_address(la_address_t *address);
@@ -457,12 +461,6 @@ void free_address(la_address_t *address);
 void empty_address_list(kw_list_t *list);
 
 void free_address_list(kw_list_t *list);
-
-int adrcmp(la_address_t *a1, la_address_t *a2);
-
-bool address_on_ignore_list(la_address_t *address);
-
-la_address_t *create_address(const char *ip);
 
 /* endqueue.c */
 
@@ -484,8 +482,6 @@ void trigger_command(la_command_t *command);
 
 void trigger_end_command(la_command_t *command);
 
-la_command_t * dup_command(la_command_t *command);
-
 la_command_t * create_command_from_template(la_command_t *template,
                 la_rule_t *rule, la_pattern_t *pattern, la_address_t *address);
 
@@ -504,9 +500,6 @@ void assert_property_ffl(la_property_t *property, const char *func, char *file,
 
 size_t token_length(const char *string);
 
-la_property_t *scan_single_token(const char *string, unsigned int pos,
-                la_rule_t *rule);
-
 const char *get_host_property_value(kw_list_t *property_list);
 
 la_property_t *get_property_from_property_list(kw_list_t *property_list,
@@ -515,10 +508,10 @@ la_property_t *get_property_from_property_list(kw_list_t *property_list,
 const char *get_value_from_property_list(kw_list_t *property_list,
                 const char *name);
 
-la_property_t *create_property_from_config(const char *name, const char *value);
+la_property_t *scan_single_token(const char *string, unsigned int pos,
+                la_rule_t *rule);
 
-la_property_t *create_property_from_token(const char *name, size_t length,
-                unsigned int pos, la_rule_t *rule);
+la_property_t *create_property_from_config(const char *name, const char *value);
 
 kw_list_t *dup_property_list(kw_list_t *list);
 
@@ -555,15 +548,11 @@ void free_rule_list(kw_list_t *list);
 
 /* sources.c */
 
-void handle_log_line(la_source_t *source, const char *line, const char *systemd_unit);
-
 void assert_source_ffl(la_source_t *source, const char *func, char *file, unsigned int line);
 
-void unwatch_source(la_source_t *source);
+void handle_log_line(la_source_t *source, const char *line, const char *systemd_unit);
 
-void watch_source(la_source_t *source, int whence);
-
-la_source_t *find_source_by_location(const char *location);
+bool handle_new_content(la_source_t *source);
 
 la_source_t *create_source(const char *name, const char *location,
                 const char *prefix);
@@ -574,18 +563,17 @@ void empty_source_list(kw_list_t *list);
 
 void free_source_list(kw_list_t *list);
 
-bool handle_new_content(la_source_t *source);
+la_source_t *find_source_by_location(const char *location);
 
 #if HAVE_LIBSYSTEMD
 /* systemd.c */
 
-void *watch_forever_systemd(void *ptr);
-
-void add_systemd_unit(const char *systemd_unit);
-
 void shutdown_watching_systemd(void);
 
 void init_watching_systemd(void);
+
+void add_systemd_unit(const char *systemd_unit);
+
 #endif /* HAVE_LIBSYSTEMD */
 
 #if HAVE_INOTIFY
@@ -599,8 +587,6 @@ void init_watching_inotify(void);
 
 void shutdown_watching_inotify(void);
 
-void *watch_forever_inotify(void *ptr);
-
 #endif /* HAVE_INOTIFY */
 
 /* polling.c */
@@ -613,8 +599,6 @@ void init_watching_polling(void);
 
 void shutdown_watching_polling(void);
 
-void *watch_forever_polling(void *ptr);
-
 /* status.c */
 
 void init_monitoring(void);
@@ -626,6 +610,10 @@ void remove_status_files(void);
 void dump_queue_status(kw_list_t *queue);
 
 /* watch.c */
+
+void watch_source(la_source_t *source, int whence);
+
+void unwatch_source(la_source_t *source);
 
 void init_watching(void);
 

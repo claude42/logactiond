@@ -48,7 +48,7 @@ unwatch_source_polling(la_source_t *source)
  * Event loop for poll mechanism
  */
 
-void *
+static void *
 watch_forever_polling(void *ptr)
 {
         la_debug("watch_forever_polling()");

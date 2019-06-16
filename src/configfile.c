@@ -46,7 +46,7 @@ pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
  * exist.
  */
 
-const char*
+static const char*
 config_get_string_or_null(const config_setting_t *setting, const char *name)
 {
         const char* result;
@@ -61,7 +61,7 @@ config_get_string_or_null(const config_setting_t *setting, const char *name)
  * not exist.
  */
 
-int
+static int
 config_get_unsigned_int_or_negative(const config_setting_t *setting,
                 const char *name)
 {
@@ -76,13 +76,13 @@ config_get_unsigned_int_or_negative(const config_setting_t *setting,
  * Return string for path relative to setting. Die if element does not exist
  */
 
-const char*
+static const char*
 config_get_string_or_die(const config_setting_t *setting, const char *name)
 {
         const char* result = config_get_string_or_null(setting, name);
 
         if (!result)
-                die_semantic("Config element %s missing!", name);
+                die_hard("Config element %s missing!", name);
 
         return result;
 }
@@ -92,7 +92,7 @@ config_get_string_or_die(const config_setting_t *setting, const char *name)
  * not exist
  */
 
-const config_setting_t *
+static const config_setting_t *
 config_setting_lookup_or_die(const config_setting_t *setting,
                 const char *path)
 {
@@ -101,7 +101,7 @@ config_setting_lookup_or_die(const config_setting_t *setting,
          * here but nowhere else */
         result = config_setting_lookup((config_setting_t *) setting, path);
         if (!result)
-                die_semantic("Config element %s missing!", path);
+                die_hard("Config element %s missing!", path);
 
         return result;
 }
@@ -123,7 +123,7 @@ get_rule(const char *rule_name)
  * Returns NULL in case no pattern with that name exists
  */
 
-const config_setting_t *
+static const config_setting_t *
 get_action(const char *action_name)
 {
         assert(action_name);
@@ -154,7 +154,7 @@ get_source(const char *source)
 
         sources_section = config_lookup(&la_config->config_file, LA_SOURCES_LABEL);
         if (!sources_section)
-                die_semantic(LA_SOURCES_LABEL " section missing!");
+                die_hard(LA_SOURCES_LABEL " section missing!");
 
         result = config_setting_lookup(sources_section, source);
 
@@ -180,7 +180,7 @@ get_source_uc_rule_or_rule(const config_setting_t *rule,
                                         LA_RULE_SOURCE_LABEL));
 
         if (!result)
-                die_semantic("Source not found for rule %s!",
+                die_hard("Source not found for rule %s!",
                                 config_setting_name(rule));
 
         return result;
@@ -191,7 +191,7 @@ get_source_uc_rule_or_rule(const config_setting_t *rule,
  * section.
  */
 
-const char *
+static const char *
 get_source_name(const config_setting_t *rule)
 {
         assert(rule);
@@ -204,7 +204,7 @@ get_source_name(const config_setting_t *rule)
  * NULL if none specified in config file.
  */
 
-const char *
+static const char *
 get_source_prefix(const config_setting_t *rule, const config_setting_t *uc_rule)
 {
         assert(rule), assert(uc_rule);
@@ -223,7 +223,7 @@ get_source_prefix(const config_setting_t *rule, const config_setting_t *uc_rule)
  * configuration section, then in rule section.
  */
 
-const char *
+static const char *
 get_source_location(const config_setting_t *rule, const config_setting_t *uc_rule)
 {
         assert(rule); assert(uc_rule);
@@ -234,7 +234,7 @@ get_source_location(const config_setting_t *rule, const config_setting_t *uc_rul
         source_def = get_source_uc_rule_or_rule(rule, uc_rule);
 
         if (!config_setting_lookup_string(source_def, LA_SOURCE_LOCATION, &result))
-                die_semantic("Source location missing!");
+                die_hard("Source location missing!");
 
         return result;
 }
@@ -276,7 +276,7 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
         else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_IP6_LABEL))
                 need_host = LA_NEED_HOST_IP6;
         else
-                die_semantic("Invalid value \"%s\" for need_host "
+                die_hard("Invalid value \"%s\" for need_host "
                                 "parameter!", tmp);
 
         if (initialize)
@@ -288,7 +288,7 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
                                 create_template(name, rule, begin, end,
                                         rule->duration, need_host));
         else
-                die_semantic("Begin action always required!");
+                die_hard("Begin action always required!");
 
         assert_list(rule->begin_commands);
 }
@@ -332,12 +332,12 @@ load_actions(la_rule_t *rule, const config_setting_t *uc_rule_def)
                 config_setting_t *defaults_section =
                         config_lookup(&la_config->config_file, LA_DEFAULTS_LABEL);
                 if (!defaults_section)
-                        die_semantic("No action specified for %s!",
+                        die_hard("No action specified for %s!",
                                         config_setting_name(rule));
                 action_reference = config_setting_lookup(defaults_section,
                                 LA_RULE_ACTION_LABEL);
                 if (!action_reference)
-                        die_semantic("No action specified for %s!",
+                        die_hard("No action specified for %s!",
                                         config_setting_name(rule));
         }
 
@@ -350,7 +350,7 @@ load_actions(la_rule_t *rule, const config_setting_t *uc_rule_def)
         else if (type == CONFIG_TYPE_LIST)
                 compile_list_of_actions(rule, action_reference);
         else
-                die_semantic("Element neither string nor list!");
+                die_hard("Element neither string nor list!");
 }
 
 static void
@@ -372,7 +372,7 @@ load_patterns(la_rule_t *rule, const config_setting_t *rule_def,
 
         int n = config_setting_length(patterns);
         if (n < 0)
-                die_semantic("No patterns specified for %s!",
+                die_hard("No patterns specified for %s!",
                                 config_setting_name(rule_def));
 
         for (unsigned int i=0; i<n; i++)
@@ -636,7 +636,7 @@ load_rules(void)
 
         int n = config_setting_length(local_section);
         if (n < 0)
-                die_semantic("No rules enabled!");
+                die_hard("No rules enabled!");
 
         bool any_enabled = false;
         for (int i=0; i<n; i++)
@@ -657,7 +657,7 @@ load_rules(void)
         }
 
         if (!any_enabled)
-                die_semantic("No rules enabledd!");
+                die_hard("No rules enabledd!");
 }
 
 static void
@@ -703,7 +703,7 @@ load_defaults(void)
         }
 }
 
-const char ** include_func(config_t *config, const char *include_dir, const
+static const char ** include_func(config_t *config, const char *include_dir, const
                 char *path, const char **error);
 
 /*
@@ -790,7 +790,7 @@ unload_la_config(void)
  * Copied from example4.c from the libconfig distribution
  */
 
-const char **
+static const char **
 include_func(config_t *config, const char *include_dir, const char *path, const char **error)
 {
         char *p;
@@ -815,7 +815,7 @@ include_func(config_t *config, const char *include_dir, const char *path, const 
                 if(include_dir)
                 {
                         strcat(include_path, include_dir);
-                        include_path_len += strlen(include_dir);
+                        include_path_len += xstrlen(include_dir);
                 }
         }
 
@@ -863,6 +863,7 @@ include_func(config_t *config, const char *include_dir, const char *path, const 
                                 result_next = result + result_count;
                         }
 
+                        /* TODO: error checking */
                         *result_next = strdup(file_path);
                         ++result_next;
                         ++result_count;

@@ -317,7 +317,7 @@ handle_inotify_event(struct inotify_event *event)
  * Event loop for inotify mechanism
  */
 
-void *
+static void *
 watch_forever_inotify(void *ptr)
 {
         la_debug("watch_forever_inotify()");

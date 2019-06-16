@@ -37,26 +37,6 @@ pthread_t monitoring_thread;
 static pthread_mutex_t monitoring_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t monitoring_condition = PTHREAD_COND_INITIALIZER;
 
-/*static void *
-dump_single_pattern(FILE *rules_file, la_pattern_t *pattern)
-{
-        assert(rules_file), assesrt_pattern(pattern);
-}
-
-static void *
-dump_single_rule(FILE *rules_file, la_rule_t *rule)
-{
-        assert(rules_file), assert_rule(rule);
-        fprintf(rules_file, "%s\n", rule->name);
-        for (int i=strlen(rule->name); i>0; i--)
-                fputc('=', rules_file);
-        fputc('\n', rules_file);
-
-        for (la_pattern_t *pattern = ITERATE_PATTERNS(rule->patterns);
-                        (pattern = NEXT_PATTERN(pattern));)
-                dump_single_pattern(rules_file, pattern);
-}*/
-
 /*
  * Write single line to the rule status file.
  */

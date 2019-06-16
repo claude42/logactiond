@@ -55,7 +55,7 @@ shutdown_watching_systemd(void)
                 sd_journal_close(journal);
 }
 
-void *
+static void *
 watch_forever_systemd(void *ptr)
 {
         la_debug("watch_forever_systemd()");
@@ -132,7 +132,7 @@ add_matches(void)
                         (unit = unit->succ->succ ? unit->succ : NULL);)
         {
                 la_debug("2");
-                len = strlen("_SYSTEMD_UNIT=") + strlen(unit->name)+1;
+                len = xstrlen("_SYSTEMD_UNIT=") + xstrlen(unit->name)+1;
                 match = realloc(match, len);
                 snprintf(match, len, "_SYSTEMD_UNIT=%s", unit->name);
                 la_log(LOG_INFO, "sd_journal_add_match(%s)", match);

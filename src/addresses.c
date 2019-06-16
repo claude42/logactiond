@@ -151,7 +151,7 @@ address_on_ignore_list(la_address_t *address)
  * Create an IPv4 address from string
  */
 
-bool
+static bool
 create_address4(const char *ip, la_address_t *address)
 {
         assert(ip); assert(address); // can't do assert_address() just yet
@@ -176,7 +176,7 @@ create_address4(const char *ip, la_address_t *address)
  * Create an IPv6 address from string
  */
 
-bool
+static bool
 create_address6(const char *ip, la_address_t *address)
 {
         assert(ip); assert(address); // can't do assert_address() just yet

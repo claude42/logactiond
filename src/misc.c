@@ -73,36 +73,6 @@ create_pidfile(void)
                 die_err("Unable to close pidfile");
 }
 
-void
-log_message(unsigned int priority, char *fmt, va_list gp, char *add)
-{
-        if (priority >= log_level ||
-                        (run_type == LA_UTIL_FOREGROUND && priority >= LOG_INFO))
-                return;
-
-        if (priority == LOG_VDEBUG)
-                priority = LOG_DEBUG;
-
-        switch (run_type)
-        {
-                case LA_DAEMON_BACKGROUND:
-                        vsyslog(priority, fmt, gp);
-                        if (add)
-                                syslog(priority, "%s", add);
-                        break;
-                case LA_DAEMON_FOREGROUND:
-                        fprintf(stderr, "<%u>", priority);
-                        /* intended fall through! */
-                case LA_UTIL_FOREGROUND:
-                case LA_UTIL_DEBUG:
-                        vfprintf(stderr, fmt, gp);
-                        if (add)
-                                fprintf(stderr, ": %s", add);
-                        fprintf(stderr, "\n");
-                        break;
-        }
-}
-
 /*
  * Create thread, die if it fails
  */
@@ -203,6 +173,36 @@ void xfree(void *ptr)
 }
 
 void
+log_message(unsigned int priority, char *fmt, va_list gp, char *add)
+{
+        if (priority >= log_level ||
+                        (run_type == LA_UTIL_FOREGROUND && priority >= LOG_INFO))
+                return;
+
+        if (priority == LOG_VDEBUG)
+                priority = LOG_DEBUG;
+
+        switch (run_type)
+        {
+                case LA_DAEMON_BACKGROUND:
+                        vsyslog(priority, fmt, gp);
+                        if (add)
+                                syslog(priority, "%s", add);
+                        break;
+                case LA_DAEMON_FOREGROUND:
+                        fprintf(stderr, "<%u>", priority);
+                        /* intended fall through! */
+                case LA_UTIL_FOREGROUND:
+                case LA_UTIL_DEBUG:
+                        vfprintf(stderr, fmt, gp);
+                        if (add)
+                                fprintf(stderr, ": %s", add);
+                        fprintf(stderr, "\n");
+                        break;
+        }
+}
+
+void
 la_debug(char *fmt, ...)
 {
 #ifndef NDEBUG
@@ -246,23 +246,6 @@ la_log(unsigned int priority, char *fmt, ...)
         va_start(myargs, fmt);
         log_message(priority, fmt, myargs, NULL);
         va_end(myargs);
-}
-
-void
-die_semantic(char *fmt, ...)
-{
-        va_list myargs;
-
-        int save_errno = errno;
-
-        va_start(myargs, fmt);
-        log_message(LOG_ERR, fmt, myargs, NULL);
-        va_end(myargs);
-
-        if (!shutdown_ongoing)
-                shutdown_daemon(EXIT_FAILURE, save_errno);
-        else
-                exit(EXIT_FAILURE);
 }
 
 void
@@ -319,6 +302,38 @@ xmalloc(size_t n)
         return result;
 }
 
+char *
+xstrdup(const char *s)
+{
+        if (!s)
+                return NULL;
+
+        void *result = strdup(s);
+        if (!result)
+                die_hard("Memory exhausted\n");
+
+        return result;
+}
+
+char *
+xstrndup(const char *s, size_t n)
+{
+        void *result = strndup(s, n);
+        if (!result)
+                die_hard("Memory exhausted\n");
+
+        return result;
+}
+
+size_t
+xstrlen(const char *s)
+{
+        if (s)
+                return strlen(s);
+        else
+                return 0;
+}
+
 /*
  * Concatenates the two strings and creates a newly malloc()ed string. If
  * one string is NULL, returns a duplicate of the other string. If both are
@@ -371,38 +386,6 @@ void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, size_t on_top)
         }
 }
 
-
-char *
-xstrdup(const char *s)
-{
-        if (!s)
-                return NULL;
-
-        void *result = strdup(s);
-        if (!result)
-                die_hard("Memory exhausted\n");
-
-        return result;
-}
-
-char *
-xstrndup(const char *s, size_t n)
-{
-        void *result = strndup(s, n);
-        if (!result)
-                die_hard("Memory exhausted\n");
-
-        return result;
-}
-
-size_t
-xstrlen(const char *s)
-{
-        if (s)
-                return strlen(s);
-        else
-                return 0;
-}
 
 kw_list_t *
 xcreate_list(void)
