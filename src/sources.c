@@ -54,8 +54,7 @@ void
 handle_log_line(la_source_t *source, const char *line, const char *systemd_unit)
 {
         assert(line); assert_source(source);
-        la_log(LOG_INFO, "handle_log_line(%s, %s)", systemd_unit, line);
-        //la_vdebug("handle_log_line(%s)", line);
+        la_vdebug("handle_log_line(%s, %s)", systemd_unit, line);
 
         for (la_rule_t *rule = ITERATE_RULES(source->rules);
                         (rule = NEXT_RULE(rule));)
@@ -89,9 +88,9 @@ handle_new_content(la_source_t *source)
         ssize_t num_read = getline(&linebuffer, &linebuffer_size, source->file);
         if (num_read==-1)
         {
-                /* What was the reason for this? I can't remember :-O */
                 if (feof(source->file))
                 {
+                        /* What was the reason for this? I can't remember :-O */
                         fseek(source->file, 0, SEEK_END);
                         return true;
                 }
