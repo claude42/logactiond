@@ -526,16 +526,34 @@ create_file_source(const config_setting_t *rule_def,
         return result;
 }
 
+#if HAVE_LIBSYSTEMD
+static void
+add_systemd_unit_to_list(const char *systemd_unit)
+{
+        assert(systemd_unit);
+
+        for (kw_node_t *tmp = &(la_config->systemd_source->systemd_units)->head;
+                        (tmp = tmp->succ->succ ? tmp->succ : NULL);)
+        {
+                if (!strcmp(systemd_unit, tmp->name))
+                        return;
+        }
+
+        kw_node_t *node = xmalloc(sizeof(kw_node_t));
+        node->name = xstrdup(systemd_unit);
+        add_tail(la_config->systemd_source->systemd_units, node);
+}
+
 /*
  * Adds a systemd unit.
  *
  * Initializes la_config->systemd_source if it didn't exist so far.
  */
 
-#if HAVE_LIBSYSTEMD
 static la_source_t *
 create_systemd_unit(const char *systemd_unit)
 {
+        assert(systemd_unit);
         if (!la_config->systemd_source)
         {
                 /* TODO: set location also to NULL */
@@ -544,9 +562,7 @@ create_systemd_unit(const char *systemd_unit)
                 la_config->systemd_source->systemd_units = xcreate_list();
         }
 #ifndef NOWATCH
-        kw_node_t *node = xmalloc(sizeof(kw_node_t));
-        node->name = xstrdup(systemd_unit);
-        add_tail(la_config->systemd_source->systemd_units, node);
+        add_systemd_unit_to_list(systemd_unit);
 #endif /* NOWATCH */
 
         return la_config->systemd_source;
