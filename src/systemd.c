@@ -125,22 +125,17 @@ add_matches(void)
         unsigned int len;
         char *match = NULL;
 
-        la_debug("list lenght=%u", list_length(la_config->systemd_source->systemd_units));
-        la_debug("%s", la_config->systemd_source->systemd_units->head.succ->name);
-        la_debug("%s", get_head(la_config->systemd_source->systemd_units)->name);
         for (kw_node_t *unit = &(la_config->systemd_source->systemd_units)->head;
                         (unit = unit->succ->succ ? unit->succ : NULL);)
         {
-                la_debug("2");
                 len = xstrlen("_SYSTEMD_UNIT=") + xstrlen(unit->name)+1;
                 match = realloc(match, len);
                 snprintf(match, len, "_SYSTEMD_UNIT=%s", unit->name);
-                la_log(LOG_INFO, "sd_journal_add_match(%s)", match);
+                la_vdebug("sd_journal_add_match(%s)", match);
                 int r = sd_journal_add_match(journal, match, 0);
                 if (r < 0)
                         die_systemd(r, "sd_journal_add_match() failed");
         }
-        la_debug("3");
         free(match);
 }
 
