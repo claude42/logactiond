@@ -258,7 +258,7 @@ trigger_all_commands(la_rule_t *rule, la_pattern_t *pattern)
  */
 
 static void
-assign_value_to_properties(kw_list_t *property_list, char *line,
+assign_value_to_properties(kw_list_t *property_list, const char *line,
                 regmatch_t pmatch[])
 {
         assert_list(property_list); assert(line);
@@ -297,7 +297,7 @@ clear_property_values(kw_list_t *property_list)
  */
 
 void
-handle_log_line_for_rule(la_rule_t *rule, char *line)
+handle_log_line_for_rule(la_rule_t *rule, const char *line)
 {
         assert_rule(rule); assert(line);
         la_vdebug("handle_log_line_for_rule(%s)", rule->name);
@@ -341,7 +341,7 @@ handle_log_line_for_rule(la_rule_t *rule, char *line)
 
 la_rule_t *
 create_rule(char *name, la_source_t *source, int threshold, int period,
-                int duration, const char *service)
+                int duration, const char *service, const char *systemd_unit)
 {
         assert_source(source);
         la_debug("create_rule(%s)", name);
@@ -362,6 +362,7 @@ create_rule(char *name, la_source_t *source, int threshold, int period,
         result->period = period!=-1 ? period : la_config->default_period;
 
         result->service = xstrdup(service);
+        result->systemd_unit = xstrdup(systemd_unit);
 
         result->patterns = xcreate_list();
         result->begin_commands = xcreate_list();
@@ -386,6 +387,7 @@ free_rule(la_rule_t *rule)
         assert_rule(rule);
         la_vdebug("free_rule(%s)", rule->name);
 
+        free(rule->systemd_unit);
         free(rule->service);
 
         free_pattern_list(rule->patterns);

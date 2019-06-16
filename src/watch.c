@@ -22,24 +22,13 @@
 
 #include "logactiond.h"
 
-pthread_t watch_thread;
+pthread_t file_watch_thread = 0;
+pthread_t systemd_watch_thread = 0;
 
-static void *watch_forever(void *ptr)
-{
-        la_debug("watch_forever()");
-#if HAVE_INOTIFY
-        watch_forever_inotify();
-#else /* HAVE_INOTIFY */
-        watch_forever_polling();
-#endif /* HAVE_INOTIFY */
-
-        return NULL;
-}
 
 /*
- * Add general watch for given filename.
- *
- * Returns la_watch_t
+ * Add general watch for given filename. Will not be called for systemd
+ * sources.
  */
 
 void
@@ -112,21 +101,28 @@ init_watching(void)
         la_debug("init_watching()");
 
 #ifndef NOWATCH
+
+        if (!is_list_empty(la_config->sources))
+        {
 #if HAVE_INOTIFY
-        init_watching_inotify();
+                init_watching_inotify();
 #else /* HAVE_INOTIFY */
-        init_watching_polling();
+                init_watching_polling();
 #endif /* HAVE_INOTIFY */
 
-        xpthread_mutex_lock(&config_mutex);
-        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
-                        (source = NEXT_SOURCE(source));)
-        {
-                watch_source(source, SEEK_END);
+                xpthread_mutex_lock(&config_mutex);
+                for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+                                (source = NEXT_SOURCE(source));)
+                {
+                        watch_source(source, SEEK_END);
+                }
+                xpthread_mutex_unlock(&config_mutex);
         }
-        xpthread_mutex_unlock(&config_mutex);
 
-        xpthread_create(&watch_thread, NULL, watch_forever, NULL);
+#if HAVE_LIBSYSTEMD
+        if (la_config->systemd_source)
+                init_watching_systemd();
+#endif /* HAVE_LIBSYSTEMD */
 
 #endif /* NOWATCH */
 }
@@ -141,19 +137,28 @@ shutdown_watching(void)
         la_debug("shutdown_watching()");
 
 #ifndef NOWATCH
-#if HAVE_INOTIFY
-        shutdown_watching_inotify();
-#else /* HAVE_INOTIFY */
-        shutdown_watching_polling();
-#endif /* HAVE_INOTIFY */
 
-        xpthread_mutex_lock(&config_mutex);
-        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
-                        (source = NEXT_SOURCE(source));)
+        if (!is_list_empty(la_config->sources))
         {
-                unwatch_source(source);
+#if HAVE_INOTIFY
+                shutdown_watching_inotify();
+#else /* HAVE_INOTIFY */
+                shutdown_watching_polling();
+#endif /* HAVE_INOTIFY */
+                xpthread_mutex_lock(&config_mutex);
+                for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+                                (source = NEXT_SOURCE(source));)
+                {
+                        unwatch_source(source);
+                }
+                xpthread_mutex_unlock(&config_mutex);
         }
-        xpthread_mutex_unlock(&config_mutex);
+
+#if HAVE_LIBSYSTEMD
+        if (la_config->systemd_source)
+                shutdown_watching_systemd();
+#endif /* HAVE_LIBSYSTEMD */
+
 
 #endif /* NOWATCH */
 }

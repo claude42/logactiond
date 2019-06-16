@@ -50,16 +50,20 @@ assert_source_ffl(la_source_t *source, const char *func, char *file, unsigned in
  * Call handle_log_line_for_rule() for each of the sources rules
  */
 
-static void
-handle_log_line(la_source_t *source, char *line)
+void
+handle_log_line(la_source_t *source, const char *line, const char *systemd_unit)
 {
         assert(line); assert_source(source);
-        la_vdebug("handle_log_line(%s)", line);
+        la_log(LOG_INFO, "handle_log_line(%s, %s)", systemd_unit, line);
+        //la_vdebug("handle_log_line(%s)", line);
 
         for (la_rule_t *rule = ITERATE_RULES(source->rules);
                         (rule = NEXT_RULE(rule));)
         {
-                handle_log_line_for_rule(rule, line);
+                if (!systemd_unit ||
+                                (rule->systemd_unit &&
+                                 !strcmp(systemd_unit, rule->systemd_unit)))
+                        handle_log_line_for_rule(rule, line);
         }
 }
 
@@ -85,16 +89,16 @@ handle_new_content(la_source_t *source)
         ssize_t num_read = getline(&linebuffer, &linebuffer_size, source->file);
         if (num_read==-1)
         {
+                /* What was the reason for this? I can't remember :-O */
                 if (feof(source->file))
                 {
-                        /* What was the reason for this? I can't remember :-O */
                         fseek(source->file, 0, SEEK_END);
                         return true;
                 }
                 else
                         return false;
         }
-        handle_log_line(source, linebuffer);
+        handle_log_line(source, linebuffer, NULL);
 
         for (;;)
         {
@@ -106,7 +110,7 @@ handle_new_content(la_source_t *source)
                         else
                                 return false;
                 }
-                handle_log_line(source, linebuffer);
+                handle_log_line(source, linebuffer, NULL);
         }
 }
 
@@ -120,8 +124,7 @@ handle_new_content(la_source_t *source)
  */
 
 la_source_t *
-create_source(const char *name, la_sourcetype_t type, const char *location,
-                const char *prefix)
+create_source(const char *name, const char *location, const char *prefix)
 {
         assert(name);
         la_debug("create_source(%s, %s, %s)", name, location, prefix);
@@ -133,7 +136,6 @@ create_source(const char *name, la_sourcetype_t type, const char *location,
         result->location = xstrdup(location);
         result->prefix = xstrdup(prefix);
         result->parent_dir = NULL;
-        result->type = type;
         result->rules = xcreate_list();
         result->file = NULL;
         result->active = false;
@@ -141,6 +143,9 @@ create_source(const char *name, la_sourcetype_t type, const char *location,
         /* Only used by inotify.c */
         result->wd = 0;
         result->parent_wd = 0;
+
+        /* Only used by systemd.c */
+        result->systemd_units = NULL;
 
         assert_source(result);
         return result;
@@ -166,6 +171,16 @@ free_source(la_source_t *source)
         free(source->location);
         free(source->prefix);
         free(source->parent_dir);
+
+        if (source->systemd_units)
+        {
+                for (kw_node_t *tmp; (tmp = rem_head(source->systemd_units));)
+                {
+                        free(tmp->name);
+                        free(tmp);
+                }
+                free(source->systemd_units);
+        }
 
         free(source);
 }

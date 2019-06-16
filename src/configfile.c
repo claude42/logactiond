@@ -239,28 +239,6 @@ get_source_location(const config_setting_t *rule, const config_setting_t *uc_rul
         return result;
 }
 
-static la_sourcetype_t
-get_source_type(const config_setting_t *rule)
-{
-        config_setting_t *source_def;
-        const char *type;
-
-        source_def = get_source(config_get_string_or_die(rule, LA_RULE_SOURCE_LABEL));
-        if (!source_def)
-                die_semantic("Source not found!");
-
-        type = config_get_string_or_die(source_def, LA_SOURCE_TYPE_LABEL);
-
-        if (!strcmp(type, LA_SOURCE_TYPE_FILE_OPTION))
-                return LA_SOURCE_TYPE_FILE;
-        else if (!strcmp(type, LA_SOURCE_TYPE_SYSTEMD_OPTION))
-                return LA_SOURCE_TYPE_SYSTEMD;
-        else
-                die_semantic("Wrong source type \"%s\" specified!", type);
-
-        return 0; // avoid warning
-}
-
 /*
  * Add command for each action's begin command to the begin_commands of
  * the corresponding rule.
@@ -541,12 +519,39 @@ create_file_source(const config_setting_t *rule_def,
         const char *prefix = get_source_prefix(rule_def, uc_rule_def);
 
         la_source_t *result = create_source(get_source_name(rule_def),
-                        get_source_type(rule_def), location, prefix);
+                        location, prefix);
         assert_source(result);
         add_tail(la_config->sources, (kw_node_t *) result);
 
         return result;
 }
+
+/*
+ * Adds a systemd unit.
+ *
+ * Initializes la_config->systemd_source if it didn't exist so far.
+ */
+
+#if HAVE_LIBSYSTEMD
+static la_source_t *
+create_systemd_unit(const char *systemd_unit)
+{
+        if (!la_config->systemd_source)
+        {
+                /* TODO: set location also to NULL */
+                la_config->systemd_source = create_source("systemd",
+                                "systemd", NULL);
+                la_config->systemd_source->systemd_units = xcreate_list();
+        }
+#ifndef NOWATCH
+        kw_node_t *node = xmalloc(sizeof(kw_node_t));
+        node->name = xstrdup(systemd_unit);
+        add_tail(la_config->systemd_source->systemd_units, node);
+#endif /* NOWATCH */
+
+        return la_config->systemd_source;
+}
+#endif /* HAVE_LIBSYSTEMD */
 
 /*
  * Load a single rule
@@ -563,16 +568,30 @@ load_single_rule(const config_setting_t *rule_def,
         assert(rule_def); assert(uc_rule_def);
         la_rule_t *new_rule;
         la_source_t *source;
-        la_sourcetype_t type;
 
         char *name = config_setting_name(rule_def);
         la_debug("load_single_rule(%s)", name);
 
-        source = find_source_by_location(get_source_location(rule_def,
-                                uc_rule_def));
+        const char *systemd_unit;
+#if HAVE_LIBSYSTEMD
+        systemd_unit = get_rule_string(rule_def, uc_rule_def,
+                        LA_RULE_SYSTEMD_UNIT_LABEL);
 
-        if (!source)
-                source = create_file_source(rule_def, uc_rule_def);
+        if (systemd_unit)
+        {
+                source = create_systemd_unit(systemd_unit);
+        }
+        else
+#endif /* HAVE_LIBSYSTEMD */
+        {
+                systemd_unit = NULL; /* necessary if HAVE_LIBSYSTEMD=0 */
+                source = find_source_by_location(get_source_location(rule_def,
+                                        uc_rule_def));
+
+                if (!source)
+                        source = create_file_source(rule_def, uc_rule_def);
+        }
+
         assert_source(source);
 
         /* get parameters either from rule or uc_rule */
@@ -586,7 +605,8 @@ load_single_rule(const config_setting_t *rule_def,
                         LA_SERVICE_LABEL);
 
         la_log(LOG_INFO, "Enabling rule \"%s\".", name);
-        new_rule = create_rule(name, source, threshold, period, duration, service);
+        new_rule = create_rule(name, source, threshold, period, duration,
+                        service, systemd_unit);
         assert_rule(new_rule);
 
         /* Properties from uc_rule_def have priority over those from

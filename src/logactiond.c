@@ -357,7 +357,10 @@ main(int argc, char *argv[])
 
         la_debug("Main thread going to sleep.");
 
-        pthread_join(watch_thread, NULL);
+        if (file_watch_thread)
+                pthread_join(file_watch_thread, NULL);
+        if (systemd_watch_thread)
+                pthread_join(systemd_watch_thread, NULL);
         la_log(LOG_INFO, "Exiting (status=%u, errno=%u).", exit_status, exit_errno);
 #if HAVE_LIBSYSTEMD
         sd_notifyf(0, "STOPPING=1\n"

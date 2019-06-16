@@ -99,6 +99,13 @@ dump_rules(void)
                         dump_single_rule(rules_file, rule);
         }
 
+        if (la_config->systemd_source)
+        {
+                for (la_rule_t *rule = ITERATE_RULES(la_config->systemd_source->rules);
+                                (rule = NEXT_RULE(rule));)
+                        dump_single_rule(rules_file, rule);
+        }
+
         pthread_mutex_unlock(&config_mutex);
 
         if (fclose(rules_file))

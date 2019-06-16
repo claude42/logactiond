@@ -73,7 +73,7 @@ create_pidfile(void)
                 die_err("Unable to close pidfile");
 }
 
-static void
+void
 log_message(unsigned int priority, char *fmt, va_list gp, char *add)
 {
         if (priority >= log_level ||
@@ -135,17 +135,17 @@ xpthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
                 const struct timespec *abstime)
 {
         int ret = pthread_cond_timedwait(cond, mutex, abstime);
-        la_debug("xpthread_cond_timedwait()=%u", ret);
+        la_vdebug("xpthread_cond_timedwait()=%u", ret);
 
         switch (ret)
         {
                 case 0:
                         break;
                 case ETIMEDOUT:
-                        la_debug("pthread_cond_timedwait() timed out");
+                        la_vdebug("pthread_cond_timedwait() timed out");
                         break;
                 case EINTR:
-                        la_debug("pthread_cond_timedwait() interrupted");
+                        la_vdebug("pthread_cond_timedwait() interrupted");
                         break;
                 default:
                         die_err("Failed to timed wait for condition");

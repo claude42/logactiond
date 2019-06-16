@@ -317,8 +317,8 @@ handle_inotify_event(struct inotify_event *event)
  * Event loop for inotify mechanism
  */
 
-void
-watch_forever_inotify(void)
+void *
+watch_forever_inotify(void *ptr)
 {
         la_debug("watch_forever_inotify()");
 
@@ -395,7 +395,7 @@ watch_source_inotify(la_source_t *source)
 void
 init_watching_inotify(void)
 {
-        la_debug("init_watching_inotify()");
+        la_log(LOG_INFO, "Initializing inotify backend.");
 
         /* Calling inotify_init() twice will do funny stuff... */
         if (!inotify_fd)
@@ -404,6 +404,8 @@ init_watching_inotify(void)
                 if (inotify_fd == -1)
                         die_err("Can't initialize inotify!");
         }
+        
+        xpthread_create(&file_watch_thread, NULL, watch_forever_inotify, NULL);
 }
 
 void

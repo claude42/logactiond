@@ -17,9 +17,8 @@ AC_PROG_CC
 
 # Checks for libraries.
 AC_CHECK_LIB([config], [config_set_include_func])
-AM_CONDITIONAL([USE_LIBCONFIG], [test "$ac_cv_lib_config_config_set_include_func" = yes])
+AM_CONDITIONAL([USE_INSTALLED_LIBCONFIG], [test "$ac_cv_lib_config_config_set_include_func" = yes])
 AC_CHECK_LIB([systemd], [sd_journal_open])
-AM_CONDITIONAL([USE_SYSTEMD], [test "$ac_cv_lib_systemd_sd_journal_open" = yes])
 AC_CHECK_LIB([resolv], [inet_net_pton])
 
 # Checks for header files.

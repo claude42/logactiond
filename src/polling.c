@@ -48,8 +48,8 @@ unwatch_source_polling(la_source_t *source)
  * Event loop for poll mechanism
  */
 
-void
-watch_forever_polling(void)
+void *
+watch_forever_polling(void *ptr)
 {
         la_debug("watch_forever_polling()");
 
@@ -156,8 +156,9 @@ watch_source_polling(la_source_t *source)
 void
 init_watching_polling(void)
 {
-        la_debug("init_watching_polling()");
+        la_log(LOG_INFO, "Initializing polling backend.");
 
+        xpthread_create(&file_watch_thread, NULL, watch_forever_polling, NULL);
 }
 
 void

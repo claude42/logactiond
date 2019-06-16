@@ -81,9 +81,6 @@
 #define LA_ACTION_NEED_HOST_IP6_LABEL "6"
 
 #define LA_SOURCES_LABEL "sources"
-#define LA_SOURCE_TYPE_LABEL "type"
-#define LA_SOURCE_TYPE_FILE_OPTION "file"
-#define LA_SOURCE_TYPE_SYSTEMD_OPTION "systemd"
 
 #define LA_LOCAL_LABEL "local"
 #define LA_LOCAL_ENABLED_LABEL "enabled"
@@ -92,6 +89,7 @@
 #define LA_RULE_SOURCE_LABEL "source"
 #define LA_RULE_ACTION_LABEL "action"
 #define LA_RULE_PATTERNS_LABEL "pattern"
+#define LA_RULE_SYSTEMD_UNIT_LABEL "systemd-unit"
 
 #define LA_SOURCE_LOCATION "location"
 #define LA_SOURCE_PREFIX "prefix"
@@ -169,9 +167,6 @@
 #define assert_property(PROPERTY) assert_property_ffl(PROPERTY, __func__, __FILE__, __LINE__)
 #endif /* NDEBUG */
 
-// TODO: add default type
-typedef enum la_sourcetype_s { LA_SOURCE_TYPE_FILE, LA_SOURCE_TYPE_SYSTEMD } la_sourcetype_t;
-
 typedef enum la_commandtype_s { LA_COMMANDTYPE_BEGIN, LA_COMMANDTYPE_END } la_commandtype_t;
 
 typedef enum la_need_host_s { LA_NEED_HOST_NO, LA_NEED_HOST_ANY,
@@ -179,9 +174,6 @@ typedef enum la_need_host_s { LA_NEED_HOST_NO, LA_NEED_HOST_ANY,
 
 typedef enum la_runtype_s { LA_DAEMON_BACKGROUND, LA_DAEMON_FOREGROUND,
         LA_UTIL_FOREGROUND, LA_UTIL_DEBUG } la_runtype_t;
-
-typedef enum la_watchbackend_s { LA_WATCHBACKEND_NONE,
-        LA_WATCHBACKEND_POLLING, LA_WATCHBACKEND_INOTIFY } la_watchbackend_t;
 
 /*
  * bla
@@ -277,6 +269,7 @@ typedef struct la_rule_s
         unsigned int threshold;
         unsigned int period;
         unsigned int duration;
+        char *systemd_unit;
         kw_list_t *trigger_list;
         kw_list_t *properties;
         unsigned long int detection_count;
@@ -321,7 +314,6 @@ typedef struct la_source_s
         kw_node_t node;
         /* Name of source in config file - strdup()d */
         char *name;
-        la_sourcetype_t type;
         /* Filename (or equivalent) - strdup()d */
         char *location;
         /* Parent dir of log file - currently only used for inotify */
@@ -343,12 +335,18 @@ typedef struct la_source_s
         int wd;
         /* Watch descriptor for parent directory */
         int parent_wd;
+
+        /* Next one is only used in systemd.c */
+
+        /* systemd_units we're interested in */
+        kw_list_t *systemd_units;
 } la_source_t;
 
 typedef struct la_config_s
 {
         config_t config_file;
         kw_list_t *sources;
+        struct la_source_s *systemd_source;
         int default_threshold;
         int default_period;
         int default_duration;
@@ -360,7 +358,8 @@ typedef struct la_config_s
 
 extern la_config_t *la_config;
 
-extern pthread_t watch_thread;
+extern pthread_t file_watch_thread;
+extern pthread_t systemd_watch_thread;
 extern pthread_t end_queue_thread;
 extern pthread_t monitoring_thread;
 
@@ -407,6 +406,8 @@ void xpthread_mutex_unlock(pthread_mutex_t *mutex);
 time_t xtime(time_t *tloc);
 
 void xfree (void *ptr);
+
+void log_message(unsigned int priority, char *fmt, va_list gp, char *add);
 
 void la_debug(char *fmt, ...);
 
@@ -542,16 +543,19 @@ void free_pattern_list(kw_list_t *list);
 
 void assert_rule_ffl(la_rule_t *rule, const char *func, char *file, unsigned int line);
 
-void handle_log_line_for_rule(la_rule_t *rule, char *line);
+void handle_log_line_for_rule(la_rule_t *rule, const char *line);
 
 la_rule_t * create_rule(char *name, la_source_t *source, int threshold,
-                int period, int duration, const char *service);
+                int period, int duration, const char *service,
+                const char *systemd_unit);
 
 void free_rule(la_rule_t *rule);
 
 void free_rule_list(kw_list_t *list);
 
 /* sources.c */
+
+void handle_log_line(la_source_t *source, const char *line, const char *systemd_unit);
 
 void assert_source_ffl(la_source_t *source, const char *func, char *file, unsigned int line);
 
@@ -561,7 +565,7 @@ void watch_source(la_source_t *source, int whence);
 
 la_source_t *find_source_by_location(const char *location);
 
-la_source_t *create_source(const char *name, la_sourcetype_t type, const char *location,
+la_source_t *create_source(const char *name, const char *location,
                 const char *prefix);
 
 void free_source(la_source_t *source);
@@ -571,6 +575,18 @@ void empty_source_list(kw_list_t *list);
 void free_source_list(kw_list_t *list);
 
 bool handle_new_content(la_source_t *source);
+
+#if HAVE_LIBSYSTEMD
+/* systemd.c */
+
+void *watch_forever_systemd(void *ptr);
+
+void add_systemd_unit(const char *systemd_unit);
+
+void shutdown_watching_systemd(void);
+
+void init_watching_systemd(void);
+#endif /* HAVE_LIBSYSTEMD */
 
 #if HAVE_INOTIFY
 /* inotify.c */
@@ -583,7 +599,7 @@ void init_watching_inotify(void);
 
 void shutdown_watching_inotify(void);
 
-void watch_forever_inotify(void);
+void *watch_forever_inotify(void *ptr);
 
 #endif /* HAVE_INOTIFY */
 
@@ -597,7 +613,7 @@ void init_watching_polling(void);
 
 void shutdown_watching_polling(void);
 
-void watch_forever_polling();
+void *watch_forever_polling(void *ptr);
 
 /* status.c */
 
