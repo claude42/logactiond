@@ -639,7 +639,7 @@ load_single_rule(const config_setting_t *rule_def,
 }
 
 
-static void
+static bool
 load_rules(void)
 {
         la_debug("load_rules()");
@@ -652,9 +652,9 @@ load_rules(void)
 
         int n = config_setting_length(local_section);
         if (n < 0)
-                die_hard("No rules enabled!");
+                return 0;
 
-        bool any_enabled = false;
+        int num_rules_enabled = 0;
         for (int i=0; i<n; i++)
         {
                 config_setting_t *uc_rule = 
@@ -664,7 +664,7 @@ load_rules(void)
                 if (config_setting_lookup_bool(uc_rule, LA_LOCAL_ENABLED_LABEL,
                                         &enabled) == CONFIG_TRUE && enabled)
                 {
-                        any_enabled = true;
+                        num_rules_enabled++;
                         load_single_rule(get_rule(config_setting_name(
                                                         config_setting_get_elem(
                                                                 local_section,
@@ -672,8 +672,7 @@ load_rules(void)
                 }
         }
 
-        if (!any_enabled)
-                die_hard("No rules enabledd!");
+        return num_rules_enabled;
 }
 
 static void
@@ -778,7 +777,11 @@ load_la_config(char *filename)
         }
 
         load_defaults();
-        load_rules();
+        if (!load_rules())
+        {
+                xpthread_mutex_unlock(&config_mutex);
+                die_hard("No rules enabledd!");
+        }
 
         config_destroy(&la_config->config_file);
 
