@@ -69,7 +69,7 @@ dump_rules(void)
         fprintf(rules_file, "Rule          Service       Source        Detected  Invoked  \n");
         fprintf(rules_file, "===========================================================\n");
 
-        pthread_mutex_lock(&config_mutex);
+        xpthread_mutex_lock(&config_mutex);
 
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                         (source = NEXT_SOURCE(source));)
@@ -86,7 +86,7 @@ dump_rules(void)
                         dump_single_rule(rules_file, rule);
         }
 
-        pthread_mutex_unlock(&config_mutex);
+        xpthread_mutex_unlock(&config_mutex);
 
         if (fclose(rules_file))
                 die_hard("Can't close \" HOSTSFILE \"!");

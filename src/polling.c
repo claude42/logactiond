@@ -64,7 +64,7 @@ watch_forever_polling(void *ptr)
                         pthread_exit(NULL);
                 }
 
-                pthread_mutex_lock(&config_mutex);
+                xpthread_mutex_lock(&config_mutex);
 
                 for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                                 (source = NEXT_SOURCE(source));)
@@ -132,7 +132,7 @@ watch_forever_polling(void *ptr)
 
                 }
 
-                pthread_mutex_unlock(&config_mutex);
+                xpthread_mutex_unlock(&config_mutex);
 
                 usleep(2500000);
         }
@@ -159,13 +159,6 @@ init_watching_polling(void)
         la_log(LOG_INFO, "Initializing polling backend.");
 
         xpthread_create(&file_watch_thread, NULL, watch_forever_polling, NULL);
-}
-
-void
-shutdown_watching_polling(void)
-{
-        la_debug("shutdown_watching_polling()");
-        // currently not needed
 }
 
 
