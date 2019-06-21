@@ -43,9 +43,6 @@
 
 static int inotify_fd = 0;
 
-static pthread_mutex_t inotify_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t inotify_condition = PTHREAD_COND_INITIALIZER;
-
 static void
 la_vdebug_inotify_event(struct inotify_event *event, uint32_t monitored)
 {
@@ -303,14 +300,23 @@ handle_inotify_event(struct inotify_event *event)
         assert(event);
         la_vdebug("handle_inotify_event()");
 
-        pthread_mutex_lock(&config_mutex);
+        xpthread_mutex_lock(&config_mutex);
 
         if (event->len) /* only directory have a name (and thus a length) */
                 handle_inotify_directory_event(event);
         else
                 handle_inotify_file_event(event);
 
-        pthread_mutex_unlock(&config_mutex);
+        xpthread_mutex_unlock(&config_mutex);
+}
+
+static void
+cleanup_watching_inotify(void *arg)
+{
+        la_debug("cleanup_watching_inotify()");
+
+        if (close(inotify_fd) == -1)
+                la_log_errno(LOG_ERR, "Can't close inotify fd!");
 }
 
 /*
@@ -326,7 +332,7 @@ watch_forever_inotify(void *ptr)
         ssize_t num_read;
         struct inotify_event *event;
 
-        xpthread_mutex_lock(&inotify_mutex);
+        pthread_cleanup_push(cleanup_watching_inotify, NULL);
 
         for (;;)
         {
@@ -342,7 +348,6 @@ watch_forever_inotify(void *ptr)
                 if (shutdown_ongoing)
                 {
                         la_debug("Shutting down inotify thread.");
-                        xpthread_mutex_unlock(&inotify_mutex);
                         pthread_exit(NULL);
                 }
 
@@ -356,6 +361,7 @@ watch_forever_inotify(void *ptr)
                 }
         }
 
+        pthread_cleanup_pop(1); // will never be reached
 }
 
 /*
@@ -406,13 +412,6 @@ init_watching_inotify(void)
         }
         
         xpthread_create(&file_watch_thread, NULL, watch_forever_inotify, NULL);
-}
-
-void
-shutdown_watching_inotify(void)
-{
-        la_debug("shutdown_watching_inotify()");
-        // currently not needed
 }
 
 #endif /* HAVE_INOTIFY */

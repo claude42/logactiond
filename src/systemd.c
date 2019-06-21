@@ -32,7 +32,8 @@
 
 #include "logactiond.h"
 
-static sd_journal *journal;
+pthread_t systemd_watch_thread = 0;
+static sd_journal *journal = NULL;
 
 static void
 die_systemd(int systemd_errno, char *fmt, ...)
@@ -43,13 +44,21 @@ die_systemd(int systemd_errno, char *fmt, ...)
         log_message(LOG_ERR, fmt, myargs, strerror(-systemd_errno));
         va_end(myargs);
 
-        shutdown_daemon(EXIT_FAILURE, -systemd_errno);
+        if (!shutdown_ongoing)
+        {
+                trigger_shutdown(EXIT_FAILURE, -systemd_errno);
+                pthread_exit(NULL);
+        }
+        else
+        {
+                exit(EXIT_FAILURE);
+        }
 }
 
-void
-shutdown_watching_systemd(void)
+static void
+cleanup_watching_systemd(void *arg)
 {
-        la_debug("shutdown_watching_systemd()");
+        la_debug("cleanup_watching_systemd()");
 
         if (journal)
                 sd_journal_close(journal);
@@ -59,7 +68,9 @@ static void *
 watch_forever_systemd(void *ptr)
 {
         la_debug("watch_forever_systemd()");
-        assert(la_config->systemd_source);
+        assert(journal); assert(la_config->systemd_source);
+
+        pthread_cleanup_push(cleanup_watching_systemd, NULL);
 
         int r; /* result from any of the sd_*() calls */
 
@@ -77,8 +88,16 @@ watch_forever_systemd(void *ptr)
                 if (r == 0)
                 {
                         /* End of journal, wait for changes */
-                        r = sd_journal_wait(journal, (uint64_t) -1);
-                        if (r >= 0)
+
+                        do
+                        {
+                                /* Only wait 1 second to make sure a shutdown
+                                 * won't take too long */
+                                r = sd_journal_wait(journal, 1000);
+                        }
+                        while (r == SD_JOURNAL_NOP && !shutdown_ongoing);
+
+                        if (r >= 0 && !shutdown_ongoing)
                                 continue; /* wait returned without error -
                                              rinse, repeat */
                 }
@@ -113,6 +132,8 @@ watch_forever_systemd(void *ptr)
                 handle_log_line(la_config->systemd_source, data+MESSAGE_LEN,
                                 unit+UNIT_LEN);
         }
+
+        pthread_cleanup_pop(1); // will never be reached
 }
 
 static void
@@ -125,13 +146,14 @@ add_matches(void)
         unsigned int len;
         char *match = NULL;
 
+        sd_journal_flush_matches(journal);
+
         for (kw_node_t *unit = &(la_config->systemd_source->systemd_units)->head;
                         (unit = unit->succ->succ ? unit->succ : NULL);)
         {
                 len = xstrlen("_SYSTEMD_UNIT=") + xstrlen(unit->name)+1;
                 match = realloc(match, len);
                 snprintf(match, len, "_SYSTEMD_UNIT=%s", unit->name);
-                la_vdebug("sd_journal_add_match(%s)", match);
                 int r = sd_journal_add_match(journal, match, 0);
                 if (r < 0)
                         die_systemd(r, "sd_journal_add_match() failed");
@@ -146,13 +168,11 @@ init_watching_systemd(void)
 
         int r;
 
-        r = sd_journal_open(&journal, SD_JOURNAL_LOCAL_ONLY);
-        if (r < 0)
-                die_systemd(r, "Opening systemd journal failed");
-
-        /*r = sd_journal_add_disjunction(journal);
-        if (r < 0)
-                die_systemd(r, "Can't add journal disjunction");*/
+        if (!journal) {
+                r = sd_journal_open(&journal, SD_JOURNAL_LOCAL_ONLY);
+                if (r < 0)
+                        die_systemd(r, "Opening systemd journal failed");
+        }
 
         add_matches();
 

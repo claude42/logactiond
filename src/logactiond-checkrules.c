@@ -36,12 +36,13 @@ static char *cfg_filename = NULL;
 static char *log_filename = NULL;
 static char *rule_name = NULL;
 bool shutdown_ongoing = false;
+int exit_status = EXIT_SUCCESS;
 
 void
-shutdown_daemon(int exit_status, int exit_errno)
+trigger_shutdown(int status, int saved_errno)
 {
-        unload_la_config();
-        exit(exit_status);
+        exit_status = status;
+        shutdown_ongoing = true;
 }
 
 static void
@@ -208,7 +209,13 @@ main(int argc, char *argv[])
                         iterate_through_all_rules(linebuffer);
         }
 
-        shutdown_daemon(EXIT_SUCCESS, 0);
+        /* This whole exit procedure doesn't make much sense for a standalone
+         * tool. We're just obeying to the infrastructure set in place by the
+         * main daemon. */
+        trigger_shutdown(EXIT_SUCCESS, 0);
+
+        unload_la_config();
+        exit(exit_status);
 }
 
 

@@ -23,7 +23,6 @@
 #include "logactiond.h"
 
 pthread_t file_watch_thread = 0;
-pthread_t systemd_watch_thread = 0;
 
 
 /*
@@ -67,10 +66,11 @@ watch_source(la_source_t *source, int whence)
 void
 unwatch_source(la_source_t *source)
 {
+        assert_source(source); assert(source->file); assert(source->active);
+        la_debug("unwatch_source(%s)", source->name);
+
         if (run_type == LA_UTIL_FOREGROUND)
                 return;
-
-        assert_source(source); assert(source->file); assert(source->active);
 
         la_debug("unwatch_source(%s)", source->name);
 
@@ -140,11 +140,6 @@ shutdown_watching(void)
 
         if (!is_list_empty(la_config->sources))
         {
-#if HAVE_INOTIFY
-                shutdown_watching_inotify();
-#else /* HAVE_INOTIFY */
-                shutdown_watching_polling();
-#endif /* HAVE_INOTIFY */
                 xpthread_mutex_lock(&config_mutex);
                 for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                                 (source = NEXT_SOURCE(source));)
@@ -153,12 +148,6 @@ shutdown_watching(void)
                 }
                 xpthread_mutex_unlock(&config_mutex);
         }
-
-#if HAVE_LIBSYSTEMD
-        if (la_config->systemd_source)
-                shutdown_watching_systemd();
-#endif /* HAVE_LIBSYSTEMD */
-
 
 #endif /* NOWATCH */
 }

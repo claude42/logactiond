@@ -381,7 +381,7 @@ extern int exit_status;
 
 /* logactiond.c */
 
-void shutdown_daemon(int status, int saved_errno);
+void trigger_shutdown(int status, int saved_errno);
 
 /* misc.c */
 
@@ -402,6 +402,8 @@ void xpthread_cond_signal(pthread_cond_t *cond);
 void xpthread_mutex_lock(pthread_mutex_t *mutex);
 
 void xpthread_mutex_unlock(pthread_mutex_t *mutex);
+
+void xpthread_join(pthread_t thread, void **retval);
 
 time_t xtime(time_t *tloc);
 
@@ -568,8 +570,6 @@ la_source_t *find_source_by_location(const char *location);
 #if HAVE_LIBSYSTEMD
 /* systemd.c */
 
-void shutdown_watching_systemd(void);
-
 void init_watching_systemd(void);
 
 void add_systemd_unit(const char *systemd_unit);
@@ -585,8 +585,6 @@ void watch_source_inotify(la_source_t *source);
 
 void init_watching_inotify(void);
 
-void shutdown_watching_inotify(void);
-
 #endif /* HAVE_INOTIFY */
 
 /* polling.c */
@@ -596,8 +594,6 @@ void unwatch_source_polling(la_source_t *source);
 void watch_source_polling(la_source_t *source);
 
 void init_watching_polling(void);
-
-void shutdown_watching_polling(void);
 
 /* status.c */
 

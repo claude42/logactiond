@@ -156,6 +156,16 @@ xpthread_mutex_unlock(pthread_mutex_t *mutex)
                 die_err("Failed to unlock mutex!");
 }
 
+/* join thread, die if pthread_join() fails
+ */
+
+void
+xpthread_join(pthread_t thread, void **retval)
+{
+        if (pthread_join(thread, retval))
+                die_err("Failed to join thread!");
+}
+
 time_t
 xtime(time_t *tloc)
 {
@@ -260,9 +270,14 @@ die_hard(char *fmt, ...)
         va_end(myargs);
 
         if (!shutdown_ongoing)
-                shutdown_daemon(EXIT_FAILURE, save_errno);
+        {
+                trigger_shutdown(EXIT_FAILURE, save_errno);
+                pthread_exit(NULL);
+        }
         else
+        {
                 exit(EXIT_FAILURE);
+        }
 }
 
 void
@@ -277,9 +292,14 @@ die_err(char *fmt, ...)
         va_end(myargs);
 
         if (!shutdown_ongoing)
-                shutdown_daemon(EXIT_FAILURE, save_errno);
+        {
+                trigger_shutdown(EXIT_FAILURE, save_errno);
+                pthread_exit(NULL);
+        }
         else
+        {
                 exit(EXIT_FAILURE);
+        }
 }
 
 void *

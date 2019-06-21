@@ -31,6 +31,7 @@
 #include <getopt.h>
 #include <pwd.h>
 #include <limits.h>
+#include <pthread.h>
 #if HAVE_INOTIFY
 #include <sys/inotify.h>
 #endif /* HAVE_INOTIFY */
@@ -39,6 +40,9 @@
 #endif /* HAVE_LIBSYSTEMD */
 
 #include "logactiond.h"
+
+pthread_mutex_t main_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t main_condition = PTHREAD_COND_INITIALIZER;
 
 char *cfg_filename = NULL;
 char *pid_file = NULL;
@@ -52,21 +56,23 @@ int exit_status = EXIT_SUCCESS;
 static int exit_errno = 0;
 
 void
-shutdown_daemon(int status, int saved_errno)
+trigger_shutdown(int status, int saved_errno)
 {
-        /* TODO: once we have multiple threads watching sources, must ensure
-         * that threads are stopped before continuing */
+        la_debug("trigger_shutdown()");
+
         exit_status = status;
         exit_errno = saved_errno;
         shutdown_ongoing = true;
+
         shutdown_watching();
         empty_end_queue();
         shutdown_monitoring();
-        unload_la_config();
-        free(la_config->sources);
-        remove_status_files();
-        remove_pidfile();
-        la_debug("shutdown_daemon() ending");
+
+        /* Wake up main thread from sleep */
+
+        xpthread_mutex_lock(&main_mutex);
+        xpthread_cond_signal(&main_condition);
+        xpthread_mutex_unlock(&main_mutex);
 }
 
 static void
@@ -99,11 +105,11 @@ handle_signal(int signal)
                 }
                 exit(0);
                 log_level = 0;
-                shutdown_daemon(EXIT_SUCCESS, 0);
+                trigger_shutdown(EXIT_SUCCESS, 0);
         }
         else
         {
-                shutdown_daemon(EXIT_SUCCESS, 0);
+                trigger_shutdown(EXIT_SUCCESS, 0);
         }
 }
 
@@ -317,6 +323,47 @@ use_correct_uid(void)
         }
 }
 
+static void
+cleanup_main(void *arg)
+{
+        la_debug("cleanup_main()");
+
+        /* Log that we're going down */
+
+        la_log(LOG_INFO, "Exiting (status=%u, errno=%u).", exit_status, exit_errno);
+#if HAVE_LIBSYSTEMD
+        sd_notifyf(0, "STOPPING=1\n"
+                        "STATUS=Exiting (status=%u, errno%u)\n"
+                        "ERRNO=%u\n", exit_status, exit_errno, exit_errno);
+#endif /* HAVE_LIBSYSTEMD */
+
+        /* Wait for all threads to end */
+        if (file_watch_thread)
+                xpthread_join(file_watch_thread, NULL);
+        la_debug("joined file_watch_thread");
+
+#if HAVE_LIBSYSTEMD
+        if (systemd_watch_thread)
+                xpthread_join(systemd_watch_thread, NULL);
+        la_debug("joined systemd_watch_thread");
+#endif /* HAVE_LIBSYSTEMD */
+
+        xpthread_join(end_queue_thread, NULL);
+        if (status_monitoring)
+                xpthread_join(monitoring_thread, NULL);
+        la_debug("joined status_monitoring_thread");
+
+        /* TODO: end queue */
+
+        unload_la_config();
+        free(la_config->sources);
+        remove_status_files();
+        remove_pidfile();
+        la_debug("cleanup_main() ending");
+
+        exit(exit_status);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -342,6 +389,8 @@ main(int argc, char *argv[])
         else
                 register_signal_handler();
 
+        pthread_cleanup_push(cleanup_main, NULL);
+
         la_log(LOG_INFO, "Starting up " PACKAGE_STRING ".");
 
         init_end_queue();
@@ -358,21 +407,15 @@ main(int argc, char *argv[])
 
         la_debug("Main thread going to sleep.");
 
-        if (file_watch_thread)
-                pthread_join(file_watch_thread, NULL);
-        if (systemd_watch_thread)
-                pthread_join(systemd_watch_thread, NULL);
-        la_log(LOG_INFO, "Exiting (status=%u, errno=%u).", exit_status, exit_errno);
-#if HAVE_LIBSYSTEMD
-        sd_notifyf(0, "STOPPING=1\n"
-                        "STATUS=Exiting (status=%u, errno%u)\n"
-                        "ERRNO=%u\n", exit_status, exit_errno, exit_errno);
-#endif /* HAVE_LIBSYSTEMD */
-        pthread_join(end_queue_thread, NULL);
-        if (status_monitoring)
-                pthread_join(monitoring_thread, NULL);
+        /* Wait for signal to shut down */
 
-        exit(exit_status);
+        xpthread_mutex_lock(&main_mutex);
+        xpthread_cond_wait(&main_condition, &main_mutex);
+        xpthread_mutex_unlock(&main_mutex);
+
+        la_debug("main_condition signal received");
+
+        pthread_cleanup_pop(1);
 }
 
 
