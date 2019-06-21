@@ -796,13 +796,19 @@ unload_la_config(void)
         if (!la_config)
                 return;
 
-        xpthread_mutex_lock(&config_mutex);
+        /* In case shutdown is ongoing, don't bother with a mutex (which might
+         * not have been correctly unlocked. OTOH, when reloading, it's
+         * absolutely necessary to lock the mutex.
+         */
+        if (!shutdown_ongoing)
+                xpthread_mutex_lock(&config_mutex);
 
         empty_source_list(la_config->sources);
         empty_property_list(la_config->default_properties);
         empty_address_list(la_config->ignore_addresses);
 
-        xpthread_mutex_unlock(&config_mutex);
+        if (!shutdown_ongoing)
+                xpthread_mutex_unlock(&config_mutex);
 }
 
 /*
