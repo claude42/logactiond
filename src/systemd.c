@@ -25,7 +25,6 @@
 #include <systemd/sd-journal.h>
 #include <pthread.h>
 #include <unistd.h>
-#include <alloca.h>
 #include <assert.h>
 
 #include <libconfig.h>
