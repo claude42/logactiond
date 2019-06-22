@@ -165,7 +165,7 @@ init_watching_polling(void)
 void
 start_watching_polling_thread(void)
 {
-        la_debg("start_watching_polling_thread()");
+        la_debug("start_watching_polling_thread()");
         assert(!file_watch_thread);
 
         if (!file_watch_thread)
