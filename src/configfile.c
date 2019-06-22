@@ -804,6 +804,8 @@ unload_la_config(void)
                 xpthread_mutex_lock(&config_mutex);
 
         empty_source_list(la_config->sources);
+        free_source(la_config->systemd_source);
+        la_config->systemd_source = NULL;
         empty_property_list(la_config->default_properties);
         empty_address_list(la_config->ignore_addresses);
 

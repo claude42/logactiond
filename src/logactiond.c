@@ -395,10 +395,11 @@ main(int argc, char *argv[])
 
         init_end_queue();
         load_la_config(cfg_filename);
-
         init_watching();
-        init_queue_processing();
-        init_monitoring();
+
+        start_watching_threads();
+        start_end_queue_thread();
+        start_monitoring_thread();
 
 #if HAVE_LIBSYSTEMD
         sd_notify(0, "READY=1\n"

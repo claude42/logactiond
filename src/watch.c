@@ -127,6 +127,30 @@ init_watching(void)
 #endif /* NOWATCH */
 }
 
+void
+start_watching_threads(void)
+{
+        la_debug("start_watching_threads()");
+
+#ifndef NOWATCH
+
+        if (!is_list_empty(la_config->sources))
+        {
+#if HAVE_INOTIFY
+                start_watching_inotify_thread();
+#else /* HAVE_INOTIFY */
+                start_watching_polling_thread();
+#endif /* HAVE_INOTIFY */
+        }
+
+#if HAVE_LIBSYSTEMD
+        if (la_config->systemd_source)
+                start_watching_systemd_thread();
+#endif /* HAVE_LIBSYSTEMD */
+
+#endif /* NOWATCH */
+}
+
 /*
  * Shutdown everything related to watching.
  */

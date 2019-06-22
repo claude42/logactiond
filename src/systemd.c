@@ -188,7 +188,17 @@ init_watching_systemd(void)
          */
         sd_journal_previous(journal);
 
-        xpthread_create(&systemd_watch_thread, NULL, watch_forever_systemd, NULL);
+}
+
+void
+start_watching_systemd_thread(void)
+{
+        la_debug("start_watching_systemd_thread()");
+        assert(!systemd_watch_thread);
+
+        if (!systemd_watch_thread)
+                xpthread_create(&systemd_watch_thread, NULL,
+                                watch_forever_systemd, NULL);
 }
 
 #endif /* HAVE_LIBSYSTEMD */

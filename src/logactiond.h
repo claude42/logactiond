@@ -474,7 +474,7 @@ void enqueue_end_command(la_command_t *end_command);
 
 void init_end_queue(void);
 
-void init_queue_processing(void);
+void start_end_queue_thread(void);
 
 /* commands.c */
 
@@ -572,6 +572,8 @@ la_source_t *find_source_by_location(const char *location);
 
 void init_watching_systemd(void);
 
+void start_watching_systemd_thread(void);
+
 void add_systemd_unit(const char *systemd_unit);
 
 #endif /* HAVE_LIBSYSTEMD */
@@ -585,6 +587,8 @@ void watch_source_inotify(la_source_t *source);
 
 void init_watching_inotify(void);
 
+void start_watching_inotify_thread(void);
+
 #endif /* HAVE_INOTIFY */
 
 /* polling.c */
@@ -595,9 +599,11 @@ void watch_source_polling(la_source_t *source);
 
 void init_watching_polling(void);
 
+void start_watching_polling_thread(void);
+
 /* status.c */
 
-void init_monitoring(void);
+void start_monitoring_thread(void);
 
 void shutdown_monitoring(void);
 
@@ -612,6 +618,8 @@ void watch_source(la_source_t *source, int whence);
 void unwatch_source(la_source_t *source);
 
 void init_watching(void);
+
+void start_watching_threads(void);
 
 void shutdown_watching(void);
 

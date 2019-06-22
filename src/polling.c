@@ -19,6 +19,8 @@
 
 #include <config.h>
 
+#if !HAVE_INOTIFY
+
 #include <unistd.h>
 #include <syslog.h>
 #include <assert.h>
@@ -158,8 +160,19 @@ init_watching_polling(void)
 {
         la_log(LOG_INFO, "Initializing polling backend.");
 
-        xpthread_create(&file_watch_thread, NULL, watch_forever_polling, NULL);
 }
 
+void
+start_watching_polling_thread(void)
+{
+        la_debg("start_watching_polling_thread()");
+        assert(!file_watch_thread);
+
+        if (!file_watch_thread)
+                xpthread_create(&file_watch_thread, NULL,
+                                watch_forever_polling, NULL);
+}
+
+#endif /* !HAVE_INOTIFY */
 
 /* vim: set autowrite expandtab: */

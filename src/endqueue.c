@@ -200,7 +200,7 @@ init_end_queue(void)
 }
 
 void
-init_queue_processing(void)
+start_end_queue_thread(void)
 {
         la_debug("init_queue_processing()");
 

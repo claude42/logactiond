@@ -411,7 +411,17 @@ init_watching_inotify(void)
                         die_err("Can't initialize inotify!");
         }
         
-        xpthread_create(&file_watch_thread, NULL, watch_forever_inotify, NULL);
+}
+
+void
+start_watching_inotify_thread(void)
+{
+        la_debug("start_watching_inotify_thread()");
+        assert(!file_watch_thread);
+
+        if (!file_watch_thread)
+                xpthread_create(&file_watch_thread, NULL,
+                                watch_forever_inotify, NULL);
 }
 
 #endif /* HAVE_INOTIFY */

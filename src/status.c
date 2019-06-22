@@ -128,7 +128,7 @@ dump_loop(void *ptr)
  */
 
 void
-init_monitoring(void)
+start_monitoring_thread(void)
 {
         la_debug("init_monitoring()");
         if (!status_monitoring)
