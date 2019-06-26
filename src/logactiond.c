@@ -330,7 +330,8 @@ cleanup_main(void *arg)
 
         /* Log that we're going down */
 
-        la_log(LOG_INFO, "Exiting (status=%u, errno=%u).", exit_status, exit_errno);
+        int loglevel = exit_status ? LOG_WARNING : LOG_INFO;
+        la_log(loglevel, "Exiting (status=%u, errno=%u).", exit_status, exit_errno);
 #if HAVE_LIBSYSTEMD
         sd_notifyf(0, "STOPPING=1\n"
                         "STATUS=Exiting (status=%u, errno%u)\n"
