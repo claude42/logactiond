@@ -387,20 +387,19 @@ load_patterns(la_rule_t *rule, const config_setting_t *rule_def,
 }
 
 
-static kw_list_t *
-load_ignore_addresses(const config_setting_t *section)
+static void
+load_ignore_addresses(kw_list_t *ignore_addresses,
+                const config_setting_t *section)
 {
-        assert(section);
+        assert_list(ignore_addresses); assert(section);
 
         la_debug("load_ignore_addresses(%s)", config_setting_name(section));
-
-        kw_list_t *result = xcreate_list();
 
         config_setting_t *ignore_section =
                 config_setting_get_member(section, "ignore");
 
         if (!ignore_section)
-                return result;
+                return;
 
         int n = config_setting_length(ignore_section);
         for (unsigned int i=0; i<n; i++)
@@ -417,11 +416,11 @@ load_ignore_addresses(const config_setting_t *section)
 
                 la_vdebug("load_ignore_addresses(%s)=%s",
                                 config_setting_name(section), address->text);
-                add_tail(result, (kw_node_t *) address);
+                add_tail(ignore_addresses, (kw_node_t *) address);
         }
-        assert_list(result);
+        assert_list(ignore_addresses);
 
-        return result;
+        return;
 }
 
 /*
@@ -704,17 +703,27 @@ load_defaults(void)
                 if (!la_config->default_properties)
                         la_config->default_properties = xcreate_list();
                 load_properties(la_config->default_properties, defaults_section);
+
                 if (!la_config->ignore_addresses)
-                        la_config->ignore_addresses =
-                                load_ignore_addresses(defaults_section);
+                        la_config->ignore_addresses = xcreate_list();
+                load_ignore_addresses(la_config->ignore_addresses,
+                                defaults_section);
         }
         else
         {
                 la_config->default_threshold = DEFAULT_THRESHOLD;
                 la_config->default_period = DEFAULT_PERIOD;
                 la_config->default_duration = DEFAULT_DURATION;
-                la_config->default_properties = NULL;
-                la_config->ignore_addresses = NULL;
+                if (la_config->default_properties)
+                {
+                        free_property_list(la_config->default_properties);
+                        la_config->default_properties = NULL;
+                }
+                if (la_config->ignore_addresses)
+                {
+                        free_address_list(la_config->ignore_addresses);
+                        la_config->ignore_addresses = NULL;
+                }
         }
 }
 

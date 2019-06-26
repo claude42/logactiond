@@ -98,6 +98,8 @@ empty_end_queue(void)
                 free_command(tmp);
         }
 
+        dump_queue_status(end_queue);
+
         if (shutdown_ongoing)
                 xpthread_cond_signal(&end_queue_condition);
 
@@ -177,9 +179,7 @@ consume_end_queue(void *ptr)
                         remove_node((kw_node_t *) command);
                         trigger_end_command(command);
                         free_command(command);
-                        xpthread_mutex_lock(&config_mutex);
                         dump_queue_status(end_queue);
-                        xpthread_mutex_unlock(&config_mutex);
                 }
         }
 }

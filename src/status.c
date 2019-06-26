@@ -141,7 +141,9 @@ void
 shutdown_monitoring(void)
 {
         la_debug("shutdown_monitoring()");
+        xpthread_mutex_lock(&monitoring_mutex);
         xpthread_cond_signal(&monitoring_condition);
+        xpthread_mutex_unlock(&monitoring_mutex);
 }
 
 /*
