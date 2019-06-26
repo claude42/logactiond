@@ -162,7 +162,7 @@ xpthread_mutex_unlock(pthread_mutex_t *mutex)
 void
 xpthread_join(pthread_t thread, void **retval)
 {
-        if (pthread_join(thread, retval))
+        if (pthread_join(thread, retval) && errno)
                 die_err("Failed to join thread!");
 }
 
