@@ -37,6 +37,36 @@ pthread_t monitoring_thread;
 static pthread_mutex_t monitoring_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t monitoring_condition = PTHREAD_COND_INITIALIZER;
 
+static void
+human_readable_time_delta(time_t delta, int *value, char *unit)
+{
+        *value = delta;
+        if (*value < 60)
+        {
+                *unit = 's';
+                return;
+        }
+
+        *value = *value / 60;
+        if (*value < 60)
+        {
+                *unit = 'm';
+                return;
+        }
+
+        *value = *value / 60;
+        if (*value < 24)
+        {
+                *unit = 'h';
+                return;
+        }
+
+        *value = *value / 24;
+        *unit = 'd';
+}
+
+
+
 /*
  * Write single line to the rule status file.
  */
@@ -120,6 +150,11 @@ dump_loop(void *ptr)
                 }
 
                 dump_rules();
+
+
+                xpthread_mutex_lock(&end_queue_mutex);
+                dump_queue_status(end_queue);
+                xpthread_mutex_unlock(&end_queue_mutex);
         }
 }
 
@@ -183,7 +218,7 @@ dump_queue_status(kw_list_t *queue)
                 die_err("Can't create \"" HOSTSFILE "\"!");
 
         fprintf(hosts_file, "IP address                                     "
-                        "Time     Rule      Action\n"
+                        "Time Rule          Action\n"
                         "======================================"
                         "=========================================\n");
 
@@ -200,12 +235,14 @@ dump_queue_status(kw_list_t *queue)
 
                 char *adr = command->address ? command->address->text : "-";
 
-                char end_time[10];
-                strftime(end_time, 9, "%T", localtime(&(command->end_time)));
+                int timedelta;
+                char unit;
+                human_readable_time_delta(command->end_time-xtime(NULL),
+                                &timedelta, &unit);
 
                 fprintf(hosts_file,
-                                "%-46.46s %-8.8s %-9.9s %-13.13s\n",
-                                adr, end_time, command->rule->name,
+                                "%-46.46s %2u%c  %-13.13s %-13.13s\n",
+                                adr, timedelta, unit, command->rule->name,
                                 command->name);
         }
 

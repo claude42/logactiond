@@ -22,7 +22,6 @@
 
 #include <config.h>
 
-#include <sys/select.h>
 #include <regex.h>
 #include <stdbool.h>
 #include <time.h>
@@ -262,6 +261,7 @@ typedef struct la_rule_s
 {
         kw_node_t node;
         char *name;
+        unsigned int id;
         struct la_source_s *source;
         char *service;
         kw_list_t *patterns;
@@ -364,6 +364,9 @@ extern pthread_t end_queue_thread;
 extern pthread_t monitoring_thread;
 
 extern pthread_mutex_t config_mutex;
+extern pthread_mutex_t end_queue_mutex;
+
+extern kw_list_t *end_queue;
 
 extern unsigned int log_level;
 

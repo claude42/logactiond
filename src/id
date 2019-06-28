@@ -1,0 +1,1858 @@
+addresses.c: *  logactiond - trigger actions based on logfile contents
+addresses.c: *  logactiond - trigger actions based on logfile contents
+addresses.c:        if (address->af != AF_INET && address->af != AF_INET6)
+addresses.c:                die_hard("%s:%u: %s: Assertion 'address->af' failed.", file,
+addresses.c:        if (!address->text)
+addresses.c:                die_hard("%s:%u: %s: Assertion 'address->text' failed.", file,
+addresses.c: * From https://stackoverflow.com/questions/7213995/ip-cidr-match-function
+addresses.c:        return !((addr.s_addr ^ net.s_addr) & htonl(0xFFFFFFFFu << (32 - prefix)));
+addresses.c:        if (a1->af == a2->af)
+addresses.c:                if (a1->af == AF_INET && a1->addr.s_addr == a2->addr.s_addr)
+addresses.c:                else if (a1->af == AF_INET6 &&
+addresses.c:                                !memcmp(&(a1->addr6), &(a2->addr6),
+addresses.c:        la_vdebug("address_on_ignore_list(%s)", address->text);
+addresses.c:        for (la_address_t *ign_address = ITERATE_ADDRESSES(la_config->ignore_addresses);
+addresses.c:                if (address->af != ign_address->af)
+addresses.c:                else if (address->af == AF_INET &&
+addresses.c:                                cidr_match(address->addr, ign_address->addr,
+addresses.c:                                        ign_address->prefix))
+addresses.c:                else if (address->af == AF_INET6 &&
+addresses.c:                                !memcmp(&(address->addr6),
+addresses.c:                                        &(ign_address->addr6), sizeof(struct
+addresses.c:        address->prefix = inet_net_pton(AF_INET, ip, &(address->addr),
+addresses.c:        if (address->prefix != -1)
+addresses.c:                address->af = AF_INET;
+addresses.c:        int tmp = inet_pton(AF_INET6, ip, &(address->addr6));
+addresses.c:                address->prefix = 128;
+addresses.c:                address->af = AF_INET6;
+addresses.c:        result->text = xstrdup(ip);
+addresses.c:        la_vdebug("dup_address(%s)", address->text);
+addresses.c:        result->af = address->af;
+addresses.c:        result->addr = address->addr;
+addresses.c:        memcpy(&(result->addr6), &(address->addr6), sizeof(struct in6_addr));
+addresses.c:        result->prefix = address->prefix;
+addresses.c:        result->text = xstrdup(address->text);
+addresses.c:        la_vdebug("free_address(%s)", address->text);
+addresses.c:        free(address->text);
+commands.c: *  logactiond - trigger actions based on logfile contents
+commands.c:        if (!command->name)
+commands.c:                die_hard("%s:%u: %s: Assertion 'command->name' failed.", file,
+commands.c:        /* TODO: Not sure whether the next will break anything - let's see */
+commands.c:        if (!command->rule)
+commands.c:                die_hard("%s:%u: %s: Assertion 'command->rule' failed.", file,
+commands.c:        if (!command->begin_string)
+commands.c:                die_hard("%s:%u: %s: Assertion 'command->begin_string' "
+commands.c:        assert_list_ffl(command->begin_properties, func, file, line);
+commands.c:        assert_list_ffl(command->end_properties, func, file, line);
+commands.c: * - HOST
+commands.c: * - RULE
+commands.c: * - SOURCE
+commands.c: * - IPVERSION
+commands.c:        la_vdebug("check_for_special_names(%s)", action_property->name);
+commands.c:        if (command->address)
+commands.c:                if (!strcmp(action_property->name, LA_HOST_TOKEN))
+commands.c:                        return command->address->text;
+commands.c:                if (!strcmp(action_property->name, LA_IPVERSION_TOKEN))
+commands.c:                        if (command->address->af == AF_INET)
+commands.c:                        else if (command->address->af == AF_INET6)
+commands.c:        if (command->rule)
+commands.c:                if (!strcmp(action_property->name, LA_RULENAME_TOKEN))
+commands.c:                        return command->rule->name;
+commands.c:                if (!strcmp(action_property->name, LA_SOURCENAME_TOKEN))
+commands.c:                        return command->rule->source->name;
+commands.c: * - special property names (such as HOST, RULE, SOURCE, IPVERSION
+commands.c: * - matched tokens in the pattern
+commands.c: * - definitions in the config file rule section
+commands.c: * - definitions in the config file default section
+commands.c:        la_vdebug("get_value_for_action_property(%s)", action_property->name);
+commands.c:                        command->pattern_properties,
+commands.c:                        action_property->name);
+commands.c:        if (command->rule)
+commands.c:                result = get_value_from_property_list(command->rule->properties,
+commands.c:                                action_property->name);
+commands.c:        return get_value_from_property_list(la_config->default_properties,
+commands.c:                        action_property->name);
+commands.c:        la_vdebug("compute_converted_length(%s)", command->name);
+commands.c:                        command->begin_properties :
+commands.c:                        command->end_properties);
+commands.c:        la_debug("convert_command(%s, %s)", command->name,
+commands.c:                command->begin_string : command->end_string;
+commands.c:                        command->begin_properties :
+commands.c:                        command->end_properties);
+commands.c:                                /* We've detected a token - not just "%%"
+commands.c:                                         * now copy nothing - still TBD whether
+commands.c:                command->begin_string : command->end_string;
+commands.c:        la_debug("convert_command(%s, %s)", command->name,
+commands.c:                        command->begin_properties :
+commands.c:                        command->end_properties);
+commands.c:                result_ptr = stpncpy(result_ptr, string_ptr, action_property->pos - start_pos);
+commands.c:                         * - still TBD whether this is a good idea */
+commands.c:                start_pos = action_property->pos + action_property->length;
+commands.c:        /* Copy remainder of string - only if there's something left.
+commands.c:         * Double-check just to bes sure we don't overrun any buffer */
+commands.c:        if (string_ptr - source_string < source_len)
+commands.c:        la_vdebug("convert_command(%s)=%s", command->name, result);
+commands.c:        la_debug("exec_command(%s)", command->name);
+commands.c:                case -1:
+commands.c:                                        "action \"%s\".", command->name);
+commands.c:                                        "\"%s\".", command->name);
+commands.c:                                        "code %d.", command->name, result);
+commands.c:        la_debug("trigger_command(%s, %d)", command->name, command->duration);
+commands.c:        if (command->address)
+commands.c:                la_command_t *tmp = find_end_command(command->address);
+commands.c:                                                tmp->address->text, tmp->name,
+commands.c:                                                tmp->rule->name);
+commands.c:        if (command->is_template)
+commands.c:                                "source \"%s\".", command->name,
+commands.c:                                command->rule->name,
+commands.c:                                command->rule->source->name);
+commands.c:                                command->address->text, command->name,
+commands.c:                                command->rule->name);
+commands.c:        if (command->end_string && command->duration > 0)
+commands.c:        la_vdebug("trigger_end_command(%s, %d)", command->name,
+commands.c:                        command->duration);
+commands.c:        if (command->duration == INT_MAX)
+commands.c:                                command->rule->name);
+commands.c:                if (command->address)
+commands.c:                                        command->address->text, command->name,
+commands.c:                                        command->rule->name);
+commands.c:                                        "\"%s\".", command->name,
+commands.c:                                        command->rule->name);
+commands.c:                                        ptr-string, NULL);
+commands.c:                        ptr += xstrlen(new_prop->name) + 1;
+commands.c: * - Duplicates begin_properties / end_properties lists
+commands.c: * - Doesn't clone begin_string, end_string, rule, pattern, host, end_time,
+commands.c:        la_vdebug("dup_command(%s)", command->name);
+commands.c:        result->id = command->id;
+commands.c:        result->is_template = false;
+commands.c:        result->name = command->name;
+commands.c:        result->begin_string = command->begin_string;
+commands.c:        result->begin_properties = dup_property_list(command->begin_properties);
+commands.c:        result->n_begin_properties = command->n_begin_properties;
+commands.c:        result->end_string = command->end_string;
+commands.c:        result->end_properties = dup_property_list(command->end_properties);
+commands.c:        result->n_end_properties = command->n_end_properties;
+commands.c:        result->duration = command->duration;
+commands.c:        result->need_host = command->need_host;
+commands.c: * Returns NULL if if ip address does not match template->need_host setting.
+commands.c:        assert_list(pattern->properties);
+commands.c:        la_debug("create_command_from_template(%s)", template->name);
+commands.c:        if ((address->af == AF_INET && template->need_host ==
+commands.c:                        (address->af ==AF_INET6 && template->need_host ==
+commands.c:        result->rule = rule;
+commands.c:        result->pattern = pattern;
+commands.c:        result->pattern_properties = dup_property_list(pattern->properties);
+commands.c:        result->address = dup_address(address);
+commands.c:        result->end_time = result->n_triggers = result->start_time= 0;
+commands.c:        result->name = xstrdup(name);
+commands.c:        result->id = ++id_counter;
+commands.c:        result->is_template = true;
+commands.c:        result->begin_string = xstrdup(begin_string);
+commands.c:        result->begin_properties = xcreate_list();
+commands.c:        result->n_begin_properties = begin_string ?
+commands.c:                scan_action_tokens(result->begin_properties, begin_string) : 0;
+commands.c:        result->end_string = xstrdup(end_string);
+commands.c:        result->end_properties = xcreate_list();
+commands.c:        result->n_end_properties = end_string ?
+commands.c:                scan_action_tokens(result->end_properties, end_string) : 0;
+commands.c:        result->rule = rule;
+commands.c:        result->pattern = NULL;
+commands.c:        result->pattern_properties = NULL;
+commands.c:        result->address = NULL;
+commands.c:        result->need_host = need_host;
+commands.c:        result->duration = duration;
+commands.c:        result->end_time = 0;
+commands.c:        result->n_triggers = 0;
+commands.c:        result->start_time = 0;
+commands.c:        la_vdebug("free_command(%s)", command->name);
+commands.c:        free_property_list(command->begin_properties);
+commands.c:        free_property_list(command->end_properties);
+commands.c:        free_property_list(command->pattern_properties);
+commands.c:        if (command->is_template)
+commands.c:                free(command->name);
+commands.c:                free(command->begin_string);
+commands.c:                free(command->end_string);
+commands.c:        free_address(command->address);
+configfile.c: *  logactiond - trigger actions based on logfile contents
+configfile.c: * Return unsigned int for path relative to setting. Return -1 if element does
+configfile.c:                return -1;
+configfile.c:                                &la_config->config_file,
+configfile.c: * Returns a config_setting_t to an action within the main actions section -
+configfile.c:                                &la_config->config_file,
+configfile.c: * Return NULL in case of an error -e.g. when source == NULL.
+configfile.c:        sources_section = config_lookup(&la_config->config_file, LA_SOURCES_LABEL);
+configfile.c: * Returns name of source - i.e. label reference by "source" item in a rule
+configfile.c:        la_debug("compile_actions(%s)", rule->name);
+configfile.c:                add_tail(rule->begin_commands, (kw_node_t *)
+configfile.c:                                        rule->duration, need_host));
+configfile.c:        assert_list(rule->begin_commands);
+configfile.c:        la_debug("compile_list_of_actions(%s)", rule->name);
+configfile.c:        la_debug("load_actions(%s)", rule->name);
+configfile.c:                        config_lookup(&la_config->config_file, LA_DEFAULTS_LABEL);
+configfile.c:        la_debug("load_patterns(%s)", rule->name);
+configfile.c:                add_tail(rule->patterns, (kw_node_t *) pattern);
+configfile.c:        assert_list(rule->patterns);
+configfile.c:                                config_setting_name(section), address->text);
+configfile.c:        add_tail(la_config->sources, (kw_node_t *) result);
+configfile.c:        for (kw_node_t *tmp = &(la_config->systemd_source->systemd_units)->head;
+configfile.c:                        (tmp = tmp->succ->succ ? tmp->succ : NULL);)
+configfile.c:                if (!strcmp(systemd_unit, tmp->name))
+configfile.c:        node->name = xstrdup(systemd_unit);
+configfile.c:        add_tail(la_config->systemd_source->systemd_units, node);
+configfile.c: * Initializes la_config->systemd_source if it didn't exist so far.
+configfile.c:        if (!la_config->systemd_source)
+configfile.c:                la_config->systemd_source = create_source("systemd",
+configfile.c:                la_config->systemd_source->systemd_units = xcreate_list();
+configfile.c:        return la_config->systemd_source;
+configfile.c: * rule_def - section were rule is specified (non-user configuration)
+configfile.c: * uc_rule_def - user configuration where rule is enabled an parameters
+configfile.c:        load_properties(new_rule->properties, uc_rule_def);
+configfile.c:        load_properties(new_rule->properties, rule_def);
+configfile.c:        add_tail(source->rules, (kw_node_t *) new_rule);
+configfile.c:                config_lookup(&la_config->config_file, LA_LOCAL_LABEL);
+configfile.c:        if (!la_config->sources)
+configfile.c:                la_config->sources = xcreate_list();
+configfile.c:                config_lookup(&la_config->config_file, LA_DEFAULTS_LABEL);
+configfile.c:                la_config->default_threshold =
+configfile.c:                if (la_config->default_threshold == -1)
+configfile.c:                        la_config->default_threshold = DEFAULT_THRESHOLD;
+configfile.c:                la_config->default_period =
+configfile.c:                if (la_config->default_period == -1)
+configfile.c:                        la_config->default_period = DEFAULT_PERIOD;
+configfile.c:                la_config->default_duration =
+configfile.c:                if (la_config->default_duration == -1)
+configfile.c:                        la_config->default_duration = DEFAULT_DURATION;
+configfile.c:                if (!la_config->default_properties)
+configfile.c:                        la_config->default_properties = xcreate_list();
+configfile.c:                load_properties(la_config->default_properties, defaults_section);
+configfile.c:                if (!la_config->ignore_addresses)
+configfile.c:                        la_config->ignore_addresses = xcreate_list();
+configfile.c:                load_ignore_addresses(la_config->ignore_addresses,
+configfile.c:                la_config->default_threshold = DEFAULT_THRESHOLD;
+configfile.c:                la_config->default_period = DEFAULT_PERIOD;
+configfile.c:                la_config->default_duration = DEFAULT_DURATION;
+configfile.c:                if (la_config->default_properties)
+configfile.c:                        free_property_list(la_config->default_properties);
+configfile.c:                        la_config->default_properties = NULL;
+configfile.c:                if (la_config->ignore_addresses)
+configfile.c:                        free_address_list(la_config->ignore_addresses);
+configfile.c:                        la_config->ignore_addresses = NULL;
+configfile.c:        config_init(&la_config->config_file);
+configfile.c:        config_set_include_func(&la_config->config_file, include_func);
+configfile.c:        if (!config_read_file(&la_config->config_file, filename))
+configfile.c:                        config_error_file(&la_config->config_file);
+configfile.c:                        die_hard("%s:%d - %s!",
+configfile.c:                                        config_error_file(&la_config->config_file),
+configfile.c:                                        config_error_line(&la_config->config_file),
+configfile.c:                                        config_error_text(&la_config->config_file));
+configfile.c:                        die_hard("%s!", config_error_text(&la_config->config_file));
+configfile.c:        config_destroy(&la_config->config_file);
+configfile.c:        empty_source_list(la_config->sources);
+configfile.c:        free_source(la_config->systemd_source);
+configfile.c:        la_config->systemd_source = NULL;
+configfile.c:        empty_property_list(la_config->default_properties);
+configfile.c:        empty_address_list(la_config->ignore_addresses);
+configfile.c:                int len = p - path;
+configfile.c:                                                include_path_len - 1) != '/'))
+configfile.c:                                        dir_entry->d_name);
+endqueue.c: *  logactiond - trigger actions based on logfile contents
+endqueue.c:        la_debug("find_end_command(%s)", address->text);
+endqueue.c:                if (!adrcmp(command->address, address))
+endqueue.c:        la_vdebug("wait_for_next_end_command(%s, %u)", command->end_string,
+endqueue.c:                        command->end_time);
+endqueue.c:        if (command->end_time == INT_MAX)
+endqueue.c:                wait_interval.tv_sec = command->end_time;
+endqueue.c:                la_command_t *command = (la_command_t *) end_queue->head.succ;
+endqueue.c:                else if (xtime(NULL) < command->end_time)
+endqueue.c:                        /* non-empty list, but end_time of first command not
+endqueue.c:        la_vdebug("set_end_time(%s, %u)", command->end_string, command->duration);
+endqueue.c:        if (command->duration == INT_MAX)
+endqueue.c:                command->end_time = INT_MAX;
+endqueue.c:                command->end_time = xtime(NULL) + command->duration;
+endqueue.c: * non-negative). Sets end time.
+endqueue.c:        la_debug("enqueue_end_command(%s, %u)", end_command->end_string,
+endqueue.c:                        end_command->duration);
+endqueue.c:        if (end_command->duration <= 0)
+endqueue.c:        for (tmp = (la_command_t *) end_queue->head.succ;
+endqueue.c:                        tmp->node.succ;
+endqueue.c:                        tmp = (la_command_t *) tmp->node.succ)
+endqueue.c:                if (end_command->end_time <= tmp->end_time)
+inotify.c: *  logactiond - trigger actions based on logfile contents
+inotify.c:        if (event->mask & IN_ACCESS)
+inotify.c:        else if (event->mask & IN_ATTRIB)
+inotify.c:        else if (event->mask & IN_CLOSE_WRITE)
+inotify.c:        else if (event->mask & IN_CLOSE_NOWRITE)
+inotify.c:        else if (event->mask & IN_CREATE)
+inotify.c:        else if (event->mask & IN_DELETE)
+inotify.c:        else if (event->mask & IN_DELETE_SELF)
+inotify.c:        else if (event->mask & IN_MODIFY)
+inotify.c:        else if (event->mask & IN_MOVE_SELF)
+inotify.c:        else if (event->mask & IN_MOVED_FROM)
+inotify.c:        else if (event->mask & IN_MOVED_TO)
+inotify.c:        else if (event->mask & IN_OPEN)
+inotify.c:        if (event->mask & monitored)
+inotify.c:                la_vdebug("%u: %s (%s)%s", event->wd, str, event->name, "");
+inotify.c:                la_vdebug("%u: %s (%s)%s", event->wd, str, event->name, " - ignored");
+inotify.c:        la_debug("unwatch_source_inotify(%s)", source->name);
+inotify.c:        if (inotify_rm_watch(inotify_fd, source->wd))
+inotify.c:                                source->name);
+inotify.c:        source->wd = 0;
+inotify.c:        if (source->parent_wd)
+inotify.c:                if (inotify_rm_watch(inotify_fd, source->parent_wd))
+inotify.c:                                        source->parent_dir);
+inotify.c:                source->parent_wd = 0;
+inotify.c:        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+inotify.c:                if (source->parent_wd == parent_wd)
+inotify.c:                        char *tmp = xstrdup(source->location);
+inotify.c:        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+inotify.c:                if (source->wd == file_wd)
+inotify.c:        la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been re-created.",
+inotify.c:                        source->name, source->location);
+inotify.c:        if (source->file)
+inotify.c:                la_log(LOG_ERR, "Reading from source \"%s\" failed.", source->name);
+inotify.c:        la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been moved away.",
+inotify.c:                        source->name, source->location);
+inotify.c:        la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been moved to watched "
+inotify.c:                        "location.", source->name, source->location);
+inotify.c:        if (source->file)
+inotify.c:        /* ignore existing content when fiel was moved here - better safe than
+inotify.c: * Watched file has been deleted - stop watching.
+inotify.c:        la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been deleted.",
+inotify.c:                        source->name, source->location);
+inotify.c:        la_source_t *source = find_source_by_parent_wd(event->wd, event->name);
+inotify.c:        if (event->mask & IN_CREATE)
+inotify.c:                la_debug("handle_inotify_directory_event(%s)", source->name);
+inotify.c:        else if (event->mask & IN_MOVED_FROM)
+inotify.c:                la_debug("handle_inotify_directory_event(%s)", source->name);
+inotify.c:        else if (event->mask & IN_MOVED_TO)
+inotify.c:                la_debug("handle_inotify_directory_event(%s)", source->name);
+inotify.c:        else if (event->mask & IN_DELETE)
+inotify.c:                la_debug("handle_inotify_directory_event(%s)", source->name);
+inotify.c:        la_source_t *source = find_source_by_file_wd(event->wd);
+inotify.c:                 * non-watched files will be triggered. So this is the "normal
+inotify.c:        la_vdebug("handle_inotify_file_event(%s)", source->name);
+inotify.c:                die_err("Reading from source \"%s\" failed", source->name);
+inotify.c:        if (event->len) /* only directory have a name (and thus a length) */
+inotify.c:        if (close(inotify_fd) == -1)
+inotify.c:                if (num_read == -1)
+inotify.c:                /* Loop will not be entered if read() failed with -1 */
+inotify.c:                        i += EVENT_SIZE + event->len;
+inotify.c:        la_debug("watch_source_inotify(%s)", source->name);
+inotify.c:        source->wd  = inotify_add_watch(inotify_fd, source->location, IN_MODIFY);
+inotify.c:        if (source->wd  == -1)
+inotify.c:                die_err("Can't add inotify watch for %s!", source->location);
+inotify.c:        if (!source->parent_wd)
+inotify.c:                char *tmp = xstrdup(source->location);
+inotify.c:                source->parent_dir = xstrdup(dirname(tmp));
+inotify.c:                source->parent_wd = inotify_add_watch(inotify_fd,
+inotify.c:                                source->parent_dir, IN_CREATE | IN_DELETE |
+inotify.c:                if (source->parent_wd == -1)
+inotify.c:                        die_err("Can't add inotify watch for %s!", source->parent_dir);
+inotify.c:                if (inotify_fd == -1)
+Übereinstimmungen in Binärdatei logactiond
+Übereinstimmungen in Binärdatei logactiond-addresses.o
+logactiond.c: *  logactiond - trigger actions based on logfile contents
+logactiond.c:#include <systemd/sd-daemon.h>
+logactiond.c:                                "STATUS=Configuration reloaded - monitoring log files.\n");
+logactiond.c:                for (int x = sysconf(_SC_OPEN_MAX); x>=0; x--)
+logactiond.c:        if (sigaction(signum, NULL, &old_act) == -1)
+logactiond.c:                if (sigaction(signum, &new_act, NULL) == -1)
+logactiond.c:        if (sigemptyset(&new_act.sa_mask) == -1)
+logactiond.c: * https://stackoverflow.com/questions/17954432/creating-a-daemon-in-linux#17955149
+logactiond.c:        if (chdir(CONF_DIR) == -1)
+logactiond.c:        for (x = sysconf(_SC_OPEN_MAX); x>=0; x--)
+logactiond.c:                "Usage: logactiond [-c configfile] [-d] [-f] [-p pidfile] [-s] [-t]\n");
+logactiond.c:                if (c == -1)
+logactiond.c:                return pw->pw_uid;
+logactiond.c:        return -1;
+logactiond.c:        if (run_uid == -1)
+logactiond.c:        la_debug("use_correct_uid() - uid=%d, runuid=%d", cur_uid, run_uid);
+logactiond.c:                        die_hard("Can't change uid for non-root user.");
+logactiond.c:                        die_hard("Trying to run as non-root user.");
+logactiond.c:        free(la_config->sources);
+logactiond.c:                        "STATUS=logactiond started - monitoring log files.\n");
+Übereinstimmungen in Binärdatei logactiond-checkrules
+Übereinstimmungen in Binärdatei logactiond_checkrules-addresses.o
+logactiond-checkrules.c: *  logactiond - trigger actions based on logfile contents
+logactiond-checkrules.c:        "Usage: logactiond-checkrule [-c configfile] [-d] [-r rule] [-v] [file]\n");
+logactiond-checkrules.c:                if (c == -1)
+logactiond-checkrules.c:        for (la_pattern_t *pattern = ITERATE_PATTERNS(rule->patterns);
+logactiond-checkrules.c:                la_debug("pattern %u: %s\n", pattern->num, pattern->string);
+logactiond-checkrules.c:                if (!regexec(pattern->regex, line, MAX_NMATCH, pmatch, 0))
+logactiond-checkrules.c:                        printf("%s(%u): %s", rule->name, pattern->num, line);
+logactiond-checkrules.c:                        if (line[strlen(line)-1] != '\n')
+logactiond-checkrules.c:        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+logactiond-checkrules.c:                for (la_rule_t *rule = ITERATE_RULES(source->rules);
+logactiond-checkrules.c:        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+logactiond-checkrules.c:                for (la_rule_t *rule = ITERATE_RULES(source->rules);
+logactiond-checkrules.c:                        if (!strcmp(rule_name, rule->name))
+logactiond-checkrules.c:		if (num_read==-1)
+Übereinstimmungen in Binärdatei logactiond_checkrules-commands.o
+Übereinstimmungen in Binärdatei logactiond_checkrules-configfile.o
+Übereinstimmungen in Binärdatei logactiond_checkrules-logactiond-checkrules.o
+Übereinstimmungen in Binärdatei logactiond_checkrules-misc.o
+Übereinstimmungen in Binärdatei logactiond_checkrules-nodelist.o
+Übereinstimmungen in Binärdatei logactiond_checkrules-patterns.o
+Übereinstimmungen in Binärdatei logactiond_checkrules-properties.o
+Übereinstimmungen in Binärdatei logactiond_checkrules-rules.o
+Übereinstimmungen in Binärdatei logactiond_checkrules-sources.o
+Übereinstimmungen in Binärdatei logactiond-commands.o
+Übereinstimmungen in Binärdatei logactiond-configfile.o
+Übereinstimmungen in Binärdatei logactiond-endqueue.o
+logactiond.h: *  logactiond - trigger actions based on logfile contents
+logactiond.h:#define LA_RULE_SYSTEMD_UNIT_LABEL "systemd-unit"
+logactiond.h:#define ITERATE_ADDRESSES(ADDRESSES) (la_address_t *) &(ADDRESSES)->head
+logactiond.h:#define NEXT_ADDRESS(ADDRESS) (la_address_t *) (ADDRESS->node.succ->succ ? ADDRESS->node.succ : NULL)
+logactiond.h:#define HAS_NEXT_ADDRESS(ADDRESS) ADDRESS->node.succ
+logactiond.h:#define ITERATE_COMMANDS(COMMANDS) (la_command_t *) &(COMMANDS)->head
+logactiond.h:#define NEXT_COMMAND(COMMAND) (la_command_t *) (COMMAND->node.succ->succ ? COMMAND->node.succ : NULL)
+logactiond.h:#define HAS_NEXT_COMMAND(COMMAND) COMMAND->node.succ
+logactiond.h:#define ITERATE_PATTERNS(PATTERNS) (la_pattern_t *) &(PATTERNS)->head
+logactiond.h:#define NEXT_PATTERN(PATTERN) (la_pattern_t *) (PATTERN->node.succ->succ ? PATTERN->node.succ : NULL)
+logactiond.h:#define HAS_NEXT_PATTERN(PATTERN) PATTERN->node.succ
+logactiond.h:#define ITERATE_PROPERTIES(PROPERTIES) (la_property_t *) &(PROPERTIES)->head
+logactiond.h:#define NEXT_PROPERTY(PROPERTY) (la_property_t *) (PROPERTY->node.succ->succ ? PROPERTY->node.succ : NULL)
+logactiond.h:#define HAS_NEXT_PROPERTY(PROPERTY) PROPERTY->node.succ
+logactiond.h:#define ITERATE_RULES(RULES) (la_rule_t *) &(RULES)->head
+logactiond.h:#define NEXT_RULE(RULE) (la_rule_t *) (RULE->node.succ->succ ? RULE->node.succ : NULL)
+logactiond.h:#define HAS_NEXT_RULE(RULE) RULE->node.succ
+logactiond.h:#define ITERATE_SOURCES(SOURCES) (la_source_t *) &(SOURCES)->head
+logactiond.h:#define NEXT_SOURCE(SOURCE) (la_source_t *) (SOURCE->node.succ->succ ? SOURCE->node.succ : NULL)
+logactiond.h:#define HAS_NEXT_SOURCE(SOURCE) SOURCE->node.succ
+logactiond.h: * name - name of property: strdup()d
+logactiond.h: * value - value of property: strdup()d
+logactiond.h:         * - when used for config file properties, this is simply the value
+logactiond.h:         * - when used when matching a log line to a regex, this is the matched
+logactiond.h:         * - when used as an action token, this is the value taken from the
+logactiond.h:         * XXX: Not thread-safe: i.e. using the same pattern for different
+logactiond.h:         * BTW: strings will be strdup()ed - take care to free again */
+logactiond.h:                                   -1 if none */
+logactiond.h:        /* Name of source in config file - strdup()d */
+logactiond.h:        /* Filename (or equivalent) - strdup()d */
+logactiond.h:        /* Parent dir of log file - currently only used for inotify */
+logactiond.h:        /* File is currently "watchable" - only used by polling backend */
+Übereinstimmungen in Binärdatei logactiond-inotify.o
+Übereinstimmungen in Binärdatei logactiond-logactiond.o
+Übereinstimmungen in Binärdatei logactiond-misc.o
+Übereinstimmungen in Binärdatei logactiond-nodelist.o
+Übereinstimmungen in Binärdatei logactiond-patterns.o
+Übereinstimmungen in Binärdatei logactiond-polling.o
+Übereinstimmungen in Binärdatei logactiond-properties.o
+Übereinstimmungen in Binärdatei logactiond-rules.o
+Übereinstimmungen in Binärdatei logactiond-sources.o
+Übereinstimmungen in Binärdatei logactiond-status.o
+Übereinstimmungen in Binärdatei logactiond-systemd.o
+Übereinstimmungen in Binärdatei logactiond-watch.o
+Makefile:# Copyright (C) 1994-2014 Free Software Foundation, Inc.
+Makefile:  if test -z '$(MAKELEVEL)'; then \
+Makefile:  elif test -n '$(MAKE_HOST)'; then \
+Makefile:  elif test -n '$(MAKE_VERSION)' && test -n '$(CURDIR)'; then \
+Makefile:  case $${target_option-} in \
+Makefile:              "target option '$${target_option-}' specified" >&2; \
+Makefile:      *=*|--*) continue;; \
+Makefile:        -*I) strip_trailopt 'I'; skip_next=yes;; \
+Makefile:      -*I?*) strip_trailopt 'I';; \
+Makefile:        -*O) strip_trailopt 'O'; skip_next=yes;; \
+Makefile:      -*O?*) strip_trailopt 'O';; \
+Makefile:        -*l) strip_trailopt 'l'; skip_next=yes;; \
+Makefile:      -*l?*) strip_trailopt 'l';; \
+Makefile:      -[dEDm]) skip_next=yes;; \
+Makefile:      -[JT]) skip_next=yes;; \
+Makefile:install_sh_DATA = $(install_sh) -c -m 644
+Makefile:install_sh_PROGRAM = $(install_sh) -c
+Makefile:install_sh_SCRIPT = $(install_sh) -c
+Makefile:build_triplet = x86_64-pc-linux-gnu
+Makefile:host_triplet = x86_64-pc-linux-gnu
+Makefile:bin_PROGRAMS = logactiond-checkrules$(EXEEXT)
+Makefile:mkinstalldirs = $(install_sh) -d
+Makefile:am_logactiond_OBJECTS = logactiond-logactiond.$(OBJEXT) \
+Makefile:	logactiond-configfile.$(OBJEXT) logactiond-rules.$(OBJEXT) \
+Makefile:	logactiond-patterns.$(OBJEXT) logactiond-sources.$(OBJEXT) \
+Makefile:	logactiond-misc.$(OBJEXT) logactiond-inotify.$(OBJEXT) \
+Makefile:	logactiond-nodelist.$(OBJEXT) logactiond-properties.$(OBJEXT) \
+Makefile:	logactiond-commands.$(OBJEXT) logactiond-endqueue.$(OBJEXT) \
+Makefile:	logactiond-addresses.$(OBJEXT) logactiond-polling.$(OBJEXT) \
+Makefile:	logactiond-status.$(OBJEXT) logactiond-watch.$(OBJEXT) \
+Makefile:	logactiond-systemd.$(OBJEXT)
+Makefile:	$(LDFLAGS) -o $@
+Makefile:	logactiond_checkrules-logactiond-checkrules.$(OBJEXT) \
+Makefile:	logactiond_checkrules-addresses.$(OBJEXT) \
+Makefile:	logactiond_checkrules-commands.$(OBJEXT) \
+Makefile:	logactiond_checkrules-configfile.$(OBJEXT) \
+Makefile:	logactiond_checkrules-misc.$(OBJEXT) \
+Makefile:	logactiond_checkrules-nodelist.$(OBJEXT) \
+Makefile:	logactiond_checkrules-patterns.$(OBJEXT) \
+Makefile:	logactiond_checkrules-properties.$(OBJEXT) \
+Makefile:	logactiond_checkrules-rules.$(OBJEXT) \
+Makefile:	logactiond_checkrules-sources.$(OBJEXT)
+Makefile:	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+Makefile:DEFAULT_INCLUDES = -I. -I$(top_builddir)
+Makefile:am__mv = mv -f
+Makefile:am__v_lt_0 = --silent
+Makefile:LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+Makefile:    *) (install-info --version) >/dev/null 2>&1;; \
+Makefile:# Read a list of newline-separated strings from the standard input,
+Makefile:    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
+Makefile:ACLOCAL = ${SHELL} /home/claude/dev2/logactiond/missing aclocal-1.15
+Makefile:AMTAR = $${TAR-tar}
+Makefile:AUTOMAKE = ${SHELL} /home/claude/dev2/logactiond/missing automake-1.15
+Makefile:CFLAGS = -g -O2
+Makefile:CPP = gcc -E
+Makefile:DEFS = -DHAVE_CONFIG_H
+Makefile:ECHO_N = -n
+Makefile:EGREP = /bin/grep -E
+Makefile:INSTALL = /usr/bin/install -c
+Makefile:INSTALL_DATA = ${INSTALL} -m 644
+Makefile:INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
+Makefile:LIBS = -lresolv -lsystemd 
+Makefile:MKDIR_P = /bin/mkdir -p
+Makefile:PTHREAD_CFLAGS = -pthread
+Makefile:am__tar = $${TAR-tar} chof - "$$tardir"
+Makefile:am__untar = $${TAR-tar} xf -
+Makefile:build = x86_64-pc-linux-gnu
+Makefile:build_os = linux-gnu
+Makefile:host = x86_64-pc-linux-gnu
+Makefile:host_os = linux-gnu
+Makefile:install_sh = ${SHELL} /home/claude/dev2/logactiond/install-sh
+Makefile:logactiond_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\""
+Makefile:logactiond_checkrules_SOURCES = logactiond-checkrules.c logactiond.h addresses.c commands.c configfile.c misc.c nodelist.c nodelist.h patterns.c properties.c rules.c sources.c
+Makefile:logactiond_checkrules_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\"" -DNOCOMMANDS -DNOWATCH
+Makefile:all: all-am
+Makefile:	      ( cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh ) \
+Makefile:	        && { if test -f $@; then exit 0; else break; fi; }; \
+Makefile:	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/Makefile'; \
+Makefile:	  $(AUTOMAKE) --gnu src/Makefile
+Makefile:	    cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh;; \
+Makefile:	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
+Makefile:	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
+Makefile:	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
+Makefile:install-binPROGRAMS: $(bin_PROGRAMS)
+Makefile:	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
+Makefile:	if test -n "$$list"; then \
+Makefile:	while read p p1; do if test -f $$p \
+Makefile:	sed -e 'p;s,.*/,,;n;h' \
+Makefile:	    -e 's|.*|.|' \
+Makefile:	    -e 'p;x;s,.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/' | \
+Makefile:	    test -z "$$files" || { \
+Makefile:uninstall-binPROGRAMS:
+Makefile:	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
+Makefile:	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
+Makefile:	      -e 's/$$/$(EXEEXT)/' \
+Makefile:	test -n "$$list" || exit 0; \
+Makefile:	echo " ( cd '$(DESTDIR)$(bindir)' && rm -f" $$files ")"; \
+Makefile:	cd "$(DESTDIR)$(bindir)" && rm -f $$files
+Makefile:clean-binPROGRAMS:
+Makefile:	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+Makefile:install-sbinPROGRAMS: $(sbin_PROGRAMS)
+Makefile:	@list='$(sbin_PROGRAMS)'; test -n "$(sbindir)" || list=; \
+Makefile:	if test -n "$$list"; then \
+Makefile:	while read p p1; do if test -f $$p \
+Makefile:	sed -e 'p;s,.*/,,;n;h' \
+Makefile:	    -e 's|.*|.|' \
+Makefile:	    -e 'p;x;s,.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/' | \
+Makefile:	    test -z "$$files" || { \
+Makefile:uninstall-sbinPROGRAMS:
+Makefile:	@list='$(sbin_PROGRAMS)'; test -n "$(sbindir)" || list=; \
+Makefile:	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
+Makefile:	      -e 's/$$/$(EXEEXT)/' \
+Makefile:	test -n "$$list" || exit 0; \
+Makefile:	echo " ( cd '$(DESTDIR)$(sbindir)' && rm -f" $$files ")"; \
+Makefile:	cd "$(DESTDIR)$(sbindir)" && rm -f $$files
+Makefile:clean-sbinPROGRAMS:
+Makefile:	-test -z "$(sbin_PROGRAMS)" || rm -f $(sbin_PROGRAMS)
+Makefile:	@rm -f logactiond$(EXEEXT)
+Makefile:logactiond-checkrules$(EXEEXT): $(logactiond_checkrules_OBJECTS) $(logactiond_checkrules_DEPENDENCIES) $(EXTRA_logactiond_checkrules_DEPENDENCIES) 
+Makefile:	@rm -f logactiond-checkrules$(EXEEXT)
+Makefile:mostlyclean-compile:
+Makefile:	-rm -f *.$(OBJEXT)
+Makefile:distclean-compile:
+Makefile:	-rm -f *.tab.c
+Makefile:include ./$(DEPDIR)/logactiond-addresses.Po
+Makefile:include ./$(DEPDIR)/logactiond-commands.Po
+Makefile:include ./$(DEPDIR)/logactiond-configfile.Po
+Makefile:include ./$(DEPDIR)/logactiond-endqueue.Po
+Makefile:include ./$(DEPDIR)/logactiond-inotify.Po
+Makefile:include ./$(DEPDIR)/logactiond-logactiond.Po
+Makefile:include ./$(DEPDIR)/logactiond-misc.Po
+Makefile:include ./$(DEPDIR)/logactiond-nodelist.Po
+Makefile:include ./$(DEPDIR)/logactiond-patterns.Po
+Makefile:include ./$(DEPDIR)/logactiond-polling.Po
+Makefile:include ./$(DEPDIR)/logactiond-properties.Po
+Makefile:include ./$(DEPDIR)/logactiond-rules.Po
+Makefile:include ./$(DEPDIR)/logactiond-sources.Po
+Makefile:include ./$(DEPDIR)/logactiond-status.Po
+Makefile:include ./$(DEPDIR)/logactiond-systemd.Po
+Makefile:include ./$(DEPDIR)/logactiond-watch.Po
+Makefile:include ./$(DEPDIR)/logactiond_checkrules-addresses.Po
+Makefile:include ./$(DEPDIR)/logactiond_checkrules-commands.Po
+Makefile:include ./$(DEPDIR)/logactiond_checkrules-configfile.Po
+Makefile:include ./$(DEPDIR)/logactiond_checkrules-logactiond-checkrules.Po
+Makefile:include ./$(DEPDIR)/logactiond_checkrules-misc.Po
+Makefile:include ./$(DEPDIR)/logactiond_checkrules-nodelist.Po
+Makefile:include ./$(DEPDIR)/logactiond_checkrules-patterns.Po
+Makefile:include ./$(DEPDIR)/logactiond_checkrules-properties.Po
+Makefile:include ./$(DEPDIR)/logactiond_checkrules-rules.Po
+Makefile:include ./$(DEPDIR)/logactiond_checkrules-sources.Po
+Makefile:	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+Makefile:#	$(AM_V_CC_no)$(COMPILE) -c -o $@ $<
+Makefile:	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+Makefile:#	$(AM_V_CC_no)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+Makefile:logactiond-logactiond.o: logactiond.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-logactiond.o -MD -MP -MF $(DEPDIR)/logactiond-logactiond.Tpo -c -o logactiond-logactiond.o `test -f 'logactiond.c' || echo '$(srcdir)/'`logactiond.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-logactiond.Tpo $(DEPDIR)/logactiond-logactiond.Po
+Makefile:#	$(AM_V_CC)source='logactiond.c' object='logactiond-logactiond.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-logactiond.o `test -f 'logactiond.c' || echo '$(srcdir)/'`logactiond.c
+Makefile:logactiond-logactiond.obj: logactiond.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-logactiond.obj -MD -MP -MF $(DEPDIR)/logactiond-logactiond.Tpo -c -o logactiond-logactiond.obj `if test -f 'logactiond.c'; then $(CYGPATH_W) 'logactiond.c'; else $(CYGPATH_W) '$(srcdir)/logactiond.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-logactiond.Tpo $(DEPDIR)/logactiond-logactiond.Po
+Makefile:#	$(AM_V_CC)source='logactiond.c' object='logactiond-logactiond.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-logactiond.obj `if test -f 'logactiond.c'; then $(CYGPATH_W) 'logactiond.c'; else $(CYGPATH_W) '$(srcdir)/logactiond.c'; fi`
+Makefile:logactiond-configfile.o: configfile.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-configfile.o -MD -MP -MF $(DEPDIR)/logactiond-configfile.Tpo -c -o logactiond-configfile.o `test -f 'configfile.c' || echo '$(srcdir)/'`configfile.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-configfile.Tpo $(DEPDIR)/logactiond-configfile.Po
+Makefile:#	$(AM_V_CC)source='configfile.c' object='logactiond-configfile.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-configfile.o `test -f 'configfile.c' || echo '$(srcdir)/'`configfile.c
+Makefile:logactiond-configfile.obj: configfile.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-configfile.obj -MD -MP -MF $(DEPDIR)/logactiond-configfile.Tpo -c -o logactiond-configfile.obj `if test -f 'configfile.c'; then $(CYGPATH_W) 'configfile.c'; else $(CYGPATH_W) '$(srcdir)/configfile.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-configfile.Tpo $(DEPDIR)/logactiond-configfile.Po
+Makefile:#	$(AM_V_CC)source='configfile.c' object='logactiond-configfile.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-configfile.obj `if test -f 'configfile.c'; then $(CYGPATH_W) 'configfile.c'; else $(CYGPATH_W) '$(srcdir)/configfile.c'; fi`
+Makefile:logactiond-rules.o: rules.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-rules.o -MD -MP -MF $(DEPDIR)/logactiond-rules.Tpo -c -o logactiond-rules.o `test -f 'rules.c' || echo '$(srcdir)/'`rules.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-rules.Tpo $(DEPDIR)/logactiond-rules.Po
+Makefile:#	$(AM_V_CC)source='rules.c' object='logactiond-rules.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-rules.o `test -f 'rules.c' || echo '$(srcdir)/'`rules.c
+Makefile:logactiond-rules.obj: rules.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-rules.obj -MD -MP -MF $(DEPDIR)/logactiond-rules.Tpo -c -o logactiond-rules.obj `if test -f 'rules.c'; then $(CYGPATH_W) 'rules.c'; else $(CYGPATH_W) '$(srcdir)/rules.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-rules.Tpo $(DEPDIR)/logactiond-rules.Po
+Makefile:#	$(AM_V_CC)source='rules.c' object='logactiond-rules.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-rules.obj `if test -f 'rules.c'; then $(CYGPATH_W) 'rules.c'; else $(CYGPATH_W) '$(srcdir)/rules.c'; fi`
+Makefile:logactiond-patterns.o: patterns.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-patterns.o -MD -MP -MF $(DEPDIR)/logactiond-patterns.Tpo -c -o logactiond-patterns.o `test -f 'patterns.c' || echo '$(srcdir)/'`patterns.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-patterns.Tpo $(DEPDIR)/logactiond-patterns.Po
+Makefile:#	$(AM_V_CC)source='patterns.c' object='logactiond-patterns.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-patterns.o `test -f 'patterns.c' || echo '$(srcdir)/'`patterns.c
+Makefile:logactiond-patterns.obj: patterns.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-patterns.obj -MD -MP -MF $(DEPDIR)/logactiond-patterns.Tpo -c -o logactiond-patterns.obj `if test -f 'patterns.c'; then $(CYGPATH_W) 'patterns.c'; else $(CYGPATH_W) '$(srcdir)/patterns.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-patterns.Tpo $(DEPDIR)/logactiond-patterns.Po
+Makefile:#	$(AM_V_CC)source='patterns.c' object='logactiond-patterns.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-patterns.obj `if test -f 'patterns.c'; then $(CYGPATH_W) 'patterns.c'; else $(CYGPATH_W) '$(srcdir)/patterns.c'; fi`
+Makefile:logactiond-sources.o: sources.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-sources.o -MD -MP -MF $(DEPDIR)/logactiond-sources.Tpo -c -o logactiond-sources.o `test -f 'sources.c' || echo '$(srcdir)/'`sources.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-sources.Tpo $(DEPDIR)/logactiond-sources.Po
+Makefile:#	$(AM_V_CC)source='sources.c' object='logactiond-sources.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-sources.o `test -f 'sources.c' || echo '$(srcdir)/'`sources.c
+Makefile:logactiond-sources.obj: sources.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-sources.obj -MD -MP -MF $(DEPDIR)/logactiond-sources.Tpo -c -o logactiond-sources.obj `if test -f 'sources.c'; then $(CYGPATH_W) 'sources.c'; else $(CYGPATH_W) '$(srcdir)/sources.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-sources.Tpo $(DEPDIR)/logactiond-sources.Po
+Makefile:#	$(AM_V_CC)source='sources.c' object='logactiond-sources.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-sources.obj `if test -f 'sources.c'; then $(CYGPATH_W) 'sources.c'; else $(CYGPATH_W) '$(srcdir)/sources.c'; fi`
+Makefile:logactiond-misc.o: misc.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-misc.o -MD -MP -MF $(DEPDIR)/logactiond-misc.Tpo -c -o logactiond-misc.o `test -f 'misc.c' || echo '$(srcdir)/'`misc.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-misc.Tpo $(DEPDIR)/logactiond-misc.Po
+Makefile:#	$(AM_V_CC)source='misc.c' object='logactiond-misc.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-misc.o `test -f 'misc.c' || echo '$(srcdir)/'`misc.c
+Makefile:logactiond-misc.obj: misc.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-misc.obj -MD -MP -MF $(DEPDIR)/logactiond-misc.Tpo -c -o logactiond-misc.obj `if test -f 'misc.c'; then $(CYGPATH_W) 'misc.c'; else $(CYGPATH_W) '$(srcdir)/misc.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-misc.Tpo $(DEPDIR)/logactiond-misc.Po
+Makefile:#	$(AM_V_CC)source='misc.c' object='logactiond-misc.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-misc.obj `if test -f 'misc.c'; then $(CYGPATH_W) 'misc.c'; else $(CYGPATH_W) '$(srcdir)/misc.c'; fi`
+Makefile:logactiond-inotify.o: inotify.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-inotify.o -MD -MP -MF $(DEPDIR)/logactiond-inotify.Tpo -c -o logactiond-inotify.o `test -f 'inotify.c' || echo '$(srcdir)/'`inotify.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-inotify.Tpo $(DEPDIR)/logactiond-inotify.Po
+Makefile:#	$(AM_V_CC)source='inotify.c' object='logactiond-inotify.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-inotify.o `test -f 'inotify.c' || echo '$(srcdir)/'`inotify.c
+Makefile:logactiond-inotify.obj: inotify.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-inotify.obj -MD -MP -MF $(DEPDIR)/logactiond-inotify.Tpo -c -o logactiond-inotify.obj `if test -f 'inotify.c'; then $(CYGPATH_W) 'inotify.c'; else $(CYGPATH_W) '$(srcdir)/inotify.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-inotify.Tpo $(DEPDIR)/logactiond-inotify.Po
+Makefile:#	$(AM_V_CC)source='inotify.c' object='logactiond-inotify.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-inotify.obj `if test -f 'inotify.c'; then $(CYGPATH_W) 'inotify.c'; else $(CYGPATH_W) '$(srcdir)/inotify.c'; fi`
+Makefile:logactiond-nodelist.o: nodelist.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-nodelist.o -MD -MP -MF $(DEPDIR)/logactiond-nodelist.Tpo -c -o logactiond-nodelist.o `test -f 'nodelist.c' || echo '$(srcdir)/'`nodelist.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-nodelist.Tpo $(DEPDIR)/logactiond-nodelist.Po
+Makefile:#	$(AM_V_CC)source='nodelist.c' object='logactiond-nodelist.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-nodelist.o `test -f 'nodelist.c' || echo '$(srcdir)/'`nodelist.c
+Makefile:logactiond-nodelist.obj: nodelist.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-nodelist.obj -MD -MP -MF $(DEPDIR)/logactiond-nodelist.Tpo -c -o logactiond-nodelist.obj `if test -f 'nodelist.c'; then $(CYGPATH_W) 'nodelist.c'; else $(CYGPATH_W) '$(srcdir)/nodelist.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-nodelist.Tpo $(DEPDIR)/logactiond-nodelist.Po
+Makefile:#	$(AM_V_CC)source='nodelist.c' object='logactiond-nodelist.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-nodelist.obj `if test -f 'nodelist.c'; then $(CYGPATH_W) 'nodelist.c'; else $(CYGPATH_W) '$(srcdir)/nodelist.c'; fi`
+Makefile:logactiond-properties.o: properties.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-properties.o -MD -MP -MF $(DEPDIR)/logactiond-properties.Tpo -c -o logactiond-properties.o `test -f 'properties.c' || echo '$(srcdir)/'`properties.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-properties.Tpo $(DEPDIR)/logactiond-properties.Po
+Makefile:#	$(AM_V_CC)source='properties.c' object='logactiond-properties.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-properties.o `test -f 'properties.c' || echo '$(srcdir)/'`properties.c
+Makefile:logactiond-properties.obj: properties.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-properties.obj -MD -MP -MF $(DEPDIR)/logactiond-properties.Tpo -c -o logactiond-properties.obj `if test -f 'properties.c'; then $(CYGPATH_W) 'properties.c'; else $(CYGPATH_W) '$(srcdir)/properties.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-properties.Tpo $(DEPDIR)/logactiond-properties.Po
+Makefile:#	$(AM_V_CC)source='properties.c' object='logactiond-properties.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-properties.obj `if test -f 'properties.c'; then $(CYGPATH_W) 'properties.c'; else $(CYGPATH_W) '$(srcdir)/properties.c'; fi`
+Makefile:logactiond-commands.o: commands.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-commands.o -MD -MP -MF $(DEPDIR)/logactiond-commands.Tpo -c -o logactiond-commands.o `test -f 'commands.c' || echo '$(srcdir)/'`commands.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-commands.Tpo $(DEPDIR)/logactiond-commands.Po
+Makefile:#	$(AM_V_CC)source='commands.c' object='logactiond-commands.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-commands.o `test -f 'commands.c' || echo '$(srcdir)/'`commands.c
+Makefile:logactiond-commands.obj: commands.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-commands.obj -MD -MP -MF $(DEPDIR)/logactiond-commands.Tpo -c -o logactiond-commands.obj `if test -f 'commands.c'; then $(CYGPATH_W) 'commands.c'; else $(CYGPATH_W) '$(srcdir)/commands.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-commands.Tpo $(DEPDIR)/logactiond-commands.Po
+Makefile:#	$(AM_V_CC)source='commands.c' object='logactiond-commands.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-commands.obj `if test -f 'commands.c'; then $(CYGPATH_W) 'commands.c'; else $(CYGPATH_W) '$(srcdir)/commands.c'; fi`
+Makefile:logactiond-endqueue.o: endqueue.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-endqueue.o -MD -MP -MF $(DEPDIR)/logactiond-endqueue.Tpo -c -o logactiond-endqueue.o `test -f 'endqueue.c' || echo '$(srcdir)/'`endqueue.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-endqueue.Tpo $(DEPDIR)/logactiond-endqueue.Po
+Makefile:#	$(AM_V_CC)source='endqueue.c' object='logactiond-endqueue.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-endqueue.o `test -f 'endqueue.c' || echo '$(srcdir)/'`endqueue.c
+Makefile:logactiond-endqueue.obj: endqueue.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-endqueue.obj -MD -MP -MF $(DEPDIR)/logactiond-endqueue.Tpo -c -o logactiond-endqueue.obj `if test -f 'endqueue.c'; then $(CYGPATH_W) 'endqueue.c'; else $(CYGPATH_W) '$(srcdir)/endqueue.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-endqueue.Tpo $(DEPDIR)/logactiond-endqueue.Po
+Makefile:#	$(AM_V_CC)source='endqueue.c' object='logactiond-endqueue.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-endqueue.obj `if test -f 'endqueue.c'; then $(CYGPATH_W) 'endqueue.c'; else $(CYGPATH_W) '$(srcdir)/endqueue.c'; fi`
+Makefile:logactiond-addresses.o: addresses.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-addresses.o -MD -MP -MF $(DEPDIR)/logactiond-addresses.Tpo -c -o logactiond-addresses.o `test -f 'addresses.c' || echo '$(srcdir)/'`addresses.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-addresses.Tpo $(DEPDIR)/logactiond-addresses.Po
+Makefile:#	$(AM_V_CC)source='addresses.c' object='logactiond-addresses.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-addresses.o `test -f 'addresses.c' || echo '$(srcdir)/'`addresses.c
+Makefile:logactiond-addresses.obj: addresses.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-addresses.obj -MD -MP -MF $(DEPDIR)/logactiond-addresses.Tpo -c -o logactiond-addresses.obj `if test -f 'addresses.c'; then $(CYGPATH_W) 'addresses.c'; else $(CYGPATH_W) '$(srcdir)/addresses.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-addresses.Tpo $(DEPDIR)/logactiond-addresses.Po
+Makefile:#	$(AM_V_CC)source='addresses.c' object='logactiond-addresses.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-addresses.obj `if test -f 'addresses.c'; then $(CYGPATH_W) 'addresses.c'; else $(CYGPATH_W) '$(srcdir)/addresses.c'; fi`
+Makefile:logactiond-polling.o: polling.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-polling.o -MD -MP -MF $(DEPDIR)/logactiond-polling.Tpo -c -o logactiond-polling.o `test -f 'polling.c' || echo '$(srcdir)/'`polling.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-polling.Tpo $(DEPDIR)/logactiond-polling.Po
+Makefile:#	$(AM_V_CC)source='polling.c' object='logactiond-polling.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-polling.o `test -f 'polling.c' || echo '$(srcdir)/'`polling.c
+Makefile:logactiond-polling.obj: polling.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-polling.obj -MD -MP -MF $(DEPDIR)/logactiond-polling.Tpo -c -o logactiond-polling.obj `if test -f 'polling.c'; then $(CYGPATH_W) 'polling.c'; else $(CYGPATH_W) '$(srcdir)/polling.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-polling.Tpo $(DEPDIR)/logactiond-polling.Po
+Makefile:#	$(AM_V_CC)source='polling.c' object='logactiond-polling.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-polling.obj `if test -f 'polling.c'; then $(CYGPATH_W) 'polling.c'; else $(CYGPATH_W) '$(srcdir)/polling.c'; fi`
+Makefile:logactiond-status.o: status.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-status.o -MD -MP -MF $(DEPDIR)/logactiond-status.Tpo -c -o logactiond-status.o `test -f 'status.c' || echo '$(srcdir)/'`status.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-status.Tpo $(DEPDIR)/logactiond-status.Po
+Makefile:#	$(AM_V_CC)source='status.c' object='logactiond-status.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-status.o `test -f 'status.c' || echo '$(srcdir)/'`status.c
+Makefile:logactiond-status.obj: status.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-status.obj -MD -MP -MF $(DEPDIR)/logactiond-status.Tpo -c -o logactiond-status.obj `if test -f 'status.c'; then $(CYGPATH_W) 'status.c'; else $(CYGPATH_W) '$(srcdir)/status.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-status.Tpo $(DEPDIR)/logactiond-status.Po
+Makefile:#	$(AM_V_CC)source='status.c' object='logactiond-status.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-status.obj `if test -f 'status.c'; then $(CYGPATH_W) 'status.c'; else $(CYGPATH_W) '$(srcdir)/status.c'; fi`
+Makefile:logactiond-watch.o: watch.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-watch.o -MD -MP -MF $(DEPDIR)/logactiond-watch.Tpo -c -o logactiond-watch.o `test -f 'watch.c' || echo '$(srcdir)/'`watch.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-watch.Tpo $(DEPDIR)/logactiond-watch.Po
+Makefile:#	$(AM_V_CC)source='watch.c' object='logactiond-watch.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-watch.o `test -f 'watch.c' || echo '$(srcdir)/'`watch.c
+Makefile:logactiond-watch.obj: watch.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-watch.obj -MD -MP -MF $(DEPDIR)/logactiond-watch.Tpo -c -o logactiond-watch.obj `if test -f 'watch.c'; then $(CYGPATH_W) 'watch.c'; else $(CYGPATH_W) '$(srcdir)/watch.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-watch.Tpo $(DEPDIR)/logactiond-watch.Po
+Makefile:#	$(AM_V_CC)source='watch.c' object='logactiond-watch.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-watch.obj `if test -f 'watch.c'; then $(CYGPATH_W) 'watch.c'; else $(CYGPATH_W) '$(srcdir)/watch.c'; fi`
+Makefile:logactiond-systemd.o: systemd.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-systemd.o -MD -MP -MF $(DEPDIR)/logactiond-systemd.Tpo -c -o logactiond-systemd.o `test -f 'systemd.c' || echo '$(srcdir)/'`systemd.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-systemd.Tpo $(DEPDIR)/logactiond-systemd.Po
+Makefile:#	$(AM_V_CC)source='systemd.c' object='logactiond-systemd.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-systemd.o `test -f 'systemd.c' || echo '$(srcdir)/'`systemd.c
+Makefile:logactiond-systemd.obj: systemd.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-systemd.obj -MD -MP -MF $(DEPDIR)/logactiond-systemd.Tpo -c -o logactiond-systemd.obj `if test -f 'systemd.c'; then $(CYGPATH_W) 'systemd.c'; else $(CYGPATH_W) '$(srcdir)/systemd.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-systemd.Tpo $(DEPDIR)/logactiond-systemd.Po
+Makefile:#	$(AM_V_CC)source='systemd.c' object='logactiond-systemd.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-systemd.obj `if test -f 'systemd.c'; then $(CYGPATH_W) 'systemd.c'; else $(CYGPATH_W) '$(srcdir)/systemd.c'; fi`
+Makefile:logactiond_checkrules-logactiond-checkrules.o: logactiond-checkrules.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-logactiond-checkrules.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-logactiond-checkrules.Tpo -c -o logactiond_checkrules-logactiond-checkrules.o `test -f 'logactiond-checkrules.c' || echo '$(srcdir)/'`logactiond-checkrules.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-logactiond-checkrules.Tpo $(DEPDIR)/logactiond_checkrules-logactiond-checkrules.Po
+Makefile:#	$(AM_V_CC)source='logactiond-checkrules.c' object='logactiond_checkrules-logactiond-checkrules.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-logactiond-checkrules.o `test -f 'logactiond-checkrules.c' || echo '$(srcdir)/'`logactiond-checkrules.c
+Makefile:logactiond_checkrules-logactiond-checkrules.obj: logactiond-checkrules.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-logactiond-checkrules.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-logactiond-checkrules.Tpo -c -o logactiond_checkrules-logactiond-checkrules.obj `if test -f 'logactiond-checkrules.c'; then $(CYGPATH_W) 'logactiond-checkrules.c'; else $(CYGPATH_W) '$(srcdir)/logactiond-checkrules.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-logactiond-checkrules.Tpo $(DEPDIR)/logactiond_checkrules-logactiond-checkrules.Po
+Makefile:#	$(AM_V_CC)source='logactiond-checkrules.c' object='logactiond_checkrules-logactiond-checkrules.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-logactiond-checkrules.obj `if test -f 'logactiond-checkrules.c'; then $(CYGPATH_W) 'logactiond-checkrules.c'; else $(CYGPATH_W) '$(srcdir)/logactiond-checkrules.c'; fi`
+Makefile:logactiond_checkrules-addresses.o: addresses.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-addresses.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-addresses.Tpo -c -o logactiond_checkrules-addresses.o `test -f 'addresses.c' || echo '$(srcdir)/'`addresses.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-addresses.Tpo $(DEPDIR)/logactiond_checkrules-addresses.Po
+Makefile:#	$(AM_V_CC)source='addresses.c' object='logactiond_checkrules-addresses.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-addresses.o `test -f 'addresses.c' || echo '$(srcdir)/'`addresses.c
+Makefile:logactiond_checkrules-addresses.obj: addresses.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-addresses.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-addresses.Tpo -c -o logactiond_checkrules-addresses.obj `if test -f 'addresses.c'; then $(CYGPATH_W) 'addresses.c'; else $(CYGPATH_W) '$(srcdir)/addresses.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-addresses.Tpo $(DEPDIR)/logactiond_checkrules-addresses.Po
+Makefile:#	$(AM_V_CC)source='addresses.c' object='logactiond_checkrules-addresses.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-addresses.obj `if test -f 'addresses.c'; then $(CYGPATH_W) 'addresses.c'; else $(CYGPATH_W) '$(srcdir)/addresses.c'; fi`
+Makefile:logactiond_checkrules-commands.o: commands.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-commands.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-commands.Tpo -c -o logactiond_checkrules-commands.o `test -f 'commands.c' || echo '$(srcdir)/'`commands.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-commands.Tpo $(DEPDIR)/logactiond_checkrules-commands.Po
+Makefile:#	$(AM_V_CC)source='commands.c' object='logactiond_checkrules-commands.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-commands.o `test -f 'commands.c' || echo '$(srcdir)/'`commands.c
+Makefile:logactiond_checkrules-commands.obj: commands.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-commands.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-commands.Tpo -c -o logactiond_checkrules-commands.obj `if test -f 'commands.c'; then $(CYGPATH_W) 'commands.c'; else $(CYGPATH_W) '$(srcdir)/commands.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-commands.Tpo $(DEPDIR)/logactiond_checkrules-commands.Po
+Makefile:#	$(AM_V_CC)source='commands.c' object='logactiond_checkrules-commands.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-commands.obj `if test -f 'commands.c'; then $(CYGPATH_W) 'commands.c'; else $(CYGPATH_W) '$(srcdir)/commands.c'; fi`
+Makefile:logactiond_checkrules-configfile.o: configfile.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-configfile.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-configfile.Tpo -c -o logactiond_checkrules-configfile.o `test -f 'configfile.c' || echo '$(srcdir)/'`configfile.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-configfile.Tpo $(DEPDIR)/logactiond_checkrules-configfile.Po
+Makefile:#	$(AM_V_CC)source='configfile.c' object='logactiond_checkrules-configfile.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-configfile.o `test -f 'configfile.c' || echo '$(srcdir)/'`configfile.c
+Makefile:logactiond_checkrules-configfile.obj: configfile.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-configfile.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-configfile.Tpo -c -o logactiond_checkrules-configfile.obj `if test -f 'configfile.c'; then $(CYGPATH_W) 'configfile.c'; else $(CYGPATH_W) '$(srcdir)/configfile.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-configfile.Tpo $(DEPDIR)/logactiond_checkrules-configfile.Po
+Makefile:#	$(AM_V_CC)source='configfile.c' object='logactiond_checkrules-configfile.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-configfile.obj `if test -f 'configfile.c'; then $(CYGPATH_W) 'configfile.c'; else $(CYGPATH_W) '$(srcdir)/configfile.c'; fi`
+Makefile:logactiond_checkrules-misc.o: misc.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-misc.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-misc.Tpo -c -o logactiond_checkrules-misc.o `test -f 'misc.c' || echo '$(srcdir)/'`misc.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-misc.Tpo $(DEPDIR)/logactiond_checkrules-misc.Po
+Makefile:#	$(AM_V_CC)source='misc.c' object='logactiond_checkrules-misc.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-misc.o `test -f 'misc.c' || echo '$(srcdir)/'`misc.c
+Makefile:logactiond_checkrules-misc.obj: misc.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-misc.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-misc.Tpo -c -o logactiond_checkrules-misc.obj `if test -f 'misc.c'; then $(CYGPATH_W) 'misc.c'; else $(CYGPATH_W) '$(srcdir)/misc.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-misc.Tpo $(DEPDIR)/logactiond_checkrules-misc.Po
+Makefile:#	$(AM_V_CC)source='misc.c' object='logactiond_checkrules-misc.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-misc.obj `if test -f 'misc.c'; then $(CYGPATH_W) 'misc.c'; else $(CYGPATH_W) '$(srcdir)/misc.c'; fi`
+Makefile:logactiond_checkrules-nodelist.o: nodelist.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-nodelist.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-nodelist.Tpo -c -o logactiond_checkrules-nodelist.o `test -f 'nodelist.c' || echo '$(srcdir)/'`nodelist.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-nodelist.Tpo $(DEPDIR)/logactiond_checkrules-nodelist.Po
+Makefile:#	$(AM_V_CC)source='nodelist.c' object='logactiond_checkrules-nodelist.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-nodelist.o `test -f 'nodelist.c' || echo '$(srcdir)/'`nodelist.c
+Makefile:logactiond_checkrules-nodelist.obj: nodelist.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-nodelist.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-nodelist.Tpo -c -o logactiond_checkrules-nodelist.obj `if test -f 'nodelist.c'; then $(CYGPATH_W) 'nodelist.c'; else $(CYGPATH_W) '$(srcdir)/nodelist.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-nodelist.Tpo $(DEPDIR)/logactiond_checkrules-nodelist.Po
+Makefile:#	$(AM_V_CC)source='nodelist.c' object='logactiond_checkrules-nodelist.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-nodelist.obj `if test -f 'nodelist.c'; then $(CYGPATH_W) 'nodelist.c'; else $(CYGPATH_W) '$(srcdir)/nodelist.c'; fi`
+Makefile:logactiond_checkrules-patterns.o: patterns.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-patterns.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-patterns.Tpo -c -o logactiond_checkrules-patterns.o `test -f 'patterns.c' || echo '$(srcdir)/'`patterns.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-patterns.Tpo $(DEPDIR)/logactiond_checkrules-patterns.Po
+Makefile:#	$(AM_V_CC)source='patterns.c' object='logactiond_checkrules-patterns.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-patterns.o `test -f 'patterns.c' || echo '$(srcdir)/'`patterns.c
+Makefile:logactiond_checkrules-patterns.obj: patterns.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-patterns.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-patterns.Tpo -c -o logactiond_checkrules-patterns.obj `if test -f 'patterns.c'; then $(CYGPATH_W) 'patterns.c'; else $(CYGPATH_W) '$(srcdir)/patterns.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-patterns.Tpo $(DEPDIR)/logactiond_checkrules-patterns.Po
+Makefile:#	$(AM_V_CC)source='patterns.c' object='logactiond_checkrules-patterns.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-patterns.obj `if test -f 'patterns.c'; then $(CYGPATH_W) 'patterns.c'; else $(CYGPATH_W) '$(srcdir)/patterns.c'; fi`
+Makefile:logactiond_checkrules-properties.o: properties.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-properties.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-properties.Tpo -c -o logactiond_checkrules-properties.o `test -f 'properties.c' || echo '$(srcdir)/'`properties.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-properties.Tpo $(DEPDIR)/logactiond_checkrules-properties.Po
+Makefile:#	$(AM_V_CC)source='properties.c' object='logactiond_checkrules-properties.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-properties.o `test -f 'properties.c' || echo '$(srcdir)/'`properties.c
+Makefile:logactiond_checkrules-properties.obj: properties.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-properties.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-properties.Tpo -c -o logactiond_checkrules-properties.obj `if test -f 'properties.c'; then $(CYGPATH_W) 'properties.c'; else $(CYGPATH_W) '$(srcdir)/properties.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-properties.Tpo $(DEPDIR)/logactiond_checkrules-properties.Po
+Makefile:#	$(AM_V_CC)source='properties.c' object='logactiond_checkrules-properties.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-properties.obj `if test -f 'properties.c'; then $(CYGPATH_W) 'properties.c'; else $(CYGPATH_W) '$(srcdir)/properties.c'; fi`
+Makefile:logactiond_checkrules-rules.o: rules.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-rules.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-rules.Tpo -c -o logactiond_checkrules-rules.o `test -f 'rules.c' || echo '$(srcdir)/'`rules.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-rules.Tpo $(DEPDIR)/logactiond_checkrules-rules.Po
+Makefile:#	$(AM_V_CC)source='rules.c' object='logactiond_checkrules-rules.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-rules.o `test -f 'rules.c' || echo '$(srcdir)/'`rules.c
+Makefile:logactiond_checkrules-rules.obj: rules.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-rules.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-rules.Tpo -c -o logactiond_checkrules-rules.obj `if test -f 'rules.c'; then $(CYGPATH_W) 'rules.c'; else $(CYGPATH_W) '$(srcdir)/rules.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-rules.Tpo $(DEPDIR)/logactiond_checkrules-rules.Po
+Makefile:#	$(AM_V_CC)source='rules.c' object='logactiond_checkrules-rules.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-rules.obj `if test -f 'rules.c'; then $(CYGPATH_W) 'rules.c'; else $(CYGPATH_W) '$(srcdir)/rules.c'; fi`
+Makefile:logactiond_checkrules-sources.o: sources.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-sources.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-sources.Tpo -c -o logactiond_checkrules-sources.o `test -f 'sources.c' || echo '$(srcdir)/'`sources.c
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-sources.Tpo $(DEPDIR)/logactiond_checkrules-sources.Po
+Makefile:#	$(AM_V_CC)source='sources.c' object='logactiond_checkrules-sources.o' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-sources.o `test -f 'sources.c' || echo '$(srcdir)/'`sources.c
+Makefile:logactiond_checkrules-sources.obj: sources.c
+Makefile:	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-sources.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-sources.Tpo -c -o logactiond_checkrules-sources.obj `if test -f 'sources.c'; then $(CYGPATH_W) 'sources.c'; else $(CYGPATH_W) '$(srcdir)/sources.c'; fi`
+Makefile:	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-sources.Tpo $(DEPDIR)/logactiond_checkrules-sources.Po
+Makefile:#	$(AM_V_CC)source='sources.c' object='logactiond_checkrules-sources.obj' libtool=no \
+Makefile:#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-sources.obj `if test -f 'sources.c'; then $(CYGPATH_W) 'sources.c'; else $(CYGPATH_W) '$(srcdir)/sources.c'; fi`
+Makefile:	$(am__define_uniq_tagged_files); mkid -fID $$unique
+Makefile:tags: tags-am
+Makefile:tags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
+Makefile:	if test -z "$(ETAGS_ARGS)$$*$$unique"; then :; else \
+Makefile:	  test -n "$$unique" || unique=$$empty_fix; \
+Makefile:	  if test $$# -gt 0; then \
+Makefile:ctags: ctags-am
+Makefile:ctags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
+Makefile:	test -z "$(CTAGS_ARGS)$$unique" \
+Makefile:	  && gtags -i $(GTAGS_ARGS) "$$here"
+Makefile:cscopelist: cscopelist-am
+Makefile:cscopelist-am: $(am__tagged_files)
+Makefile:	  if test -f "$$i"; then \
+Makefile:distclean-tags:
+Makefile:	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
+Makefile:	  sed -e "s|^$$srcdirstrip/||;t" \
+Makefile:	      -e "s|^$$topsrcdirstrip/|$(top_builddir)/|;t"`; \
+Makefile:			   sort -u` ;; \
+Makefile:	  if test -f $$file || test -d $$file; then d=.; else d=$(srcdir); fi; \
+Makefile:	  if test -d $$d/$$file; then \
+Makefile:	    dir=`echo "/$$file" | sed -e 's,/[^/]*$$,,'`; \
+Makefile:	    if test -d "$(distdir)/$$file"; then \
+Makefile:	      find "$(distdir)/$$file" -type d ! -perm -700 -exec chmod u+rwx {} \;; \
+Makefile:	    if test -d $(srcdir)/$$file && test $$d != $(srcdir); then \
+Makefile:	      cp -fpR $(srcdir)/$$file "$(distdir)$$dir" || exit 1; \
+Makefile:	      find "$(distdir)/$$file" -type d ! -perm -700 -exec chmod u+rwx {} \;; \
+Makefile:	    cp -fpR $$d/$$file "$(distdir)$$dir" || exit 1; \
+Makefile:	    test -f "$(distdir)/$$file" \
+Makefile:	    || cp -p $$d/$$file "$(distdir)/$$file" \
+Makefile:check-am: all-am
+Makefile:check: check-am
+Makefile:all-am: Makefile $(PROGRAMS)
+Makefile:	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
+Makefile:install: install-am
+Makefile:install-exec: install-exec-am
+Makefile:install-data: install-data-am
+Makefile:uninstall: uninstall-am
+Makefile:install-am: all-am
+Makefile:	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
+Makefile:installcheck: installcheck-am
+Makefile:install-strip:
+Makefile:	if test -z '$(STRIP)'; then \
+Makefile:	    install_sh_PROGRAM="$(INSTALL_STRIP_PROGRAM)" INSTALL_STRIP_FLAG=-s \
+Makefile:	    install_sh_PROGRAM="$(INSTALL_STRIP_PROGRAM)" INSTALL_STRIP_FLAG=-s \
+Makefile:mostlyclean-generic:
+Makefile:clean-generic:
+Makefile:distclean-generic:
+Makefile:	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
+Makefile:	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+Makefile:maintainer-clean-generic:
+Makefile:clean: clean-am
+Makefile:clean-am: clean-binPROGRAMS clean-generic clean-sbinPROGRAMS \
+Makefile:	mostlyclean-am
+Makefile:distclean: distclean-am
+Makefile:	-rm -rf ./$(DEPDIR)
+Makefile:	-rm -f Makefile
+Makefile:distclean-am: clean-am distclean-compile distclean-generic \
+Makefile:	distclean-tags
+Makefile:dvi: dvi-am
+Makefile:dvi-am:
+Makefile:html: html-am
+Makefile:html-am:
+Makefile:info: info-am
+Makefile:info-am:
+Makefile:install-data-am:
+Makefile:install-dvi: install-dvi-am
+Makefile:install-dvi-am:
+Makefile:install-exec-am: install-binPROGRAMS install-sbinPROGRAMS
+Makefile:install-html: install-html-am
+Makefile:install-html-am:
+Makefile:install-info: install-info-am
+Makefile:install-info-am:
+Makefile:install-man:
+Makefile:install-pdf: install-pdf-am
+Makefile:install-pdf-am:
+Makefile:install-ps: install-ps-am
+Makefile:install-ps-am:
+Makefile:installcheck-am:
+Makefile:maintainer-clean: maintainer-clean-am
+Makefile:	-rm -rf ./$(DEPDIR)
+Makefile:	-rm -f Makefile
+Makefile:maintainer-clean-am: distclean-am maintainer-clean-generic
+Makefile:mostlyclean: mostlyclean-am
+Makefile:mostlyclean-am: mostlyclean-compile mostlyclean-generic
+Makefile:pdf: pdf-am
+Makefile:pdf-am:
+Makefile:ps: ps-am
+Makefile:ps-am:
+Makefile:uninstall-am: uninstall-binPROGRAMS uninstall-sbinPROGRAMS
+Makefile:.MAKE: install-am install-strip
+Makefile:.PHONY: CTAGS GTAGS TAGS all all-am check check-am clean \
+Makefile:	clean-binPROGRAMS clean-generic clean-sbinPROGRAMS \
+Makefile:	cscopelist-am ctags ctags-am distclean distclean-compile \
+Makefile:	distclean-generic distclean-tags distdir dvi dvi-am html \
+Makefile:	html-am info info-am install install-am install-binPROGRAMS \
+Makefile:	install-data install-data-am install-dvi install-dvi-am \
+Makefile:	install-exec install-exec-am install-html install-html-am \
+Makefile:	install-info install-info-am install-man install-pdf \
+Makefile:	install-pdf-am install-ps install-ps-am install-sbinPROGRAMS \
+Makefile:	install-strip installcheck installcheck-am installdirs \
+Makefile:	maintainer-clean maintainer-clean-generic mostlyclean \
+Makefile:	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
+Makefile:	tags tags-am uninstall uninstall-am uninstall-binPROGRAMS \
+Makefile:	uninstall-sbinPROGRAMS
+Makefile:#logactiond_CPPFLAGS = -I$(top_srcdir)/lib
+Makefile:#logactiond_LDFLAGS = -Lconfig
+Makefile.am:bin_PROGRAMS = logactiond-checkrules
+Makefile.am:logactiond_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\""
+Makefile.am:logactiond_checkrules_SOURCES = logactiond-checkrules.c logactiond.h addresses.c commands.c configfile.c misc.c nodelist.c nodelist.h patterns.c properties.c rules.c sources.c
+Makefile.am:logactiond_checkrules_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\"" -DNOCOMMANDS -DNOWATCH
+Makefile.am:#logactiond_CPPFLAGS = -I$(top_srcdir)/lib
+Makefile.am:#logactiond_LDFLAGS = -Lconfig
+Makefile.in:# Copyright (C) 1994-2014 Free Software Foundation, Inc.
+Makefile.in:  if test -z '$(MAKELEVEL)'; then \
+Makefile.in:  elif test -n '$(MAKE_HOST)'; then \
+Makefile.in:  elif test -n '$(MAKE_VERSION)' && test -n '$(CURDIR)'; then \
+Makefile.in:  case $${target_option-} in \
+Makefile.in:              "target option '$${target_option-}' specified" >&2; \
+Makefile.in:      *=*|--*) continue;; \
+Makefile.in:        -*I) strip_trailopt 'I'; skip_next=yes;; \
+Makefile.in:      -*I?*) strip_trailopt 'I';; \
+Makefile.in:        -*O) strip_trailopt 'O'; skip_next=yes;; \
+Makefile.in:      -*O?*) strip_trailopt 'O';; \
+Makefile.in:        -*l) strip_trailopt 'l'; skip_next=yes;; \
+Makefile.in:      -*l?*) strip_trailopt 'l';; \
+Makefile.in:      -[dEDm]) skip_next=yes;; \
+Makefile.in:      -[JT]) skip_next=yes;; \
+Makefile.in:install_sh_DATA = $(install_sh) -c -m 644
+Makefile.in:install_sh_PROGRAM = $(install_sh) -c
+Makefile.in:install_sh_SCRIPT = $(install_sh) -c
+Makefile.in:bin_PROGRAMS = logactiond-checkrules$(EXEEXT)
+Makefile.in:mkinstalldirs = $(install_sh) -d
+Makefile.in:am_logactiond_OBJECTS = logactiond-logactiond.$(OBJEXT) \
+Makefile.in:	logactiond-configfile.$(OBJEXT) logactiond-rules.$(OBJEXT) \
+Makefile.in:	logactiond-patterns.$(OBJEXT) logactiond-sources.$(OBJEXT) \
+Makefile.in:	logactiond-misc.$(OBJEXT) logactiond-inotify.$(OBJEXT) \
+Makefile.in:	logactiond-nodelist.$(OBJEXT) logactiond-properties.$(OBJEXT) \
+Makefile.in:	logactiond-commands.$(OBJEXT) logactiond-endqueue.$(OBJEXT) \
+Makefile.in:	logactiond-addresses.$(OBJEXT) logactiond-polling.$(OBJEXT) \
+Makefile.in:	logactiond-status.$(OBJEXT) logactiond-watch.$(OBJEXT) \
+Makefile.in:	logactiond-systemd.$(OBJEXT)
+Makefile.in:	$(LDFLAGS) -o $@
+Makefile.in:	logactiond_checkrules-logactiond-checkrules.$(OBJEXT) \
+Makefile.in:	logactiond_checkrules-addresses.$(OBJEXT) \
+Makefile.in:	logactiond_checkrules-commands.$(OBJEXT) \
+Makefile.in:	logactiond_checkrules-configfile.$(OBJEXT) \
+Makefile.in:	logactiond_checkrules-misc.$(OBJEXT) \
+Makefile.in:	logactiond_checkrules-nodelist.$(OBJEXT) \
+Makefile.in:	logactiond_checkrules-patterns.$(OBJEXT) \
+Makefile.in:	logactiond_checkrules-properties.$(OBJEXT) \
+Makefile.in:	logactiond_checkrules-rules.$(OBJEXT) \
+Makefile.in:	logactiond_checkrules-sources.$(OBJEXT)
+Makefile.in:	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+Makefile.in:DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
+Makefile.in:am__mv = mv -f
+Makefile.in:am__v_lt_0 = --silent
+Makefile.in:LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+Makefile.in:    *) (install-info --version) >/dev/null 2>&1;; \
+Makefile.in:# Read a list of newline-separated strings from the standard input,
+Makefile.in:    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
+Makefile.in:logactiond_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\""
+Makefile.in:logactiond_checkrules_SOURCES = logactiond-checkrules.c logactiond.h addresses.c commands.c configfile.c misc.c nodelist.c nodelist.h patterns.c properties.c rules.c sources.c
+Makefile.in:logactiond_checkrules_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\"" -DNOCOMMANDS -DNOWATCH
+Makefile.in:all: all-am
+Makefile.in:	      ( cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh ) \
+Makefile.in:	        && { if test -f $@; then exit 0; else break; fi; }; \
+Makefile.in:	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/Makefile'; \
+Makefile.in:	  $(AUTOMAKE) --gnu src/Makefile
+Makefile.in:	    cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh;; \
+Makefile.in:	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
+Makefile.in:	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
+Makefile.in:	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
+Makefile.in:install-binPROGRAMS: $(bin_PROGRAMS)
+Makefile.in:	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
+Makefile.in:	if test -n "$$list"; then \
+Makefile.in:	while read p p1; do if test -f $$p \
+Makefile.in:	sed -e 'p;s,.*/,,;n;h' \
+Makefile.in:	    -e 's|.*|.|' \
+Makefile.in:	    -e 'p;x;s,.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/' | \
+Makefile.in:	    test -z "$$files" || { \
+Makefile.in:uninstall-binPROGRAMS:
+Makefile.in:	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
+Makefile.in:	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
+Makefile.in:	      -e 's/$$/$(EXEEXT)/' \
+Makefile.in:	test -n "$$list" || exit 0; \
+Makefile.in:	echo " ( cd '$(DESTDIR)$(bindir)' && rm -f" $$files ")"; \
+Makefile.in:	cd "$(DESTDIR)$(bindir)" && rm -f $$files
+Makefile.in:clean-binPROGRAMS:
+Makefile.in:	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+Makefile.in:install-sbinPROGRAMS: $(sbin_PROGRAMS)
+Makefile.in:	@list='$(sbin_PROGRAMS)'; test -n "$(sbindir)" || list=; \
+Makefile.in:	if test -n "$$list"; then \
+Makefile.in:	while read p p1; do if test -f $$p \
+Makefile.in:	sed -e 'p;s,.*/,,;n;h' \
+Makefile.in:	    -e 's|.*|.|' \
+Makefile.in:	    -e 'p;x;s,.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/' | \
+Makefile.in:	    test -z "$$files" || { \
+Makefile.in:uninstall-sbinPROGRAMS:
+Makefile.in:	@list='$(sbin_PROGRAMS)'; test -n "$(sbindir)" || list=; \
+Makefile.in:	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
+Makefile.in:	      -e 's/$$/$(EXEEXT)/' \
+Makefile.in:	test -n "$$list" || exit 0; \
+Makefile.in:	echo " ( cd '$(DESTDIR)$(sbindir)' && rm -f" $$files ")"; \
+Makefile.in:	cd "$(DESTDIR)$(sbindir)" && rm -f $$files
+Makefile.in:clean-sbinPROGRAMS:
+Makefile.in:	-test -z "$(sbin_PROGRAMS)" || rm -f $(sbin_PROGRAMS)
+Makefile.in:	@rm -f logactiond$(EXEEXT)
+Makefile.in:logactiond-checkrules$(EXEEXT): $(logactiond_checkrules_OBJECTS) $(logactiond_checkrules_DEPENDENCIES) $(EXTRA_logactiond_checkrules_DEPENDENCIES) 
+Makefile.in:	@rm -f logactiond-checkrules$(EXEEXT)
+Makefile.in:mostlyclean-compile:
+Makefile.in:	-rm -f *.$(OBJEXT)
+Makefile.in:distclean-compile:
+Makefile.in:	-rm -f *.tab.c
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond-addresses.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond-commands.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond-configfile.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond-endqueue.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond-inotify.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond-logactiond.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond-misc.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond-nodelist.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond-patterns.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond-polling.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond-properties.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond-rules.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond-sources.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond-status.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond-systemd.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond-watch.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond_checkrules-addresses.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond_checkrules-commands.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond_checkrules-configfile.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond_checkrules-logactiond-checkrules.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond_checkrules-misc.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond_checkrules-nodelist.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond_checkrules-patterns.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond_checkrules-properties.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond_checkrules-rules.Po@am__quote@
+Makefile.in:@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logactiond_checkrules-sources.Po@am__quote@
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+Makefile.in:logactiond-logactiond.o: logactiond.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-logactiond.o -MD -MP -MF $(DEPDIR)/logactiond-logactiond.Tpo -c -o logactiond-logactiond.o `test -f 'logactiond.c' || echo '$(srcdir)/'`logactiond.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-logactiond.Tpo $(DEPDIR)/logactiond-logactiond.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='logactiond.c' object='logactiond-logactiond.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-logactiond.o `test -f 'logactiond.c' || echo '$(srcdir)/'`logactiond.c
+Makefile.in:logactiond-logactiond.obj: logactiond.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-logactiond.obj -MD -MP -MF $(DEPDIR)/logactiond-logactiond.Tpo -c -o logactiond-logactiond.obj `if test -f 'logactiond.c'; then $(CYGPATH_W) 'logactiond.c'; else $(CYGPATH_W) '$(srcdir)/logactiond.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-logactiond.Tpo $(DEPDIR)/logactiond-logactiond.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='logactiond.c' object='logactiond-logactiond.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-logactiond.obj `if test -f 'logactiond.c'; then $(CYGPATH_W) 'logactiond.c'; else $(CYGPATH_W) '$(srcdir)/logactiond.c'; fi`
+Makefile.in:logactiond-configfile.o: configfile.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-configfile.o -MD -MP -MF $(DEPDIR)/logactiond-configfile.Tpo -c -o logactiond-configfile.o `test -f 'configfile.c' || echo '$(srcdir)/'`configfile.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-configfile.Tpo $(DEPDIR)/logactiond-configfile.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='configfile.c' object='logactiond-configfile.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-configfile.o `test -f 'configfile.c' || echo '$(srcdir)/'`configfile.c
+Makefile.in:logactiond-configfile.obj: configfile.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-configfile.obj -MD -MP -MF $(DEPDIR)/logactiond-configfile.Tpo -c -o logactiond-configfile.obj `if test -f 'configfile.c'; then $(CYGPATH_W) 'configfile.c'; else $(CYGPATH_W) '$(srcdir)/configfile.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-configfile.Tpo $(DEPDIR)/logactiond-configfile.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='configfile.c' object='logactiond-configfile.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-configfile.obj `if test -f 'configfile.c'; then $(CYGPATH_W) 'configfile.c'; else $(CYGPATH_W) '$(srcdir)/configfile.c'; fi`
+Makefile.in:logactiond-rules.o: rules.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-rules.o -MD -MP -MF $(DEPDIR)/logactiond-rules.Tpo -c -o logactiond-rules.o `test -f 'rules.c' || echo '$(srcdir)/'`rules.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-rules.Tpo $(DEPDIR)/logactiond-rules.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rules.c' object='logactiond-rules.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-rules.o `test -f 'rules.c' || echo '$(srcdir)/'`rules.c
+Makefile.in:logactiond-rules.obj: rules.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-rules.obj -MD -MP -MF $(DEPDIR)/logactiond-rules.Tpo -c -o logactiond-rules.obj `if test -f 'rules.c'; then $(CYGPATH_W) 'rules.c'; else $(CYGPATH_W) '$(srcdir)/rules.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-rules.Tpo $(DEPDIR)/logactiond-rules.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rules.c' object='logactiond-rules.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-rules.obj `if test -f 'rules.c'; then $(CYGPATH_W) 'rules.c'; else $(CYGPATH_W) '$(srcdir)/rules.c'; fi`
+Makefile.in:logactiond-patterns.o: patterns.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-patterns.o -MD -MP -MF $(DEPDIR)/logactiond-patterns.Tpo -c -o logactiond-patterns.o `test -f 'patterns.c' || echo '$(srcdir)/'`patterns.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-patterns.Tpo $(DEPDIR)/logactiond-patterns.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='patterns.c' object='logactiond-patterns.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-patterns.o `test -f 'patterns.c' || echo '$(srcdir)/'`patterns.c
+Makefile.in:logactiond-patterns.obj: patterns.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-patterns.obj -MD -MP -MF $(DEPDIR)/logactiond-patterns.Tpo -c -o logactiond-patterns.obj `if test -f 'patterns.c'; then $(CYGPATH_W) 'patterns.c'; else $(CYGPATH_W) '$(srcdir)/patterns.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-patterns.Tpo $(DEPDIR)/logactiond-patterns.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='patterns.c' object='logactiond-patterns.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-patterns.obj `if test -f 'patterns.c'; then $(CYGPATH_W) 'patterns.c'; else $(CYGPATH_W) '$(srcdir)/patterns.c'; fi`
+Makefile.in:logactiond-sources.o: sources.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-sources.o -MD -MP -MF $(DEPDIR)/logactiond-sources.Tpo -c -o logactiond-sources.o `test -f 'sources.c' || echo '$(srcdir)/'`sources.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-sources.Tpo $(DEPDIR)/logactiond-sources.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sources.c' object='logactiond-sources.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-sources.o `test -f 'sources.c' || echo '$(srcdir)/'`sources.c
+Makefile.in:logactiond-sources.obj: sources.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-sources.obj -MD -MP -MF $(DEPDIR)/logactiond-sources.Tpo -c -o logactiond-sources.obj `if test -f 'sources.c'; then $(CYGPATH_W) 'sources.c'; else $(CYGPATH_W) '$(srcdir)/sources.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-sources.Tpo $(DEPDIR)/logactiond-sources.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sources.c' object='logactiond-sources.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-sources.obj `if test -f 'sources.c'; then $(CYGPATH_W) 'sources.c'; else $(CYGPATH_W) '$(srcdir)/sources.c'; fi`
+Makefile.in:logactiond-misc.o: misc.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-misc.o -MD -MP -MF $(DEPDIR)/logactiond-misc.Tpo -c -o logactiond-misc.o `test -f 'misc.c' || echo '$(srcdir)/'`misc.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-misc.Tpo $(DEPDIR)/logactiond-misc.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='misc.c' object='logactiond-misc.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-misc.o `test -f 'misc.c' || echo '$(srcdir)/'`misc.c
+Makefile.in:logactiond-misc.obj: misc.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-misc.obj -MD -MP -MF $(DEPDIR)/logactiond-misc.Tpo -c -o logactiond-misc.obj `if test -f 'misc.c'; then $(CYGPATH_W) 'misc.c'; else $(CYGPATH_W) '$(srcdir)/misc.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-misc.Tpo $(DEPDIR)/logactiond-misc.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='misc.c' object='logactiond-misc.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-misc.obj `if test -f 'misc.c'; then $(CYGPATH_W) 'misc.c'; else $(CYGPATH_W) '$(srcdir)/misc.c'; fi`
+Makefile.in:logactiond-inotify.o: inotify.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-inotify.o -MD -MP -MF $(DEPDIR)/logactiond-inotify.Tpo -c -o logactiond-inotify.o `test -f 'inotify.c' || echo '$(srcdir)/'`inotify.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-inotify.Tpo $(DEPDIR)/logactiond-inotify.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='inotify.c' object='logactiond-inotify.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-inotify.o `test -f 'inotify.c' || echo '$(srcdir)/'`inotify.c
+Makefile.in:logactiond-inotify.obj: inotify.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-inotify.obj -MD -MP -MF $(DEPDIR)/logactiond-inotify.Tpo -c -o logactiond-inotify.obj `if test -f 'inotify.c'; then $(CYGPATH_W) 'inotify.c'; else $(CYGPATH_W) '$(srcdir)/inotify.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-inotify.Tpo $(DEPDIR)/logactiond-inotify.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='inotify.c' object='logactiond-inotify.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-inotify.obj `if test -f 'inotify.c'; then $(CYGPATH_W) 'inotify.c'; else $(CYGPATH_W) '$(srcdir)/inotify.c'; fi`
+Makefile.in:logactiond-nodelist.o: nodelist.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-nodelist.o -MD -MP -MF $(DEPDIR)/logactiond-nodelist.Tpo -c -o logactiond-nodelist.o `test -f 'nodelist.c' || echo '$(srcdir)/'`nodelist.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-nodelist.Tpo $(DEPDIR)/logactiond-nodelist.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='nodelist.c' object='logactiond-nodelist.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-nodelist.o `test -f 'nodelist.c' || echo '$(srcdir)/'`nodelist.c
+Makefile.in:logactiond-nodelist.obj: nodelist.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-nodelist.obj -MD -MP -MF $(DEPDIR)/logactiond-nodelist.Tpo -c -o logactiond-nodelist.obj `if test -f 'nodelist.c'; then $(CYGPATH_W) 'nodelist.c'; else $(CYGPATH_W) '$(srcdir)/nodelist.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-nodelist.Tpo $(DEPDIR)/logactiond-nodelist.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='nodelist.c' object='logactiond-nodelist.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-nodelist.obj `if test -f 'nodelist.c'; then $(CYGPATH_W) 'nodelist.c'; else $(CYGPATH_W) '$(srcdir)/nodelist.c'; fi`
+Makefile.in:logactiond-properties.o: properties.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-properties.o -MD -MP -MF $(DEPDIR)/logactiond-properties.Tpo -c -o logactiond-properties.o `test -f 'properties.c' || echo '$(srcdir)/'`properties.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-properties.Tpo $(DEPDIR)/logactiond-properties.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='properties.c' object='logactiond-properties.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-properties.o `test -f 'properties.c' || echo '$(srcdir)/'`properties.c
+Makefile.in:logactiond-properties.obj: properties.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-properties.obj -MD -MP -MF $(DEPDIR)/logactiond-properties.Tpo -c -o logactiond-properties.obj `if test -f 'properties.c'; then $(CYGPATH_W) 'properties.c'; else $(CYGPATH_W) '$(srcdir)/properties.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-properties.Tpo $(DEPDIR)/logactiond-properties.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='properties.c' object='logactiond-properties.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-properties.obj `if test -f 'properties.c'; then $(CYGPATH_W) 'properties.c'; else $(CYGPATH_W) '$(srcdir)/properties.c'; fi`
+Makefile.in:logactiond-commands.o: commands.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-commands.o -MD -MP -MF $(DEPDIR)/logactiond-commands.Tpo -c -o logactiond-commands.o `test -f 'commands.c' || echo '$(srcdir)/'`commands.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-commands.Tpo $(DEPDIR)/logactiond-commands.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='commands.c' object='logactiond-commands.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-commands.o `test -f 'commands.c' || echo '$(srcdir)/'`commands.c
+Makefile.in:logactiond-commands.obj: commands.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-commands.obj -MD -MP -MF $(DEPDIR)/logactiond-commands.Tpo -c -o logactiond-commands.obj `if test -f 'commands.c'; then $(CYGPATH_W) 'commands.c'; else $(CYGPATH_W) '$(srcdir)/commands.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-commands.Tpo $(DEPDIR)/logactiond-commands.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='commands.c' object='logactiond-commands.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-commands.obj `if test -f 'commands.c'; then $(CYGPATH_W) 'commands.c'; else $(CYGPATH_W) '$(srcdir)/commands.c'; fi`
+Makefile.in:logactiond-endqueue.o: endqueue.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-endqueue.o -MD -MP -MF $(DEPDIR)/logactiond-endqueue.Tpo -c -o logactiond-endqueue.o `test -f 'endqueue.c' || echo '$(srcdir)/'`endqueue.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-endqueue.Tpo $(DEPDIR)/logactiond-endqueue.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='endqueue.c' object='logactiond-endqueue.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-endqueue.o `test -f 'endqueue.c' || echo '$(srcdir)/'`endqueue.c
+Makefile.in:logactiond-endqueue.obj: endqueue.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-endqueue.obj -MD -MP -MF $(DEPDIR)/logactiond-endqueue.Tpo -c -o logactiond-endqueue.obj `if test -f 'endqueue.c'; then $(CYGPATH_W) 'endqueue.c'; else $(CYGPATH_W) '$(srcdir)/endqueue.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-endqueue.Tpo $(DEPDIR)/logactiond-endqueue.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='endqueue.c' object='logactiond-endqueue.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-endqueue.obj `if test -f 'endqueue.c'; then $(CYGPATH_W) 'endqueue.c'; else $(CYGPATH_W) '$(srcdir)/endqueue.c'; fi`
+Makefile.in:logactiond-addresses.o: addresses.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-addresses.o -MD -MP -MF $(DEPDIR)/logactiond-addresses.Tpo -c -o logactiond-addresses.o `test -f 'addresses.c' || echo '$(srcdir)/'`addresses.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-addresses.Tpo $(DEPDIR)/logactiond-addresses.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='addresses.c' object='logactiond-addresses.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-addresses.o `test -f 'addresses.c' || echo '$(srcdir)/'`addresses.c
+Makefile.in:logactiond-addresses.obj: addresses.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-addresses.obj -MD -MP -MF $(DEPDIR)/logactiond-addresses.Tpo -c -o logactiond-addresses.obj `if test -f 'addresses.c'; then $(CYGPATH_W) 'addresses.c'; else $(CYGPATH_W) '$(srcdir)/addresses.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-addresses.Tpo $(DEPDIR)/logactiond-addresses.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='addresses.c' object='logactiond-addresses.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-addresses.obj `if test -f 'addresses.c'; then $(CYGPATH_W) 'addresses.c'; else $(CYGPATH_W) '$(srcdir)/addresses.c'; fi`
+Makefile.in:logactiond-polling.o: polling.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-polling.o -MD -MP -MF $(DEPDIR)/logactiond-polling.Tpo -c -o logactiond-polling.o `test -f 'polling.c' || echo '$(srcdir)/'`polling.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-polling.Tpo $(DEPDIR)/logactiond-polling.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='polling.c' object='logactiond-polling.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-polling.o `test -f 'polling.c' || echo '$(srcdir)/'`polling.c
+Makefile.in:logactiond-polling.obj: polling.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-polling.obj -MD -MP -MF $(DEPDIR)/logactiond-polling.Tpo -c -o logactiond-polling.obj `if test -f 'polling.c'; then $(CYGPATH_W) 'polling.c'; else $(CYGPATH_W) '$(srcdir)/polling.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-polling.Tpo $(DEPDIR)/logactiond-polling.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='polling.c' object='logactiond-polling.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-polling.obj `if test -f 'polling.c'; then $(CYGPATH_W) 'polling.c'; else $(CYGPATH_W) '$(srcdir)/polling.c'; fi`
+Makefile.in:logactiond-status.o: status.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-status.o -MD -MP -MF $(DEPDIR)/logactiond-status.Tpo -c -o logactiond-status.o `test -f 'status.c' || echo '$(srcdir)/'`status.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-status.Tpo $(DEPDIR)/logactiond-status.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='status.c' object='logactiond-status.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-status.o `test -f 'status.c' || echo '$(srcdir)/'`status.c
+Makefile.in:logactiond-status.obj: status.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-status.obj -MD -MP -MF $(DEPDIR)/logactiond-status.Tpo -c -o logactiond-status.obj `if test -f 'status.c'; then $(CYGPATH_W) 'status.c'; else $(CYGPATH_W) '$(srcdir)/status.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-status.Tpo $(DEPDIR)/logactiond-status.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='status.c' object='logactiond-status.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-status.obj `if test -f 'status.c'; then $(CYGPATH_W) 'status.c'; else $(CYGPATH_W) '$(srcdir)/status.c'; fi`
+Makefile.in:logactiond-watch.o: watch.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-watch.o -MD -MP -MF $(DEPDIR)/logactiond-watch.Tpo -c -o logactiond-watch.o `test -f 'watch.c' || echo '$(srcdir)/'`watch.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-watch.Tpo $(DEPDIR)/logactiond-watch.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='watch.c' object='logactiond-watch.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-watch.o `test -f 'watch.c' || echo '$(srcdir)/'`watch.c
+Makefile.in:logactiond-watch.obj: watch.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-watch.obj -MD -MP -MF $(DEPDIR)/logactiond-watch.Tpo -c -o logactiond-watch.obj `if test -f 'watch.c'; then $(CYGPATH_W) 'watch.c'; else $(CYGPATH_W) '$(srcdir)/watch.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-watch.Tpo $(DEPDIR)/logactiond-watch.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='watch.c' object='logactiond-watch.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-watch.obj `if test -f 'watch.c'; then $(CYGPATH_W) 'watch.c'; else $(CYGPATH_W) '$(srcdir)/watch.c'; fi`
+Makefile.in:logactiond-systemd.o: systemd.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-systemd.o -MD -MP -MF $(DEPDIR)/logactiond-systemd.Tpo -c -o logactiond-systemd.o `test -f 'systemd.c' || echo '$(srcdir)/'`systemd.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-systemd.Tpo $(DEPDIR)/logactiond-systemd.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='systemd.c' object='logactiond-systemd.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-systemd.o `test -f 'systemd.c' || echo '$(srcdir)/'`systemd.c
+Makefile.in:logactiond-systemd.obj: systemd.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -MT logactiond-systemd.obj -MD -MP -MF $(DEPDIR)/logactiond-systemd.Tpo -c -o logactiond-systemd.obj `if test -f 'systemd.c'; then $(CYGPATH_W) 'systemd.c'; else $(CYGPATH_W) '$(srcdir)/systemd.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond-systemd.Tpo $(DEPDIR)/logactiond-systemd.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='systemd.c' object='logactiond-systemd.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_CPPFLAGS) $(CPPFLAGS) $(logactiond_CFLAGS) $(CFLAGS) -c -o logactiond-systemd.obj `if test -f 'systemd.c'; then $(CYGPATH_W) 'systemd.c'; else $(CYGPATH_W) '$(srcdir)/systemd.c'; fi`
+Makefile.in:logactiond_checkrules-logactiond-checkrules.o: logactiond-checkrules.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-logactiond-checkrules.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-logactiond-checkrules.Tpo -c -o logactiond_checkrules-logactiond-checkrules.o `test -f 'logactiond-checkrules.c' || echo '$(srcdir)/'`logactiond-checkrules.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-logactiond-checkrules.Tpo $(DEPDIR)/logactiond_checkrules-logactiond-checkrules.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='logactiond-checkrules.c' object='logactiond_checkrules-logactiond-checkrules.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-logactiond-checkrules.o `test -f 'logactiond-checkrules.c' || echo '$(srcdir)/'`logactiond-checkrules.c
+Makefile.in:logactiond_checkrules-logactiond-checkrules.obj: logactiond-checkrules.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-logactiond-checkrules.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-logactiond-checkrules.Tpo -c -o logactiond_checkrules-logactiond-checkrules.obj `if test -f 'logactiond-checkrules.c'; then $(CYGPATH_W) 'logactiond-checkrules.c'; else $(CYGPATH_W) '$(srcdir)/logactiond-checkrules.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-logactiond-checkrules.Tpo $(DEPDIR)/logactiond_checkrules-logactiond-checkrules.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='logactiond-checkrules.c' object='logactiond_checkrules-logactiond-checkrules.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-logactiond-checkrules.obj `if test -f 'logactiond-checkrules.c'; then $(CYGPATH_W) 'logactiond-checkrules.c'; else $(CYGPATH_W) '$(srcdir)/logactiond-checkrules.c'; fi`
+Makefile.in:logactiond_checkrules-addresses.o: addresses.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-addresses.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-addresses.Tpo -c -o logactiond_checkrules-addresses.o `test -f 'addresses.c' || echo '$(srcdir)/'`addresses.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-addresses.Tpo $(DEPDIR)/logactiond_checkrules-addresses.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='addresses.c' object='logactiond_checkrules-addresses.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-addresses.o `test -f 'addresses.c' || echo '$(srcdir)/'`addresses.c
+Makefile.in:logactiond_checkrules-addresses.obj: addresses.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-addresses.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-addresses.Tpo -c -o logactiond_checkrules-addresses.obj `if test -f 'addresses.c'; then $(CYGPATH_W) 'addresses.c'; else $(CYGPATH_W) '$(srcdir)/addresses.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-addresses.Tpo $(DEPDIR)/logactiond_checkrules-addresses.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='addresses.c' object='logactiond_checkrules-addresses.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-addresses.obj `if test -f 'addresses.c'; then $(CYGPATH_W) 'addresses.c'; else $(CYGPATH_W) '$(srcdir)/addresses.c'; fi`
+Makefile.in:logactiond_checkrules-commands.o: commands.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-commands.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-commands.Tpo -c -o logactiond_checkrules-commands.o `test -f 'commands.c' || echo '$(srcdir)/'`commands.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-commands.Tpo $(DEPDIR)/logactiond_checkrules-commands.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='commands.c' object='logactiond_checkrules-commands.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-commands.o `test -f 'commands.c' || echo '$(srcdir)/'`commands.c
+Makefile.in:logactiond_checkrules-commands.obj: commands.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-commands.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-commands.Tpo -c -o logactiond_checkrules-commands.obj `if test -f 'commands.c'; then $(CYGPATH_W) 'commands.c'; else $(CYGPATH_W) '$(srcdir)/commands.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-commands.Tpo $(DEPDIR)/logactiond_checkrules-commands.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='commands.c' object='logactiond_checkrules-commands.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-commands.obj `if test -f 'commands.c'; then $(CYGPATH_W) 'commands.c'; else $(CYGPATH_W) '$(srcdir)/commands.c'; fi`
+Makefile.in:logactiond_checkrules-configfile.o: configfile.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-configfile.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-configfile.Tpo -c -o logactiond_checkrules-configfile.o `test -f 'configfile.c' || echo '$(srcdir)/'`configfile.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-configfile.Tpo $(DEPDIR)/logactiond_checkrules-configfile.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='configfile.c' object='logactiond_checkrules-configfile.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-configfile.o `test -f 'configfile.c' || echo '$(srcdir)/'`configfile.c
+Makefile.in:logactiond_checkrules-configfile.obj: configfile.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-configfile.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-configfile.Tpo -c -o logactiond_checkrules-configfile.obj `if test -f 'configfile.c'; then $(CYGPATH_W) 'configfile.c'; else $(CYGPATH_W) '$(srcdir)/configfile.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-configfile.Tpo $(DEPDIR)/logactiond_checkrules-configfile.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='configfile.c' object='logactiond_checkrules-configfile.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-configfile.obj `if test -f 'configfile.c'; then $(CYGPATH_W) 'configfile.c'; else $(CYGPATH_W) '$(srcdir)/configfile.c'; fi`
+Makefile.in:logactiond_checkrules-misc.o: misc.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-misc.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-misc.Tpo -c -o logactiond_checkrules-misc.o `test -f 'misc.c' || echo '$(srcdir)/'`misc.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-misc.Tpo $(DEPDIR)/logactiond_checkrules-misc.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='misc.c' object='logactiond_checkrules-misc.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-misc.o `test -f 'misc.c' || echo '$(srcdir)/'`misc.c
+Makefile.in:logactiond_checkrules-misc.obj: misc.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-misc.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-misc.Tpo -c -o logactiond_checkrules-misc.obj `if test -f 'misc.c'; then $(CYGPATH_W) 'misc.c'; else $(CYGPATH_W) '$(srcdir)/misc.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-misc.Tpo $(DEPDIR)/logactiond_checkrules-misc.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='misc.c' object='logactiond_checkrules-misc.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-misc.obj `if test -f 'misc.c'; then $(CYGPATH_W) 'misc.c'; else $(CYGPATH_W) '$(srcdir)/misc.c'; fi`
+Makefile.in:logactiond_checkrules-nodelist.o: nodelist.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-nodelist.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-nodelist.Tpo -c -o logactiond_checkrules-nodelist.o `test -f 'nodelist.c' || echo '$(srcdir)/'`nodelist.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-nodelist.Tpo $(DEPDIR)/logactiond_checkrules-nodelist.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='nodelist.c' object='logactiond_checkrules-nodelist.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-nodelist.o `test -f 'nodelist.c' || echo '$(srcdir)/'`nodelist.c
+Makefile.in:logactiond_checkrules-nodelist.obj: nodelist.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-nodelist.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-nodelist.Tpo -c -o logactiond_checkrules-nodelist.obj `if test -f 'nodelist.c'; then $(CYGPATH_W) 'nodelist.c'; else $(CYGPATH_W) '$(srcdir)/nodelist.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-nodelist.Tpo $(DEPDIR)/logactiond_checkrules-nodelist.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='nodelist.c' object='logactiond_checkrules-nodelist.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-nodelist.obj `if test -f 'nodelist.c'; then $(CYGPATH_W) 'nodelist.c'; else $(CYGPATH_W) '$(srcdir)/nodelist.c'; fi`
+Makefile.in:logactiond_checkrules-patterns.o: patterns.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-patterns.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-patterns.Tpo -c -o logactiond_checkrules-patterns.o `test -f 'patterns.c' || echo '$(srcdir)/'`patterns.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-patterns.Tpo $(DEPDIR)/logactiond_checkrules-patterns.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='patterns.c' object='logactiond_checkrules-patterns.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-patterns.o `test -f 'patterns.c' || echo '$(srcdir)/'`patterns.c
+Makefile.in:logactiond_checkrules-patterns.obj: patterns.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-patterns.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-patterns.Tpo -c -o logactiond_checkrules-patterns.obj `if test -f 'patterns.c'; then $(CYGPATH_W) 'patterns.c'; else $(CYGPATH_W) '$(srcdir)/patterns.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-patterns.Tpo $(DEPDIR)/logactiond_checkrules-patterns.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='patterns.c' object='logactiond_checkrules-patterns.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-patterns.obj `if test -f 'patterns.c'; then $(CYGPATH_W) 'patterns.c'; else $(CYGPATH_W) '$(srcdir)/patterns.c'; fi`
+Makefile.in:logactiond_checkrules-properties.o: properties.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-properties.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-properties.Tpo -c -o logactiond_checkrules-properties.o `test -f 'properties.c' || echo '$(srcdir)/'`properties.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-properties.Tpo $(DEPDIR)/logactiond_checkrules-properties.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='properties.c' object='logactiond_checkrules-properties.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-properties.o `test -f 'properties.c' || echo '$(srcdir)/'`properties.c
+Makefile.in:logactiond_checkrules-properties.obj: properties.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-properties.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-properties.Tpo -c -o logactiond_checkrules-properties.obj `if test -f 'properties.c'; then $(CYGPATH_W) 'properties.c'; else $(CYGPATH_W) '$(srcdir)/properties.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-properties.Tpo $(DEPDIR)/logactiond_checkrules-properties.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='properties.c' object='logactiond_checkrules-properties.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-properties.obj `if test -f 'properties.c'; then $(CYGPATH_W) 'properties.c'; else $(CYGPATH_W) '$(srcdir)/properties.c'; fi`
+Makefile.in:logactiond_checkrules-rules.o: rules.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-rules.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-rules.Tpo -c -o logactiond_checkrules-rules.o `test -f 'rules.c' || echo '$(srcdir)/'`rules.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-rules.Tpo $(DEPDIR)/logactiond_checkrules-rules.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rules.c' object='logactiond_checkrules-rules.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-rules.o `test -f 'rules.c' || echo '$(srcdir)/'`rules.c
+Makefile.in:logactiond_checkrules-rules.obj: rules.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-rules.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-rules.Tpo -c -o logactiond_checkrules-rules.obj `if test -f 'rules.c'; then $(CYGPATH_W) 'rules.c'; else $(CYGPATH_W) '$(srcdir)/rules.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-rules.Tpo $(DEPDIR)/logactiond_checkrules-rules.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rules.c' object='logactiond_checkrules-rules.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-rules.obj `if test -f 'rules.c'; then $(CYGPATH_W) 'rules.c'; else $(CYGPATH_W) '$(srcdir)/rules.c'; fi`
+Makefile.in:logactiond_checkrules-sources.o: sources.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-sources.o -MD -MP -MF $(DEPDIR)/logactiond_checkrules-sources.Tpo -c -o logactiond_checkrules-sources.o `test -f 'sources.c' || echo '$(srcdir)/'`sources.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-sources.Tpo $(DEPDIR)/logactiond_checkrules-sources.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sources.c' object='logactiond_checkrules-sources.o' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-sources.o `test -f 'sources.c' || echo '$(srcdir)/'`sources.c
+Makefile.in:logactiond_checkrules-sources.obj: sources.c
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -MT logactiond_checkrules-sources.obj -MD -MP -MF $(DEPDIR)/logactiond_checkrules-sources.Tpo -c -o logactiond_checkrules-sources.obj `if test -f 'sources.c'; then $(CYGPATH_W) 'sources.c'; else $(CYGPATH_W) '$(srcdir)/sources.c'; fi`
+Makefile.in:@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/logactiond_checkrules-sources.Tpo $(DEPDIR)/logactiond_checkrules-sources.Po
+Makefile.in:@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sources.c' object='logactiond_checkrules-sources.obj' libtool=no @AMDEPBACKSLASH@
+Makefile.in:@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(logactiond_checkrules_CPPFLAGS) $(CPPFLAGS) $(logactiond_checkrules_CFLAGS) $(CFLAGS) -c -o logactiond_checkrules-sources.obj `if test -f 'sources.c'; then $(CYGPATH_W) 'sources.c'; else $(CYGPATH_W) '$(srcdir)/sources.c'; fi`
+Makefile.in:	$(am__define_uniq_tagged_files); mkid -fID $$unique
+Makefile.in:tags: tags-am
+Makefile.in:tags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
+Makefile.in:	if test -z "$(ETAGS_ARGS)$$*$$unique"; then :; else \
+Makefile.in:	  test -n "$$unique" || unique=$$empty_fix; \
+Makefile.in:	  if test $$# -gt 0; then \
+Makefile.in:ctags: ctags-am
+Makefile.in:ctags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
+Makefile.in:	test -z "$(CTAGS_ARGS)$$unique" \
+Makefile.in:	  && gtags -i $(GTAGS_ARGS) "$$here"
+Makefile.in:cscopelist: cscopelist-am
+Makefile.in:cscopelist-am: $(am__tagged_files)
+Makefile.in:	  if test -f "$$i"; then \
+Makefile.in:distclean-tags:
+Makefile.in:	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
+Makefile.in:	  sed -e "s|^$$srcdirstrip/||;t" \
+Makefile.in:	      -e "s|^$$topsrcdirstrip/|$(top_builddir)/|;t"`; \
+Makefile.in:			   sort -u` ;; \
+Makefile.in:	  if test -f $$file || test -d $$file; then d=.; else d=$(srcdir); fi; \
+Makefile.in:	  if test -d $$d/$$file; then \
+Makefile.in:	    dir=`echo "/$$file" | sed -e 's,/[^/]*$$,,'`; \
+Makefile.in:	    if test -d "$(distdir)/$$file"; then \
+Makefile.in:	      find "$(distdir)/$$file" -type d ! -perm -700 -exec chmod u+rwx {} \;; \
+Makefile.in:	    if test -d $(srcdir)/$$file && test $$d != $(srcdir); then \
+Makefile.in:	      cp -fpR $(srcdir)/$$file "$(distdir)$$dir" || exit 1; \
+Makefile.in:	      find "$(distdir)/$$file" -type d ! -perm -700 -exec chmod u+rwx {} \;; \
+Makefile.in:	    cp -fpR $$d/$$file "$(distdir)$$dir" || exit 1; \
+Makefile.in:	    test -f "$(distdir)/$$file" \
+Makefile.in:	    || cp -p $$d/$$file "$(distdir)/$$file" \
+Makefile.in:check-am: all-am
+Makefile.in:check: check-am
+Makefile.in:all-am: Makefile $(PROGRAMS)
+Makefile.in:	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
+Makefile.in:install: install-am
+Makefile.in:install-exec: install-exec-am
+Makefile.in:install-data: install-data-am
+Makefile.in:uninstall: uninstall-am
+Makefile.in:install-am: all-am
+Makefile.in:	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
+Makefile.in:installcheck: installcheck-am
+Makefile.in:install-strip:
+Makefile.in:	if test -z '$(STRIP)'; then \
+Makefile.in:	    install_sh_PROGRAM="$(INSTALL_STRIP_PROGRAM)" INSTALL_STRIP_FLAG=-s \
+Makefile.in:	    install_sh_PROGRAM="$(INSTALL_STRIP_PROGRAM)" INSTALL_STRIP_FLAG=-s \
+Makefile.in:mostlyclean-generic:
+Makefile.in:clean-generic:
+Makefile.in:distclean-generic:
+Makefile.in:	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
+Makefile.in:	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+Makefile.in:maintainer-clean-generic:
+Makefile.in:clean: clean-am
+Makefile.in:clean-am: clean-binPROGRAMS clean-generic clean-sbinPROGRAMS \
+Makefile.in:	mostlyclean-am
+Makefile.in:distclean: distclean-am
+Makefile.in:	-rm -rf ./$(DEPDIR)
+Makefile.in:	-rm -f Makefile
+Makefile.in:distclean-am: clean-am distclean-compile distclean-generic \
+Makefile.in:	distclean-tags
+Makefile.in:dvi: dvi-am
+Makefile.in:dvi-am:
+Makefile.in:html: html-am
+Makefile.in:html-am:
+Makefile.in:info: info-am
+Makefile.in:info-am:
+Makefile.in:install-data-am:
+Makefile.in:install-dvi: install-dvi-am
+Makefile.in:install-dvi-am:
+Makefile.in:install-exec-am: install-binPROGRAMS install-sbinPROGRAMS
+Makefile.in:install-html: install-html-am
+Makefile.in:install-html-am:
+Makefile.in:install-info: install-info-am
+Makefile.in:install-info-am:
+Makefile.in:install-man:
+Makefile.in:install-pdf: install-pdf-am
+Makefile.in:install-pdf-am:
+Makefile.in:install-ps: install-ps-am
+Makefile.in:install-ps-am:
+Makefile.in:installcheck-am:
+Makefile.in:maintainer-clean: maintainer-clean-am
+Makefile.in:	-rm -rf ./$(DEPDIR)
+Makefile.in:	-rm -f Makefile
+Makefile.in:maintainer-clean-am: distclean-am maintainer-clean-generic
+Makefile.in:mostlyclean: mostlyclean-am
+Makefile.in:mostlyclean-am: mostlyclean-compile mostlyclean-generic
+Makefile.in:pdf: pdf-am
+Makefile.in:pdf-am:
+Makefile.in:ps: ps-am
+Makefile.in:ps-am:
+Makefile.in:uninstall-am: uninstall-binPROGRAMS uninstall-sbinPROGRAMS
+Makefile.in:.MAKE: install-am install-strip
+Makefile.in:.PHONY: CTAGS GTAGS TAGS all all-am check check-am clean \
+Makefile.in:	clean-binPROGRAMS clean-generic clean-sbinPROGRAMS \
+Makefile.in:	cscopelist-am ctags ctags-am distclean distclean-compile \
+Makefile.in:	distclean-generic distclean-tags distdir dvi dvi-am html \
+Makefile.in:	html-am info info-am install install-am install-binPROGRAMS \
+Makefile.in:	install-data install-data-am install-dvi install-dvi-am \
+Makefile.in:	install-exec install-exec-am install-html install-html-am \
+Makefile.in:	install-info install-info-am install-man install-pdf \
+Makefile.in:	install-pdf-am install-ps install-ps-am install-sbinPROGRAMS \
+Makefile.in:	install-strip installcheck installcheck-am installdirs \
+Makefile.in:	maintainer-clean maintainer-clean-generic mostlyclean \
+Makefile.in:	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
+Makefile.in:	tags tags-am uninstall uninstall-am uninstall-binPROGRAMS \
+Makefile.in:	uninstall-sbinPROGRAMS
+Makefile.in:#logactiond_CPPFLAGS = -I$(top_srcdir)/lib
+Makefile.in:#logactiond_LDFLAGS = -Lconfig
+misc.c: *  logactiond - trigger actions based on logfile contents
+misc.c:        char buf[20]; /* should be enough - I think */
+misc.c:        if (fd == -1)
+misc.c:        if (result == -1)
+misc.c:                *dst_ptr = *dst_ptr - *dst + tmp_ptr;
+misc.c:        result->head.succ = (kw_node_t *) &result->tail;
+misc.c:        result->head.pred = NULL;
+misc.c:        result->tail.succ = NULL;
+misc.c:        result->tail.pred = (kw_node_t *) &result->head;
+nodelist.c: *  logactiond - trigger actions based on logfile contents
+nodelist.c:        if (!(node->succ || node->pred))
+nodelist.c:                die_hard("%s:%u: %s: Assertion 'node->succ || node->pred' failed.",
+nodelist.c:        if (!(node->succ != node->pred))
+nodelist.c:                die_hard("%s:%u: %s: Assertion 'node->succ != node->pred' failed.",
+nodelist.c:        if (node->pred)
+nodelist.c:                if (!(node->pred->succ == node))
+nodelist.c:                        die_hard("%s:%u: %s: Assertion 'node->pred->succ == node' failed.",
+nodelist.c:        if (node->succ)
+nodelist.c:                if (!(node->succ->pred == node))
+nodelist.c:                        die_hard("%s:%u: %s: Assertion 'node->succ->pred == node' failed.",
+nodelist.c:        if (!(list->head.succ && list->tail.pred))
+nodelist.c:                die_hard("%s:%u: %s: Assertion 'list->head.succ && "
+nodelist.c:                                "list->tail.pred' failed.", file, line, func);
+nodelist.c:        if (!(!list->head.pred && !list->tail.succ))
+nodelist.c:                die_hard("%s:%u: %s: Assertion '!list->head.pred && "
+nodelist.c:                                "!list->tail.succ' failed.", file, line, func);
+nodelist.c:        for (kw_node_t *node = list->head.succ; node->succ; node = node->succ)
+nodelist.c:        result->head.succ = (kw_node_t *) &result->tail;
+nodelist.c:        result->head.pred = NULL;
+nodelist.c:        result->tail.succ = NULL;
+nodelist.c:        result->tail.pred = (kw_node_t *) &result->head;
+nodelist.c: * When new_node == list->head, new_node is inserted at the beginning of the list.
+nodelist.c: * Wenn new_node == list->tail, new_node is inserted at the end of the list
+nodelist.c:        if (!ex_node->succ)
+nodelist.c:                ex_node = ex_node->pred;
+nodelist.c:        kw_node_t *succ = ex_node->succ;
+nodelist.c:        new_node->pred = ex_node;
+nodelist.c:        new_node->succ = ex_node->succ;
+nodelist.c:        ex_node->succ->pred = new_node;
+nodelist.c:        ex_node->succ = new_node;
+nodelist.c:        if (!ex_node->pred)
+nodelist.c:                ex_node = ex_node->succ;
+nodelist.c:        kw_node_t *pred = ex_node->pred;
+nodelist.c:        new_node->pred = ex_node->pred;
+nodelist.c:        new_node->succ = ex_node;
+nodelist.c:        ex_node->pred->succ = new_node;
+nodelist.c:        ex_node->pred = new_node;
+nodelist.c:        if (!node->pred || !node->succ)
+nodelist.c:        node->pred->succ = node->succ;
+nodelist.c:        node->succ->pred = node->pred;
+nodelist.c:        assert_node(node->pred); assert_node(node->succ);
+nodelist.c:        node->succ = list->head.succ;
+nodelist.c:        node->pred = (kw_node_t *) &list->head;
+nodelist.c:        list->head.succ = node;
+nodelist.c:        node->succ->pred = node;
+nodelist.c:        node->succ = (kw_node_t *) &list->tail;
+nodelist.c:        node->pred = list->tail.pred;
+nodelist.c:        list->tail.pred = node;
+nodelist.c:        node->pred->succ = node;
+nodelist.c:        return list->head.succ;
+nodelist.c:        return list->tail.pred;
+nodelist.c:        result = list->head.succ;
+nodelist.c:        list->head.succ = result->succ;
+nodelist.c:        result->succ->pred = (kw_node_t *) &list->head;
+nodelist.c:        result = list->tail.pred;
+nodelist.c:        list->tail.pred = result->pred;
+nodelist.c:        result->pred->succ = (kw_node_t *) &list->tail;
+nodelist.c:        return (kw_node_t *) &list->head;
+nodelist.c:        *iterator = (*iterator)->succ;
+nodelist.c:        if ((*iterator)->succ == NULL)
+nodelist.c:        kw_node_t *node = list->head.succ;
+nodelist.c:        while (node->succ)
+nodelist.c:                node = node->succ;
+nodelist.c:        kw_node_t *node = list->head.succ;
+nodelist.c:        while (node->succ)
+nodelist.c:                node = node->succ;
+nodelist.c: * &mylist->head = pointer auf list header
+nodelist.c: * mylist->head.succ = pointer auf next element (list footer bei empty list)
+nodelist.c: * mylist->head.pred = null
+nodelist.c: * &mylist->tail = pointer auf footer
+nodelist.c: * mylist->tail.succ
+nodelist.c: * Don't use mylist->head / mylist->tail
+nodelist.c:        printf("&mylist->head=%u\n", &mylist->head);
+nodelist.c:        printf("mylist->head.succ=%u\n", mylist->head.succ);
+nodelist.c:        printf("mylist->head.pred=%u\n", mylist->head.pred);
+nodelist.c:        printf("mylist->head.succ->pred=%u\n", mylist->head.succ->pred);
+nodelist.c:        printf("&mylist->tail=%u\n", &mylist->tail);
+nodelist.c:        printf("mylist->tail.succ=%u\n", mylist->tail.succ);
+nodelist.c:        printf("mylist->tail.pred=%u\n", mylist->tail.pred);
+nodelist.c:        printf("---\n");
+nodelist.c:        result->text = "bla";
+nodelist.c:        printf("&mylist->head=%u\n", &mylist->head);
+nodelist.c:        printf("mylist->head.succ=%u\n", mylist->head.succ);
+nodelist.c:        printf("mylist->head.pred=%u\n", mylist->head.pred);
+nodelist.c:        printf("result->node.succ=%u\n", result->node.succ);
+nodelist.c:        printf("result->node.pred=%u\n", result->node.pred);
+nodelist.c:        printf("mylist->head.succ->pred=%u\n", mylist->head.succ->pred);
+nodelist.c:        printf("&mylist->tail=%u\n", &mylist->tail);
+nodelist.c:        printf("mylist->tail.succ=%u\n", mylist->tail.succ);
+nodelist.c:        printf("mylist->tail.pred=%u\n", mylist->tail.pred);
+nodelist.c:        printf("---\n");
+nodelist.c:        result->text = "blub";
+nodelist.c:        printf("get_head=%s\n", result->text);
+nodelist.c:                printf("loop1: %s\n", result->text); 
+nodelist.c:        printf("4: %s\n", result->text);
+nodelist.h: *  logactiond - trigger actions based on logfile contents
+nodelist.h:        ( ((x)->tail.pred) == (kw_node_t *)(x) )
+patterns.c: *  logactiond - trigger actions based on logfile contents
+patterns.c:        assert_rule_ffl(pattern->rule, func, file, line);
+patterns.c:        assert_list_ffl(pattern->properties, func, file, line);
+patterns.c: * pattern->string instead of returning it
+patterns.c:                                        src_ptr-string, pattern->rule);
+patterns.c:                                if (new_prop->is_host_property)
+patterns.c:                                                new_prop->replacement);
+patterns.c:                                        new_prop->subexpression = subexpression + 1;
+patterns.c:                                        add_tail(pattern->properties, (kw_node_t *)
+patterns.c:                                size_t repl_len = xstrlen(new_prop->replacement);
+patterns.c:                                dst_ptr = stpncpy(dst_ptr, new_prop->replacement,
+patterns.c:                                src_ptr += new_prop->length;
+patterns.c:        char *full_string = concat(rule->source->prefix,
+patterns.c:        result->num = num;
+patterns.c:        result->rule = rule;
+patterns.c:        result->properties = xcreate_list();
+patterns.c:        result->string = convert_regex(full_string, result);
+patterns.c:        result->regex = xmalloc(sizeof(regex_t));
+patterns.c:        int r = regcomp(result->regex, result->string, REG_EXTENDED | REG_NEWLINE);
+patterns.c:                die_err("Error %d compiling regex: %s!", r, result->string);
+patterns.c:        result->detection_count = result->invocation_count = 0;
+patterns.c:        la_vdebug("free_pattern(%s)", pattern->string);
+patterns.c:        free_property_list(pattern->properties);
+patterns.c:        free(pattern->string);
+patterns.c:        free(pattern->regex);
+polling.c: *  logactiond - trigger actions based on logfile contents
+polling.c:        la_vdebug("unwatch_source_polling(%s)", source->name);
+polling.c:                for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+polling.c:                        if (!source->active)
+polling.c:                                source->file = fopen(source->location, "r");
+polling.c:                                if (source->file)
+polling.c:                                        source->active = true;
+polling.c:                                        if (fstat(fileno(source->file), &(source->stats)) == -1)
+polling.c:                        if (!stat(source->location, &sb) && (
+polling.c:                                                sb.st_ino != source->stats.st_ino ||
+polling.c:                                                sb.st_dev != source->stats.st_dev ||
+polling.c:                                source->file = freopen(source->location, "r",
+polling.c:                                                source->file);
+polling.c:                                if (source->file)
+polling.c:                                        memcpy(&(source->stats), &sb,
+polling.c:                                                        "\"%s\" - file \"%s\".",
+polling.c:                                                        source->name,
+polling.c:                                                        source->location);
+polling.c:                                        source->active = false;
+polling.c:        la_debug("watch_source_polling(%s)", source->name);
+properties.c: *  logactiond - trigger actions based on logfile contents
+properties.c:        if (!property->name)
+properties.c:                die_hard("%s:%u: %s: Assertion 'property->name' failed.", file,
+properties.c: * Returns length of token - i.e. number of characters until closing '%' is
+properties.c:                        return ptr-string+1;
+properties.c:                if (property->is_host_property)
+properties.c:                        return property->value;
+properties.c:                if (!strcmp(name, result->name))
+properties.c:        return property ? property->value : NULL;
+properties.c: * Convert name to lower case. Also die if non alpha-numeric character is
+properties.c:                        /* will print out partially converted name :-/ */
+properties.c:        result->name = xstrndup(name+1, length-2);
+properties.c:        convert_property_name(result->name);
+properties.c:        result->value = NULL;
+properties.c:        result->is_host_property = false;
+properties.c:        if (!strcmp(result->name, LA_HOST_TOKEN))
+properties.c:                result->is_host_property = true;
+properties.c:                result->replacement = xstrdup(LA_HOST_TOKEN_REPL);
+properties.c:        else if (rule && rule->service && !strcmp(result->name, LA_SERVICE_TOKEN))
+properties.c:                result->replacement = xstrdup(rule->service);
+properties.c:                result->replacement = xstrdup(LA_TOKEN_REPL);
+properties.c:        result->length = length;
+properties.c:        result->pos = pos;
+properties.c:        result->subexpression = 0;
+properties.c:        result->name = xstrdup(name);
+properties.c:        convert_property_name(result->name);
+properties.c:        result->is_host_property = !strcmp(result->name, LA_HOST_TOKEN);
+properties.c:        result->value = xstrdup(value);
+properties.c:        result->replacement = NULL;
+properties.c:        la_vdebug("duplicate_property(%s)", property->name);
+properties.c:        result->name = xstrdup(property->name);
+properties.c:        result->is_host_property = property->is_host_property;
+properties.c:        result->value = xstrdup(property->value);
+properties.c:        result->replacement = xstrdup(property->replacement);
+properties.c:        result->pos = property->pos;
+properties.c:        result->length = property->length;
+properties.c:        result->subexpression = property->subexpression;
+properties.c:        la_vdebug("free_property(%s, %s, %s)", property->name, property->value,
+properties.c:                        property->replacement);
+properties.c:        free(property->name);
+properties.c:        free(property->value);
+properties.c:        free(property->replacement);
+rules.c: *  logactiond - trigger actions based on logfile contents
+rules.c:        if (!rule->name)
+rules.c:                die_hard("%s:%u: %s: Assertion 'rule->name' failed. ", file, line, func);
+rules.c:        if (!rule->source)
+rules.c:                assert_source_ffl(rule->source, func, file, line);
+rules.c:        assert_list_ffl(rule->patterns, func, file, line);
+rules.c:        assert_list_ffl(rule->begin_commands, func, file, line);
+rules.c:        assert_list_ffl(rule->trigger_list, func, file, line);
+rules.c:        assert_list_ffl(rule->properties, func, file, line);
+rules.c:        la_debug("add_trigger(%s)", command->name);
+rules.c:        command->n_triggers = 0;
+rules.c:        command->start_time = xtime(NULL);
+rules.c:        add_head(command->rule->trigger_list, (kw_node_t *) command);
+rules.c:        assert_list(command->rule->trigger_list);
+rules.c:        la_debug("find_trigger(%s, %u)", rule->name, template->id);
+rules.c:        for (la_command_t *command = ITERATE_COMMANDS(rule->trigger_list);
+rules.c:                if (command->id == template->id &&
+rules.c:                                !adrcmp(command->address, address))
+rules.c: * - Add command to trigger list if not in there yet.
+rules.c: * - Increase counter by one.
+rules.c: * - If counter > threshold, trigger command
+rules.c: * - If period passed, reset counter
+rules.c:        la_debug("handle_command_on_trigger_list(%s)", command->name);
+rules.c:        if (command->n_triggers == 0)
+rules.c:        if (xtime(NULL) - command->start_time < command->rule->period)
+rules.c:                /* still within current period - increase counter,
+rules.c:                command->n_triggers++;
+rules.c:                                command->address->text,
+rules.c:                                command->n_triggers,
+rules.c:                                command->rule->name);
+rules.c:                if (command->n_triggers >= command->rule->threshold)
+rules.c:                        if (command->rule->invocation_count < ULONG_MAX)
+rules.c:                                command->rule->invocation_count++;
+rules.c:                        if (command->pattern->invocation_count < ULONG_MAX)
+rules.c:                                command->pattern->invocation_count++;
+rules.c:                command->start_time = xtime(NULL);
+rules.c:                command->n_triggers = 1;
+rules.c:                                command->address->text,
+rules.c:                                command->rule->name);
+rules.c: * command - command to be triggered
+rules.c:        la_debug("trigger_single_command(%s)", template->name);
+rules.c:                                "active for rule \"%s\".", address->text,
+rules.c:                                tmp->name, rule->name);
+rules.c:                if (template->need_host != LA_NEED_HOST_NO &&
+rules.c:                                        command->name,
+rules.c:                                        command->rule->name);
+rules.c: * rule - 
+rules.c: * pattern - pattern that matched
+rules.c:        la_debug("trigger_all_commands(%s)", rule->name);
+rules.c:        const char *host = get_host_property_value(pattern->properties);
+rules.c:                                ITERATE_COMMANDS(rule->begin_commands);
+rules.c: * property_list - existing properties from pattern
+rules.c: * line - matched log line
+rules.c: * pmatch - result from regexec() call pointing to matches in line
+rules.c:                property->value = xstrndup(line + pmatch[property->subexpression].rm_so,
+rules.c:                                pmatch[property->subexpression].rm_eo -
+rules.c:                                pmatch[property->subexpression].rm_so);
+rules.c:                free(property->value);
+rules.c:                property->value = NULL;
+rules.c:        la_vdebug("handle_log_line_for_rule(%s)", rule->name);
+rules.c:        for (la_pattern_t *pattern = ITERATE_PATTERNS(rule->patterns);
+rules.c:                if (!regexec(pattern->regex, line, MAX_NMATCH, pmatch, 0))
+rules.c:                        if (pattern->detection_count < ULONG_MAX)
+rules.c:                                pattern->detection_count++;
+rules.c:                        if (pattern->rule->detection_count < ULONG_MAX)
+rules.c:                                pattern->rule->detection_count++;
+rules.c:                        assign_value_to_properties(pattern->properties, line,
+rules.c:                        clear_property_values(pattern->properties);
+rules.c: * source - source file this rule applies to
+rules.c: * threshold - how many time a rule must match in the given period before an
+rules.c: * period - period (in seconds) for the threshold
+rules.c: * duration - duration (in seconds) after which end command is activated
+rules.c:        result->name = xstrdup(name);
+rules.c:        result->source = source;
+rules.c:                result->threshold = threshold;
+rules.c:        else if (la_config->default_threshold >= 0)
+rules.c:                result->threshold = la_config->default_threshold;
+rules.c:                result->threshold = 1;
+rules.c:        result->duration = duration!=-1 ? duration : la_config->default_duration;
+rules.c:        result->period = period!=-1 ? period : la_config->default_period;
+rules.c:        result->service = xstrdup(service);
+rules.c:        result->systemd_unit = xstrdup(systemd_unit);
+rules.c:        result->patterns = xcreate_list();
+rules.c:        result->begin_commands = xcreate_list();
+rules.c:        result->trigger_list = xcreate_list();
+rules.c:        result->properties = xcreate_list();
+rules.c:        result->detection_count = result->invocation_count = 0;
+rules.c:        la_vdebug("free_rule(%s)", rule->name);
+rules.c:        free(rule->systemd_unit);
+rules.c:        free(rule->service);
+rules.c:        free_pattern_list(rule->patterns);
+rules.c:        free_command_list(rule->begin_commands);
+rules.c:        free_command_list(rule->trigger_list);
+rules.c:        free_property_list(rule->properties);
+rules.c:        free(rule->name);
+sources.c: *  logactiond - trigger actions based on logfile contents
+sources.c:        if (!source->name)
+sources.c:                die_hard("%s:%u: %s: Assertion 'source->name' failed. ", file, line, func);
+sources.c:        if (!source->location)
+sources.c:                die_hard("%s:%u: %s: Assertion 'source->location' failed. ", file, line, func);
+sources.c:        assert_list_ffl(source->rules, func, file, line);
+sources.c:        for (la_rule_t *rule = ITERATE_RULES(source->rules);
+sources.c:                                (rule->systemd_unit &&
+sources.c:                                 !strcmp(systemd_unit, rule->systemd_unit)))
+sources.c:        la_vdebug("handle_new_content(%s)", source->name);
+sources.c:        ssize_t num_read = getline(&linebuffer, &linebuffer_size, source->file);
+sources.c:        if (num_read==-1)
+sources.c:                if (feof(source->file))
+sources.c:                        /* What was the reason for this? I can't remember :-O */
+sources.c:                        fseek(source->file, 0, SEEK_END);
+sources.c:                ssize_t num_read = getline(&linebuffer, &linebuffer_size, source->file);
+sources.c:                if (num_read==-1)
+sources.c:                        if (feof(source->file))
+sources.c: * la_config->sources.
+sources.c:        result->name = xstrdup(name);
+sources.c:        result->location = xstrdup(location);
+sources.c:        result->prefix = xstrdup(prefix);
+sources.c:        result->parent_dir = NULL;
+sources.c:        result->rules = xcreate_list();
+sources.c:        result->file = NULL;
+sources.c:        result->active = false;
+sources.c:        result->wd = 0;
+sources.c:        result->parent_wd = 0;
+sources.c:        result->systemd_units = NULL;
+sources.c: * Free single source. Does nothing when argument is NULL. Expects source->file
+sources.c:        assert_source(source); assert(!source->file);
+sources.c:        la_vdebug("free_source(%s)", source->name);
+sources.c:        free_rule_list(source->rules);
+sources.c:        free(source->name);
+sources.c:        free(source->location);
+sources.c:        free(source->prefix);
+sources.c:        free(source->parent_dir);
+sources.c:        if (source->systemd_units)
+sources.c:                for (kw_node_t *tmp; (tmp = rem_head(source->systemd_units));)
+sources.c:                        free(tmp->name);
+sources.c:                free(source->systemd_units);
+sources.c:        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+sources.c:                if (!strcmp(location, source->location))
+status.c: *  logactiond - trigger actions based on logfile contents
+status.c:        la_vdebug("dump_single_rule(%s)", rule->name);
+status.c:        la_vdebug("%-13.13s %-9.9s %-9.9s %9u %9u\n",
+status.c:                        rule->name, rule->service, rule->source->name,
+status.c:                        rule->detection_count, rule->invocation_count);
+status.c:        fprintf(rules_file, "%-13.13s %-13.13s %-13.13s %8lu %8lu\n",
+status.c:                        rule->name, rule->service, rule->source->name,
+status.c:                        rule->detection_count, rule->invocation_count);
+status.c:        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+status.c:                for (la_rule_t *rule = ITERATE_RULES(source->rules);
+status.c:        if (la_config->systemd_source)
+status.c:                for (la_rule_t *rule = ITERATE_RULES(la_config->systemd_source->rules);
+status.c:                if (command->end_time == INT_MAX)
+status.c:                la_debug("printing %s", command->name);
+status.c:                char *adr = command->address ? command->address->text : "-";
+status.c:                human_readable_time_delta(command->end_time-xtime(NULL),
+status.c:                                "%-46.46s %2u%c %-9.9s %-13.13s\n",
+status.c:                                adr, timedelta, unit, command->rule->name,
+status.c:                                command->name);
+systemd.c: *  logactiond - trigger actions based on logfile contents
+systemd.c:#include <systemd/sd-journal.h>
+systemd.c:        log_message(LOG_ERR, fmt, myargs, strerror(-systemd_errno));
+systemd.c:                trigger_shutdown(EXIT_FAILURE, -systemd_errno);
+systemd.c:        assert(journal); assert(la_config->systemd_source);
+systemd.c:                                continue; /* wait returned without error -
+systemd.c:                handle_log_line(la_config->systemd_source, data+MESSAGE_LEN,
+systemd.c:        assert_source(la_config->systemd_source);
+systemd.c:        assert(la_config->systemd_source->systemd_units);
+systemd.c:        for (kw_node_t *unit = &(la_config->systemd_source->systemd_units)->head;
+systemd.c:                        (unit = unit->succ->succ ? unit->succ : NULL);)
+systemd.c:                len = xstrlen("_SYSTEMD_UNIT=") + xstrlen(unit->name)+1;
+systemd.c:                snprintf(match, len, "_SYSTEMD_UNIT=%s", unit->name);
+systemd.c:        /* Weird behavior of sd_journal_seek_tail() - which actually moves the
+TAGS:logactiond-checkrules.c,865
+watch.c: *  logactiond - trigger actions based on logfile contents
+watch.c:        la_debug("watch_source(%s)", source->name);
+watch.c:        source->file = fopen(source->location, "r");
+watch.c:        if (!source->file)
+watch.c:                die_err("Opening source \"%s\" failed", source->name);
+watch.c:        if (fstat(fileno(source->file), &(source->stats)) == -1)
+watch.c:                die_err("Stating source \"%s\" failed", source->name);
+watch.c:        if (fseek(source->file, 0, whence))
+watch.c:                die_err("Seeking in source \"%s\" failed", source->name);
+watch.c:        source->active = true;
+watch.c:        assert_source(source); assert(source->file); assert(source->active);
+watch.c:        la_debug("unwatch_source(%s)", source->name);
+watch.c:        la_debug("unwatch_source(%s)", source->name);
+watch.c:        if (fclose(source->file))
+watch.c:                die_err("Closing source \"%s\" failed", source->name);
+watch.c:        source->file = NULL;
+watch.c:        source->active = false;
+watch.c:        if (!is_list_empty(la_config->sources))
+watch.c:                for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+watch.c:        if (la_config->systemd_source)
+watch.c:        if (!is_list_empty(la_config->sources))
+watch.c:        if (la_config->systemd_source)
+watch.c:        if (!is_list_empty(la_config->sources))
+watch.c:                for (la_source_t *source = ITERATE_SOURCES(la_config->sources);

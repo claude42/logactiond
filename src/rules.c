@@ -349,6 +349,7 @@ create_rule(char *name, la_source_t *source, int threshold, int period,
         la_rule_t *result = xmalloc(sizeof(la_rule_t));
 
         result->name = xstrdup(name);
+        result->id = ++id_counter;
         result->source = source;
 
         if (threshold >= 0)
