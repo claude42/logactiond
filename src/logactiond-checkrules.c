@@ -130,20 +130,29 @@ next_line(la_rule_t *rule, char *line)
 static void
 iterate_through_all_rules(char *line)
 {
+        la_debug("iterate_through_all_rules()");
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                         (source = NEXT_SOURCE(source));)
         {
                 for (la_rule_t *rule = ITERATE_RULES(source->rules);
                                 (rule = NEXT_RULE(rule));)
-                {
                         next_line(rule, line);
-                }
         }
+
+#if HAVE_LIBSYSTEMD
+        if (la_config->systemd_source)
+        {
+                for (la_rule_t *rule = ITERATE_RULES(la_config->systemd_source->rules);
+                                (rule = NEXT_RULE(rule));)
+                        next_line(rule, line);
+        }
+#endif /* HAVE_LIBSYSTEMD */
 }
 
 static la_rule_t *
 find_rule(const char *rule_name)
 {
+        la_debug("find_rule()");
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                         (source = NEXT_SOURCE(source));)
         {
@@ -157,6 +166,22 @@ find_rule(const char *rule_name)
                         }
                 }
         }
+
+#if HAVE_LIBSYSTEMD
+        if (la_config->systemd_source)
+        {
+                for (la_rule_t *rule = ITERATE_RULES(la_config->systemd_source->rules);
+                                (rule = NEXT_RULE(rule));)
+                {
+                        if (!strcmp(rule_name, rule->name))
+                        {
+                                la_debug("find_rule(%s)", rule_name);
+                                return rule;
+                        }
+                }
+        }
+#endif /* HAVE_LIBSYSTEMD */
+
 
         la_debug("find_rule(%s)=NULL", rule_name);
         return NULL;
@@ -186,9 +211,12 @@ main(int argc, char *argv[])
 
         la_rule_t *one_rule = NULL;
         if (rule_name)
+        {
                 one_rule = find_rule(rule_name);
+                if (!one_rule)
+                        die_hard("Can't find rule %s", rule_name);
+        }
         
-
         char *linebuffer = xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
         size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE*sizeof(char);
 
