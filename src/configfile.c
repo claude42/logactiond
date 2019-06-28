@@ -18,11 +18,8 @@
 
 #include <config.h>
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/select.h>
-#include <err.h>
 #include <syslog.h>
 #include <assert.h>
 
