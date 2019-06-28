@@ -292,7 +292,7 @@ trigger_command(la_command_t *command)
                                 command->rule->name,
                                 command->rule->source->name);
         else
-                la_log(LOG_INFO, "Host: %s, action \"%s\" triggered by rule \"%s\".",
+                la_log(LOG_INFO, "Host: %s, action \"%s\" activated by rule \"%s\".",
                                 command->address->text, command->name,
                                 command->rule->name);
 
