@@ -20,7 +20,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <syslog.h>
 #include <assert.h>
 #include <limits.h>
@@ -142,31 +141,6 @@ get_value_for_action_property(la_command_t *command,
                         action_property->name);
 }
 
-/*
- * Basically adds the length of all property values in begin_properties or
- * end_properties (depending on command type) to source_len.
- */
-
-static size_t
-compute_converted_length(la_command_t *command, la_commandtype_t type,
-                size_t source_len)
-{
-        la_vdebug("compute_converted_length(%s)", command->name);
-
-        size_t result = source_len;
-
-        la_property_t  *action_property = ITERATE_PROPERTIES(
-                        type == LA_COMMANDTYPE_BEGIN ?
-                        command->begin_properties :
-                        command->end_properties);
-
-        while ((action_property = NEXT_PROPERTY(action_property)))
-                result += xstrlen(get_value_for_action_property(command,
-                                        action_property));
-
-        return result;
-}
-
 static char *
 convert_command(la_command_t *command, la_commandtype_t type)
 {
@@ -250,70 +224,6 @@ convert_command(la_command_t *command, la_commandtype_t type)
         return result;
 }
 
-/* TODO: refactor */
-/*
- * 
- * TODO: current implementation leads to calling
- * get_value_for_action_property() twice per property which is unnecessarily
- * expensive. Let's find a better solution
- */
-
-static char *
-convert_command2(la_command_t *command, la_commandtype_t type)
-{
-        assert_command(command);
-
-        const char *source_string = (type == LA_COMMANDTYPE_BEGIN) ?
-                command->begin_string : command->end_string;
-        la_debug("convert_command(%s, %s)", command->name,
-                        type == LA_COMMANDTYPE_BEGIN ? "begin" : "end");
-
-        size_t source_len = xstrlen(source_string);
-        const char *string_ptr = source_string;
-
-        char *result = xmalloc(compute_converted_length(command, type,
-                                source_len));
-        char *result_ptr = result;
-
-        unsigned int start_pos = 0; /* position after last token */
-
-        la_property_t *action_property = ITERATE_PROPERTIES(
-                        type == LA_COMMANDTYPE_BEGIN ?
-                        command->begin_properties :
-                        command->end_properties);
-
-        while ((action_property = NEXT_PROPERTY(action_property)))
-        {
-                /* copy string before next token */
-                result_ptr = stpncpy(result_ptr, string_ptr, action_property->pos - start_pos);
-
-                /* copy value for token */
-                const char *repl = get_value_for_action_property(command,
-                                action_property);
-                if (repl)
-                        result_ptr = stpncpy(result_ptr, repl, xstrlen(repl));
-                else
-                        /* in case there's no value found, we now copy nothing
-                         * - still TBD whether this is a good idea */
-                        ;
-
-
-                start_pos = action_property->pos + action_property->length;
-                string_ptr = source_string + start_pos;
-        }
-
-        /* Copy remainder of string - only if there's something left.
-         * Double-check just to bes sure we don't overrun any buffer */
-        if (string_ptr - source_string < source_len)
-                /* strcpy() ok here because we definitley reserved enough space
-                 */
-                strcpy(result_ptr, string_ptr);
-        else
-                *result_ptr = '\0';
-
-        la_vdebug("convert_command(%s)=%s", command->name, result);
-        return result;
-}
 
 /*
  * Executes command string via system() and logs result.
@@ -367,22 +277,22 @@ trigger_command(la_command_t *command)
                 la_command_t *tmp = find_end_command(command->address);
                 if (tmp)
                 {
-                                la_log(LOG_INFO, "Host: %s, ignored, action "
-                                                "\"%s\" still " "active for "
-                                                "rule \"%s\".",
-                                                tmp->address->text, tmp->name,
-                                                tmp->rule->name);
-                                return;
+                        la_log(LOG_INFO, "Host: %s, ignored, action \"%s\" "
+                                        "already active (triggered by rule "
+                                        "\"%s\").",
+                                        tmp->address->text, tmp->name,
+                                        tmp->rule->name);
+                        return;
                 }
         }
 
         if (command->is_template)
-                la_log(LOG_INFO, "Initializing action \"%s\" for rule \"%s\", "
+                la_debug("Initializing action \"%s\" for rule \"%s\", "
                                 "source \"%s\".", command->name,
                                 command->rule->name,
                                 command->rule->source->name);
         else
-                la_log(LOG_INFO, "Host: %s, action \"%s\" fired for rule \"%s\".",
+                la_log(LOG_INFO, "Host: %s, action \"%s\" triggered by rule \"%s\".",
                                 command->address->text, command->name,
                                 command->rule->name);
 
@@ -511,7 +421,7 @@ dup_command(la_command_t *command)
 /*
  * Create command from template. Duplicate template and add add'l information
  *
- * Returns NULL if if ip address does not match template->need_host setting.
+ * Returns NULL if ip address does not match template->need_host setting.
  */
 
 la_command_t *
