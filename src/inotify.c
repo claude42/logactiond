@@ -337,27 +337,27 @@ watch_forever_inotify(void *ptr)
         for (;;)
         {
                 num_read = read(inotify_fd, buffer, BUF_LEN);
-                if (num_read == -1)
+                if (shutdown_ongoing)
+                {
+                        la_debug("Shutting down inotify thread.");
+                        pthread_exit(NULL);
+                }
+                else if (num_read == -1)
                 {
                         if (errno == EINTR)
                                 la_debug("read interrupted!");
                         else
                                 die_err("Error reading from inotify!");
                 }
-
-                if (shutdown_ongoing)
+                else
                 {
-                        la_debug("Shutting down inotify thread.");
-                        pthread_exit(NULL);
-                }
-
-                int i=0;
-                /* Loop will not be entered if read() failed with -1 */
-                while (i<num_read)
-                {
-                        event = (struct inotify_event *) &buffer[i];
-                        handle_inotify_event(event);
-                        i += EVENT_SIZE + event->len;
+                        int i=0;
+                        while (i<num_read)
+                        {
+                                event = (struct inotify_event *) &buffer[i];
+                                handle_inotify_event(event);
+                                i += EVENT_SIZE + event->len;
+                        }
                 }
         }
 
