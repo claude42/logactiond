@@ -54,7 +54,7 @@ void
 handle_log_line(la_source_t *source, const char *line, const char *systemd_unit)
 {
         assert(line); assert_source(source);
-        la_vdebug("handle_log_line(%s, %s)", systemd_unit, line);
+        la_debug("handle_log_line(%s, %s)", systemd_unit, line);
 
         for (la_rule_t *rule = ITERATE_RULES(source->rules);
                         (rule = NEXT_RULE(rule));)
