@@ -6,13 +6,17 @@
 
 if [ -n "$4" ]; then
 	PORTS="-m multiport --dports $4"
+	PROTOCOL="-p $3"
+else
+	PORTS=""
+	PROTOCOL=""
 fi
 
 iptables -N "la-$1"
 iptables -A "la-$1" -j RETURN
-iptables -I $2 -p $3 $PORTS -j "la-$1"
+iptables -I $2 $PROTOCOL $PORTS -j "la-$1"
 
 ip6tables -N "la-$1"
 ip6tables -A "la-$1" -j RETURN
-ip6tables -I $2 -p $3 $PORTS -j "la-$1"
+ip6tables -I $2 $PROTOCOL $PORTS -j "la-$1"
 
