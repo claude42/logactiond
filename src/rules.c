@@ -203,6 +203,22 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
 }
 
 /*
+ * Increases pattern->detection_count and pattern->rule_detection_count by 1.
+ */
+
+static void
+increase_detection_count(la_pattern_t *pattern)
+{
+        assert_pattern(pattern);
+        la_vdebug("increase_detection_count()");
+
+        if (pattern->detection_count < ULONG_MAX)
+                pattern->detection_count++;
+        if (pattern->rule->detection_count < ULONG_MAX)
+                pattern->rule->detection_count++;
+}
+
+/*
  * Trigger all commands assigned to a rule
  *
  * Inputs
@@ -239,6 +255,7 @@ trigger_all_commands(la_rule_t *rule, la_pattern_t *pattern)
         }
         else
         {
+                increase_detection_count(pattern);
                 for (la_command_t *template =
                                 ITERATE_COMMANDS(rule->begin_commands);
                                 (template = NEXT_COMMAND(template));)
@@ -310,10 +327,6 @@ handle_log_line_for_rule(la_rule_t *rule, const char *line)
                 regmatch_t pmatch[MAX_NMATCH];
                 if (!regexec(pattern->regex, line, MAX_NMATCH, pmatch, 0))
                 {
-                        if (pattern->detection_count < ULONG_MAX)
-                                pattern->detection_count++;
-                        if (pattern->rule->detection_count < ULONG_MAX)
-                                pattern->rule->detection_count++;
                         assign_value_to_properties(pattern->properties, line,
                                         pmatch);
                         trigger_all_commands(rule, pattern);
