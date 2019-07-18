@@ -183,7 +183,6 @@ convert_command(la_command_t *command, la_commandtype_t type)
                                         realloc_buffer(&result, &dst_ptr,
                                                         &dst_len, repl_len);
                                         dst_ptr = stpncpy(dst_ptr, repl, repl_len);
-                                        src_ptr += length;
                                 }
                                 else
                                 {
@@ -192,6 +191,7 @@ convert_command(la_command_t *command, la_commandtype_t type)
                                          * this is a good idea */
                                         ;
                                 }
+                                src_ptr += length;
                         }
                         else
                         {
