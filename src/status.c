@@ -231,7 +231,7 @@ dump_queue_status(kw_list_t *queue)
                 // not interested in shutdown commands (or anything beyond...)
                 if (command->end_time == INT_MAX)
                         break;
-                la_debug("printing %s", command->name);
+                la_vdebug("printing %s", command->name);
 
                 char *adr = command->address ? command->address->text : "-";
 
