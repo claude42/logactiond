@@ -90,9 +90,9 @@ watch_forever_systemd(void *ptr)
 
                         do
                         {
-                                /* Only wait 1 second to make sure a shutdown
+                                /* Only wait 3 second to make sure a shutdown
                                  * won't take too long */
-                                r = sd_journal_wait(journal, 1000);
+                                r = sd_journal_wait(journal, 3000000);
                         }
                         while (r == SD_JOURNAL_NOP && !shutdown_ongoing);
 
