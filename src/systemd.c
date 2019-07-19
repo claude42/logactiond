@@ -197,7 +197,7 @@ start_watching_systemd_thread(void)
 
         if (!systemd_watch_thread)
                 xpthread_create(&systemd_watch_thread, NULL,
-                                watch_forever_systemd, NULL);
+                                watch_forever_systemd, NULL, "systemd");
 }
 
 #endif /* HAVE_LIBSYSTEMD */

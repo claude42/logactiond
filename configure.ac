@@ -46,6 +46,23 @@ AC_CHECK_FUNCS([inotify_init],
   [AC_DEFINE([HAVE_INOTIFY], [1],
     [Define to 1 if you have usable inotify support.])])
 
+AC_MSG_CHECKING([for pthread_setname_np])
+HOLD_LIBS="$LIBS"
+LIBS="-pthread"
+AC_LINK_IFELSE(
+  [AC_LANG_SOURCE[
+    #define _GNU_SOURCE
+    #include <pthread.h>
+    int main(int argc, char** argv) {
+      int ret = pthread_setname_np(pthread_self(), "name");
+      return ret;
+    }
+  ]],
+  [AC_DEFINE([HAVE_PTHREAD_SETNAME_NP], [1], [Define if you have pthread_setname_np function.])
+  AC_MSG_RESULT([yes])],
+  [AC_MSG_RESULT([no])] )
+LIBS="$HOLD_LIBS"
+
 AC_CHECK_FILE([/run],
   [AC_DEFINE([HAVE_RUN], [1],
     [Define to 1 if you have /run.])])

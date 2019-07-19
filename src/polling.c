@@ -170,7 +170,7 @@ start_watching_polling_thread(void)
 
         if (!file_watch_thread)
                 xpthread_create(&file_watch_thread, NULL,
-                                watch_forever_polling, NULL);
+                                watch_forever_polling, NULL, "polling");
 }
 
 #endif /* !HAVE_INOTIFY */

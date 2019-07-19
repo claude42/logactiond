@@ -206,7 +206,8 @@ start_end_queue_thread(void)
 
         assert(end_queue);
 
-        xpthread_create(&end_queue_thread, NULL, consume_end_queue, NULL);
+        xpthread_create(&end_queue_thread, NULL, consume_end_queue, NULL,
+                        "end queue");
 }
 
 

@@ -169,7 +169,7 @@ start_monitoring_thread(void)
         if (!status_monitoring)
                 return;
 
-        xpthread_create(&monitoring_thread, NULL, dump_loop, NULL);
+        xpthread_create(&monitoring_thread, NULL, dump_loop, NULL, "status");
 }
 
 void

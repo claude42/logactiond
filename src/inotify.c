@@ -421,7 +421,7 @@ start_watching_inotify_thread(void)
 
         if (!file_watch_thread)
                 xpthread_create(&file_watch_thread, NULL,
-                                watch_forever_inotify, NULL);
+                                watch_forever_inotify, NULL, "inotify");
 }
 
 #endif /* HAVE_INOTIFY */

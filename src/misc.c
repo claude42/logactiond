@@ -16,8 +16,10 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <config.h>
 
+#define _GNU_SOURCE
+#include <pthread.h>
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <err.h>
@@ -28,7 +30,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
-#include <pthread.h>
+
 
 #include "logactiond.h"
 
@@ -79,10 +81,14 @@ create_pidfile(void)
 
 void
 xpthread_create(pthread_t *thread, const pthread_attr_t *attr,
-                void *(*start_routine)(void *), void *arg)
+                void *(*start_routine)(void *), void *arg, char *name)
 {
         if (pthread_create(thread, attr, start_routine, arg))
                 die_err("Failed to create thread!");
+#if HAVE_PTHREAD_SETNAME_NP
+        if (pthread_setname_np(*thread, name))
+                die_err("Failed to set thread name!");
+#endif /* HAVE_PTHREAD_SETNAME_NP */
 }
 
 /*

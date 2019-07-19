@@ -393,7 +393,7 @@ void remove_pidfile(void);
 void create_pidfile(void);
 
 void xpthread_create(pthread_t *thread, const pthread_attr_t *attr,
-                void *(*start_routine)(void *), void *arg);
+                void *(*start_routine)(void *), void *arg, char *name);
 
 void xpthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
 
