@@ -109,12 +109,14 @@ dump_rules(void)
                         dump_single_rule(rules_file, rule);
         }
 
+#if HAVE_LIBSYSTEMD
         if (la_config->systemd_source)
         {
                 for (la_rule_t *rule = ITERATE_RULES(la_config->systemd_source->rules);
                                 (rule = NEXT_RULE(rule));)
                         dump_single_rule(rules_file, rule);
         }
+#endif /* HAVE_LIBSYSTEMD */
 
         xpthread_mutex_unlock(&config_mutex);
 

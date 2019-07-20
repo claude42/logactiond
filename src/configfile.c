@@ -810,8 +810,10 @@ unload_la_config(void)
                 xpthread_mutex_lock(&config_mutex);
 
         empty_source_list(la_config->sources);
+#if HAVE_LIBSYSTEMD
         free_source(la_config->systemd_source);
         la_config->systemd_source = NULL;
+#endif /* HAVE_LIBSYSTEMD */
         empty_property_list(la_config->default_properties);
         empty_address_list(la_config->ignore_addresses);
 

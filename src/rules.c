@@ -376,7 +376,11 @@ create_rule(char *name, la_source_t *source, int threshold, int period,
         result->period = period!=-1 ? period : la_config->default_period;
 
         result->service = xstrdup(service);
+#if HAVE_LIBSYSTEMD
         result->systemd_unit = xstrdup(systemd_unit);
+#else /* HAVE_LIBSYSTEMD */
+        result->systemd_unit = NULL;
+#endif /* HAVE_LIBSYSTEMD */
 
         result->patterns = xcreate_list();
         result->begin_commands = xcreate_list();
@@ -401,7 +405,9 @@ free_rule(la_rule_t *rule)
         assert_rule(rule);
         la_vdebug("free_rule(%s)", rule->name);
 
+#if HAVE_LIBSYSTEMD
         free(rule->systemd_unit);
+#endif /* HAVE_LISTSYSTEMD */
         free(rule->service);
 
         free_pattern_list(rule->patterns);

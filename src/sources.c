@@ -59,9 +59,14 @@ handle_log_line(la_source_t *source, const char *line, const char *systemd_unit)
         for (la_rule_t *rule = ITERATE_RULES(source->rules);
                         (rule = NEXT_RULE(rule));)
         {
+                /* In case we use systemd, check whether the systemd unit
+                 * matches, otherwise we can save us going through all the
+                 * pattern matching stuff */
+#if HAVE_LIBSYSTEMD
                 if (!systemd_unit ||
                                 (rule->systemd_unit &&
                                  !strcmp(systemd_unit, rule->systemd_unit)))
+#endif /* HAVE_LIBSYSTEMD */
                         handle_log_line_for_rule(rule, line);
         }
 }
@@ -171,6 +176,7 @@ free_source(la_source_t *source)
         free(source->prefix);
         free(source->parent_dir);
 
+#if HAVE_LIBSYSTEMD
         if (source->systemd_units)
         {
                 for (kw_node_t *tmp; (tmp = rem_head(source->systemd_units));)
@@ -180,6 +186,7 @@ free_source(la_source_t *source)
                 }
                 free(source->systemd_units);
         }
+#endif /* HAVE_LISTSYSTEMD */
 
         free(source);
 }
