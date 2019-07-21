@@ -90,7 +90,7 @@ get_host_property_value(kw_list_t *property_list)
 /*
  * Go through property_list and find property with the same name as given as
  * second parameter. If such a property is found, return the whole property.
- * Return NULL otherwise.
+ * Return NULL otherwise. Also return NULL in case property_list is NULL.
  */
 
 la_property_t *
@@ -116,6 +116,8 @@ get_property_from_property_list(kw_list_t *property_list, const char *name)
  * Go through property_list and find property on the list with same name as
  * the property given as second parameter. If such a property is found, return
  * assigned value. Return NULL otherwise.
+ *
+ * Note: will also return NULL if property is found but its value is NULL!
  */
 
 const char *

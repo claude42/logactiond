@@ -189,16 +189,9 @@ typedef struct la_address_s
 } la_address_t;
 
 /*
- * bla
- *
- * name - name of property: strdup()d
- * value - value of property: strdup()d
+ * la_property_s
  *
  * Note: both name and value must be assigned strdup()ed strings
- *
- * XXX: in it's current implementation, la_property_t data structure is not
- * thread safe. I.e. the same pattern must not be used by different backend (as
- * these run in different threads).
  */
 
 typedef struct la_property_s
@@ -216,8 +209,6 @@ typedef struct la_property_s
          * - when used as an action token, this is the value taken from the
          *   original token
          *
-         * XXX: Not thread-safe: i.e. using the same pattern for different
-         * backends will not work.
          * BTW: strings will be strdup()ed - take care to free again */
         char *value;
 
@@ -230,7 +221,7 @@ typedef struct la_property_s
          * obtained from log lines matching tokens or in action strings.
          */
 
-        /* Position in original string. Points to innitial '<'!.
+        /* Position in original string. Points to innitial '%'!.
          * Only for use in convert_regex() */
         unsigned int pos;
         /* Length of token including the two '%'. Saves us a few strlen() calls in
