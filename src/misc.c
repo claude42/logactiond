@@ -21,9 +21,9 @@
 
 #define _GNU_SOURCE
 #include <pthread.h>
-#if HAVE_PTHREAD_SET_NAME_NP
+#if HAVE_PTHREAD_NP_H
 #include <pthread_np.h>
-#endif /* HAVE_PTHREAD_SET_NAME_NP */
+#endif /* HAVE_PTHREAD_NP_H */
 #include <stdio.h>
 #include <stdlib.h>
 #include <err.h>
