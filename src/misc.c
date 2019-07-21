@@ -17,9 +17,13 @@
  */
 
 
+#include <config.h>
+
 #define _GNU_SOURCE
 #include <pthread.h>
-#include <config.h>
+#if HAVE_PTHREAD_SET_NAME_NP
+#include <pthread_np.h>
+#endif /* HAVE_PTHREAD_SET_NAME_NP */
 #include <stdio.h>
 #include <stdlib.h>
 #include <err.h>
@@ -88,7 +92,9 @@ xpthread_create(pthread_t *thread, const pthread_attr_t *attr,
 #if HAVE_PTHREAD_SETNAME_NP
         if (pthread_setname_np(*thread, name))
                 die_err("Failed to set thread name!");
-#endif /* HAVE_PTHREAD_SETNAME_NP */
+#elif HAVE_PTHREAD_SET_NAME_NP
+        pthread_set_name_np(*thread, name);
+#endif
 }
 
 /*

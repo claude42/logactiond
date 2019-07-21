@@ -25,6 +25,7 @@
 #include <regex.h>
 #include <stdbool.h>
 #include <time.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>
 #include <pthread.h>
