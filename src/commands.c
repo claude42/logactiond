@@ -321,22 +321,17 @@ trigger_end_command(la_command_t *command)
                         command->duration);
 
         if (command->duration == INT_MAX)
-        {
                 la_log(LOG_INFO, "Disabling rule \"%s\".",
                                 command->rule->name);
-        }
+        else if (command->address)
+                la_log(LOG_INFO, "Host: %s, action \"%s\" ended for "
+                                "rule \"%s\".",
+                                command->address->text, command->name,
+                                command->rule->name);
         else
-        {
-                if (command->address)
-                        la_log(LOG_INFO, "Host: %s, action \"%s\" ended for "
-                                        "rule \"%s\".",
-                                        command->address->text, command->name,
-                                        command->rule->name);
-                else
-                        la_log(LOG_INFO, "Action \"%s\" ended for rule "
-                                        "\"%s\".", command->name,
-                                        command->rule->name);
-        }
+                la_log(LOG_INFO, "Action \"%s\" ended for rule "
+                                "\"%s\".", command->name,
+                                command->rule->name);
 
         exec_command(command, LA_COMMANDTYPE_END);
 }
@@ -434,6 +429,9 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
         la_debug("create_command_from_template(%s)", template->name);
 
         /* Return if action can't handle type of IP address */
+        if (!address && template->need_host != LA_NEED_HOST_NO)
+                return NULL;
+
         if ((address->af == AF_INET && template->need_host ==
                                 LA_NEED_HOST_IP6) ||
                         (address->af ==AF_INET6 && template->need_host ==

@@ -193,7 +193,7 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
                                 pattern, address);
                 if (!command)
                 {
-                        la_debug("IP doesn't match what action can do");
+                        la_debug("IP address doesn't match what requirements of action!");
                         return;
                 }
         }
