@@ -128,11 +128,13 @@ watch_forever_systemd(void *ptr)
                 if (r < 0)
                         die_systemd(r, "sd_journal_get_data() failed");
 
+                xpthread_mutex_lock(&config_mutex);
                 handle_log_line(la_config->systemd_source, data+MESSAGE_LEN,
                                 unit+UNIT_LEN);
+                xpthread_mutex_unlock(&config_mutex);
         }
 
-        pthread_cleanup_pop(1); // will never be reached
+        pthread_cleanup_pop(1); // will never be reached. TODO: add some assert()?
 }
 
 static void
