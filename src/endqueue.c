@@ -48,7 +48,7 @@ pthread_cond_t end_queue_condition = PTHREAD_COND_INITIALIZER;
 la_command_t *
 find_end_command(la_address_t *address)
 {
-        la_debug("find_end_command(%s)", address->text);
+        la_debug("find_end_command()");
 
         if (!end_queue)
                 return NULL;
