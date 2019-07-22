@@ -63,7 +63,7 @@ token_length(const char *string)
 
         die_hard("Closing '%%' of token missing!");
 
-        assert(fail);
+        assert(false);
         return 0; // avoid compiler warning
 }
 
