@@ -132,7 +132,10 @@ watch_forever_systemd(void *ptr)
                                 unit+UNIT_LEN);
         }
 
-        pthread_cleanup_pop(1); // will never be reached
+        assert(fail);
+        /* Will never be reached, simple here to make potential pthread macros
+         * happy */
+        pthread_cleanup_pop(1);
 }
 
 static void
