@@ -57,7 +57,6 @@ add_trigger(la_command_t *command)
         assert_command(command);
         la_debug("add_trigger(%s)", command->name);
 
-        command->n_triggers = 0;
         command->start_time = xtime(NULL);
 
         add_head(command->rule->trigger_list, (kw_node_t *) command);
@@ -90,6 +89,17 @@ find_trigger(la_rule_t *rule, la_command_t *template, la_address_t *address)
         return NULL;
 }
 
+static void
+incr_invocation_counts(la_command_t *command)
+{
+        assert_command(command);
+        if (command->rule->invocation_count < ULONG_MAX)
+                command->rule->invocation_count++;
+        if (command->pattern->invocation_count < ULONG_MAX)
+                command->pattern->invocation_count++;
+}
+
+
 /*
  * - Add command to trigger list if not in there yet.
  * - Increase counter by one.
@@ -107,6 +117,7 @@ handle_command_on_trigger_list(la_command_t *command)
         if (command->n_triggers == 0)
                 add_trigger(command);
 
+        /* Go through this also for newly added commands - in cas threshold = 1 */
         if (xtime(NULL) - command->start_time < command->rule->period)
         {
                 /* still within current period - increase counter,
@@ -119,10 +130,7 @@ handle_command_on_trigger_list(la_command_t *command)
                 if (command->n_triggers >= command->rule->threshold)
                 {
                         remove_node((kw_node_t *) command);
-                        if (command->rule->invocation_count < ULONG_MAX)
-                                command->rule->invocation_count++;
-                        if (command->pattern->invocation_count < ULONG_MAX)
-                                command->pattern->invocation_count++;
+                        incr_invocation_counts(command);
                         trigger_command(command);
                 }
         }
