@@ -57,6 +57,7 @@
 #define PIDFILE RUNDIR "/logactiond.pid"
 #define HOSTSFILE RUNDIR "/logactiond.hosts"
 #define RULESFILE RUNDIR "/logactiond.rules"
+#define DIAGFILE RUNDIR "/logactiond.diagnostics"
 
 
 #define LA_DEFAULTS_LABEL "defaults"
@@ -366,7 +367,7 @@ extern unsigned int id_counter;
 
 extern la_runtype_t run_type;
 
-extern bool status_monitoring;
+extern unsigned int status_monitoring;
 
 extern bool shutdown_ongoing;
 

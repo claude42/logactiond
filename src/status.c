@@ -37,6 +37,11 @@ pthread_t monitoring_thread;
 static pthread_mutex_t monitoring_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t monitoring_condition = PTHREAD_COND_INITIALIZER;
 
+/*
+ * Convert time_t into human readable format. Return values are in *value and
+ * *unit...
+ */
+
 static void
 human_readable_time_delta(time_t delta, int *value, char *unit)
 {
@@ -65,7 +70,15 @@ human_readable_time_delta(time_t delta, int *value, char *unit)
         *unit = 'd';
 }
 
+static void
+dump_rule_diagnostics(FILE *diag_file, la_rule_t *rule)
+{
+        assert(diag_file), assert_rule(rule);
+        la_vdebug("dump_rule_diagnostics(%s)", rule->name);
 
+        fprintf(diag_file, "%s, list length=%u\n", rule->name,
+                        list_length(rule->trigger_list));
+}
 
 /*
  * Write single line to the rule status file.
@@ -96,32 +109,55 @@ dump_rules(void)
         FILE *rules_file = fopen(RULESFILE, "w");
         if (!rules_file)
                 die_err("Can't create \"" RULESFILE "\"!");
-        fprintf(rules_file, "Rule          Service       Source        Detected  Invoked  \n");
+
+        FILE *diag_file = NULL;
+        if (status_monitoring >= 2)
+        {
+                diag_file = fopen(DIAGFILE, "w");
+                if (!diag_file)
+                        die_err("Can't create \"" DIAGFILE "\"!");
+        }
+
+        fprintf(rules_file, "Rule          Service       Source        Detected  Invoked\n");
         fprintf(rules_file, "===========================================================\n");
 
         xpthread_mutex_lock(&config_mutex);
+
+        /* First print rules of sources watched via inotify / polling */
 
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                         (source = NEXT_SOURCE(source));)
         {
                 for (la_rule_t *rule = ITERATE_RULES(source->rules);
                                 (rule = NEXT_RULE(rule));)
+                {
                         dump_single_rule(rules_file, rule);
+                        if (status_monitoring >= 2)
+                                dump_rule_diagnostics(diag_file, rule);
+                }
         }
 
 #if HAVE_LIBSYSTEMD
+        /* Then print systemd rules - if any */
         if (la_config->systemd_source)
         {
                 for (la_rule_t *rule = ITERATE_RULES(la_config->systemd_source->rules);
                                 (rule = NEXT_RULE(rule));)
+                {
                         dump_single_rule(rules_file, rule);
+                        if (status_monitoring >= 2)
+                                dump_rule_diagnostics(diag_file, rule);
+                }
         }
 #endif /* HAVE_LIBSYSTEMD */
 
         xpthread_mutex_unlock(&config_mutex);
 
         if (fclose(rules_file))
-                die_hard("Can't close \" HOSTSFILE \"!");
+                die_hard("Can't close \" RULESTSFILE \"!");
+        if (status_monitoring >= 2)
+                if (fclose(diag_file))
+                        die_hard("Can't close \" DIAGFILE \"!");
 }
 
 /*
@@ -152,7 +188,6 @@ dump_loop(void *ptr)
                 }
 
                 dump_rules();
-
 
                 xpthread_mutex_lock(&end_queue_mutex);
                 dump_queue_status(end_queue);
@@ -197,6 +232,9 @@ remove_status_files(void)
                 die_err("Can't remove host status file!");
         if (remove(RULESFILE) && errno != ENOENT)
                 die_err("Can't remove rule status file!");
+        if (status_monitoring >=2)
+                if (remove(DIAGFILE) && errno != ENOENT)
+                        die_err("Can't remove diagnostics file!");
 }
 
 /*
@@ -218,6 +256,12 @@ dump_queue_status(kw_list_t *queue)
         FILE *hosts_file = fopen(HOSTSFILE, "w");
         if (!hosts_file)
                 die_err("Can't create \"" HOSTSFILE "\"!");
+
+        if (status_monitoring >= 2)
+        {
+                fprintf(hosts_file, "Queue length: %u\n\n",
+                                list_length(queue));
+        }
 
         fprintf(hosts_file, "IP address                                     "
                         "Time Rule          Action\n"

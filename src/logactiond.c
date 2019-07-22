@@ -32,9 +32,6 @@
 #include <pwd.h>
 #include <limits.h>
 #include <pthread.h>
-#if HAVE_INOTIFY
-#include <sys/inotify.h>
-#endif /* HAVE_INOTIFY */
 #if HAVE_LIBSYSTEMD
 #include <systemd/sd-daemon.h>
 #endif /* HAVE_LIBSYSTEMD */
@@ -50,7 +47,7 @@ la_runtype_t run_type = LA_DAEMON_BACKGROUND;
 unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
 unsigned int id_counter = 0;
 char *run_uid_s = NULL;
-bool status_monitoring = false;
+unsigned int status_monitoring = 0;
 bool shutdown_ongoing = false;
 int exit_status = EXIT_SUCCESS;
 static int exit_errno = 0;
@@ -262,7 +259,9 @@ read_options(int argc, char *argv[])
                                 run_uid_s = optarg;
                                 break;
                         case 't':
-                                status_monitoring = true;
+                                status_monitoring++;
+                                if (optarg && *optarg == 't')
+                                        status_monitoring++;
                                 break;
                         case '?':
                                 print_usage();
