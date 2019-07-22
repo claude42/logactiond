@@ -66,7 +66,7 @@ cidr_match(struct in_addr addr, struct in_addr net, int prefix)
 }
 
 /*
- * Compare to addresses. Return 0 if addresses are the same, return 1
+ * Compare two addresses. Return 0 if addresses are the same, return 1
  * otherwise.
  */
 
