@@ -34,8 +34,6 @@
 #include "nodelist.h"
 
 pthread_t monitoring_thread;
-static pthread_mutex_t monitoring_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t monitoring_condition = PTHREAD_COND_INITIALIZER;
 
 /*
  * Convert time_t into human readable format. Return values are in *value and
@@ -161,6 +159,26 @@ dump_rules(void)
 }
 
 /*
+ * Remove all previously created status files
+ */
+
+void
+remove_status_files(void *arg)
+{
+        la_debug("remove_status_files()");
+        if (!status_monitoring)
+                return;
+
+        if (remove(HOSTSFILE) && errno != ENOENT)
+                die_err("Can't remove host status file!");
+        if (remove(RULESFILE) && errno != ENOENT)
+                die_err("Can't remove rule status file!");
+        if (status_monitoring >=2)
+                if (remove(DIAGFILE) && errno != ENOENT)
+                        die_err("Can't remove diagnostics file!");
+}
+
+/*
  * Regularly dump logfiles
  */
 
@@ -169,21 +187,17 @@ dump_loop(void *ptr)
 {
         la_debug("dump_loop()");
 
-        xpthread_mutex_lock(&monitoring_mutex);
+        pthread_cleanup_push(remove_status_files, NULL);
 
         struct timespec wait_interval;
 
         for (;;)
         {
                 la_vdebug("dump_loop() looping");
-                wait_interval.tv_nsec = 0;
-                wait_interval.tv_sec = xtime(NULL) + 5;
-                xpthread_cond_timedwait(&monitoring_condition, &monitoring_mutex,
-                                &wait_interval);
+                sleep(5);
                 if (shutdown_ongoing)
                 {
                         la_debug("Shutting down monitoring thread.");
-                        xpthread_mutex_unlock(&monitoring_mutex);
                         pthread_exit(NULL);
                 }
 
@@ -193,6 +207,11 @@ dump_loop(void *ptr)
                 dump_queue_status(end_queue);
                 xpthread_mutex_unlock(&end_queue_mutex);
         }
+
+        assert(false);
+        /* Will never be reached, simply here to make potential pthread macros
+         * happy */
+        pthread_cleanup_pop(1);
 }
 
 /*
@@ -207,34 +226,6 @@ start_monitoring_thread(void)
                 return;
 
         xpthread_create(&monitoring_thread, NULL, dump_loop, NULL, "status");
-}
-
-void
-shutdown_monitoring(void)
-{
-        la_debug("shutdown_monitoring()");
-        xpthread_mutex_lock(&monitoring_mutex);
-        xpthread_cond_signal(&monitoring_condition);
-        xpthread_mutex_unlock(&monitoring_mutex);
-}
-
-/*
- * Remove all previously created status files
- */
-
-void
-remove_status_files(void)
-{
-        if (!status_monitoring)
-                return;
-
-        if (remove(HOSTSFILE) && errno != ENOENT)
-                die_err("Can't remove host status file!");
-        if (remove(RULESFILE) && errno != ENOENT)
-                die_err("Can't remove rule status file!");
-        if (status_monitoring >=2)
-                if (remove(DIAGFILE) && errno != ENOENT)
-                        die_err("Can't remove diagnostics file!");
 }
 
 /*

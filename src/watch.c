@@ -72,8 +72,6 @@ unwatch_source(la_source_t *source)
         if (run_type == LA_UTIL_FOREGROUND)
                 return;
 
-        la_debug("unwatch_source(%s)", source->name);
-
 #ifndef NOWATCH
 
 #if HAVE_INOTIFY

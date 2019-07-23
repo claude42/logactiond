@@ -315,6 +315,8 @@ cleanup_watching_inotify(void *arg)
 {
         la_debug("cleanup_watching_inotify()");
 
+        shutdown_watching();
+
         if (close(inotify_fd) == -1)
                 la_log_errno(LOG_ERR, "Can't close inotify fd!");
 }
