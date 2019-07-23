@@ -429,21 +429,28 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
         la_debug("create_command_from_template(%s)", template->name);
 
         /* Return if action can't handle type of IP address */
-        if (!address && template->need_host != LA_NEED_HOST_NO)
-                return NULL;
 
-        if ((address->af == AF_INET && template->need_host ==
-                                LA_NEED_HOST_IP6) ||
-                        (address->af ==AF_INET6 && template->need_host ==
-                         LA_NEED_HOST_IP4))
-                return NULL;
+        if (!address)
+        {
+                if (template->need_host != LA_NEED_HOST_NO)
+                        return NULL;
+        }
+        else
+        {
+                if ((address->af == AF_INET && template->need_host ==
+                                        LA_NEED_HOST_IP6) ||
+                                (address->af == AF_INET6 &&
+                                                template->need_host ==
+                                                LA_NEED_HOST_IP4))
+                        return NULL;
+        }
 
         la_command_t *result = dup_command(template);
 
         result->rule = rule;
         result->pattern = pattern;
         result->pattern_properties = dup_property_list(pattern->properties);
-        result->address = dup_address(address);
+        result->address = address ? dup_address(address) : NULL;
         result->end_time = result->n_triggers = result->start_time= 0;
 
         return result;
@@ -466,7 +473,7 @@ la_command_t *
 create_template(const char *name, la_rule_t *rule, const char *begin_string,
                 const char *end_string, unsigned int duration, la_need_host_t need_host)
 {
-        assert_rule(rule); assert(begin_string);
+        assert(name); assert_rule(rule); assert(begin_string);
         la_debug("create_template(%s, %d)", name, duration);
 
         la_command_t *result = xmalloc(sizeof(la_command_t));
