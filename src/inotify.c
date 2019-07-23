@@ -361,7 +361,7 @@ watch_forever_inotify(void *ptr)
                 }
         }
 
-        assert(fail);
+        assert(false);
         /* Will never be reached, simple here to make potential pthread macros
          * happy */
         pthread_cleanup_pop(1); // will never be reached
