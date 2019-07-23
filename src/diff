@@ -1,0 +1,83 @@
+diff --git a/TODO b/TODO
+index 3e400a9..0257b89 100644
+--- a/TODO
++++ b/TODO
+@@ -2,7 +2,6 @@ TODOs in no particular order
+ 
+ * Limit regexes to one instance per token
+ * error message if log file is lost for longer time
+-* check for root / add option to run as non-root
+ * better NDEBUG support for la_debug() - how varargs with macro?
+ * Debian package
+ ---
+@@ -11,3 +10,8 @@ TODOs in no particular order
+ * can create_command with address==NULL happen?
+ * is code right to expect that command->address is never NULL?
+ * SIGPIPE not handled correctly!
++* use sd_journal_send
++* currently not possible to define a rule only in logactiond.cfg
++* Reload with syntax error -> logactiond will quit butsystemctl will hang
++* meta rule doesn't work with syslog
++* local macros in m4 directory (https://www.gnu.org/savannah-checkouts/gnu/automake/manual/automake.html#Local-Macros)
+diff --git a/src/properties.c b/src/properties.c
+index e0a39e3..8064d70 100644
+--- a/src/properties.c
++++ b/src/properties.c
+@@ -130,26 +130,26 @@ get_value_from_property_list(kw_list_t *property_list, const char *name)
+ }
+ 
+ /*
+- * Convert name to lower case. Also die if non alpha-numeric character is
+- * found.
++ * Duplicxate string and onvert to lower case. Also die if non alpha-numeric
++ * character is found.
+  */
+ 
+-static void convert_property_name(char *name)
++static char *
++dup_str_and_tolower(const char *s, size_t n)
+ {
+-        assert(name);
+-        la_vdebug("convert_property_name(%s)", name);
++        const char *src = s;
++        char *result = xmalloc(n);
++        char *dst = result;
+ 
+-        for (char *ptr=name; *ptr; ptr++)
++        while (*src)
+         {
+-                if (!isalnum(*ptr))
++                if (!isalnum(*src))
+                         /* will print out partially converted name :-/ */
+-                        die_hard("Invalid property name %s!", name);
+-                
+-                *ptr = tolower((unsigned char) *ptr);
++                        die_hard("Invalid property name %s!", s);
++                *dst++ = tolower((unsigned char) *src++);
+         }
+ }
+ 
+-
+ /*
+  * Create and initialize new la_property_t.
+  *
+@@ -173,8 +173,7 @@ create_property_from_token(const char *name, size_t length, unsigned int pos,
+ 
+         la_property_t *result = xmalloc(sizeof(la_property_t));
+ 
+-        result->name = xstrndup(name+1, length-2);
+-        convert_property_name(result->name);
++        dup_str_and_tolower(name+1, length-2);
+         result->value = NULL;
+ 
+         result->is_host_property = false;
+@@ -229,8 +228,7 @@ create_property_from_config(const char *name, const char *value)
+ 
+         la_property_t *result = xmalloc(sizeof(la_property_t));
+ 
+-        result->name = xstrdup(name);
+-        convert_property_name(result->name);
++        dup_str_and_tolower(name, strlen(name));
+         result->is_host_property = !strcmp(result->name, LA_HOST_TOKEN);
+         result->value = xstrdup(value);
+         result->replacement = NULL;

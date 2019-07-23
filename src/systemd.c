@@ -134,7 +134,10 @@ watch_forever_systemd(void *ptr)
                 xpthread_mutex_unlock(&config_mutex);
         }
 
-        pthread_cleanup_pop(1); // will never be reached. TODO: add some assert()?
+        assert(false);
+        /* Will never be reached, simple here to make potential pthread macros
+         * happy */
+        pthread_cleanup_pop(1);
 }
 
 static void
