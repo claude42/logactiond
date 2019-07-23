@@ -131,25 +131,29 @@ get_value_from_property_list(kw_list_t *property_list, const char *name)
 }
 
 /*
- * Convert name to lower case. Also die if non alpha-numeric character is
- * found.
+ * Duplicxate string and onvert to lower case. Also die if non alpha-numeric
+ * character is found.
  */
 
-static void convert_property_name(char *name)
+static char *
+dup_str_and_tolower(const char *s, size_t n)
 {
-        assert(name);
-        la_vdebug("convert_property_name(%s)", name);
+        assert(s); assert(n>1);
+        la_vdebug("dup_str_and_tolower(%s, %u)", s, n);
+        const char *src = s;
+        char *result = xmalloc(n+1);
+        char *dst = result;
 
-        for (char *ptr=name; *ptr; ptr++)
+        while (src < s+n)
         {
-                if (!isalnum(*ptr))
+                if (!isalnum(*src))
                         /* will print out partially converted name :-/ */
-                        die_hard("Invalid property name %s!", name);
-                
-                *ptr = tolower((unsigned char) *ptr);
+                        die_hard("Invalid property name %s!", s);
+                *dst++ = tolower((unsigned char) *src++);
         }
+        *dst = '\0';
+        return result;
 }
-
 
 /*
  * Create and initialize new la_property_t.
@@ -174,8 +178,7 @@ create_property_from_token(const char *name, size_t length, unsigned int pos,
 
         la_property_t *result = xmalloc(sizeof(la_property_t));
 
-        result->name = xstrndup(name+1, length-2);
-        convert_property_name(result->name);
+        result->name = dup_str_and_tolower(name+1, length-2);
         result->value = NULL;
 
         result->is_host_property = false;
@@ -230,8 +233,7 @@ create_property_from_config(const char *name, const char *value)
 
         la_property_t *result = xmalloc(sizeof(la_property_t));
 
-        result->name = xstrdup(name);
-        convert_property_name(result->name);
+        result->name = dup_str_and_tolower(name, strlen(name));
         result->is_host_property = !strcmp(result->name, LA_HOST_TOKEN);
         result->value = xstrdup(value);
         result->replacement = NULL;
