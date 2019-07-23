@@ -142,6 +142,7 @@ create_address4(const char *ip, la_address_t *address)
         if (address->prefix != -1)
         {
                 address->af = AF_INET;
+                address->text = xstrdup(ip);
                 return true;
         }
         else
@@ -168,6 +169,8 @@ create_address6(const char *ip, la_address_t *address)
         {
                 address->prefix = 128;
                 address->af = AF_INET6;
+                address->text = xmalloc(50);
+                inet_ntop(AF_INET6, &(address->addr6), address->text, 50);
                 return true;
         }
         else if (tmp == 0)
@@ -206,10 +209,8 @@ create_address(const char *ip)
                         return NULL;
                 }
         }
-        /* only reached in case IP address could be converted correctly. Thus
-         * ip does point to a string and is therefore not NULL */
-        result->text = xstrdup(ip);
 
+        /* only reached in case IP address could be converted correctly */
         assert_address(result);
         return result;
 }

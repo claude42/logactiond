@@ -268,7 +268,7 @@ dump_queue_status(kw_list_t *queue)
                         "======================================"
                         "=========================================\n");
 
-        /* INET6_ADDRSTRLEN 46 + "/123*/
+        /* INET6_ADDRSTRLEN 46 + "/123" */
 
         for (la_command_t *command = ITERATE_COMMANDS(queue);
                         (command = NEXT_COMMAND(command));)
