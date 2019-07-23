@@ -22,7 +22,8 @@ AC_CHECK_LIB([systemd], [sd_journal_open])
 AC_CHECK_LIB([resolv], [inet_net_pton])
 
 # Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h limits.h stdlib.h string.h syslog.h unistd.h fcntl.h pthread_np.h])
+AC_CHECK_HEADERS([arpa/inet.h limits.h stdlib.h string.h syslog.h unistd.h
+		  fcntl.h netinet/in.h sys/socket.h pthread_np.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_CHECK_HEADER_STDBOOL
@@ -32,6 +33,7 @@ AC_TYPE_SIZE_T
 AC_TYPE_SSIZE_T
 AC_TYPE_UINT32_T
 AC_TYPE_UID_T
+AC_TYPE_UINT64_T
 
 # Checks for library functions.
 AC_FUNC_FORK
