@@ -89,7 +89,10 @@ empty_end_queue(void)
         if (!end_queue)
                 return;
 
-        xpthread_mutex_lock(&end_queue_mutex);
+        /* Don't care about locking the mutex in case of system shutdown as
+         * empty_end_queue() has been called from cleanup action */
+        if (!shutdown_ongoing)
+                xpthread_mutex_lock(&end_queue_mutex);
 
         for (la_command_t *tmp;
                         (tmp = REM_COMMANDS_HEAD(end_queue));)
@@ -100,10 +103,12 @@ empty_end_queue(void)
 
         dump_queue_status(end_queue);
 
-        if (shutdown_ongoing)
+        if (!shutdown_ongoing)
+        {
+                /* signal probably not strictly necessary... */
                 xpthread_cond_signal(&end_queue_condition);
-
-        xpthread_mutex_unlock(&end_queue_mutex);
+                xpthread_mutex_unlock(&end_queue_mutex);
+        }
 }
 
 /*
@@ -137,6 +142,14 @@ wait_for_next_end_command(la_command_t *command)
         }
 }
 
+static void
+cleanup_end_queue(void *arg)
+{
+        la_debug("cleanup_end_queue()");
+
+        empty_end_queue();
+}
+
 /*
  * Consumes next end command from end queue and triggers it (if any) then waits
  * appropriate amount of time.
@@ -148,6 +161,8 @@ static void *
 consume_end_queue(void *ptr)
 {
         la_debug("consume_end_queue()");
+
+        pthread_cleanup_push(cleanup_end_queue, NULL);
 
         xpthread_mutex_lock(&end_queue_mutex);
 
@@ -182,6 +197,11 @@ consume_end_queue(void *ptr)
                         dump_queue_status(end_queue);
                 }
         }
+
+        assert(false);
+        /* Will never be reached, simple here to make potential pthread macros
+         * happy */
+        pthread_cleanup_pop(1);
 }
 
 /*
@@ -240,6 +260,9 @@ enqueue_end_command(la_command_t *end_command)
         assert_command(end_command); assert(end_queue);
         la_debug("enqueue_end_command(%s, %u)", end_command->end_string,
                         end_command->duration);
+
+        if (shutdown_ongoing)
+                return;
 
         if (end_command->duration <= 0)
                 return;

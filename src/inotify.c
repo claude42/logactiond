@@ -315,6 +315,8 @@ cleanup_watching_inotify(void *arg)
 {
         la_debug("cleanup_watching_inotify()");
 
+        shutdown_watching();
+
         if (close(inotify_fd) == -1)
                 la_log_errno(LOG_ERR, "Can't close inotify fd!");
 }
@@ -361,7 +363,7 @@ watch_forever_inotify(void *ptr)
                 }
         }
 
-        assert(fail);
+        assert(false);
         /* Will never be reached, simple here to make potential pthread macros
          * happy */
         pthread_cleanup_pop(1); // will never be reached

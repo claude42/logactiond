@@ -601,10 +601,6 @@ void start_watching_polling_thread(void);
 
 void start_monitoring_thread(void);
 
-void shutdown_monitoring(void);
-
-void remove_status_files(void);
-
 void dump_queue_status(kw_list_t *queue);
 
 /* watch.c */

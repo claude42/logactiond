@@ -46,6 +46,16 @@ unwatch_source_polling(la_source_t *source)
         // anything?
 }
 
+static void
+cleanup_watching_polling(void *arg)
+{
+        la_debug("cleanup_watching_polling()");
+
+        shutdown_watching();
+
+        // anything else?
+}
+
 /*
  * Event loop for poll mechanism
  */
@@ -57,6 +67,7 @@ watch_forever_polling(void *ptr)
 
         struct stat sb;
 
+        pthread_cleanup_push(cleanup_watching_polling, NULL);
 
         for (;;)
         {
@@ -136,8 +147,14 @@ watch_forever_polling(void *ptr)
 
                 xpthread_mutex_unlock(&config_mutex);
 
+                /* TODO: replace with nanosleep() */
                 usleep(2500000);
         }
+
+        assert(false);
+        /* Will never be reached, simple here to make potential pthread macros
+         * happy */
+        pthread_cleanup_pop(1); // will never be reached
 }
 
 /*

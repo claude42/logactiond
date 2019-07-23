@@ -38,9 +38,6 @@
 
 #include "logactiond.h"
 
-pthread_mutex_t main_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t main_condition = PTHREAD_COND_INITIALIZER;
-
 char *cfg_filename = NULL;
 char *pid_file = NULL;
 la_runtype_t run_type = LA_DAEMON_BACKGROUND;
@@ -61,15 +58,12 @@ trigger_shutdown(int status, int saved_errno)
         exit_errno = saved_errno;
         shutdown_ongoing = true;
 
-        shutdown_watching();
-        empty_end_queue();
-        shutdown_monitoring();
+        pthread_cancel(file_watch_thread);
+        pthread_cancel(systemd_watch_thread);
+        pthread_cancel(end_queue_thread);
+        pthread_cancel(monitoring_thread);
 
-        /* Wake up main thread from sleep */
-
-        xpthread_mutex_lock(&main_mutex);
-        xpthread_cond_signal(&main_condition);
-        xpthread_mutex_unlock(&main_mutex);
+        pthread_cancel(pthread_self());
 }
 
 static void
@@ -338,6 +332,14 @@ cleanup_main(void *arg)
 #endif /* HAVE_LIBSYSTEMD */
 
         /* Wait for all threads to end */
+        if (end_queue_thread)
+                xpthread_join(end_queue_thread, NULL);
+        la_debug("joined end_queue_thread");
+
+        if (status_monitoring)
+                xpthread_join(monitoring_thread, NULL);
+        la_debug("joined status_monitoring_thread");
+
         if (file_watch_thread)
                 xpthread_join(file_watch_thread, NULL);
         la_debug("joined file_watch_thread");
@@ -348,16 +350,8 @@ cleanup_main(void *arg)
         la_debug("joined systemd_watch_thread");
 #endif /* HAVE_LIBSYSTEMD */
 
-        xpthread_join(end_queue_thread, NULL);
-        if (status_monitoring)
-                xpthread_join(monitoring_thread, NULL);
-        la_debug("joined status_monitoring_thread");
-
-        /* TODO: end queue */
-
         unload_la_config();
         free(la_config->sources);
-        remove_status_files();
         remove_pidfile();
         la_debug("cleanup_main() ending");
 
@@ -408,14 +402,13 @@ main(int argc, char *argv[])
 
         la_debug("Main thread going to sleep.");
 
-        /* Wait for signal to shut down */
+        /* Wait forever - until thread gets pthread_cancell()ed */
+        sleep(INT_MAX);
 
-        xpthread_mutex_lock(&main_mutex);
-        xpthread_cond_wait(&main_condition, &main_mutex);
-        xpthread_mutex_unlock(&main_mutex);
-
-        la_debug("main_condition signal received");
-
+        /* We must have waited for a LONG time to get here... :-) */
+        assert(false);
+        /* Will never be reached, simple here to make potential pthread macros
+         * happy */
         pthread_cleanup_pop(1);
 }
 
