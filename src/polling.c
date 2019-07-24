@@ -24,7 +24,6 @@
 #include <unistd.h>
 #include <syslog.h>
 #include <assert.h>
-//#include <libgen.h>
 #include <poll.h>
 #include <stdio.h>
 #include <sys/stat.h>
@@ -32,28 +31,12 @@
 
 #include "logactiond.h"
 
-
-/*
- * TODO
- */
-
-void
-unwatch_source_polling(la_source_t *source)
-{
-        assert_source(source);
-        la_vdebug("unwatch_source_polling(%s)", source->name);
-
-        // anything?
-}
-
 static void
 cleanup_watching_polling(void *arg)
 {
         la_debug("cleanup_watching_polling()");
 
         shutdown_watching();
-
-        // anything else?
 }
 
 /*
@@ -155,28 +138,6 @@ watch_forever_polling(void *ptr)
         /* Will never be reached, simple here to make potential pthread macros
          * happy */
         pthread_cleanup_pop(1); // will never be reached
-}
-
-/*
- * TODO
- */
-
-void
-watch_source_polling(la_source_t *source)
-{
-        assert_source(source);
-        la_debug("watch_source_polling(%s)", source->name);
-
-        // anything?
-
-}
-
-
-void
-init_watching_polling(void)
-{
-        la_log(LOG_INFO, "Initializing polling backend.");
-
 }
 
 void

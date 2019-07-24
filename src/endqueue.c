@@ -204,27 +204,12 @@ consume_end_queue(void *ptr)
         pthread_cleanup_pop(1);
 }
 
-/*
- * Initializes end que structure and then launches end queue thread.
- */
-
-void
-init_end_queue(void)
-{
-        la_debug("init_end_queue()");
-
-        end_queue = xcreate_list();
-
-        dump_queue_status(end_queue);
-
-}
-
 void
 start_end_queue_thread(void)
 {
         la_debug("init_queue_processing()");
 
-        assert(end_queue);
+        end_queue = xcreate_list();
 
         xpthread_create(&end_queue_thread, NULL, consume_end_queue, NULL,
                         "end queue");

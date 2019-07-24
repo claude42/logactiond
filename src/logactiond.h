@@ -468,8 +468,6 @@ void empty_end_queue();
 
 void enqueue_end_command(la_command_t *end_command);
 
-void init_end_queue(void);
-
 void start_end_queue_thread(void);
 
 /* commands.c */
@@ -588,12 +586,6 @@ void start_watching_inotify_thread(void);
 #endif /* HAVE_INOTIFY */
 
 /* polling.c */
-
-void unwatch_source_polling(la_source_t *source);
-
-void watch_source_polling(la_source_t *source);
-
-void init_watching_polling(void);
 
 void start_watching_polling_thread(void);
 

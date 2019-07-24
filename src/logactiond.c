@@ -58,10 +58,16 @@ trigger_shutdown(int status, int saved_errno)
         exit_errno = saved_errno;
         shutdown_ongoing = true;
 
-        pthread_cancel(file_watch_thread);
-        pthread_cancel(systemd_watch_thread);
-        pthread_cancel(end_queue_thread);
-        pthread_cancel(monitoring_thread);
+        if (file_watch_thread)
+                pthread_cancel(file_watch_thread);
+#if HAVE_LIBSYSTEMD
+        if (systemd_watch_thread)
+                pthread_cancel(systemd_watch_thread);
+#endif /* HAVE_LIBSYSTEMD */
+        if (end_queue_thread)
+                pthread_cancel(end_queue_thread);
+        if (monitoring_thread)
+                pthread_cancel(monitoring_thread);
 
         pthread_cancel(pthread_self());
 }
@@ -221,7 +227,7 @@ read_options(int argc, char *argv[])
                         {"pidfile",    required_argument, NULL, 'p'},
                         {"simulate",   no_argument,       NULL, 's'},
                         {"user",       required_argument, NULL, 'u'},
-                        {"status",     no_argument,       NULL, 't'},
+                        {"status",     optional_argument, NULL, 't'},
                         {0,            0,                 0,    0  }
                 };
 
@@ -269,23 +275,46 @@ read_options(int argc, char *argv[])
         }
 }
 
+/* Determine UID belonging to what's been specified on the command line. This
+ * could be either the UID (as string) itself or as user name.
+ */
+
 static uid_t
 getrunuid(const char *uid_s)
 {
+        /* If there's no argument, we assume UID 0 */
         if (!uid_s)
                 return 0;
+        
+        /* Don't accept empty string */
+        if (*uid_s == '\0')
+                return -1;
 
+        /* First test whether a UID has been specified on the command line. In
+         * case endptr points to a 0, the argument was a number. If otherwise
+         * there are spurious characters after the number and we don't accept
+         * the argument. */
         char *endptr;
         int value = strtol(uid_s,  &endptr, 10);
-        if (endptr != uid_s)
+        if (*endptr == '\0')
                 return value;
 
+        /* If its not a number, we test for a username. */
         struct passwd *pw = getpwnam(uid_s);
         if (pw)
                 return pw->pw_uid;
 
         return -1;
 }
+
+/* Run with correct UID. Correct if,
+ *
+ * - Current UID and requested UID are the same.
+ * - Current UID is root and setuid() to desired user is succesful.
+ *
+ * Will die if otherwise.
+ *
+ */
 
 static void
 use_correct_uid(void)
@@ -387,12 +416,9 @@ main(int argc, char *argv[])
 
         la_log(LOG_INFO, "Starting up " PACKAGE_STRING ".");
 
-        init_end_queue();
-        load_la_config(cfg_filename);
-        init_watching();
-
-        start_watching_threads();
         start_end_queue_thread();
+        load_la_config(cfg_filename);
+        start_watching_threads();
         start_monitoring_thread();
 
 #if HAVE_LIBSYSTEMD

@@ -52,8 +52,6 @@ watch_source(la_source_t *source, int whence)
 
 #if HAVE_INOTIFY
         watch_source_inotify(source);
-#else /* HAVE_INOTIFY */
-        watch_source_polling(source);
 #endif /* HAVE_INOTIFY */
 
 #endif /* NOWATCH */
@@ -76,8 +74,6 @@ unwatch_source(la_source_t *source)
 
 #if HAVE_INOTIFY
         unwatch_source_inotify(source);
-#else /* HAVE_INOTIFY */
-        unwatch_source_polling(source);
 #endif /* HAVE_INOTIFY */
 
         if (fclose(source->file))
@@ -99,13 +95,10 @@ init_watching(void)
         la_debug("init_watching()");
 
 #ifndef NOWATCH
-
         if (!is_list_empty(la_config->sources))
         {
 #if HAVE_INOTIFY
                 init_watching_inotify();
-#else /* HAVE_INOTIFY */
-                init_watching_polling();
 #endif /* HAVE_INOTIFY */
 
                 xpthread_mutex_lock(&config_mutex);
@@ -130,8 +123,9 @@ start_watching_threads(void)
 {
         la_debug("start_watching_threads()");
 
-#ifndef NOWATCH
+        init_watching();
 
+#ifndef NOWATCH
         if (!is_list_empty(la_config->sources))
         {
 #if HAVE_INOTIFY
