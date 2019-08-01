@@ -351,9 +351,8 @@ cleanup_main(void *arg)
         la_debug("cleanup_main()");
 
         /* Log that we're going down */
+        la_log(LOG_INFO, "Shutting down");
 
-        int loglevel = exit_status ? LOG_WARNING : LOG_INFO;
-        la_log(loglevel, "Exiting (status=%u, errno=%u).", exit_status, exit_errno);
 #if HAVE_LIBSYSTEMD
         sd_notifyf(0, "STOPPING=1\n"
                         "STATUS=Exiting (status=%u, errno%u)\n"
@@ -382,7 +381,8 @@ cleanup_main(void *arg)
         unload_la_config();
         free(la_config->sources);
         remove_pidfile();
-        la_debug("cleanup_main() ending");
+        int loglevel = exit_status ? LOG_WARNING : LOG_INFO;
+        la_log(loglevel, "Exiting (status=%u, errno=%u).", exit_status, exit_errno);
 
         exit(exit_status);
 }
