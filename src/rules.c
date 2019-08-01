@@ -67,6 +67,8 @@ add_trigger(la_command_t *command)
 /*
  * Search for a command triggered by a certain host on the trigger_list of the
  * given rule. Return if found, return NULL otherwise.
+ *
+ * On the fly this also trims the trigger list from expired commands.
  */
 
 static la_command_t *
@@ -78,12 +80,28 @@ find_trigger(la_rule_t *rule, la_command_t *template, la_address_t *address)
         if (!address)
                 return NULL;
 
-        for (la_command_t *command = ITERATE_COMMANDS(rule->trigger_list);
-                        (command = NEXT_COMMAND(command));)
+        time_t now = xtime(NULL);
+
+        /* Don't use standard ITERATE_COMMANDS/NEXT_COMMAND idiom here to avoid
+         * that remove_node() breaks the whole thing */
+        la_command_t *command = ITERATE_COMMANDS(rule->trigger_list);
+        command = NEXT_COMMAND(command);
+        while (command)
         {
+                /* Return command if ids match */
                 if (command->id == template->id &&
                                 !adrcmp(command->address, address))
                         return command;
+
+                la_command_t *tmp = command;
+                command = NEXT_COMMAND(command);
+                /* Remove expired commands from trigger list */
+                if (now - tmp->start_time > tmp->rule->period)
+                {
+                        /*la_log(LOG_INFO, "NOTE: Removed IP %s from \"%s\"",
+                                        tmp->address->text, tmp->rule->name);*/
+                        remove_node((kw_node_t *) tmp);
+                }
         }
 
         return NULL;
