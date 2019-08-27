@@ -37,6 +37,7 @@ static char *log_filename = NULL;
 static char *rule_name = NULL;
 bool shutdown_ongoing = false;
 int exit_status = EXIT_SUCCESS;
+bool show_undetected = false;
 
 void
 trigger_shutdown(int status, int saved_errno)
@@ -49,7 +50,7 @@ static void
 print_usage(void)
 {
         fprintf(stderr,
-        "Usage: logactiond-checkrule [-c configfile] [-d] [-r rule] [-v] [file]\n");
+        "Usage: logactiond-checkrule [-u] [-c configfile] [-d] [-r rule] [-v] [file]\n");
 }
 
 static void
@@ -63,6 +64,7 @@ read_options(int argc, char *argv[])
         {
                 static struct option long_options[] =
                 {
+                        {"undetected", no_argument,       NULL, 'u'},
                         {"rule",       required_argument, NULL, 'r'},
                         {"configfile", required_argument, NULL, 'c'},
                         {"debug",      optional_argument, NULL, 'd'},
@@ -70,13 +72,16 @@ read_options(int argc, char *argv[])
                         {0,            0,                 0,    0  }
                 };
 
-                int c = getopt_long(argc, argv, "r:c:d::v", long_options, NULL);
+                int c = getopt_long(argc, argv, "ur:c:d::v", long_options, NULL);
 
                 if (c == -1)
                         break;
                 
                 switch (c)
                 {
+                        case 'u':
+                                show_undetected = true;
+                                break;
                         case 'r': 
                                 rule_name = optarg;
                                 break;
@@ -120,10 +125,24 @@ next_line(la_rule_t *rule, char *line)
                 regmatch_t pmatch[MAX_NMATCH];
                 if (!regexec(pattern->regex, line, MAX_NMATCH, pmatch, 0))
                 {
-                        printf("%s(%u): %s", rule->name, pattern->num, line);
-                        if (line[strlen(line)-1] != '\n')
-                                printf("\n");
+                        if (!show_undetected)
+                        {
+                                printf("%s(%u): %s", rule->name, pattern->num, line);
+                                if (line[strlen(line)-1] != '\n')
+                                        printf("\n");
+                        }
+                        else
+                        {
+                                return;
+                        }
                 }
+        }
+
+        if (show_undetected)
+        {
+                printf("%s", line);
+                if (line[strlen(line)-1] != '\n')
+                        printf("\n");
         }
 }
 
