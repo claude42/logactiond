@@ -24,6 +24,7 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <syslog.h>
 
 #include "logactiond.h"
 #include "nodelist.h"
@@ -48,7 +49,7 @@ assert_address_ffl(la_address_t *address, const char *func, char *file, unsigned
  * From https://stackoverflow.com/questions/7213995/ip-cidr-match-function
  */
 static bool
-cidr_match(struct in_addr addr, struct in_addr net, int prefix)
+cidr_match(struct in_addr addr, struct in_addr net, uint8_t prefix)
 {
         la_vdebug("cidr_match()");
 
@@ -65,6 +66,37 @@ cidr_match(struct in_addr addr, struct in_addr net, int prefix)
         return !((addr.s_addr ^ net.s_addr) & htonl(0xFFFFFFFFu << (32 - prefix)));
 }
 
+bool cidr6_match(struct in6_addr addr, struct in6_addr net, uint8_t prefix)
+{
+        la_vdebug("cidr6_match()");
+//#ifdef LINUX
+	const uint32_t *a = addr.s6_addr32;
+	const uint32_t *n = net.s6_addr32;
+//#else
+	//const uint32_t *a = addr.__u6_addr.__u6_addr32;
+	//const uint32_t *n = net.__u6_addr.__u6_addr32;
+//#endif
+
+	int prefix_whole, prefix_incomplete;
+
+	prefix_whole = prefix >> 5;         // number of whole u32
+	prefix_incomplete = prefix & 0x1F;  // number of prefix in incomplete u32
+	if (prefix_whole)
+	{
+		if (memcmp(a, n, prefix_whole << 2))
+			return false;
+	}
+
+	if (prefix_incomplete)
+	{
+		uint32_t mask = htonl((0xFFFFFFFFu) << (32 - prefix_incomplete));
+		if ((a[prefix_whole] ^ n[prefix_whole]) & mask)
+			return false;
+	}
+
+	return true;
+}
+
 /*
  * Compare two addresses. Return 0 if addresses are the same, return 1
  * otherwise.
@@ -75,13 +107,8 @@ adrcmp(la_address_t *a1, la_address_t *a2)
 {
         la_vdebug("adrcmp()");
 
-        if (!a1 && !a2)
-                return 0;
-
-        if (!a1 || !a2)
-                return 1;
-
-        if (a1->af == a2->af)
+        /* if both are not NULL and of the address family, look further */
+        if (a1 && a2 && a1->af == a2->af)
         {
                 if (a1->af == AF_INET && a1->addr.s_addr == a2->addr.s_addr)
                         return 0;
@@ -91,6 +118,16 @@ adrcmp(la_address_t *a1, la_address_t *a2)
                         return 0;
         }
 
+        /* if both are NULL, they are the same (sort of) */
+        if (!a1 && !a2)
+                return 0;
+
+        /* Return 1 otherwise, either if
+         * - one of the two addresses is NULL, or
+         * - address families differs, or
+         * - addresses differ, or
+         * - unknown address family
+         */
         return 1;
 }
 
@@ -118,9 +155,8 @@ address_on_ignore_list(la_address_t *address)
                                         ign_address->prefix))
                                 return true;
                 else if (address->af == AF_INET6 &&
-                                !memcmp(&(address->addr6),
-                                        &(ign_address->addr6), sizeof(struct
-                                                in6_addr)))
+                                cidr6_match(address->addr6, ign_address->addr6,
+                                        ign_address->prefix))
                         return true;
         }
 
@@ -163,11 +199,23 @@ create_address6(const char *ip, la_address_t *address)
         assert(ip); assert(address); // can't do assert_address() just yet
         la_vdebug("create_address6(%s)", ip);
 
-        /* TODO: does not support prefix for IPv6 */
+        char *sep = strchr(ip, '/');
+        if (sep)
+                *sep = '\0';
+
         int tmp = inet_pton(AF_INET6, ip, &(address->addr6));
         if (tmp == 1)
         {
-                address->prefix = 128;
+                if (sep)
+                {
+                        address->prefix = strtol(sep + 1, NULL, 10);
+                        if (address->prefix < 0 || address->prefix > 128)
+                                return false;
+                }
+                else
+                {
+                        address->prefix = 128;
+                }
                 address->af = AF_INET6;
                 address->text = xmalloc(50);
                 inet_ntop(AF_INET6, &(address->addr6), address->text, 50);
