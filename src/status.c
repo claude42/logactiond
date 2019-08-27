@@ -33,7 +33,7 @@
 #include "logactiond.h"
 #include "nodelist.h"
 
-pthread_t monitoring_thread;
+pthread_t monitoring_thread = 0;
 
 /*
  * Convert time_t into human readable format. Return values are in *value and

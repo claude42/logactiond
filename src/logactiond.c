@@ -364,7 +364,7 @@ cleanup_main(void *arg)
                 xpthread_join(end_queue_thread, NULL);
         la_debug("joined end_queue_thread");
 
-        if (status_monitoring)
+        if (monitoring_thread)
                 xpthread_join(monitoring_thread, NULL);
         la_debug("joined status_monitoring_thread");
 
@@ -429,7 +429,8 @@ main(int argc, char *argv[])
         la_debug("Main thread going to sleep.");
 
         /* Wait forever - until thread gets pthread_cancell()ed */
-        sleep(INT_MAX);
+        while (sleep(INT_MAX))
+                la_debug("Sleep interrupted, going back to sleep");
 
         /* We must have waited for a LONG time to get here... :-) */
         assert(false);

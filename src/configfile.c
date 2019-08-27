@@ -643,8 +643,7 @@ load_rules(void)
         config_setting_t *local_section = 
                 config_lookup(&la_config->config_file, LA_LOCAL_LABEL);
 
-        if (!la_config->sources)
-                la_config->sources = xcreate_list();
+        la_config->sources = xcreate_list();
 
         int n = config_setting_length(local_section);
         if (n < 0)
@@ -697,12 +696,10 @@ load_defaults(void)
                 if (la_config->default_duration == -1)
                         la_config->default_duration = DEFAULT_DURATION;
 
-                if (!la_config->default_properties)
-                        la_config->default_properties = xcreate_list();
+                la_config->default_properties = xcreate_list();
                 load_properties(la_config->default_properties, defaults_section);
 
-                if (!la_config->ignore_addresses)
-                        la_config->ignore_addresses = xcreate_list();
+                la_config->ignore_addresses = xcreate_list();
                 load_ignore_addresses(la_config->ignore_addresses,
                                 defaults_section);
         }
@@ -809,13 +806,16 @@ unload_la_config(void)
         if (!shutdown_ongoing)
                 xpthread_mutex_lock(&config_mutex);
 
-        empty_source_list(la_config->sources);
+        free_source_list(la_config->sources);
+        la_config->sources = NULL;
 #if HAVE_LIBSYSTEMD
         free_source(la_config->systemd_source);
         la_config->systemd_source = NULL;
 #endif /* HAVE_LIBSYSTEMD */
-        empty_property_list(la_config->default_properties);
-        empty_address_list(la_config->ignore_addresses);
+        free_property_list(la_config->default_properties);
+        la_config->default_properties = NULL;
+        free_address_list(la_config->ignore_addresses);
+        la_config->ignore_addresses = NULL;
 
         if (!shutdown_ongoing)
                 xpthread_mutex_unlock(&config_mutex);
