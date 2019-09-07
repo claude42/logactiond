@@ -107,17 +107,6 @@ find_trigger(la_rule_t *rule, la_command_t *template, la_address_t *address)
         return NULL;
 }
 
-static void
-incr_invocation_counts(la_command_t *command)
-{
-        assert_command(command);
-        if (command->rule->invocation_count < ULONG_MAX)
-                command->rule->invocation_count++;
-        if (command->pattern->invocation_count < ULONG_MAX)
-                command->pattern->invocation_count++;
-}
-
-
 /*
  * - Add command to trigger list if not in there yet.
  * - Increase counter by one.
@@ -148,7 +137,6 @@ handle_command_on_trigger_list(la_command_t *command)
                 if (command->n_triggers >= command->rule->threshold)
                 {
                         remove_node((kw_node_t *) command);
-                        incr_invocation_counts(command);
                         trigger_command(command);
                 }
         }
@@ -413,7 +401,8 @@ create_rule(char *name, la_source_t *source, int threshold, int period,
         result->trigger_list = xcreate_list();
         result->properties = xcreate_list();
 
-        result->detection_count = result->invocation_count = 0;
+        result->detection_count = result->invocation_count =
+                result->queue_count = 0;
 
         return result;
 }

@@ -256,6 +256,16 @@ exec_command(la_command_t *command, la_commandtype_t type)
         }
 }
 
+static void
+incr_invocation_counts(la_command_t *command)
+{
+        assert_command(command);
+        if (command->rule->invocation_count < ULONG_MAX)
+                command->rule->invocation_count++;
+        if (command->pattern->invocation_count < ULONG_MAX)
+                command->pattern->invocation_count++;
+}
+
 /*
  * Executes a begin_command and enqueues an end_command into the queue (if one
  * hase been defined).
@@ -288,14 +298,20 @@ trigger_command(la_command_t *command)
         }
 
         if (command->is_template)
+        {
                 la_debug("Initializing action \"%s\" for rule \"%s\", "
                                 "source \"%s\".", command->name,
                                 command->rule->name,
                                 command->rule->source->name);
+        }
         else
+        {
                 la_log(LOG_INFO, "Host: %s, action \"%s\" activated by rule \"%s\".",
                                 command->address->text, command->name,
                                 command->rule->name);
+                incr_invocation_counts(command);
+                command->rule->queue_count++;
+        }
 
         /* TODO: can't we convert_command() earlier? */
         exec_command(command, LA_COMMANDTYPE_BEGIN);
@@ -321,17 +337,23 @@ trigger_end_command(la_command_t *command)
                         command->duration);
 
         if (command->duration == INT_MAX)
+        {
                 la_log(LOG_INFO, "Disabling rule \"%s\".",
                                 command->rule->name);
-        else if (command->address)
-                la_log(LOG_INFO, "Host: %s, action \"%s\" ended for "
-                                "rule \"%s\".",
-                                command->address->text, command->name,
-                                command->rule->name);
+        }
         else
-                la_log(LOG_INFO, "Action \"%s\" ended for rule "
-                                "\"%s\".", command->name,
-                                command->rule->name);
+        {
+                if (command->address)
+                        la_log(LOG_INFO, "Host: %s, action \"%s\" ended for "
+                                        "rule \"%s\".", command->address->text,
+                                        command->name, command->rule->name);
+                else
+                        la_log(LOG_INFO, "Action \"%s\" ended for rule "
+                                        "\"%s\".", command->name,
+                                        command->rule->name);
+
+                command->rule->queue_count--;
+        }
 
         exec_command(command, LA_COMMANDTYPE_END);
 }

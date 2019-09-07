@@ -267,6 +267,7 @@ typedef struct la_rule_s
         kw_list_t *properties;
         unsigned long int detection_count;
         unsigned long int invocation_count;
+        unsigned long int queue_count;
 } la_rule_t;
 
 typedef struct la_command_s
