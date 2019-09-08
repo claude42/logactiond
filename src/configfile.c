@@ -103,12 +103,17 @@ config_setting_lookup_or_die(const config_setting_t *setting,
         return result;
 }
 
+/* 
+ * Return config_setting_t for named element in the "rules" section of the
+ * config file
+ */
+
 static const config_setting_t *
 get_rule(const char *rule_name)
 {
         assert(rule_name);
 
-        return config_setting_lookup_or_die(config_lookup(
+        return config_setting_lookup(config_lookup(
                                 &la_config->config_file,
                                 LA_RULES_LABEL), rule_name);
 }
@@ -167,18 +172,20 @@ static config_setting_t *
 get_source_uc_rule_or_rule(const config_setting_t *rule,
                 const config_setting_t *uc_rule)
 {
+        assert(uc_rule);
+
         config_setting_t *result;
 
         result = get_source(config_get_string_or_null(uc_rule,
                                 LA_RULE_SOURCE_LABEL));
 
-        if (!result)
+        if (!result && rule)
                 result = get_source(config_get_string_or_null(rule,
                                         LA_RULE_SOURCE_LABEL));
 
         if (!result)
                 die_hard("Source not found for rule %s!",
-                                config_setting_name(rule));
+                                config_setting_name(uc_rule));
 
         return result;
 }
@@ -189,11 +196,22 @@ get_source_uc_rule_or_rule(const config_setting_t *rule,
  */
 
 static const char *
-get_source_name(const config_setting_t *rule)
+get_source_name(const config_setting_t *rule, const config_setting_t *uc_rule)
 {
-        assert(rule);
+        assert(uc_rule);
 
-        return config_get_string_or_die(rule, LA_RULE_SOURCE_LABEL);
+        const char *result;
+
+        result = config_get_string_or_null(uc_rule, LA_RULE_SOURCE_LABEL);
+
+        if (!result && rule)
+                result = config_get_string_or_null(rule, LA_RULE_SOURCE_LABEL);
+
+        if (!result)
+                die_hard("No source name specified for rule %s!",
+                                config_setting_name(uc_rule));
+
+        return result;
 }
 
 /*
@@ -204,7 +222,7 @@ get_source_name(const config_setting_t *rule)
 static const char *
 get_source_prefix(const config_setting_t *rule, const config_setting_t *uc_rule)
 {
-        assert(rule), assert(uc_rule);
+        assert(uc_rule);
 
         const char *result;
         config_setting_t *source_def = get_source_uc_rule_or_rule(rule, uc_rule);
@@ -223,7 +241,7 @@ get_source_prefix(const config_setting_t *rule, const config_setting_t *uc_rule)
 static const char *
 get_source_location(const config_setting_t *rule, const config_setting_t *uc_rule)
 {
-        assert(rule); assert(uc_rule);
+        assert(uc_rule);
 
         config_setting_t *source_def;
         const char *result;
@@ -231,7 +249,8 @@ get_source_location(const config_setting_t *rule, const config_setting_t *uc_rul
         source_def = get_source_uc_rule_or_rule(rule, uc_rule);
 
         if (!config_setting_lookup_string(source_def, LA_SOURCE_LOCATION, &result))
-                die_hard("Source location missing!");
+                die_hard("Source location missing for rule %s!",
+                                config_setting_name(uc_rule));
 
         return result;
 }
@@ -354,7 +373,7 @@ static void
 load_patterns(la_rule_t *rule, const config_setting_t *rule_def, 
                 const config_setting_t *uc_rule_def)
 {
-        assert_rule(rule); assert(rule_def); assert(uc_rule_def);
+        assert(rule_def); assert(uc_rule_def);
 
         la_debug("load_patterns(%s)", rule->name);
 
@@ -363,10 +382,11 @@ load_patterns(la_rule_t *rule, const config_setting_t *rule_def,
         /* again unclear why this cast is necessary */
         patterns = config_setting_lookup((config_setting_t *)
                         uc_rule_def, LA_RULE_PATTERNS_LABEL);
-        if (!patterns)
+        if (!patterns && rule_def)
                 patterns = config_setting_lookup_or_die(rule_def,
                                 LA_RULE_PATTERNS_LABEL);
 
+        /* TODO: is NULL an acceptable input for config_setting_length()? */
         int n = config_setting_length(patterns);
         if (n < 0)
                 die_hard("No patterns specified for %s!",
@@ -473,11 +493,11 @@ static const char *
 get_rule_string(const config_setting_t *rule_def,
                 const config_setting_t *uc_rule_def, const char *name)
 {
-        assert(rule_def); assert(uc_rule_def); assert(name);
+        assert(uc_rule_def); assert(name);
 
         const char *result = config_get_string_or_null(uc_rule_def, name);
 
-        if (!result)
+        if (!result && rule_def)
                 result = config_get_string_or_null(rule_def, name);
 
         return result;
@@ -493,11 +513,11 @@ static int
 get_rule_unsigned_int(const config_setting_t *rule_def,
                 const config_setting_t *uc_rule_def, const char *name)
 {
-        assert(rule_def); assert(uc_rule_def); assert(name);
+        assert(uc_rule_def); assert(name);
 
         int result = config_get_unsigned_int_or_negative(uc_rule_def, name);
 
-        if (result < 0)
+        if (result < 0 && rule_def)
                 result = config_get_unsigned_int_or_negative(rule_def, name);
 
         return result;
@@ -511,10 +531,12 @@ static la_source_t *
 create_file_source(const config_setting_t *rule_def,
                 const config_setting_t *uc_rule_def)
 {
+        assert(uc_rule_def);
+
         const char *location = get_source_location(rule_def, uc_rule_def);
         const char *prefix = get_source_prefix(rule_def, uc_rule_def);
 
-        la_source_t *result = create_source(get_source_name(rule_def),
+        la_source_t *result = create_source(get_source_name(rule_def, uc_rule_def),
                         location, prefix);
         assert_source(result);
         add_tail(la_config->sources, (kw_node_t *) result);
@@ -568,21 +590,20 @@ create_systemd_unit(const char *systemd_unit)
 /*
  * Load a single rule
  *
- * rule_def - section were rule is specified (non-user configuration)
- * uc_rule_def - user configuration where rule is enabled an parameters
- * from rule_def may be overwritten.
+ * uc_rule_def - user configuration where rule is enabled in local section of
+ * the config file
  */
 
 static void
-load_single_rule(const config_setting_t *rule_def,
-                const config_setting_t *uc_rule_def)
+load_single_rule(const config_setting_t *uc_rule_def)
 {
-        assert(rule_def); assert(uc_rule_def);
+        assert(uc_rule_def);
         la_rule_t *new_rule;
         la_source_t *source;
 
-        char *name = config_setting_name(rule_def);
+        char *name = config_setting_name(uc_rule_def);
         la_debug("load_single_rule(%s)", name);
+        const config_setting_t *rule_def = get_rule(name);
 
         const char *systemd_unit;
 #if HAVE_LIBSYSTEMD
@@ -596,7 +617,7 @@ load_single_rule(const config_setting_t *rule_def,
         else
 #endif /* HAVE_LIBSYSTEMD */
         {
-                systemd_unit = NULL; /* necessary if HAVE_LIBSYSTEMD=0 */
+                systemd_unit = NULL; /* necessary if HAVE_LIBSYSTEMD==0 */
                 source = find_source_by_location(get_source_location(rule_def,
                                         uc_rule_def));
 
@@ -624,7 +645,8 @@ load_single_rule(const config_setting_t *rule_def,
         /* Properties from uc_rule_def have priority over those from
          * rule_def */
         load_properties(new_rule->properties, uc_rule_def);
-        load_properties(new_rule->properties, rule_def);
+        if (rule_def)
+                load_properties(new_rule->properties, rule_def);
 
         /* Patterns from uc_rule_def have priority over those from rule_def */
         load_patterns(new_rule, rule_def, uc_rule_def);
@@ -660,10 +682,7 @@ load_rules(void)
                                         &enabled) == CONFIG_TRUE && enabled)
                 {
                         num_rules_enabled++;
-                        load_single_rule(get_rule(config_setting_name(
-                                                        config_setting_get_elem(
-                                                                local_section,
-                                                                i))), uc_rule);
+                        load_single_rule(uc_rule);
                 }
         }
 
