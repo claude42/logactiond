@@ -87,11 +87,6 @@ dump_single_rule(FILE *rules_file, la_rule_t *rule)
 {
         assert(rules_file), assert_rule(rule);
         la_vdebug("dump_single_rule(%s)", rule->name);
-        la_vdebug("%-13.13s %-9.9s %-9.9s %9u %9u %9u\n",
-                        rule->name, rule->systemd_unit ? rule->systemd_unit :
-                        rule->service, rule->source->name,
-                        rule->detection_count, rule->invocation_count,
-                        rule->queue_count);
         fprintf(rules_file, "%-13.13s %-13.13s %-13.13s %8lu %8lu %8lu\n",
                         rule->name, rule->systemd_unit ? rule->systemd_unit :
                         rule->service, rule->source->name,
@@ -197,7 +192,6 @@ dump_loop(void *ptr)
 
         for (;;)
         {
-                la_vdebug("dump_loop() looping");
                 sleep(5);
                 if (shutdown_ongoing)
                 {
@@ -272,7 +266,6 @@ dump_queue_status(kw_list_t *queue)
                 // not interested in shutdown commands (or anything beyond...)
                 if (command->end_time == INT_MAX)
                         break;
-                la_vdebug("printing %s", command->name);
 
                 char *adr = command->address ? command->address->text : "-";
 
