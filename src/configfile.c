@@ -634,12 +634,30 @@ load_single_rule(const config_setting_t *uc_rule_def)
                         LA_PERIOD_LABEL);
         int duration = get_rule_unsigned_int(rule_def, uc_rule_def,
                         LA_DURATION_LABEL);
+
+        int meta_enabled;
+        if (!config_setting_lookup_bool(rule_def, LA_META_ENABLED_LABEL,
+                                &meta_enabled))
+        {
+                if (!config_setting_lookup_bool(uc_rule_def,
+                                        LA_META_ENABLED_LABEL, &meta_enabled))
+                        meta_enabled = -1;
+        }
+
+        int meta_threshold = get_rule_unsigned_int(rule_def, uc_rule_def,
+                        LA_META_THRESHOLD_LABEL);
+        int meta_period = get_rule_unsigned_int(rule_def, uc_rule_def,
+                        LA_META_PERIOD_LABEL);
+        int meta_duration = get_rule_unsigned_int(rule_def, uc_rule_def,
+                        LA_META_DURATION_LABEL);
+
         const char *service = get_rule_string(rule_def, uc_rule_def,
                         LA_SERVICE_LABEL);
 
         la_log(LOG_INFO, "Enabling rule \"%s\".", name);
         new_rule = create_rule(name, source, threshold, period, duration,
-                        service, systemd_unit);
+                        meta_enabled, meta_threshold, meta_period,
+                        meta_duration, service, systemd_unit);
         assert_rule(new_rule);
 
         /* Properties from uc_rule_def have priority over those from
@@ -715,6 +733,28 @@ load_defaults(void)
                 if (la_config->default_duration == -1)
                         la_config->default_duration = DEFAULT_DURATION;
 
+                if (!config_setting_lookup_bool(defaults_section,
+                                        LA_META_ENABLED_LABEL,
+                                        &(la_config->default_meta_enabled)))
+                        la_config->default_meta_enabled = DEFAULT_META_ENABLED;
+
+                la_config->default_meta_threshold =
+                        config_get_unsigned_int_or_negative(defaults_section,
+                                        LA_META_THRESHOLD_LABEL);
+                if (la_config->default_meta_threshold == -1)
+                        la_config->default_meta_threshold = DEFAULT_META_THRESHOLD;
+                la_config->default_meta_period =
+                        config_get_unsigned_int_or_negative(defaults_section,
+                                        LA_META_PERIOD_LABEL);
+                if (la_config->default_meta_period == -1)
+                        la_config->default_meta_period = DEFAULT_META_PERIOD;
+                la_config->default_meta_duration =
+                        config_get_unsigned_int_or_negative(defaults_section,
+                                        LA_META_DURATION_LABEL);
+                if (la_config->default_meta_duration == -1)
+                        la_config->default_meta_duration = DEFAULT_META_DURATION;
+
+
                 la_config->default_properties = xcreate_list();
                 load_properties(la_config->default_properties, defaults_section);
 
@@ -727,6 +767,10 @@ load_defaults(void)
                 la_config->default_threshold = DEFAULT_THRESHOLD;
                 la_config->default_period = DEFAULT_PERIOD;
                 la_config->default_duration = DEFAULT_DURATION;
+                la_config->default_meta_enabled = DEFAULT_META_ENABLED;
+                la_config->default_meta_threshold = DEFAULT_THRESHOLD;
+                la_config->default_meta_period = DEFAULT_PERIOD;
+                la_config->default_meta_duration = DEFAULT_DURATION;
                 if (la_config->default_properties)
                 {
                         free_property_list(la_config->default_properties);
@@ -804,6 +848,7 @@ load_la_config(char *filename)
                 xpthread_mutex_unlock(&config_mutex);
                 die_hard("No rules enabledd!");
         }
+        la_config->meta_list = xcreate_list();
 
         config_destroy(&la_config->config_file);
 
@@ -835,6 +880,10 @@ unload_la_config(void)
         la_config->default_properties = NULL;
         free_address_list(la_config->ignore_addresses);
         la_config->ignore_addresses = NULL;
+        // TODO: FIXIT! Currently wrong because this is a list of
+        // meta_command_t
+        // free_command_list(la_config->meta_list);
+        la_config->meta_list = NULL;
 
         if (!shutdown_ongoing)
                 xpthread_mutex_unlock(&config_mutex);

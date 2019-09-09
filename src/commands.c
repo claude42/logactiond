@@ -29,6 +29,21 @@
 
 #include "logactiond.h"
 
+
+#define ITERATE_META_COMMANDS(COMMANDS) (meta_command_t *) &(COMMANDS)->head
+#define NEXT_META_COMMAND(COMMAND) (meta_command_t *) (COMMAND->node.succ->succ ? COMMAND->node.succ : NULL)
+#define HAS_NEXT_META_COMMAND(COMMAND) COMMAND->node.succ
+#define REM_META_COMMANDS_HEAD(COMMANDS) (meta_command_t *) rem_head(COMMANDS)
+
+typedef struct la_meta_command_s
+{
+        kw_node_t node;
+        la_rule_t *rule;
+        la_address_t *address;
+        unsigned int meta_n_triggers;
+        time_t meta_start_time;
+} meta_command_t;
+
 void
 assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned int line)
 {
@@ -256,6 +271,106 @@ exec_command(la_command_t *command, la_commandtype_t type)
         }
 }
 
+/*
+ * Tries to find a command on the meta list which
+ * a.) has last been invoked within the meta_period
+ * b.) has the same address as the given command
+ *
+ * On the fly this also trims the meta list from expired commands.
+ */
+
+static void
+free_meta_command(meta_command_t *meta_command)
+{
+        free_address(meta_command->address);
+        free(meta_command);
+}
+
+static meta_command_t *
+create_meta_command(la_command_t *command)
+{
+        meta_command_t *result = xmalloc(sizeof(meta_command_t));
+
+        result->rule = command->rule;
+        result->address = dup_address(command->address);
+        result->meta_start_time = xtime(NULL);
+        result->meta_n_triggers = 1;
+
+        return result;
+}
+
+static meta_command_t *
+find_on_meta_list(la_command_t *command)
+{
+        assert_command(command);
+        la_debug("find_on_meta_list(%s)", command->name);
+
+        time_t now = xtime(NULL);
+
+        /* Don't use standard ITERATE_COMMANDS/NEXT_COMMAND idiom here to avoid
+         * that remove_node() breaks the whole thing */
+        meta_command_t *list_command = ITERATE_META_COMMANDS(la_config->meta_list);
+        list_command = NEXT_META_COMMAND(list_command);
+        while (list_command)
+        {
+                if (now - list_command->rule->meta_period)
+                {
+                        if (!adrcmp(command->address, list_command->address))
+                                return list_command;
+                        list_command = NEXT_META_COMMAND(list_command);
+                }
+                else
+                {
+                        /* Remove expired commands from trigger list */
+                        meta_command_t *tmp = list_command;
+                        list_command = NEXT_META_COMMAND(list_command);
+                        remove_node((kw_node_t *) tmp);
+                        free_meta_command(tmp);
+                }
+        }
+
+        return NULL;
+}
+
+/*
+ * Checks whether a coresponding command is already on the meta_list (see
+ * find_on_meta_list(). If so, increases trigger counter. Returns true if >
+ * threshold.
+ *
+ * If nothings found on the list, clone command and add to the list.
+ */
+
+static bool
+check_meta_list(la_command_t *command)
+{
+        assert_command(command);
+        la_vdebug("check_meta_list(%s)", command->name);
+
+        meta_command_t *meta_command = find_on_meta_list(command);
+
+        if (meta_command)
+        {
+                if (++meta_command->meta_n_triggers >= 
+                                meta_command->rule->meta_threshold)
+                {
+                        remove_node((kw_node_t *) meta_command);
+                        free_meta_command(meta_command);
+                        return true;
+                }
+                else
+                {
+                        return false;
+                }
+
+        }
+        else
+        {
+                meta_command = create_meta_command(command);
+                add_head(la_config->meta_list, (kw_node_t *) meta_command);
+                return false;
+        }
+}
+
 static void
 incr_invocation_counts(la_command_t *command)
 {
@@ -306,9 +421,19 @@ trigger_command(la_command_t *command)
         }
         else
         {
-                la_log(LOG_INFO, "Host: %s, action \"%s\" activated by rule \"%s\".",
-                                command->address->text, command->name,
-                                command->rule->name);
+                /* handle meta list, check if meta_duration should be used */
+                bool meta = false;
+                if (command->rule->meta_enabled && check_meta_list(command))
+                {
+                        command->duration = command->rule->meta_duration;
+                        meta = true;
+                }
+
+                la_log(LOG_INFO, "Host: %s, %saction \"%s\" activated by rule \"%s\".",
+                                command->address->text, meta ? "META " : "",
+                                command->name, command->rule->name);
+
+                /* update relevant counters for status monitoring */
                 incr_invocation_counts(command);
                 command->rule->queue_count++;
         }

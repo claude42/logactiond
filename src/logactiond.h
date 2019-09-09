@@ -47,6 +47,10 @@
 #define DEFAULT_PERIOD 600
 #define DEFAULT_DURATION 600
 
+#define DEFAULT_META_ENABLED false
+#define DEFAULT_META_THRESHOLD 3
+#define DEFAULT_META_PERIOD 3600
+#define DEFAULT_META_DURATION 86400
 
 #if HAVE_RUN
 #define RUNDIR "/run"
@@ -67,6 +71,12 @@
 #define LA_THRESHOLD_LABEL "threshold"
 #define LA_PERIOD_LABEL "period"
 #define LA_DURATION_LABEL "duration"
+
+#define LA_META_ENABLED_LABEL "meta_enabled"
+#define LA_META_THRESHOLD_LABEL "meta_threshold"
+#define LA_META_PERIOD_LABEL "meta_period"
+#define LA_META_DURATION_LABEL "meta_duration"
+
 #define LA_SERVICE_LABEL "service"
 
 
@@ -262,6 +272,10 @@ typedef struct la_rule_s
         unsigned int threshold;
         unsigned int period;
         unsigned int duration;
+        bool meta_enabled;
+        unsigned int meta_threshold;
+        unsigned int meta_period;
+        unsigned int meta_duration;
         char *systemd_unit;
         kw_list_t *trigger_list;
         kw_list_t *properties;
@@ -344,8 +358,13 @@ typedef struct la_config_s
         int default_threshold;
         int default_period;
         int default_duration;
+        int default_meta_enabled; /* should be bool but well... */
+        int default_meta_threshold;
+        int default_meta_period;
+        int default_meta_duration;
         kw_list_t *default_properties;
         kw_list_t *ignore_addresses;
+        kw_list_t *meta_list;
 } la_config_t;
 
 /* Global variables */
@@ -535,9 +554,10 @@ void assert_rule_ffl(la_rule_t *rule, const char *func, char *file, unsigned int
 
 void handle_log_line_for_rule(la_rule_t *rule, const char *line);
 
-la_rule_t * create_rule(char *name, la_source_t *source, int threshold,
-                int period, int duration, const char *service,
-                const char *systemd_unit);
+la_rule_t *create_rule(char *name, la_source_t *source, int threshold,
+                int period, int duration, int meta_enabled,
+                int meta_threshold, int meta_period, int meta_duration,
+                const char *service, const char *systemd_unit);
 
 void free_rule(la_rule_t *rule);
 

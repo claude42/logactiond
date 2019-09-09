@@ -207,7 +207,7 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
                                 pattern, address);
                 if (!command)
                 {
-                        la_debug("IP address doesn't match what requirements of action!");
+                        la_log(LOG_ERR, "IP address doesn't match what requirements of action!");
                         return;
                 }
         }
@@ -367,8 +367,10 @@ handle_log_line_for_rule(la_rule_t *rule, const char *line)
  */
 
 la_rule_t *
-create_rule(char *name, la_source_t *source, int threshold, int period,
-                int duration, const char *service, const char *systemd_unit)
+create_rule(char *name, la_source_t *source, int threshold, int period, int
+                duration, int meta_enabled, int meta_threshold,
+                int meta_period, int meta_duration, const char *service,
+                const char *systemd_unit)
 {
         assert_source(source);
         la_debug("create_rule(%s)", name);
@@ -388,6 +390,20 @@ create_rule(char *name, la_source_t *source, int threshold, int period,
 
         result->duration = duration!=-1 ? duration : la_config->default_duration;
         result->period = period!=-1 ? period : la_config->default_period;
+
+        result->meta_enabled = meta_enabled>=0 ? meta_enabled :
+                la_config->default_meta_enabled;
+
+        if (meta_threshold >= 0)
+                result->meta_threshold = meta_threshold;
+        else if (la_config->default_meta_threshold >= 0)
+                result->meta_threshold = la_config->default_meta_threshold;
+        else
+                result->meta_threshold = 1;
+
+        result->meta_duration = meta_duration!=-1 ? meta_duration :
+                la_config->default_meta_duration;
+        result->meta_period = meta_period!=-1 ? meta_period : la_config->default_meta_period;
 
         result->service = xstrdup(service);
 #if HAVE_LIBSYSTEMD
