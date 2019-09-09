@@ -69,13 +69,16 @@ cidr_match(struct in_addr addr, struct in_addr net, uint8_t prefix)
 bool cidr6_match(struct in6_addr addr, struct in6_addr net, uint8_t prefix)
 {
         la_vdebug("cidr6_match()");
-//#ifdef LINUX
+
+        /* Alas I'm not a IPv6 expert. But the following will make the source
+         * compile at least on the BSDs (and thus MacOS). Not sure if that will
+         * help on other platforms.
+         */
+#if !defined(s6_addr32)
+#define s6_addr32 __u6_addr.__u6_addr32
+#endif
 	const uint32_t *a = addr.s6_addr32;
 	const uint32_t *n = net.s6_addr32;
-//#else
-	//const uint32_t *a = addr.__u6_addr.__u6_addr32;
-	//const uint32_t *n = net.__u6_addr.__u6_addr32;
-//#endif
 
 	int prefix_whole, prefix_incomplete;
 
