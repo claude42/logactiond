@@ -315,11 +315,21 @@ die_err(char *fmt, ...)
 }
 
 void *
+xrealloc(void *ptr, size_t n)
+{
+        void *result = realloc(ptr, n);
+        if (!result && n!=0)
+                die_hard("Memory exhausted");
+
+        return result;
+}
+
+void *
 xmalloc0(size_t n)
 {
         void *result = calloc(n, 1);
         if (!result && n!=0)
-                die_err("Memory exhausted");
+                die_hard("Memory exhausted");
 
         return result;
 }
@@ -391,6 +401,8 @@ concat(const char *s1, const char *s2)
 }
 
 
+
+
 /*
  * dst is a block of previously allocated memory
  * dst_len is the length of the previously allocated memory
@@ -412,7 +424,7 @@ void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, size_t on_top)
                 la_debug("realloc_buffer()=%u", *dst_len);
 
                 void *tmp_ptr;
-                tmp_ptr = realloc(*dst, *dst_len);
+                tmp_ptr = xrealloc(*dst, *dst_len);
                 *dst_ptr = *dst_ptr - *dst + tmp_ptr;
                 *dst = tmp_ptr;
         }

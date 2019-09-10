@@ -66,6 +66,11 @@ cleanup_watching_systemd(void *arg)
 static void *
 watch_forever_systemd(void *ptr)
 {
+        static char *message_buffer;
+        static char *unit_buffer;
+        static unsigned int message_buffer_length;
+        static unsigned int unit_buffer_length;
+
         la_debug("watch_forever_systemd()");
         assert(journal); assert(la_config->systemd_source);
 
@@ -80,7 +85,6 @@ watch_forever_systemd(void *ptr)
 #define UNIT "_SYSTEMD_UNIT"
 #define UNIT_LEN 14
                 const void *data;
-                const void *unit;
                 size_t size;
 
                 r = sd_journal_next(journal);
@@ -121,14 +125,28 @@ watch_forever_systemd(void *ptr)
                 r = sd_journal_get_data(journal, MESSAGE, &data, &size);
                 if (r < 0)
                         die_systemd(r, "sd_journal_get_data() failed");
+                if (size+1 > message_buffer_length)
+                {
+                        message_buffer = xrealloc(message_buffer, size+1);
+                        message_buffer_length = size+1;
+                }
+                strncpy(message_buffer, data+MESSAGE_LEN, size-MESSAGE_LEN);
+                message_buffer[size-MESSAGE_LEN] = '\0';
 
-                r = sd_journal_get_data(journal, UNIT, &unit, &size);
+                r = sd_journal_get_data(journal, UNIT, &data, &size);
                 if (r < 0)
                         die_systemd(r, "sd_journal_get_data() failed");
+                if (size+1 > unit_buffer_length)
+                {
+                        unit_buffer = xrealloc(unit_buffer, size+1);
+                        unit_buffer_length = size+1;
+                }
+                strncpy(unit_buffer, data+UNIT_LEN, size-UNIT_LEN);
+                unit_buffer[size-UNIT_LEN] = '\0';
 
                 xpthread_mutex_lock(&config_mutex);
-                handle_log_line(la_config->systemd_source, data+MESSAGE_LEN,
-                                unit+UNIT_LEN);
+                handle_log_line(la_config->systemd_source, message_buffer,
+                                unit_buffer);
                 xpthread_mutex_unlock(&config_mutex);
         }
 
@@ -154,7 +172,7 @@ add_matches(void)
                         (unit = unit->succ->succ ? unit->succ : NULL);)
         {
                 len = xstrlen("_SYSTEMD_UNIT=") + xstrlen(unit->name)+1;
-                match = realloc(match, len);
+                match = xrealloc(match, len);
                 snprintf(match, len, "_SYSTEMD_UNIT=%s", unit->name);
                 int r = sd_journal_add_match(journal, match, 0);
                 if (r < 0)

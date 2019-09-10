@@ -439,6 +439,8 @@ void die_hard(char *fmt, ...);
 
 void die_err(char *fmt, ...);
 
+void *xrealloc(void *ptr, size_t n);
+
 void *xmalloc0(size_t n);
 
 void *xmalloc(size_t n);
