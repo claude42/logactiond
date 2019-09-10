@@ -160,7 +160,10 @@ get_value_for_action_property(la_command_t *command,
 static char *
 convert_command(la_command_t *command, la_commandtype_t type)
 {
-        assert (command);
+        /* Don't assert_command() here, as after a reload some commands might
+         * not have a rule attached to them anymore */
+        assert(command); assert(command->name); assert(command->end_string);
+        assert(command->end_properties);
         la_debug("convert_command(%s, %s)", command->name,
                         type == LA_COMMANDTYPE_BEGIN ? "begin" : "end");
 
@@ -235,7 +238,7 @@ convert_command(la_command_t *command, la_commandtype_t type)
         }
 
         *dst_ptr = 0;
-        la_vdebug("convert_command()=%s", result);
+        la_debug("convert_command()=%s", result);
 
         return result;
 }
@@ -248,7 +251,10 @@ convert_command(la_command_t *command, la_commandtype_t type)
 static void
 exec_command(la_command_t *command, la_commandtype_t type)
 {
+        /* Don't assert_command() here, as after a reload some commands might
+         * not have a rule attached to them anymore */
         assert(command);
+        assert(command->name);
         la_debug("exec_command(%s)", command->name);
 
         int result = system(convert_command(command, type));
@@ -457,7 +463,9 @@ trigger_command(la_command_t *command)
 void
 trigger_end_command(la_command_t *command)
 {
-        assert_command(command);
+        /* Don't assert_command() here, as after a reload some commands might
+         * not have a rule attached to them anymore */
+        assert(command);
         la_vdebug("trigger_end_command(%s, %d)", command->name,
                         command->duration);
 
@@ -477,7 +485,10 @@ trigger_end_command(la_command_t *command)
                                         "\"%s\".", command->name,
                                         command->rule->name);
 
-                command->rule->queue_count--;
+                /* After a reload some commands might not have a rule attached
+                 * to them anymore */
+                if (command->rule)
+                        command->rule->queue_count--;
         }
 
         exec_command(command, LA_COMMANDTYPE_END);
@@ -523,11 +534,9 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
 
 
 /*
- * Clones command from a command template.
- * - Duplicates begin_properties / end_properties lists
- * - Doesn't clone begin_string, end_string, rule, pattern, host, end_time,
- *   n_triggers, start_time
- * Must be free()d after use.
+ * Clones command from a command template. Duplicates / copies most but not all
+ * template parameters. dup_command() should only be called from
+ * create_command_from_template().
  */
 
 /* FIXME: when are we calling dup_command()? e.g. does the property list have
@@ -545,17 +554,19 @@ dup_command(la_command_t *command)
 
         result->is_template = false;
 
-        result->name = command->name;
-        result->begin_string = command->begin_string;
+        result->name = xstrdup(command->name);
+        result->begin_string = xstrdup(command->begin_string);
         result->begin_properties = dup_property_list(command->begin_properties);
         result->n_begin_properties = command->n_begin_properties;
 
-        result->end_string = command->end_string;
+        result->end_string = xstrdup(command->end_string);
         result->end_properties = dup_property_list(command->end_properties);
         result->n_end_properties = command->n_end_properties;
 
         result->duration = command->duration;
         result->need_host = command->need_host;
+
+        result->rule_name = xstrdup(command->rule_name);
 
         return result;
 }
@@ -651,6 +662,10 @@ create_template(const char *name, la_rule_t *rule, const char *begin_string,
         result->n_triggers = 0;
         result->start_time = 0;
 
+        /* Will be used to restore queue counters on reload. Yes, it's a bit
+         * ugly but such is life... */
+        result->rule_name = xstrdup(rule->name);
+
         assert_command(result);
         return result;
 }
@@ -670,16 +685,13 @@ free_command(la_command_t *command)
         assert_command(command);
         la_vdebug("free_command(%s)", command->name);
 
+        free(command->name);
+        free(command->begin_string);
+        free(command->end_string);
         free_property_list(command->begin_properties);
         free_property_list(command->end_properties);
         free_property_list(command->pattern_properties);
-
-        if (command->is_template)
-        {
-                free(command->name);
-                free(command->begin_string);
-                free(command->end_string);
-        }
+        free(command->rule_name);
 
         free_address(command->address);
         free(command);

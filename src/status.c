@@ -262,7 +262,10 @@ dump_queue_status(kw_list_t *queue)
         for (la_command_t *command = ITERATE_COMMANDS(queue);
                         (command = NEXT_COMMAND(command));)
         {
-                assert_command(command);
+                /* Don't assert_command() here, as after a reload some commands might
+                 * not have a rule attached to them anymore */
+                assert(command); assert(command->name);
+                assert_address(command->address);
                 // not interested in shutdown commands (or anything beyond...)
                 if (command->end_time == INT_MAX)
                         break;
@@ -276,7 +279,7 @@ dump_queue_status(kw_list_t *queue)
 
                 fprintf(hosts_file,
                                 "%-46.46s %2u%c  %-13.13s %-13.13s\n",
-                                adr, timedelta, unit, command->rule->name,
+                                adr, timedelta, unit, command->rule_name,
                                 command->name);
         }
 

@@ -39,6 +39,101 @@ pthread_mutex_t end_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t end_queue_condition = PTHREAD_COND_INITIALIZER;
 
 /*
+ * Searches for a rule with the given name in the given source. Returns NULL if
+ * no such rule exists.
+ */
+
+static la_rule_t *
+find_source_rule_by_name(la_source_t *source, char *name)
+{
+        assert_source(source), assert(name);
+        la_debug("find_source_rule_by_name(%s, %s)", source->name, name);
+
+        for (la_rule_t *rule = ITERATE_RULES(source->rules);
+                        (rule = NEXT_RULE(rule));)
+        {
+                if (!strcmp(rule->name, name))
+                        return rule;
+        }
+
+        return NULL;
+}
+
+/*
+ * Searches for a rule with the given name in any of the sources. Returns first
+ * it finds (searching the systemd source first - if available), NULL
+ * otherwise.
+ */
+
+static la_rule_t *
+find_rule_by_name(char *name)
+{
+        assert(name);
+        la_debug("find_rule_by_name(%s)", name);
+
+        la_rule_t *result;
+#if HAVE_LIBSYSTEMD
+        if (la_config->systemd_source)
+        {
+                result = find_source_rule_by_name(la_config->systemd_source, name);
+                if (result)
+                        return result;
+        }
+#endif /* HAVE_LIBSYSTEMD */
+
+        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+                        (source = NEXT_SOURCE(source));)
+        {
+                result = find_source_rule_by_name(source, name);
+                if (result)
+                        return result;
+        }
+        
+        return NULL;
+}
+
+/*
+ * Only invoked after a config reload. Goes through all commands in the
+ * end_queue (skipping the shutdown commands) and tries to find matching new
+ * rules. If found, adjusts the rule's queue counter accordingly.
+ *
+ * On the fly it cleans up command->rule and command->pattern of all commands
+ * to avoid other code will follow wrong pointers.
+ */
+
+void
+update_queue_count_numbers(void)
+{
+        la_debug("update_queue_count_numbers()");
+
+        xpthread_mutex_lock(&config_mutex);
+        xpthread_mutex_lock(&end_queue_mutex);
+
+        for (la_command_t *command = ITERATE_COMMANDS(end_queue);
+                        (command = NEXT_COMMAND(command));)
+        {
+                la_rule_t *rule = NULL;
+
+                if (!command->is_template)
+                {
+                        rule = find_rule_by_name(command->rule_name);
+                        la_debug("found rule %s", rule->name);
+                        if (rule)
+                                rule->queue_count++;
+                }
+
+                /* Clean up pointers to stuff that will soon cease to exist.
+                 * Just to make sure, nobdoy acidentally wants to use outdated
+                 * stuff it later on */
+                command->rule = rule;
+                command->pattern = NULL;
+        }
+
+        xpthread_mutex_unlock(&end_queue_mutex);
+        xpthread_mutex_unlock(&config_mutex);
+}
+
+/*
  * Search for a command by a certain host for a given rule on the end_que
  * list. Return if found, return NULL otherwise
  *

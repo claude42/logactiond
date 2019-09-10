@@ -306,6 +306,7 @@ typedef struct la_command_s
 
         /* only relevant for end_commands */
         time_t end_time;        /* specific time for enqueued end_commands */
+        char *rule_name;
 
         /* only relevant in trigger_list */
         unsigned int n_triggers;/* how man times triggered during period */
@@ -483,6 +484,8 @@ void empty_address_list(kw_list_t *list);
 void free_address_list(kw_list_t *list);
 
 /* endqueue.c */
+
+void update_queue_count_numbers(void);
 
 la_command_t *find_end_command(la_address_t *address);
 

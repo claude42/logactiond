@@ -84,9 +84,9 @@ handle_signal(int signal)
                                 "STATUS=Reloading configuration.\n");
 #endif /* HAVE_LIBSYSTEMD */
                 shutdown_watching();
-                empty_end_queue();
                 unload_la_config();
                 load_la_config(cfg_filename);
+                update_queue_count_numbers();
                 init_watching();
 #if HAVE_LIBSYSTEMD
                 sd_notify(0, "READY=1\n"
@@ -103,6 +103,10 @@ handle_signal(int signal)
                 exit(0);
                 log_level = 0;
                 trigger_shutdown(EXIT_SUCCESS, 0);
+        }
+        else if (signal == SIGUSR1)
+        {
+                empty_end_queue();
         }
         else
         {
@@ -139,6 +143,7 @@ register_signal_handler(void)
         set_signal(new_act, SIGTERM);
         set_signal(new_act, SIGHUP);
         set_signal(new_act, SIGPIPE);
+        set_signal(new_act, SIGUSR1);
 }
 
 /*
@@ -379,7 +384,6 @@ cleanup_main(void *arg)
 #endif /* HAVE_LIBSYSTEMD */
 
         unload_la_config();
-        free(la_config->sources);
         remove_pidfile();
         int loglevel = exit_status ? LOG_WARNING : LOG_INFO;
         la_log(loglevel, "Exiting (status=%u, errno=%u).", exit_status, exit_errno);
