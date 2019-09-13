@@ -129,7 +129,7 @@ watch_forever_polling(void *ptr)
                 struct timespec blink;
                 blink.tv_sec = 2;
                 blink.tv_nsec = 500000000;
-                nanosleep(&blink);
+                nanosleep(&blink, NULL);
         }
 
         assert(false);
