@@ -125,8 +125,7 @@ bool cidr6_match(struct in6_addr addr, struct in6_addr net, uint8_t prefix)
 int
 adrcmp(la_address_t *a1, la_address_t *a2)
 {
-        assert(a1), assert(a2);
-        la_vdebug("adrcmp(%s, %s)", a1->text, a2->text);
+        la_vdebug("adrcmp()");
 
         /* if both are not NULL and of the address family, look further */
         if (a1 && a2 && a1->af == a2->af)

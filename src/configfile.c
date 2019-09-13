@@ -900,13 +900,6 @@ unload_la_config(void)
         la_config->default_properties = NULL;
         free_address_list(la_config->ignore_addresses);
         la_config->ignore_addresses = NULL;
-#ifndef NOCOMMANDS
-        free_meta_command_list(la_config->meta_list);
-        la_config->meta_list = NULL;
-#endif /* NOCOMMANDS */
-
-        free(la_config);
-        la_config = NULL;
 
         if (!shutdown_ongoing)
                 xpthread_mutex_unlock(&config_mutex);
@@ -940,7 +933,7 @@ include_func(config_t *config, const char *include_dir, const char *path, const 
         {
                 if(include_dir)
                 {
-                        strcat(include_path, include_dir);
+                        strncat(include_path, include_dir, PATH_MAX);
                         include_path_len += xstrlen(include_dir);
                 }
         }

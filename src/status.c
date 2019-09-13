@@ -90,7 +90,7 @@ dump_single_rule(FILE *rules_file, la_rule_t *rule)
         la_vdebug("dump_single_rule(%s)", rule->name);
         fprintf(rules_file, "%-13.13s %-13.13s %-13.13s %8lu %8lu %8lu\n",
                         rule->name, rule->systemd_unit ? rule->systemd_unit :
-                        rule->service, rule->source->name,
+                        rule->service ? rule->service : "-", rule->source->name,
                         rule->detection_count, rule->invocation_count,
                         rule->queue_count);
 }
@@ -249,11 +249,12 @@ dump_queue_status(kw_list_t *queue)
         if (status_monitoring >= 2)
         {
                 fprintf(hosts_file, "Queue length: %u, meta_command: %u\n\n",
-                                list_length(queue), list_length(la_config->meta_list));
+                                list_length(queue),
+                                la_config->meta_list ?  list_length(la_config->meta_list) : 0);
         }
 
         fprintf(hosts_file, "IP address                                     "
-                        "Time Rule          Action\n"
+                        "M Time Rule          Action\n"
                         "======================================"
                         "=========================================\n");
 
@@ -266,7 +267,6 @@ dump_queue_status(kw_list_t *queue)
                 /* Don't assert_command() here, as after a reload some commands might
                  * not have a rule attached to them anymore */
                 assert(command); assert(command->name);
-                assert_address(command->address);
                 // not interested in shutdown commands (or anything beyond...)
                 if (command->end_time == INT_MAX)
                         break;
@@ -279,9 +279,9 @@ dump_queue_status(kw_list_t *queue)
                                 &timedelta, &unit);
 
                 fprintf(hosts_file,
-                                "%-46.46s %2u%c  %-13.13s %-13.13s\n",
-                                adr, timedelta, unit, command->rule_name,
-                                command->name);
+                                "%-46.46s %c %2u%c  %-13.13s %-13.13s\n",
+                                adr, command->meta ? 'M' : ' ', timedelta,
+                                unit, command->rule_name, command->name);
         }
 
         if (fclose(hosts_file))

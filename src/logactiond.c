@@ -388,6 +388,14 @@ cleanup_main(void *arg)
 #endif /* HAVE_LIBSYSTEMD */
 
         unload_la_config();
+#ifndef NOCOMMANDS
+        free_meta_command_list(la_config->meta_list);
+#endif /* NOCOMMANDS */
+
+        /* TODO: not the best place here but well */
+        free(la_config);
+        la_config = NULL;
+
         remove_pidfile();
         int loglevel = exit_status ? LOG_WARNING : LOG_INFO;
         la_log(loglevel, "Exiting (status=%u, errno=%u).", exit_status, exit_errno);

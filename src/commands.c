@@ -442,15 +442,14 @@ trigger_command(la_command_t *command)
         else
         {
                 /* handle meta list, check if meta_duration should be used */
-                bool meta = false;
                 if (command->rule->meta_enabled && check_meta_list(command))
                 {
                         command->duration = command->rule->meta_duration;
-                        meta = true;
+                        command->meta = true;
                 }
 
                 la_log(LOG_INFO, "Host: %s, %saction \"%s\" activated by rule \"%s\".",
-                                command->address->text, meta ? "META " : "",
+                                command->address->text, command->meta ? "META " : "",
                                 command->name, command->rule->name);
 
                 /* update relevant counters for status monitoring */
@@ -624,6 +623,7 @@ create_command_from_template(la_command_t *template, la_pattern_t *pattern,
         result->pattern_properties = dup_property_list(pattern->properties);
         result->address = address ? dup_address(address) : NULL;
         result->end_time = result->n_triggers = result->start_time= 0;
+        result->meta = false;
 
         assert_command(result);
         return result;

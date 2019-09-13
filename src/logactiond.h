@@ -306,6 +306,7 @@ typedef struct la_command_s
         la_need_host_t need_host;    /* Command requires host */
         int duration;                /* duration how long command shall stay active,
                                    -1 if none */
+        bool meta;
 
         /* only relevant for end_commands */
         time_t end_time;        /* specific time for enqueued end_commands */
