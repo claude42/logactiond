@@ -576,6 +576,8 @@ dup_command(la_command_t *command)
         result->end_properties = dup_property_list(command->end_properties);
         result->n_end_properties = command->n_end_properties;
 
+        result->rule = command->rule;
+
         result->duration = command->duration;
         result->need_host = command->need_host;
 
@@ -592,10 +594,10 @@ dup_command(la_command_t *command)
  */
 
 la_command_t *
-create_command_from_template(la_command_t *template, la_rule_t *rule,
-                la_pattern_t *pattern, la_address_t *address)
+create_command_from_template(la_command_t *template, la_pattern_t *pattern,
+                la_address_t *address)
 {
-        assert_command(template); assert_rule(rule); assert_pattern(pattern);
+        assert_command(template); assert_pattern(pattern);
         assert_list(pattern->properties);
         la_debug("create_command_from_template(%s)", template->name);
 
@@ -618,7 +620,6 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
 
         la_command_t *result = dup_command(template);
 
-        result->rule = rule;
         result->pattern = pattern;
         result->pattern_properties = dup_property_list(pattern->properties);
         result->address = address ? dup_address(address) : NULL;

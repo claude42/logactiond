@@ -509,7 +509,7 @@ void trigger_command(la_command_t *command);
 void trigger_end_command(la_command_t *command);
 
 la_command_t * create_command_from_template(la_command_t *template,
-                la_rule_t *rule, la_pattern_t *pattern, la_address_t *address);
+                la_pattern_t *pattern, la_address_t *address);
 
 la_command_t *create_template(const char *name, la_rule_t *rule,
                 const char *begin_string, const char *end_string,

@@ -72,10 +72,10 @@ add_trigger(la_command_t *command)
  */
 
 static la_command_t *
-find_trigger(la_rule_t *rule, la_command_t *template, la_address_t *address)
+find_trigger(la_command_t *template, la_address_t *address)
 {
-        assert_rule(rule); assert_command(template);
-        la_debug("find_trigger(%s, %u)", rule->name, template->id);
+        assert_command(template);
+        la_debug("find_trigger(%s, %u)", template->rule->name, template->id);
 
         if (!address)
                 return NULL;
@@ -84,7 +84,7 @@ find_trigger(la_rule_t *rule, la_command_t *template, la_address_t *address)
 
         /* Don't use standard ITERATE_COMMANDS/NEXT_COMMAND idiom here to avoid
          * that remove_node() breaks the whole thing */
-        la_command_t *command = ITERATE_COMMANDS(rule->trigger_list);
+        la_command_t *command = ITERATE_COMMANDS(template->rule->trigger_list);
         command = NEXT_COMMAND(command);
         while (command)
         {
@@ -160,13 +160,13 @@ handle_command_on_trigger_list(la_command_t *command)
  */
 
 static void
-trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
-                la_address_t *address, la_command_t *template)
+trigger_single_command(la_pattern_t *pattern, la_address_t *address,
+                la_command_t *template)
 {
         if  (run_type == LA_UTIL_FOREGROUND)
                 return;
 
-        assert_rule(rule); assert_pattern(pattern);
+        assert_pattern(pattern); assert_rule(pattern->rule);
         assert_command(template);
         la_debug("trigger_single_command(%s)", template->name);
 
@@ -179,7 +179,7 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
         {
                 la_log(LOG_INFO, "Host: %s, ignored, action \"%s\" already "
                                 "active (triggered by rule \"%s\").",
-                                address->text, tmp->name, rule->name);
+                                address->text, tmp->name, tmp->rule->name);
                 return;
         }
 
@@ -187,7 +187,7 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
          * fired) by the same host before. Create new command if not found. If
          * host is not set, always create new command.
          */
-        command = find_trigger(rule, template, address);
+        command = find_trigger(template, address);
 
         if (!command)
         {
@@ -198,12 +198,12 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
                 {
                         la_log(LOG_ERR, "Missing required host token, action "
                                         "\"%s\" not fired for rule \"%s\"!",
-                                        command->name,
-                                        command->rule->name);
+                                        template->name,
+                                        pattern->rule->name);
                         return;
                 }
-                command = create_command_from_template(template, rule,
-                                pattern, address);
+                command = create_command_from_template(template, pattern,
+                                address);
                 if (!command)
                 {
                         la_log(LOG_ERR, "IP address doesn't match what requirements of action!");
@@ -240,10 +240,10 @@ increase_detection_count(la_pattern_t *pattern)
  */
 
 static void
-trigger_all_commands(la_rule_t *rule, la_pattern_t *pattern)
+trigger_all_commands(la_pattern_t *pattern)
 {
-        assert_rule(rule); assert_pattern(pattern);
-        la_debug("trigger_all_commands(%s)", rule->name);
+        assert_pattern(pattern); assert_rule(pattern->rule);
+        la_debug("trigger_all_commands(%s)", pattern->rule->name);
 
         const char *host = get_host_property_value(pattern->properties);
 
@@ -271,9 +271,9 @@ trigger_all_commands(la_rule_t *rule, la_pattern_t *pattern)
                 increase_detection_count(pattern);
 #ifndef NOCOMMANDS
                 for (la_command_t *template =
-                                ITERATE_COMMANDS(rule->begin_commands);
+                                ITERATE_COMMANDS(pattern->rule->begin_commands);
                                 (template = NEXT_COMMAND(template));)
-                        trigger_single_command(rule, pattern, address, template);
+                        trigger_single_command(pattern, address, template);
 #endif /* NOCOMMANDS */
         }
 
@@ -344,7 +344,7 @@ handle_log_line_for_rule(la_rule_t *rule, const char *line)
                 {
                         assign_value_to_properties(pattern->properties, line,
                                         pmatch);
-                        trigger_all_commands(rule, pattern);
+                        trigger_all_commands(pattern);
                         clear_property_values(pattern->properties);
                         return;
                 }
