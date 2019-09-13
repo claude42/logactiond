@@ -139,7 +139,8 @@ convert_regex(const char *string, la_pattern_t *pattern)
                                 if (braces)
                                 {
                                         if (subexpression + 1 >= MAX_NMATCH)
-                                                die_hard("Too many subexpressions in regex!");
+                                                die_hard("Too many subexpressions in regex "
+                                                                "\"%s\"!", string);
 
                                         new_prop->subexpression = subexpression + 1;
                                         add_tail(pattern->properties, (kw_node_t *)
@@ -249,7 +250,6 @@ free_pattern(la_pattern_t *pattern)
         if (!pattern)
                 return;
 
-        assert_pattern(pattern);
         la_vdebug("free_pattern(%s)", pattern->string);
 
         free_property_list(pattern->properties);

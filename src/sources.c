@@ -167,7 +167,6 @@ free_source(la_source_t *source)
         if (!source)
                 return;
 
-        assert_source(source); assert(!source->file);
         la_vdebug("free_source(%s)", source->name);
 
         free_rule_list(source->rules);

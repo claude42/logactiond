@@ -154,7 +154,6 @@ get_action(const char *action_name)
 static config_setting_t *
 get_source(const char *source)
 {
-        assert(source);
         assert(la_config);
 
         config_setting_t *sources_section;

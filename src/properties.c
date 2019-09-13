@@ -294,7 +294,6 @@ free_property(la_property_t *property)
         if (!property)
                 return;
 
-        assert_property(property);
         la_vdebug("free_property(%s, %s, %s)", property->name, property->value,
                         property->replacement);
 

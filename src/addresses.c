@@ -330,7 +330,6 @@ free_address(la_address_t *address)
         if (!address)
                 return;
 
-        assert_address(address);
         la_vdebug("free_address(%s)", address->text);
 
         free(address->text);

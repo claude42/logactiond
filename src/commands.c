@@ -697,7 +697,6 @@ free_command(la_command_t *command)
         if (!command)
                 return;
 
-        assert_command(command);
         la_vdebug("free_command(%s)", command->name);
 
         free(command->name);

@@ -435,7 +435,6 @@ free_rule(la_rule_t *rule)
         if (!rule)
                 return;
 
-        assert_rule(rule);
         la_vdebug("free_rule(%s)", rule->name);
 
 #if HAVE_LIBSYSTEMD
