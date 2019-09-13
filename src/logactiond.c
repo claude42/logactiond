@@ -32,6 +32,7 @@
 #include <pwd.h>
 #include <limits.h>
 #include <pthread.h>
+#include <string.h>
 #if HAVE_LIBSYSTEMD
 #include <systemd/sd-daemon.h>
 #endif /* HAVE_LIBSYSTEMD */
@@ -95,16 +96,6 @@ handle_signal(int signal)
                                 "STATUS=Configuration reloaded - monitoring log files.\n");
 #endif /* HAVE_LIBSYSTEMD */
         }
-        else if (signal == SIGPIPE)
-        {
-                for (int x = sysconf(_SC_OPEN_MAX); x>=0; x--)
-                {
-                        close (x);
-                }
-                exit(0);
-                log_level = 0;
-                trigger_shutdown(EXIT_SUCCESS, 0);
-        }
         else if (signal == SIGUSR1)
         {
                 empty_end_queue();
@@ -129,6 +120,20 @@ set_signal(struct sigaction new_act, int signum)
 }
 
 static void
+ignore_sigpipe(void)
+{
+	struct sigaction act;
+	int r;
+
+	memset(&act, 0, sizeof(act));
+	act.sa_handler = SIG_IGN;
+	act.sa_flags = SA_RESTART;
+	r = sigaction(SIGPIPE, &act, NULL);
+	if (r)
+		die_err("Error setting signals!");
+}
+
+static void
 register_signal_handler(void)
 {
         la_debug("register_signal_handler()");
@@ -143,8 +148,8 @@ register_signal_handler(void)
         set_signal(new_act, SIGINT);
         set_signal(new_act, SIGTERM);
         set_signal(new_act, SIGHUP);
-        set_signal(new_act, SIGPIPE);
         set_signal(new_act, SIGUSR1);
+	ignore_sigpipe();
 }
 
 /*
