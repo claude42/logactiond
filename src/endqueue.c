@@ -69,6 +69,7 @@ static la_rule_t *
 find_rule_by_name(char *name)
 {
         assert(name);
+        assert(la_config);
         la_debug("find_rule_by_name(%s)", name);
 
         la_rule_t *result;
@@ -81,6 +82,7 @@ find_rule_by_name(char *name)
         }
 #endif /* HAVE_LIBSYSTEMD */
 
+        assert(la_config->sources);
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                         (source = NEXT_SOURCE(source));)
         {
@@ -105,6 +107,7 @@ void
 update_queue_count_numbers(void)
 {
         la_debug("update_queue_count_numbers()");
+        assert_list(end_queue);
 
         xpthread_mutex_lock(&config_mutex);
         xpthread_mutex_lock(&end_queue_mutex);
@@ -117,7 +120,6 @@ update_queue_count_numbers(void)
                 if (!command->is_template)
                 {
                         rule = find_rule_by_name(command->rule_name);
-                        la_debug("found rule %s", rule->name);
                         if (rule)
                                 rule->queue_count++;
                 }
@@ -147,9 +149,11 @@ find_end_command(la_address_t *address)
 
         if (!end_queue)
                 return NULL;
+        assert_list(end_queue);
 
         if (!address)
                 return NULL;
+        assert_address(address);
 
         la_command_t *result = NULL;
 
@@ -183,6 +187,7 @@ empty_end_queue(void)
 
         if (!end_queue)
                 return;
+        assert_list(end_queue);
 
         /* Don't care about locking the mutex in case of system shutdown as
          * empty_end_queue() has been called from cleanup action */
@@ -218,6 +223,7 @@ static void
 wait_for_next_end_command(la_command_t *command)
 {
         assert_command(command);
+        assert(command->end_string);
         la_vdebug("wait_for_next_end_command(%s, %u)", command->end_string,
                         command->end_time);
 
@@ -256,6 +262,7 @@ static void *
 consume_end_queue(void *ptr)
 {
         la_debug("consume_end_queue()");
+        assert_list(end_queue);
 
         pthread_cleanup_push(cleanup_end_queue, NULL);
 
@@ -321,6 +328,7 @@ static void
 set_end_time(la_command_t *command)
 {
         assert_command(command);
+        assert(command->end_string);
         la_vdebug("set_end_time(%s, %u)", command->end_string, command->duration);
 
         if (command->duration == INT_MAX)
@@ -337,7 +345,8 @@ set_end_time(la_command_t *command)
 void
 enqueue_end_command(la_command_t *end_command)
 {
-        assert_command(end_command); assert(end_queue);
+        assert_command(end_command); assert(end_command->end_string);
+        assert_list(end_queue);
         la_debug("enqueue_end_command(%s, %u)", end_command->end_string,
                         end_command->duration);
 

@@ -35,9 +35,25 @@ assert_address_ffl(la_address_t *address, const char *func, char *file, unsigned
         if (!address)
                 die_hard("%s:%u: %s: Assertion 'address' failed. ", file, line,
                                 func);
-        if (address->af != AF_INET && address->af != AF_INET6)
+        if (address->af == AF_INET)
+        {
+                if (address->prefix<0 || address->prefix>32)
+                        die_hard("%s:%u: %s: Assertion 'address->prefix<0 || "
+                                        "address->prefix>32' failed.", file,
+                                        line, func);
+        }
+        else if (address->af == AF_INET6)
+        {
+                if (address->prefix<0 || address->prefix>128)
+                        die_hard("%s:%u: %s: Assertion 'address->prefix<0 || "
+                                        "address->prefix>128' failed.", file,
+                                        line, func);
+        }
+        else
+        {
                 die_hard("%s:%u: %s: Assertion 'address->af' failed.", file,
                                 line, func);
+        }
         if (!address->text)
                 die_hard("%s:%u: %s: Assertion 'address->text' failed.", file,
                                 line, func);
@@ -69,10 +85,11 @@ cidr_match(struct in_addr addr, struct in_addr net, uint8_t prefix)
 bool cidr6_match(struct in6_addr addr, struct in6_addr net, uint8_t prefix)
 {
         la_vdebug("cidr6_match()");
+        assert(prefix<=128);
 
         /* Alas I'm not a IPv6 expert. But the following will make the source
-         * compile at least on the BSDs (and thus MacOS). Not sure if that will
-         * help on other platforms.
+         * compile at least on Linux and the BSDs (and thus MacOS). Not sure if
+         * that will help on other platforms.
          */
 #if !defined(s6_addr32)
 #define s6_addr32 __u6_addr.__u6_addr32
@@ -108,7 +125,8 @@ bool cidr6_match(struct in6_addr addr, struct in6_addr net, uint8_t prefix)
 int
 adrcmp(la_address_t *a1, la_address_t *a2)
 {
-        la_vdebug("adrcmp()");
+        assert(a1), assert(a2);
+        la_vdebug("adrcmp(%s, %s)", a1->text, a2->text);
 
         /* if both are not NULL and of the address family, look further */
         if (a1 && a2 && a1->af == a2->af)
@@ -127,7 +145,7 @@ adrcmp(la_address_t *a1, la_address_t *a2)
 
         /* Return 1 otherwise, either if
          * - one of the two addresses is NULL, or
-         * - address families differs, or
+         * - address families differ, or
          * - addresses differ, or
          * - unknown address family
          */
@@ -147,6 +165,10 @@ address_on_ignore_list(la_address_t *address)
         assert_address(address);
 
         la_vdebug("address_on_ignore_list(%s)", address->text);
+
+        assert(la_config);
+        if (!la_config->ignore_addresses)
+                return false;
 
         for (la_address_t *ign_address = ITERATE_ADDRESSES(la_config->ignore_addresses);
                         (ign_address = NEXT_ADDRESS(ign_address));)
@@ -211,7 +233,10 @@ create_address6(const char *ip, la_address_t *address)
         {
                 if (sep)
                 {
-                        address->prefix = strtol(sep + 1, NULL, 10);
+                        char *endptr;
+                        address->prefix = strtol(sep + 1, &endptr, 10);
+                        if (*endptr != '\0')
+                                return false; // spurious characters after '/'
                         if (address->prefix < 0 || address->prefix > 128)
                                 return false;
                 }
@@ -221,8 +246,14 @@ create_address6(const char *ip, la_address_t *address)
                 }
                 address->af = AF_INET6;
                 address->text = xmalloc(50);
-                inet_ntop(AF_INET6, &(address->addr6), address->text, 50);
-                return true;
+                if (inet_ntop(AF_INET6, &(address->addr6), address->text, 50))
+                {
+                        return true;
+                }
+                {
+                        free(address->text);
+                        return false;
+                }
         }
         else if (tmp == 0)
         {
@@ -262,6 +293,7 @@ create_address(const char *ip)
         }
 
         /* only reached in case IP address could be converted correctly */
+
         assert_address(result);
         return result;
 }
@@ -315,10 +347,10 @@ empty_address_list(kw_list_t *list)
         la_vdebug("free_address_list()");
         if (!list)
                 return;
+        assert_list(list);
 
         for (la_address_t *tmp; (tmp = REM_ADDRESSES_HEAD(list));)
                 free_address(tmp);
-
 }
 
 void

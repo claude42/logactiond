@@ -40,7 +40,10 @@
 
 #define SYSLOG_IDENT PACKAGE
 
-//#define CONF_DIR "/etc/logactiond"
+#if !defined(CONF_DIR)
+#define CONF_DIR "/etc/logactiond"
+#endif /* !defined(CONF_DIR) */
+
 #define CONFIG_FILE "logactiond.cfg"
 
 #define DEFAULT_THRESHOLD 3
@@ -251,7 +254,7 @@ typedef struct la_property_s
 typedef struct la_pattern_s
 {
         kw_node_t node;
-        unsigned int num;
+        unsigned int num; // position of the pattern in the config file
         struct la_rule_s *rule;
         char *string; /* already converted regex, doesn't contain tokens anymore */
         regex_t *regex; /* compiled regex */
@@ -496,6 +499,8 @@ void enqueue_end_command(la_command_t *end_command);
 void start_end_queue_thread(void);
 
 /* commands.c */
+
+void free_meta_command_list(kw_list_t *list);
 
 void assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned int line);
 

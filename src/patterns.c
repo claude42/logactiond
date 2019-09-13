@@ -35,6 +35,10 @@ assert_pattern_ffl(la_pattern_t *pattern, const char *func, char *file, unsigned
         if (!pattern)
                 die_hard("%s:%u: %s: Assertion 'pattern' failed. ", file, line, func);
         assert_rule_ffl(pattern->rule, func, file, line);
+        if (!pattern->string)
+                die_hard("%s:%u: %s: Assertion 'pattern->string' failed. ", file, line, func);
+        if (!pattern->regex)
+                die_hard("%s:%u: %s: Assertion 'pattern->regex' failed. ", file, line, func);
         assert_list_ffl(pattern->properties, func, file, line);
 }
 
@@ -82,6 +86,7 @@ static char*
 convert_regex(const char *string, la_pattern_t *pattern)
 {
         assert(string);
+        assert(pattern); assert_list(pattern->properties);
         la_vdebug("convert_regex(%s)", string);
 
         size_t dst_len = 2 * xstrlen(string);
@@ -123,7 +128,7 @@ convert_regex(const char *string, la_pattern_t *pattern)
                                 // contain braces but this might change in the
                                 // future.
                                 //
-                                // Use case Use case: logactiond has special,
+                                // Use case: logactiond has special,
                                 // builtin %SOMETHING% variables which can be
                                 // used in pattern definitions, e.g. think
                                 // %HOSTNAME% being replaced by the local
@@ -134,7 +139,7 @@ convert_regex(const char *string, la_pattern_t *pattern)
                                 if (braces)
                                 {
                                         if (subexpression + 1 >= MAX_NMATCH)
-                                                die_hard("subexpression > MAX_NMATCH");
+                                                die_hard("Too many subexpressions in regex!");
 
                                         new_prop->subexpression = subexpression + 1;
                                         add_tail(pattern->properties, (kw_node_t *)
@@ -230,6 +235,7 @@ create_pattern(const char *string_from_configfile, unsigned int num,
 
         result->detection_count = result->invocation_count = 0;
 
+        assert_pattern(result);
         return result;
 }
 

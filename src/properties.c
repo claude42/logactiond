@@ -119,6 +119,8 @@ get_property_from_property_list(kw_list_t *property_list, const char *name)
  * assigned value. Return NULL otherwise.
  *
  * Note: will also return NULL if property is found but its value is NULL!
+ *
+ * Noet 2: will also return NULL if property_list is NULL
  */
 
 const char *
@@ -131,7 +133,7 @@ get_value_from_property_list(kw_list_t *property_list, const char *name)
 }
 
 /*
- * Duplicxate string and onvert to lower case. Also die if non alpha-numeric
+ * Duplicate string and onvert to lower case. Also die if non alpha-numeric
  * character is found.
  */
 
@@ -173,7 +175,7 @@ static la_property_t *
 create_property_from_token(const char *name, size_t length, unsigned int pos,
                 la_rule_t *rule)
 {
-        assert(name);
+        assert(name); assert(length>2);
         la_vdebug("create_property_from_token(%s)", name);
 
         la_property_t *result = xmalloc(sizeof(la_property_t));
@@ -201,6 +203,7 @@ create_property_from_token(const char *name, size_t length, unsigned int pos,
         result->pos = pos;
         result->subexpression = 0;
 
+        assert_property(result);
         return result;
 }
 
@@ -238,6 +241,7 @@ create_property_from_config(const char *name, const char *value)
         result->value = xstrdup(value);
         result->replacement = NULL;
         
+        assert_property(result);
         return result;
 }
 
@@ -260,6 +264,7 @@ duplicate_property(la_property_t *property)
         result->length = property->length;
         result->subexpression = property->subexpression;
 
+        assert_property(result);
         return result;
 }
 
@@ -275,6 +280,7 @@ dup_property_list(kw_list_t *list)
                         (property = NEXT_PROPERTY(property));)
                 add_tail(result, (kw_node_t *) duplicate_property(property));
 
+        assert_list(result);
         return result;
 }
 
@@ -309,6 +315,7 @@ empty_property_list(kw_list_t *list)
         if (!list)
                 return;
 
+        assert_list(list);
         for (la_property_t *tmp;
                         (tmp = REM_PROPERTIES_HEAD(list));)
                 free_property(tmp);

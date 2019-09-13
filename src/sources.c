@@ -81,10 +81,11 @@ handle_log_line(la_source_t *source, const char *line, const char *systemd_unit)
 bool
 handle_new_content(la_source_t *source)
 {
-        assert_source(source);
+        assert_source(source); assert(source->file);
         la_vdebug("handle_new_content(%s)", source->name);
 
         /* TODO: less random number? */
+        /* TODO2: free() buffer on cleanup */
         if (!linebuffer)
                 linebuffer = xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
 
@@ -202,6 +203,7 @@ empty_source_list(kw_list_t *list)
 
         if (!list)
                 return;
+        assert_list(list);
 
         for (la_source_t *tmp;
                         (tmp = REM_SOURCES_HEAD(list));)
@@ -224,6 +226,7 @@ la_source_t
 *find_source_by_location(const char *location)
 {
         assert(location);
+        assert(la_config); assert_list(la_config->sources);
         la_debug("find_source_by_location(%s)", location);
 
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);

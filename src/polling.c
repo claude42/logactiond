@@ -47,6 +47,7 @@ static void *
 watch_forever_polling(void *ptr)
 {
         la_debug("watch_forever_polling()");
+        assert(la_config); assert(la_config->sources);
 
         struct stat sb;
 
@@ -65,7 +66,6 @@ watch_forever_polling(void *ptr)
                 for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                                 (source = NEXT_SOURCE(source));)
                 {
-                        la_vdebug("loop");
                         /* 1st case: file previously unaccessible
                          * 
                          * Try to open/stat, if it succeeds, great, go ahead
@@ -73,22 +73,20 @@ watch_forever_polling(void *ptr)
                          */
                         if (!source->active)
                         {
-                                la_vdebug("not active");
                                 source->file = fopen(source->location, "r");
                                 if (source->file)
                                 {
-                                        la_vdebug("now active again");
                                         source->active = true;
+                                        /* Nice, but if fstat() fails, we still can't
+                                         * move forward */
                                         if (fstat(fileno(source->file), &(source->stats)) == -1)
                                         {
-                                                la_vdebug("fstat failed, deactivating");
                                                 unwatch_source(source);
                                         }
                                 } else
                                         la_vdebug("still inactive");
                                 continue;
                         }
-                        la_vdebug("active");
 
                         /* 2nd case: file has been accessible and still is, but
                          * suddenly it's a different file
@@ -118,20 +116,20 @@ watch_forever_polling(void *ptr)
 
                         /* 3rd case: file accessible, same as before
                          *
-                         * Go and read new content
+                         * Go and read new content, stop watching if that
+                         * should fail.
                          */
                         if (!handle_new_content(source))
-                        {
-                                la_vdebug("handling content failed");
                                 unwatch_source(source);
-                        }
 
                 }
 
                 xpthread_mutex_unlock(&config_mutex);
 
-                /* TODO: replace with nanosleep() */
-                usleep(2500000);
+                struct timespec blink;
+                blink.tv_sec = 2;
+                blink.tv_nsec = 500000000;
+                nanosleep(&blink);
         }
 
         assert(false);
@@ -146,9 +144,8 @@ start_watching_polling_thread(void)
         la_debug("start_watching_polling_thread()");
         assert(!file_watch_thread);
 
-        if (!file_watch_thread)
-                xpthread_create(&file_watch_thread, NULL,
-                                watch_forever_polling, NULL, "polling");
+        xpthread_create(&file_watch_thread, NULL,
+                        watch_forever_polling, NULL, "polling");
 }
 
 #endif /* !HAVE_INOTIFY */

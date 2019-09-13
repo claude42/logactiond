@@ -68,8 +68,6 @@ assert_list_ffl(kw_list_t *list, const char *func, char *file, unsigned int line
  * Can be freed with free()
  */
 
-/* TODO: we need a xcreate_list() as well */
-
 kw_list_t *
 create_list(void)
 {

@@ -36,7 +36,7 @@ watch_source(la_source_t *source, int whence)
         if (run_type == LA_UTIL_FOREGROUND)
                 return;
 
-        assert_source(source);
+        assert_source(source); assert(!source->file);
         la_debug("watch_source(%s)", source->name);
 
 #ifndef NOWATCH
@@ -95,6 +95,7 @@ init_watching(void)
         la_debug("init_watching()");
 
 #ifndef NOWATCH
+        assert(la_config); assert_list(la_config->sources);
         if (!is_list_empty(la_config->sources))
         {
 #if HAVE_INOTIFY
@@ -126,6 +127,7 @@ start_watching_threads(void)
         init_watching();
 
 #ifndef NOWATCH
+        assert(la_config); assert_list(la_config->sources);
         if (!is_list_empty(la_config->sources))
         {
 #if HAVE_INOTIFY
@@ -153,7 +155,7 @@ shutdown_watching(void)
         la_debug("shutdown_watching()");
 
 #ifndef NOWATCH
-
+        assert(la_config); assert_list(la_config->sources);
         if (!is_list_empty(la_config->sources))
         {
                 xpthread_mutex_lock(&config_mutex);

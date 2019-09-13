@@ -46,6 +46,7 @@ pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
 static const char*
 config_get_string_or_null(const config_setting_t *setting, const char *name)
 {
+        assert(setting); assert(name);
         const char* result;
         if (!config_setting_lookup_string(setting, name, &result))
                 result = NULL;
@@ -62,6 +63,7 @@ static int
 config_get_unsigned_int_or_negative(const config_setting_t *setting,
                 const char *name)
 {
+        assert(setting); assert(name);
         int result;
         if (!config_setting_lookup_int(setting, name, &result))
                 return -1;
@@ -76,6 +78,7 @@ config_get_unsigned_int_or_negative(const config_setting_t *setting,
 static const char*
 config_get_string_or_die(const config_setting_t *setting, const char *name)
 {
+        assert(setting); assert(name);
         const char* result = config_get_string_or_null(setting, name);
 
         if (!result)
@@ -93,6 +96,7 @@ static const config_setting_t *
 config_setting_lookup_or_die(const config_setting_t *setting,
                 const char *path)
 {
+        assert(setting); assert(path);
         const config_setting_t *result;
         /* TODO: not sure why config_setting_t * (without const) is required
          * here but nowhere else */
@@ -112,6 +116,7 @@ static const config_setting_t *
 get_rule(const char *rule_name)
 {
         assert(rule_name);
+        assert(la_config);
 
         return config_setting_lookup(config_lookup(
                                 &la_config->config_file,
@@ -129,6 +134,7 @@ static const config_setting_t *
 get_action(const char *action_name)
 {
         assert(action_name);
+        assert(la_config);
 
         return config_setting_lookup_or_die(config_lookup(
                                 &la_config->config_file,
@@ -148,6 +154,9 @@ get_action(const char *action_name)
 static config_setting_t *
 get_source(const char *source)
 {
+        assert(source);
+        assert(la_config);
+
         config_setting_t *sources_section;
         config_setting_t *result;
 
@@ -268,10 +277,12 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
         la_debug("compile_actions(%s)", rule->name);
 
         const char *name = config_setting_name(action_def);
+#ifndef NOCOMMANDS
         const char *initialize = config_get_string_or_null(action_def,
                         LA_ACTION_INITIALIZE_LABEL);
         const char *shutdown = config_get_string_or_null(action_def,
                         LA_ACTION_SHUTDOWN_LABEL);
+#endif /* NOCOMMANDS */
         const char *begin = config_get_string_or_die(action_def,
                         LA_ACTION_BEGIN_LABEL);
         const char *end = config_get_string_or_null(action_def,
@@ -279,8 +290,8 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
 
         const char *tmp = config_get_string_or_null(action_def,
                         LA_ACTION_NEED_HOST_LABEL);
-        la_need_host_t need_host;
 
+        la_need_host_t need_host = LA_NEED_HOST_NO;
         if (!tmp)
                 need_host = LA_NEED_HOST_NO;
         else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_NO_LABEL))
@@ -295,9 +306,11 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
                 die_hard("Invalid value \"%s\" for need_host "
                                 "parameter!", tmp);
 
+#ifndef NOCOMMANDS
         if (initialize)
                 trigger_command(create_template(name, rule, initialize,
                                         shutdown, INT_MAX, false));
+#endif /* NOCOMMANDS */
 
         if (begin)
                 add_tail(rule->begin_commands, (kw_node_t *)
@@ -317,7 +330,7 @@ compile_list_of_actions(la_rule_t *rule,
 
         la_debug("compile_list_of_actions(%s)", rule->name);
 
-        int n_items = config_setting_length(action_def);
+        unsigned int n_items = config_setting_length(action_def);
 
         for (unsigned int i=0; i<n_items; i++)
         {
@@ -373,7 +386,7 @@ static void
 load_patterns(la_rule_t *rule, const config_setting_t *rule_def, 
                 const config_setting_t *uc_rule_def)
 {
-        assert(rule_def); assert(uc_rule_def);
+        assert_rule(rule); assert(uc_rule_def);
 
         la_debug("load_patterns(%s)", rule->name);
 
@@ -418,7 +431,7 @@ load_ignore_addresses(kw_list_t *ignore_addresses,
         if (!ignore_section)
                 return;
 
-        int n = config_setting_length(ignore_section);
+        unsigned int n = config_setting_length(ignore_section);
         for (unsigned int i=0; i<n; i++)
         {
                 config_setting_t *elem =
@@ -459,7 +472,7 @@ load_properties(kw_list_t *properties, const config_setting_t *section)
         if (!properties_section)
                 return;
 
-        int n = config_setting_length(properties_section);
+        unsigned int n = config_setting_length(properties_section);
         for (unsigned int i=0; i<n; i++)
         {
                 config_setting_t *elem =
@@ -471,7 +484,9 @@ load_properties(kw_list_t *properties, const config_setting_t *section)
                 if (!value)
                         die_hard("Only strings allowed for properties!");
 
-                /* if property with same name already exists, do nothing */
+                /* if property with same name already exists, do nothing (as
+                 * this could be a standard use case, e.g. rule property
+                 * overrides default property etc. */
                 if (get_property_from_property_list(properties, name))
                         continue;
 
@@ -532,6 +547,7 @@ create_file_source(const config_setting_t *rule_def,
                 const config_setting_t *uc_rule_def)
 {
         assert(uc_rule_def);
+        assert(la_config); assert_list(la_config->sources);
 
         const char *location = get_source_location(rule_def, uc_rule_def);
         const char *prefix = get_source_prefix(rule_def, uc_rule_def);
@@ -544,11 +560,19 @@ create_file_source(const config_setting_t *rule_def,
         return result;
 }
 
+/*
+ * Add systemd unit to systemd_source's list of systemd unit. Makes sure, a
+ * unit with the same name isn't added more than once.
+ */
+
 #if HAVE_LIBSYSTEMD
+#ifndef NOWATCH
 static void
 add_systemd_unit_to_list(const char *systemd_unit)
 {
         assert(systemd_unit);
+        assert(la_config); assert_source(la_config->systemd_source);
+        assert_list(la_config->systemd_source->systemd_units);
 
         for (kw_node_t *tmp = &(la_config->systemd_source->systemd_units)->head;
                         (tmp = tmp->succ->succ ? tmp->succ : NULL);)
@@ -561,6 +585,7 @@ add_systemd_unit_to_list(const char *systemd_unit)
         node->name = xstrdup(systemd_unit);
         add_tail(la_config->systemd_source->systemd_units, node);
 }
+#endif /* NOWATCH */
 
 /*
  * Adds a systemd unit.
@@ -572,6 +597,7 @@ static la_source_t *
 create_systemd_unit(const char *systemd_unit)
 {
         assert(systemd_unit);
+        assert(la_config);
         if (!la_config->systemd_source)
         {
                 /* TODO: set location also to NULL */
@@ -635,6 +661,8 @@ load_single_rule(const config_setting_t *uc_rule_def)
         int duration = get_rule_unsigned_int(rule_def, uc_rule_def,
                         LA_DURATION_LABEL);
 
+        /* meta_enabled could either be 1 (enabled for rule), 0 (disabled for
+         * rule) or -1 (not specified in rule, use default) */
         int meta_enabled;
         if (!config_setting_lookup_bool(rule_def, LA_META_ENABLED_LABEL,
                                 &meta_enabled))
@@ -675,19 +703,22 @@ load_single_rule(const config_setting_t *uc_rule_def)
 }
 
 
-static bool
+static unsigned int
 load_rules(void)
 {
         la_debug("load_rules()");
+        assert(la_config);
 
         config_setting_t *local_section = 
                 config_lookup(&la_config->config_file, LA_LOCAL_LABEL);
-
-        la_config->sources = xcreate_list();
+        if (!local_section)
+                return 0;
 
         int n = config_setting_length(local_section);
         if (n < 0)
                 return 0;
+
+        la_config->sources = xcreate_list();
 
         int num_rules_enabled = 0;
         for (int i=0; i<n; i++)
@@ -711,6 +742,7 @@ static void
 load_defaults(void)
 {
         la_debug("load_defaults()");
+        assert(la_config);
 
         config_setting_t *defaults_section =
                 config_lookup(&la_config->config_file, LA_DEFAULTS_LABEL);
@@ -771,16 +803,8 @@ load_defaults(void)
                 la_config->default_meta_threshold = DEFAULT_THRESHOLD;
                 la_config->default_meta_period = DEFAULT_PERIOD;
                 la_config->default_meta_duration = DEFAULT_DURATION;
-                if (la_config->default_properties)
-                {
-                        free_property_list(la_config->default_properties);
-                        la_config->default_properties = NULL;
-                }
-                if (la_config->ignore_addresses)
-                {
-                        free_address_list(la_config->ignore_addresses);
-                        la_config->ignore_addresses = NULL;
-                }
+                la_config->default_properties = NULL;
+                la_config->ignore_addresses = NULL;
         }
 }
 
@@ -821,8 +845,7 @@ load_la_config(char *filename)
         la_log(LOG_INFO, "Loading configuration from \"%s/%s\".", CONF_DIR,
                         filename);
 
-        if (!la_config)
-                la_config = xmalloc0(sizeof(la_config_t));
+        la_config = xmalloc0(sizeof(la_config_t));
 
         config_init(&la_config->config_file);
 
@@ -859,9 +882,7 @@ void
 unload_la_config(void)
 {
         la_debug("unload_la_config()");
-
-        if (!la_config)
-                return;
+        assert(la_config);
 
         /* In case shutdown is ongoing, don't bother with a mutex (which might
          * not have been correctly unlocked. OTOH, when reloading, it's
@@ -880,10 +901,13 @@ unload_la_config(void)
         la_config->default_properties = NULL;
         free_address_list(la_config->ignore_addresses);
         la_config->ignore_addresses = NULL;
-        // TODO: FIXIT! Currently wrong because this is a list of
-        // meta_command_t
-        // free_command_list(la_config->meta_list);
+#ifndef NOCOMMANDS
+        free_meta_command_list(la_config->meta_list);
         la_config->meta_list = NULL;
+#endif /* NOCOMMANDS */
+
+        free(la_config);
+        la_config = NULL;
 
         if (!shutdown_ongoing)
                 xpthread_mutex_unlock(&config_mutex);

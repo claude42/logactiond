@@ -39,8 +39,7 @@ assert_rule_ffl(la_rule_t *rule, const char *func, char *file, unsigned int line
                 die_hard("%s:%u: %s: Assertion 'rule' failed. ", file, line, func);
         if (!rule->name)
                 die_hard("%s:%u: %s: Assertion 'rule->name' failed. ", file, line, func);
-        if (!rule->source)
-                assert_source_ffl(rule->source, func, file, line);
+        assert_source_ffl(rule->source, func, file, line);
         assert_list_ffl(rule->patterns, func, file, line);
         assert_list_ffl(rule->begin_commands, func, file, line);
         assert_list_ffl(rule->trigger_list, func, file, line);
@@ -51,6 +50,7 @@ assert_rule_ffl(la_rule_t *rule, const char *func, char *file, unsigned int line
  * Add command to trigger list of rule it belongs to.
  */
 
+#ifndef NOCOMMANDS
 static void
 add_trigger(la_command_t *command)
 {
@@ -124,7 +124,7 @@ handle_command_on_trigger_list(la_command_t *command)
         if (command->n_triggers == 0)
                 add_trigger(command);
 
-        /* Go through this also for newly added commands - in cas threshold = 1 */
+        /* Go through this also for newly added commands - in case threshold = 1 */
         if (xtime(NULL) - command->start_time < command->rule->period)
         {
                 /* still within current period - increase counter,
@@ -163,7 +163,6 @@ static void
 trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
                 la_address_t *address, la_command_t *template)
 {
-#ifndef NOCOMMANDS
         if  (run_type == LA_UTIL_FOREGROUND)
                 return;
 
@@ -213,8 +212,8 @@ trigger_single_command(la_rule_t *rule, la_pattern_t *pattern,
         }
 
         handle_command_on_trigger_list(command);
-#endif /* NOCOMMANDS */
 }
+#endif /* NOCOMMANDS */
 
 /*
  * Increases pattern->detection_count and pattern->rule_detection_count by 1.
@@ -270,10 +269,12 @@ trigger_all_commands(la_rule_t *rule, la_pattern_t *pattern)
         else
         {
                 increase_detection_count(pattern);
+#ifndef NOCOMMANDS
                 for (la_command_t *template =
                                 ITERATE_COMMANDS(rule->begin_commands);
                                 (template = NEXT_COMMAND(template));)
                         trigger_single_command(rule, pattern, address, template);
+#endif /* NOCOMMANDS */
         }
 
         free_address(address);
@@ -399,7 +400,7 @@ create_rule(char *name, la_source_t *source, int threshold, int period, int
         else if (la_config->default_meta_threshold >= 0)
                 result->meta_threshold = la_config->default_meta_threshold;
         else
-                result->meta_threshold = 1;
+                result->meta_threshold = 3;
 
         result->meta_duration = meta_duration!=-1 ? meta_duration :
                 la_config->default_meta_duration;
@@ -420,6 +421,7 @@ create_rule(char *name, la_source_t *source, int threshold, int period, int
         result->detection_count = result->invocation_count =
                 result->queue_count = 0;
 
+        assert_rule(result);
         return result;
 }
 
@@ -462,6 +464,7 @@ free_rule_list(kw_list_t *list)
 
         if (!list)
                 return;
+        assert_list(list);
 
         for (la_rule_t *tmp;
                         (tmp = REM_RULES_HEAD(list));)

@@ -46,7 +46,8 @@ static int inotify_fd = 0;
 static void
 la_vdebug_inotify_event(struct inotify_event *event, uint32_t monitored)
 {
-        char *str;
+        assert(event);
+        char *str = "unkown";
 
         if (event->mask & IN_ACCESS)
                 str = "IN_ACCESS";
@@ -117,6 +118,7 @@ static la_source_t *
 find_source_by_parent_wd(int parent_wd, char *file_name)
 {
         assert(parent_wd); assert(file_name);
+        assert(la_config); assert_list(la_config->sources);
         la_vdebug("find_source_by_parent_wd(%s)", file_name);
 
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
@@ -152,6 +154,7 @@ static la_source_t *
 find_source_by_file_wd(int file_wd)
 {
         assert(file_wd);
+        assert(la_config); assert_list(la_config->sources);
         la_vdebug("find_source_by_file_wd(%u)", file_wd);
 
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
@@ -424,9 +427,8 @@ start_watching_inotify_thread(void)
         la_debug("start_watching_inotify_thread()");
         assert(!file_watch_thread);
 
-        if (!file_watch_thread)
-                xpthread_create(&file_watch_thread, NULL,
-                                watch_forever_inotify, NULL, "inotify");
+        xpthread_create(&file_watch_thread, NULL,
+                        watch_forever_inotify, NULL, "inotify");
 }
 
 #endif /* HAVE_INOTIFY */

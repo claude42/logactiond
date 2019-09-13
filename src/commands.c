@@ -52,10 +52,7 @@ assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned
         if (!command->name)
                 die_hard("%s:%u: %s: Assertion 'command->name' failed.", file,
                                 line, func);
-        /* TODO: Not sure whether the next will break anything - let's see */
-        if (!command->rule)
-                die_hard("%s:%u: %s: Assertion 'command->rule' failed.", file,
-                                line, func);
+        assert_rule_ffl(command->rule, func, file, line);
         if (!command->begin_string)
                 die_hard("%s:%u: %s: Assertion 'command->begin_string' "
                                 "failed.", file, line, func);
@@ -96,16 +93,13 @@ check_for_special_names(la_command_t *command, la_property_t *action_property)
                 }
         }
 
-        if (command->rule)
-        {
-                /* RULE */
-                if (!strcmp(action_property->name, LA_RULENAME_TOKEN))
-                        return command->rule->name;
+        /* RULE */
+        if (!strcmp(action_property->name, LA_RULENAME_TOKEN))
+                return command->rule->name;
 
-                /* SOURCE */
-                if (!strcmp(action_property->name, LA_SOURCENAME_TOKEN))
-                        return command->rule->source->name;
-        }
+        /* SOURCE */
+        if (!strcmp(action_property->name, LA_SOURCENAME_TOKEN))
+                return command->rule->source->name;
 
         return NULL;
 }
@@ -143,13 +137,10 @@ get_value_for_action_property(la_command_t *command,
                 return result;
 
         /* next search in config file rule section */
-        if (command->rule)
-        {
-                result = get_value_from_property_list(command->rule->properties,
-                                action_property->name);
-                if (result)
-                        return result;
-        }
+        result = get_value_from_property_list(command->rule->properties,
+                        action_property->name);
+        if (result)
+                return result;
 
         /* lastly search in config file default section, return NULL if
          * nothing is there either */
@@ -163,7 +154,10 @@ convert_command(la_command_t *command, la_commandtype_t type)
         /* Don't assert_command() here, as after a reload some commands might
          * not have a rule attached to them anymore */
         assert(command); assert(command->name); assert(command->end_string);
-        assert(command->end_properties);
+        assert((type == LA_COMMANDTYPE_BEGIN && command->begin_properties &&
+                                command->begin_string) ||
+                        (type == LA_COMMANDTYPE_END && command->end_properties &&
+                         command->end_properties));
         la_debug("convert_command(%s, %s)", command->name,
                         type == LA_COMMANDTYPE_BEGIN ? "begin" : "end");
 
@@ -285,11 +279,30 @@ exec_command(la_command_t *command, la_commandtype_t type)
  * On the fly this also trims the meta list from expired commands.
  */
 
+#ifndef NOCOMMANDS
 static void
 free_meta_command(meta_command_t *meta_command)
 {
+        la_debug("free_meta_command()");
+        assert(meta_command);
+
         free_address(meta_command->address);
         free(meta_command);
+}
+
+void
+free_meta_command_list(kw_list_t *list)
+{
+        la_vdebug("free_meta_command_list()");
+        if (!list)
+                return;
+        assert_list(list);
+
+        for (meta_command_t *tmp;
+                        (tmp = REM_META_COMMANDS_HEAD(list));)
+                free_meta_command(tmp);
+
+        free(list);
 }
 
 static meta_command_t *
@@ -315,6 +328,7 @@ find_on_meta_list(la_command_t *command)
 
         /* Don't use standard ITERATE_COMMANDS/NEXT_COMMAND idiom here to avoid
          * that remove_node() breaks the whole thing */
+        assert(la_config); assert_list(la_config->meta_list);
         meta_command_t *list_command = ITERATE_META_COMMANDS(la_config->meta_list);
         list_command = NEXT_META_COMMAND(list_command);
         while (list_command)
@@ -350,7 +364,8 @@ static bool
 check_meta_list(la_command_t *command)
 {
         assert_command(command);
-        la_vdebug("check_meta_list(%s)", command->name);
+        la_debug("check_meta_list(%s, %u)", command->address->text,
+                        command->duration);
 
         meta_command_t *meta_command = find_on_meta_list(command);
 
@@ -395,7 +410,6 @@ incr_invocation_counts(la_command_t *command)
 void
 trigger_command(la_command_t *command)
 {
-#ifndef NOCOMMANDS
         assert_command(command);
         la_debug("trigger_command(%s, %d)", command->name, command->duration);
 
@@ -444,15 +458,14 @@ trigger_command(la_command_t *command)
                 command->rule->queue_count++;
         }
 
-        /* TODO: can't we convert_command() earlier? */
         exec_command(command, LA_COMMANDTYPE_BEGIN);
 
         if (command->end_string && command->duration > 0)
                 enqueue_end_command(command);
         else
                 free_command(command);
-#endif /* NOCOMMANDS */
 }
+#endif /* NOCOMMANDS */
 
 /*
  * Executes an end_command.
@@ -469,7 +482,7 @@ trigger_end_command(la_command_t *command)
         la_vdebug("trigger_end_command(%s, %d)", command->name,
                         command->duration);
 
-        if (command->duration == INT_MAX)
+        if (command->is_template)
         {
                 la_log(LOG_INFO, "Disabling rule \"%s\".",
                                 command->rule->name);
@@ -479,11 +492,11 @@ trigger_end_command(la_command_t *command)
                 if (command->address)
                         la_log(LOG_INFO, "Host: %s, action \"%s\" ended for "
                                         "rule \"%s\".", command->address->text,
-                                        command->name, command->rule->name);
+                                        command->name, command->rule_name);
                 else
                         la_log(LOG_INFO, "Action \"%s\" ended for rule "
                                         "\"%s\".", command->name,
-                                        command->rule->name);
+                                        command->rule_name);
 
                 /* After a reload some commands might not have a rule attached
                  * to them anymore */
@@ -611,6 +624,7 @@ create_command_from_template(la_command_t *template, la_rule_t *rule,
         result->address = address ? dup_address(address) : NULL;
         result->end_time = result->n_triggers = result->start_time= 0;
 
+        assert_command(result);
         return result;
 }
 
@@ -642,8 +656,8 @@ create_template(const char *name, la_rule_t *rule, const char *begin_string,
 
         result->begin_string = xstrdup(begin_string);
         result->begin_properties = xcreate_list();
-        result->n_begin_properties = begin_string ?
-                scan_action_tokens(result->begin_properties, begin_string) : 0;
+        result->n_begin_properties =
+                scan_action_tokens(result->begin_properties, begin_string);
 
         result->end_string = xstrdup(end_string);
         result->end_properties = xcreate_list();
@@ -707,6 +721,7 @@ free_command_list(kw_list_t *list)
         la_vdebug("free_command_list()");
         if (!list)
                 return;
+        assert_list(list);
 
         for (la_command_t *tmp;
                         (tmp = REM_COMMANDS_HEAD(list));)

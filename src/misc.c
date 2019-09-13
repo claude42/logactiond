@@ -34,6 +34,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
+#include <assert.h>
 
 
 #include "logactiond.h"
@@ -56,11 +57,11 @@ remove_pidfile(void)
 void
 create_pidfile(void)
 {
+#define BUF_LEN 20 /* should be enough - I think */
         la_debug("create_pidfile(" PIDFILE ")");
 
         int fd;
-        char buf[20]; /* should be enough - I think */
-        int len;
+        char buf[BUF_LEN];
 
         fd = open(PIDFILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
         if (fd == -1)
@@ -71,8 +72,8 @@ create_pidfile(void)
         if (ftruncate(fd, 0))
                 die_err("Unable to truncate pidfile");
 
-        snprintf(buf, 20, "%ld\n", (long) getpid());
-        if (write(fd, buf, len) != len)
+        snprintf(buf, BUF_LEN, "%ld\n", (long) getpid());
+        if (write(fd, buf, BUF_LEN) != BUF_LEN)
                 die_err("Unable to write pid to pidfile");
 
         if (close(fd))
@@ -197,6 +198,8 @@ void xfree(void *ptr)
 void
 log_message(unsigned int priority, char *fmt, va_list gp, char *add)
 {
+        assert(fmt);
+
         if (priority >= log_level ||
                         (run_type == LA_UTIL_FOREGROUND && priority >= LOG_INFO))
                 return;
@@ -423,7 +426,7 @@ void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, size_t on_top)
                 *dst_len = *dst_len * 2 + on_top;
                 la_debug("realloc_buffer()=%u", *dst_len);
 
-                void *tmp_ptr;
+                char *tmp_ptr;
                 tmp_ptr = xrealloc(*dst, *dst_len);
                 *dst_ptr = *dst_ptr - *dst + tmp_ptr;
                 *dst = tmp_ptr;

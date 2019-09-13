@@ -53,6 +53,7 @@ void
 trigger_shutdown(int status, int saved_errno)
 {
         la_debug("trigger_shutdown()");
+        assert(!shutdown_ongoing);
 
         exit_status = status;
         exit_errno = saved_errno;
@@ -219,8 +220,6 @@ static void
 read_options(int argc, char *argv[])
 {
         la_debug("read_options()");
-
-        int opt;
 
         for (;;)
         {
@@ -394,9 +393,6 @@ cleanup_main(void *arg)
 int
 main(int argc, char *argv[])
 {
-        int ifd;
-        int wd;
-
         chdir(CONF_DIR);
 
         read_options(argc, argv);

@@ -40,7 +40,7 @@ AC_FUNC_FORK
 AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([regcomp strdup strerror strndup strrchr ftruncate strcasecmp fcntl strtol])
+AC_CHECK_FUNCS([regcomp strdup strerror strndup strrchr ftruncate strcasecmp fcntl strtol strchr])
 
 AX_PTHREAD
 

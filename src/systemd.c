@@ -39,6 +39,7 @@ die_systemd(int systemd_errno, char *fmt, ...)
 {
         va_list myargs;
 
+        assert(fmt);
         va_start(myargs, fmt);
         log_message(LOG_ERR, fmt, myargs, strerror(-systemd_errno));
         va_end(myargs);
@@ -125,12 +126,15 @@ watch_forever_systemd(void *ptr)
                 r = sd_journal_get_data(journal, MESSAGE, &data, &size);
                 if (r < 0)
                         die_systemd(r, "sd_journal_get_data() failed");
+
+                /* sd_journal_get_data() interface is, well, not ideal. Let's
+                 * create some nice, 0-terminated strings for further usage. */
                 if (size+1 > message_buffer_length)
                 {
                         message_buffer = xrealloc(message_buffer, size+1);
                         message_buffer_length = size+1;
                 }
-                strncpy(message_buffer, data+MESSAGE_LEN, size-MESSAGE_LEN);
+                strncpy(message_buffer, (char *)data+MESSAGE_LEN, size-MESSAGE_LEN);
                 message_buffer[size-MESSAGE_LEN] = '\0';
 
                 r = sd_journal_get_data(journal, UNIT, &data, &size);
@@ -141,7 +145,7 @@ watch_forever_systemd(void *ptr)
                         unit_buffer = xrealloc(unit_buffer, size+1);
                         unit_buffer_length = size+1;
                 }
-                strncpy(unit_buffer, data+UNIT_LEN, size-UNIT_LEN);
+                strncpy(unit_buffer, (char *)data+UNIT_LEN, size-UNIT_LEN);
                 unit_buffer[size-UNIT_LEN] = '\0';
 
                 xpthread_mutex_lock(&config_mutex);
@@ -160,8 +164,9 @@ static void
 add_matches(void)
 {
         la_debug("add_matches()");
+        assert(la_config);
         assert_source(la_config->systemd_source);
-        assert(la_config->systemd_source->systemd_units);
+        assert_list(la_config->systemd_source->systemd_units);
 
         unsigned int len;
         char *match = NULL;
@@ -216,9 +221,8 @@ start_watching_systemd_thread(void)
         la_debug("start_watching_systemd_thread()");
         assert(!systemd_watch_thread);
 
-        if (!systemd_watch_thread)
-                xpthread_create(&systemd_watch_thread, NULL,
-                                watch_forever_systemd, NULL, "systemd");
+        xpthread_create(&systemd_watch_thread, NULL,
+                        watch_forever_systemd, NULL, "systemd");
 }
 
 #endif /* HAVE_LIBSYSTEMD */

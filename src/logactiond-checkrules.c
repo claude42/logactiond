@@ -58,8 +58,6 @@ read_options(int argc, char *argv[])
 {
         la_debug("read_options()");
 
-        int opt;
-
         for (;;)
         {
                 static struct option long_options[] =

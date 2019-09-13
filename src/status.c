@@ -43,6 +43,7 @@ pthread_t monitoring_thread = 0;
 static void
 human_readable_time_delta(time_t delta, int *value, char *unit)
 {
+        assert(value); assert(unit);
         *value = delta;
         if (*value < 60)
         {
@@ -122,6 +123,7 @@ dump_rules(void)
 
         /* First print rules of sources watched via inotify / polling */
 
+        assert(la_config); assert(la_config->sources);
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                         (source = NEXT_SOURCE(source));)
         {
@@ -188,8 +190,6 @@ dump_loop(void *ptr)
 
         pthread_cleanup_push(remove_status_files, NULL);
 
-        struct timespec wait_interval;
-
         for (;;)
         {
                 sleep(5);
@@ -248,8 +248,8 @@ dump_queue_status(kw_list_t *queue)
 
         if (status_monitoring >= 2)
         {
-                fprintf(hosts_file, "Queue length: %u\n\n",
-                                list_length(queue));
+                fprintf(hosts_file, "Queue length: %u, meta_command: %u\n\n",
+                                list_length(queue), list_length(la_config->meta_list));
         }
 
         fprintf(hosts_file, "IP address                                     "
@@ -259,6 +259,7 @@ dump_queue_status(kw_list_t *queue)
 
         /* INET6_ADDRSTRLEN 46 + "/123" */
 
+        assert_list(queue);
         for (la_command_t *command = ITERATE_COMMANDS(queue);
                         (command = NEXT_COMMAND(command));)
         {
