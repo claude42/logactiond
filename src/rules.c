@@ -50,7 +50,7 @@ assert_rule_ffl(la_rule_t *rule, const char *func, char *file, unsigned int line
  * Add command to trigger list of rule it belongs to.
  */
 
-#ifndef NOCOMMANDS
+#if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
 static void
 add_trigger(la_command_t *command)
 {
@@ -138,6 +138,10 @@ handle_command_on_trigger_list(la_command_t *command)
                 {
                         remove_node((kw_node_t *) command);
                         trigger_command(command);
+                        if (command->end_string && command->duration > 0)
+                                enqueue_end_command(command);
+                        else
+                                free_command(command);
                 }
         }
         else
@@ -213,7 +217,7 @@ trigger_single_command(la_pattern_t *pattern, la_address_t *address,
 
         handle_command_on_trigger_list(command);
 }
-#endif /* NOCOMMANDS */
+#endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
 
 /*
  * Increases pattern->detection_count and pattern->rule_detection_count by 1.
@@ -269,12 +273,12 @@ trigger_all_commands(la_pattern_t *pattern)
         else
         {
                 increase_detection_count(pattern);
-#ifndef NOCOMMANDS
+#if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
                 for (la_command_t *template =
                                 ITERATE_COMMANDS(pattern->rule->begin_commands);
                                 (template = NEXT_COMMAND(template));)
                         trigger_single_command(pattern, address, template);
-#endif /* NOCOMMANDS */
+#endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
         }
 
         free_address(address);

@@ -68,8 +68,10 @@ trigger_shutdown(int status, int saved_errno)
 #endif /* HAVE_LIBSYSTEMD */
         if (end_queue_thread)
                 pthread_cancel(end_queue_thread);
+#ifndef NOMONITORING
         if (monitoring_thread)
                 pthread_cancel(monitoring_thread);
+#endif /* NOMONITORING */
 
         pthread_cancel(pthread_self());
 }
@@ -373,9 +375,11 @@ cleanup_main(void *arg)
                 xpthread_join(end_queue_thread, NULL);
         la_debug("joined end_queue_thread");
 
+#ifndef NOMONITORING
         if (monitoring_thread)
                 xpthread_join(monitoring_thread, NULL);
         la_debug("joined status_monitoring_thread");
+#endif /* NOMONITORING */
 
         if (file_watch_thread)
                 xpthread_join(file_watch_thread, NULL);
@@ -388,9 +392,9 @@ cleanup_main(void *arg)
 #endif /* HAVE_LIBSYSTEMD */
 
         unload_la_config();
-#ifndef NOCOMMANDS
+#if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
         free_meta_command_list(la_config->meta_list);
-#endif /* NOCOMMANDS */
+#endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
 
         /* TODO: not the best place here but well */
         free(la_config);
@@ -432,7 +436,9 @@ main(int argc, char *argv[])
         start_end_queue_thread();
         load_la_config(cfg_filename);
         start_watching_threads();
+#ifndef NOMONITORING
         start_monitoring_thread();
+#endif /* NOMONITORING */
 
 #if HAVE_LIBSYSTEMD
         sd_notify(0, "READY=1\n"

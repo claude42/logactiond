@@ -174,6 +174,7 @@ find_end_command(la_address_t *address)
         return result;
 }
 
+#ifndef NOCOMMANDS
 /*
  * Remove and trigger all remaining end and shutdown commands in the queue
  */
@@ -190,8 +191,10 @@ empty_end_queue(void)
         assert_list(end_queue);
 
         /* Don't care about locking the mutex in case of system shutdown as
-         * empty_end_queue() has been called from cleanup action */
-        if (!shutdown_ongoing)
+         * empty_end_queue() has been called from cleanup action.
+         *
+         * Of course also don't touch mutex if no thread is running. */
+        if (!shutdown_ongoing && end_queue_thread)
                 xpthread_mutex_lock(&end_queue_mutex);
 
         for (la_command_t *tmp;
@@ -201,15 +204,18 @@ empty_end_queue(void)
                 free_command(tmp);
         }
 
+#ifndef NOMONITORING
         dump_queue_status(end_queue);
+#endif /* NOMONITORING */
 
-        if (!shutdown_ongoing)
+        if (!shutdown_ongoing && end_queue_thread)
         {
                 /* signal probably not strictly necessary... */
                 xpthread_cond_signal(&end_queue_condition);
                 xpthread_mutex_unlock(&end_queue_mutex);
         }
 }
+#endif /* NOCOMMANDS */
 
 /*
  * Will wait until the next end command has to be executed. In case the next
@@ -296,7 +302,9 @@ consume_end_queue(void *ptr)
                         remove_node((kw_node_t *) command);
                         trigger_end_command(command);
                         free_command(command);
+#ifndef NOMONITORING
                         dump_queue_status(end_queue);
+#endif /* NOMONITORING */
                 }
         }
 
@@ -373,7 +381,9 @@ enqueue_end_command(la_command_t *end_command)
 
         insert_node_before((kw_node_t *) tmp, (kw_node_t *) end_command);
 
+#ifndef NOMONITORING
         dump_queue_status(end_queue);
+#endif /* NOMONITORING */
 
         xpthread_cond_signal(&end_queue_condition);
 

@@ -18,6 +18,8 @@
 
 #include <config.h>
 
+#ifndef NOMONITORING
+
 #include <time.h>
 #include <pthread.h>
 #include <unistd.h>
@@ -287,5 +289,7 @@ dump_queue_status(kw_list_t *queue)
         if (fclose(hosts_file))
                 die_hard("Can't close \" HOSTSFILE \"!");
 }
+
+#endif /* NOMONITORING */
 
 /* vim: set autowrite expandtab: */

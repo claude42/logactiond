@@ -279,7 +279,7 @@ exec_command(la_command_t *command, la_commandtype_t type)
  * On the fly this also trims the meta list from expired commands.
  */
 
-#ifndef NOCOMMANDS
+#if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
 static void
 free_meta_command(meta_command_t *meta_command)
 {
@@ -458,13 +458,8 @@ trigger_command(la_command_t *command)
         }
 
         exec_command(command, LA_COMMANDTYPE_BEGIN);
-
-        if (command->end_string && command->duration > 0)
-                enqueue_end_command(command);
-        else
-                free_command(command);
 }
-#endif /* NOCOMMANDS */
+#endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
 
 /*
  * Executes an end_command.

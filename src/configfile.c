@@ -307,8 +307,15 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
 
 #ifndef NOCOMMANDS
         if (initialize)
-                trigger_command(create_template(name, rule, initialize,
-                                        shutdown, INT_MAX, false));
+        {
+                la_command_t *template = create_template(name, rule,
+                                initialize, shutdown, INT_MAX, false);
+#ifndef ONLYCLEANUPCOMMANDS
+                trigger_command(template);
+#endif /* ONLYCLEANUPCOMMANDS */
+                if (template->end_string)
+                        trigger_end_command(template);
+        }
 #endif /* NOCOMMANDS */
 
         if (begin)
