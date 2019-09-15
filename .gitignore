@@ -110,6 +110,7 @@ src/TAGS
 
 src/logactiond
 src/logactiond-checkrules
+src/logactiond-cleanup
 
 libconfig/.gitignore
 libconfig/ac_config.h.in
