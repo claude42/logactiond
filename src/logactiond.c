@@ -393,12 +393,8 @@ cleanup_main(void *arg)
 
         unload_la_config();
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
-        free_meta_command_list(la_config->meta_list);
+        free_meta_list();
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
-
-        /* TODO: not the best place here but well */
-        free(la_config);
-        la_config = NULL;
 
         remove_pidfile();
         int loglevel = exit_status ? LOG_WARNING : LOG_INFO;

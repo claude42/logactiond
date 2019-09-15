@@ -369,7 +369,6 @@ typedef struct la_config_s
         int default_meta_duration;
         kw_list_t *default_properties;
         kw_list_t *ignore_addresses;
-        kw_list_t *meta_list;
 } la_config_t;
 
 /* Global variables */
@@ -501,7 +500,9 @@ void start_end_queue_thread(void);
 
 /* commands.c */
 
-void free_meta_command_list(kw_list_t *list);
+unsigned int meta_list_length(void);
+
+void free_meta_list(void);
 
 void assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned int line);
 

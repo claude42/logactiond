@@ -877,7 +877,6 @@ load_la_config(char *filename)
                 xpthread_mutex_unlock(&config_mutex);
                 die_hard("No rules enabledd!");
         }
-        la_config->meta_list = xcreate_list();
 
         config_destroy(&la_config->config_file);
 
@@ -907,6 +906,9 @@ unload_la_config(void)
         la_config->default_properties = NULL;
         free_address_list(la_config->ignore_addresses);
         la_config->ignore_addresses = NULL;
+
+        free(la_config);
+        la_config = NULL;
 
         if (!shutdown_ongoing)
                 xpthread_mutex_unlock(&config_mutex);

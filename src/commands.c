@@ -44,6 +44,8 @@ typedef struct la_meta_command_s
         time_t meta_start_time;
 } meta_command_t;
 
+static kw_list_t *meta_list;
+
 void
 assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned int line)
 {
@@ -271,6 +273,15 @@ exec_command(la_command_t *command, la_commandtype_t type)
         }
 }
 
+unsigned int
+meta_list_length(void)
+{
+        if (!meta_list)
+                return 0;
+
+        return list_length(meta_list);
+}
+
 /*
  * Tries to find a command on the meta list which
  * a.) has last been invoked within the meta_period
@@ -291,18 +302,18 @@ free_meta_command(meta_command_t *meta_command)
 }
 
 void
-free_meta_command_list(kw_list_t *list)
+free_meta_list(void)
 {
-        la_vdebug("free_meta_command_list()");
-        if (!list)
+        la_vdebug("free_meta_list()");
+        if (!meta_list)
                 return;
-        assert_list(list);
+        assert_list(meta_list);
 
         for (meta_command_t *tmp;
-                        (tmp = REM_META_COMMANDS_HEAD(list));)
+                        (tmp = REM_META_COMMANDS_HEAD(meta_list));)
                 free_meta_command(tmp);
 
-        free(list);
+        free(meta_list);
 }
 
 static meta_command_t *
@@ -328,8 +339,8 @@ find_on_meta_list(la_command_t *command)
 
         /* Don't use standard ITERATE_COMMANDS/NEXT_COMMAND idiom here to avoid
          * that remove_node() breaks the whole thing */
-        assert(la_config); assert_list(la_config->meta_list);
-        meta_command_t *list_command = ITERATE_META_COMMANDS(la_config->meta_list);
+        assert_list(meta_list);
+        meta_command_t *list_command = ITERATE_META_COMMANDS(meta_list);
         list_command = NEXT_META_COMMAND(list_command);
         while (list_command)
         {
@@ -367,6 +378,9 @@ check_meta_list(la_command_t *command)
         la_debug("check_meta_list(%s, %u)", command->address->text,
                         command->duration);
 
+        if (!meta_list)
+                meta_list = xcreate_list();
+
         meta_command_t *meta_command = find_on_meta_list(command);
 
         if (meta_command)
@@ -387,7 +401,7 @@ check_meta_list(la_command_t *command)
         else
         {
                 meta_command = create_meta_command(command);
-                add_head(la_config->meta_list, (kw_node_t *) meta_command);
+                add_head(meta_list, (kw_node_t *) meta_command);
                 return false;
         }
 }

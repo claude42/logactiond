@@ -252,7 +252,7 @@ dump_queue_status(kw_list_t *queue)
         {
                 fprintf(hosts_file, "Queue length: %u, meta_command: %u\n\n",
                                 list_length(queue),
-                                la_config->meta_list ?  list_length(la_config->meta_list) : 0);
+                                meta_list_length());
         }
 
         fprintf(hosts_file, "IP address                                     "
