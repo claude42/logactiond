@@ -65,7 +65,12 @@ create_pidfile(void)
 
         fd = open(PIDFILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
         if (fd == -1)
-                die_err("Unable to open pidfile");
+        {
+                if (errno == EEXIST)
+                        die_err("Pidfile already exists.");
+                else
+                        die_err("Unable to open pidfile.");
+        }
 
         created_pidfile = true;
 
