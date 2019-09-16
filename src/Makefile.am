@@ -5,8 +5,8 @@ if !USE_INSTALLED_LIBCONFIG
 endif
 
 
-sbin_PROGRAMS = logactiond
-bin_PROGRAMS = logactiond-checkrules logactiond-cleanup logactiond-queue
+sbin_PROGRAMS = logactiond logactiond-cleanup logactiond-queue
+bin_PROGRAMS = logactiond-checkrules
 logactiond_SOURCES = logactiond.c logactiond.h configfile.c rules.c patterns.c sources.c misc.c inotify.c nodelist.c nodelist.h properties.c commands.c endqueue.c addresses.c polling.c status.c watch.c systemd.c fifo.c
 logactiond_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\""
 logactiond_CFLAGS = $(PTHREAD_CFLAGS)
