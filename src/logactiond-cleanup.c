@@ -50,7 +50,7 @@ static void
 print_usage(void)
 {
         fprintf(stderr,
-        "Usage: logactiond-checkrule [-c configfile] [-d] [-v]\n");
+        "Usage: logactiond-cleanup [-c configfile] [-d] [-v]\n");
 }
 
 static void
