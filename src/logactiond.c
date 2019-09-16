@@ -72,6 +72,8 @@ trigger_shutdown(int status, int saved_errno)
         if (monitoring_thread)
                 pthread_cancel(monitoring_thread);
 #endif /* NOMONITORING */
+        if (fifo_thread)
+                pthread_cancel(fifo_thread);
 
         pthread_cancel(pthread_self());
 }
@@ -435,6 +437,7 @@ main(int argc, char *argv[])
 #ifndef NOMONITORING
         start_monitoring_thread();
 #endif /* NOMONITORING */
+        start_fifo_thread();
 
 #if HAVE_LIBSYSTEMD
         sd_notify(0, "READY=1\n"

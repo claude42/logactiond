@@ -65,6 +65,7 @@
 #define HOSTSFILE RUNDIR "/logactiond.hosts"
 #define RULESFILE RUNDIR "/logactiond.rules"
 #define DIAGFILE RUNDIR "/logactiond.diagnostics"
+#define FIFOFILE RUNDIR "/logactiond.fifo"
 
 
 #define LA_DEFAULTS_LABEL "defaults"
@@ -306,7 +307,8 @@ typedef struct la_command_s
         la_need_host_t need_host;    /* Command requires host */
         int duration;                /* duration how long command shall stay active,
                                    -1 if none */
-        bool meta;
+        bool meta;              /* True if META rule been applied */
+        bool manual;            /* True if command has been manually submitted */
 
         /* only relevant for end_commands */
         time_t end_time;        /* specific time for enqueued end_commands */
@@ -379,6 +381,7 @@ extern pthread_t file_watch_thread;
 extern pthread_t systemd_watch_thread;
 extern pthread_t end_queue_thread;
 extern pthread_t monitoring_thread;
+extern pthread_t fifo_thread;
 
 extern pthread_mutex_t config_mutex;
 extern pthread_mutex_t end_queue_mutex;
@@ -492,6 +495,8 @@ void update_queue_count_numbers(void);
 
 la_command_t *find_end_command(la_address_t *address);
 
+int remove_and_trigger(la_address_t *address);
+
 void empty_end_queue();
 
 void enqueue_end_command(la_command_t *end_command);
@@ -499,6 +504,8 @@ void enqueue_end_command(la_command_t *end_command);
 void start_end_queue_thread(void);
 
 /* commands.c */
+
+void exec_command(la_command_t *command, la_commandtype_t type);
 
 unsigned int meta_list_length(void);
 
@@ -512,6 +519,9 @@ void trigger_end_command(la_command_t *command);
 
 la_command_t * create_command_from_template(la_command_t *template,
                 la_pattern_t *pattern, la_address_t *address);
+
+la_command_t * create_manual_command_from_template(la_command_t *template,
+                la_address_t *address);
 
 la_command_t *create_template(const char *name, la_rule_t *rule,
                 const char *begin_string, const char *end_string,
@@ -639,6 +649,10 @@ void init_watching(void);
 void start_watching_threads(void);
 
 void shutdown_watching(void);
+
+/* fifo.c */
+
+void start_fifo_thread(void);
 
 
 #endif /* __logactiond_h */

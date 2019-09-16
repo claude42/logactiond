@@ -6,8 +6,8 @@ endif
 
 
 sbin_PROGRAMS = logactiond
-bin_PROGRAMS = logactiond-checkrules logactiond-cleanup
-logactiond_SOURCES = logactiond.c logactiond.h configfile.c rules.c patterns.c sources.c misc.c inotify.c nodelist.c nodelist.h properties.c commands.c endqueue.c addresses.c polling.c status.c watch.c systemd.c
+bin_PROGRAMS = logactiond-checkrules logactiond-cleanup logactiond-queue
+logactiond_SOURCES = logactiond.c logactiond.h configfile.c rules.c patterns.c sources.c misc.c inotify.c nodelist.c nodelist.h properties.c commands.c endqueue.c addresses.c polling.c status.c watch.c systemd.c fifo.c
 logactiond_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\""
 logactiond_CFLAGS = $(PTHREAD_CFLAGS)
 
@@ -19,6 +19,7 @@ logactiond_cleanup_SOURCES = logactiond-cleanup.c logactiond.h addresses.c comma
 logactiond_cleanup_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\"" -DNOWATCH -DNOMONITORING -DONLYCLEANUPCOMMANDS
 logactiond_cleanup_CFLAGS = $(PTHREAD_CFLAGS)
 
+logactiond_queue_SOURCES = logactiond-queue.c logactiond.h
 
 
 #logactiond_LDADD = $(PTHREAD_LIBS)

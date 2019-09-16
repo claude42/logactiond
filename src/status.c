@@ -173,12 +173,12 @@ remove_status_files(void *arg)
                 return;
 
         if (remove(HOSTSFILE) && errno != ENOENT)
-                die_err("Can't remove host status file!");
+                la_log_errno(LOG_ERR, "Can't remove host status file");
         if (remove(RULESFILE) && errno != ENOENT)
-                die_err("Can't remove rule status file!");
+                la_log_errno(LOG_ERR, "Can't remove rule status file");
         if (status_monitoring >=2)
                 if (remove(DIAGFILE) && errno != ENOENT)
-                        die_err("Can't remove diagnostics file!");
+                        la_log_errno(LOG_ERR, "Can't remove diagnostics file");
 }
 
 /*
@@ -224,6 +224,7 @@ start_monitoring_thread(void)
         la_debug("init_monitoring()");
         if (!status_monitoring)
                 return;
+        assert(!monitoring_thread);
 
         xpthread_create(&monitoring_thread, NULL, dump_loop, NULL, "status");
 }
@@ -280,10 +281,17 @@ dump_queue_status(kw_list_t *queue)
                 human_readable_time_delta(command->end_time-xtime(NULL),
                                 &timedelta, &unit);
 
+                char flag;
+                if (command->meta)
+                        flag = 'M';
+                else if (command->manual)
+                        flag = 'A';
+                else
+                        flag = ' ';
                 fprintf(hosts_file,
                                 "%-46.46s %c %2u%c  %-13.13s %-13.13s\n",
-                                adr, command->meta ? 'M' : ' ', timedelta,
-                                unit, command->rule_name, command->name);
+                                adr, flag, timedelta, unit, command->rule_name,
+                                command->name);
         }
 
         if (fclose(hosts_file))

@@ -174,6 +174,63 @@ find_end_command(la_address_t *address)
         return result;
 }
 
+/*
+ * Searches for command with given address in end queue. If found, removes it
+ * from end queue, triggers it and then frees it.
+ *
+ * Will lock the endqueue mutex thus must not be called from functions which
+ * already have locked the mutex (such as consume_end_queue()).
+ */
+
+int
+remove_and_trigger(la_address_t *address)
+{
+        assert_address(address);
+        la_debug("remove_and_trigger()");
+
+        if (!end_queue)
+                return -1;
+        assert_list(end_queue);
+
+        xpthread_mutex_lock(&end_queue_mutex);
+
+        la_debug("remove_and_trigger() - mutex locked");
+
+        /* Don't use find_end_command() here but do it ourself so we can keep
+         * the mutex locked during the whole function to avoid creating a race
+         * condition. */
+        la_command_t *command = NULL;
+        for (la_command_t *tmp = ITERATE_COMMANDS(end_queue);
+                        (tmp = NEXT_COMMAND(tmp));)
+        {
+                if (!adrcmp(tmp->address, address))
+                {
+                        command = tmp;
+                        break;
+                }
+        }
+
+        if (!command)
+        {
+                la_debug("remove_and_trigger() - command not found");
+                xpthread_mutex_unlock(&end_queue_mutex);
+                return -1;
+        }
+
+        la_debug("remove_and_trigger() - command found");
+
+        remove_node((kw_node_t *) command);
+        trigger_end_command(command);
+        free_command(command);
+
+        la_debug("remove_and_trigger() - deed done");
+
+        xpthread_mutex_unlock(&end_queue_mutex);
+        la_debug("remove_and_trigger() - unlocked mutex");
+
+        return 0;
+}
+
 #ifndef NOCOMMANDS
 /*
  * Remove and trigger all remaining end and shutdown commands in the queue

@@ -244,7 +244,7 @@ convert_command(la_command_t *command, la_commandtype_t type)
  * Executes command string via system() and logs result.
  */
 
-static void
+void
 exec_command(la_command_t *command, la_commandtype_t type)
 {
         /* Don't assert_command() here, as after a reload some commands might
@@ -417,8 +417,7 @@ incr_invocation_counts(la_command_t *command)
 }
 
 /*
- * Executes a begin_command and enqueues an end_command into the queue (if one
- * hase been defined).
+ * Executes a begin_command.
  */
 
 void
@@ -632,7 +631,44 @@ create_command_from_template(la_command_t *template, la_pattern_t *pattern,
         result->pattern_properties = dup_property_list(pattern->properties);
         result->address = address ? dup_address(address) : NULL;
         result->end_time = result->n_triggers = result->start_time= 0;
+        result->manual = result->meta = false;
+
+        assert_command(result);
+        return result;
+}
+
+la_command_t *
+create_manual_command_from_template(la_command_t *template, la_address_t
+                *address)
+{
+        assert_command(template);
+        la_debug("create_manual_command_from_template(%s)", template->name);
+
+        /* Return if action can't handle type of IP address */
+
+        if (!address)
+        {
+                if (template->need_host != LA_NEED_HOST_NO)
+                        return NULL;
+        }
+        else
+        {
+                if ((address->af == AF_INET && template->need_host ==
+                                        LA_NEED_HOST_IP6) ||
+                                (address->af == AF_INET6 &&
+                                                template->need_host ==
+                                                LA_NEED_HOST_IP4))
+                        return NULL;
+        }
+
+        la_command_t *result = dup_command(template);
+
+        result->pattern = NULL;
+        result->pattern_properties = NULL;
+        result->address = address ? dup_address(address) : NULL;
+        result->end_time = result->n_triggers = result->start_time= 0;
         result->meta = false;
+        result->manual = true;
 
         assert_command(result);
         return result;
