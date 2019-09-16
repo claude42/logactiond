@@ -20,6 +20,7 @@ logactiond_cleanup_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysc
 logactiond_cleanup_CFLAGS = $(PTHREAD_CFLAGS)
 
 logactiond_queue_SOURCES = logactiond-queue.c logactiond.h
+logactiond_queue_CPPFLAGS = -I$(top_srcdir)/libconfig/lib
 
 
 #logactiond_LDADD = $(PTHREAD_LIBS)
