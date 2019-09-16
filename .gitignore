@@ -111,6 +111,7 @@ src/TAGS
 src/logactiond
 src/logactiond-checkrules
 src/logactiond-cleanup
+src/logactiond-queue
 
 libconfig/.gitignore
 libconfig/ac_config.h.in
