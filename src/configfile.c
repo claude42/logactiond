@@ -314,7 +314,7 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
                 trigger_command(template);
 #endif /* ONLYCLEANUPCOMMANDS */
                 if (template->end_string)
-                        trigger_end_command(template);
+                        enqueue_end_command(template);
         }
 #endif /* NOCOMMANDS */
 
