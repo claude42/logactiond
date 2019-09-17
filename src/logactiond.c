@@ -104,10 +104,21 @@ handle_signal(int signal)
         {
                 empty_end_queue();
         }
-        else
+        else if (signal == SIGINT || signal == SIGTERM)
         {
                 trigger_shutdown(EXIT_SUCCESS, 0);
         }
+        else if (signal == SIGABRT)
+        {
+                la_log(LOG_ERR, "Process aborted");
+                trigger_shutdown(EXIT_FAILURE, 0);
+        }
+        else
+        {
+                la_log(LOG_ERR, "Received unknown signal %u", signal);
+                trigger_shutdown(EXIT_FAILURE, 0);
+        }
+
 }
 
 static void
@@ -152,6 +163,7 @@ register_signal_handler(void)
         set_signal(new_act, SIGINT);
         set_signal(new_act, SIGTERM);
         set_signal(new_act, SIGHUP);
+        set_signal(new_act, SIGABRT); /* for failed assert()s */
         set_signal(new_act, SIGUSR1);
 	ignore_sigpipe();
 }
