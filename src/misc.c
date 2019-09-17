@@ -49,7 +49,7 @@ remove_pidfile(void)
         if (created_pidfile)
         {
                 if (unlink(PIDFILE) && errno != ENOENT)
-                        la_log(LOG_ERR, "Unable to remove pidfile");
+                        la_log_errno(LOG_ERR, "Unable to remove pidfile");
                 created_pidfile = false;
         }
 }
