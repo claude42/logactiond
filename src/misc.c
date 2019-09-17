@@ -290,14 +290,9 @@ die_hard(char *fmt, ...)
         va_end(myargs);
 
         if (!shutdown_ongoing)
-        {
                 trigger_shutdown(EXIT_FAILURE, save_errno);
-                pthread_exit(NULL);
-        }
-        else
-        {
-                exit(EXIT_FAILURE);
-        }
+
+        pthread_exit(NULL);
 }
 
 void
@@ -312,14 +307,9 @@ die_err(char *fmt, ...)
         va_end(myargs);
 
         if (!shutdown_ongoing)
-        {
                 trigger_shutdown(EXIT_FAILURE, save_errno);
-                pthread_exit(NULL);
-        }
-        else
-        {
-                exit(EXIT_FAILURE);
-        }
+
+        pthread_exit(NULL);
 }
 
 void *
