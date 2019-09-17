@@ -25,6 +25,7 @@
 #include <assert.h>
 #include <getopt.h>
 #include <string.h>
+#include <errno.h>
 
 #include "logactiond.h"
 
@@ -109,11 +110,22 @@ main(int argc, char *argv[])
 
         chdir(CONF_DIR);
 
+        init_end_queue();
         load_la_config(cfg_filename);
         la_debug("done load_la_config()");
 
         empty_end_queue();
 
+        if (remove(PIDFILE) && errno != ENOENT)
+                la_log_errno(LOG_ERR, "Unable to remove pidfile");
+        if (remove(HOSTSFILE) && errno != ENOENT)
+                la_log_errno(LOG_ERR, "Can't remove host status file");
+        if (remove(RULESFILE) && errno != ENOENT)
+                la_log_errno(LOG_ERR, "Can't remove rule status file");
+        if (remove(DIAGFILE) && errno != ENOENT)
+                la_log_errno(LOG_ERR, "Can't remove diagnostics file");
+        if (remove(FIFOFILE) && errno != ENOENT)
+                la_log_errno(LOG_ERR, "Cannot remove fifo");
 
         /* This whole exit procedure doesn't make much sense for a standalone
          * tool. We're just obeying to the infrastructure set in place by the

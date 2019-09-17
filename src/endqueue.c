@@ -372,11 +372,21 @@ consume_end_queue(void *ptr)
 }
 
 void
+init_end_queue(void)
+{
+        la_debug("create_end_queue()");
+        assert(!end_queue);
+
+        end_queue = xcreate_list();
+}
+
+
+void
 start_end_queue_thread(void)
 {
         la_debug("init_queue_processing()");
 
-        end_queue = xcreate_list();
+        init_end_queue();
 
         xpthread_create(&end_queue_thread, NULL, consume_end_queue, NULL,
                         "end queue");
