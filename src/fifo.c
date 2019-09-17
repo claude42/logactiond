@@ -264,6 +264,9 @@ fifo_loop(void *ptr)
                         case '-':
                                 remove_entry(linebuffer);
                                 break;
+                        case '0':
+                                empty_end_queue();
+                                break;
                         default:
                                 la_log(LOG_ERR, "Unknown command: %s", linebuffer);
                                 break;
