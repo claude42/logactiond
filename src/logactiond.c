@@ -74,8 +74,6 @@ trigger_shutdown(int status, int saved_errno)
 #endif /* NOMONITORING */
         if (fifo_thread)
                 pthread_cancel(fifo_thread);
-
-        pthread_cancel(pthread_self());
 }
 
 static void
@@ -370,53 +368,6 @@ use_correct_uid(void)
         }
 }
 
-static void
-cleanup_main(void *arg)
-{
-        la_debug("cleanup_main()");
-
-        /* Log that we're going down */
-        la_log(LOG_INFO, "Shutting down");
-
-#if HAVE_LIBSYSTEMD
-        sd_notifyf(0, "STOPPING=1\n"
-                        "STATUS=Exiting (status=%u, errno%u)\n"
-                        "ERRNO=%u\n", exit_status, exit_errno, exit_errno);
-#endif /* HAVE_LIBSYSTEMD */
-
-        /* Wait for all threads to end */
-        if (end_queue_thread)
-                xpthread_join(end_queue_thread, NULL);
-        la_debug("joined end_queue_thread");
-
-#ifndef NOMONITORING
-        if (monitoring_thread)
-                xpthread_join(monitoring_thread, NULL);
-        la_debug("joined status_monitoring_thread");
-#endif /* NOMONITORING */
-
-        if (file_watch_thread)
-                xpthread_join(file_watch_thread, NULL);
-        la_debug("joined file_watch_thread");
-
-#if HAVE_LIBSYSTEMD
-        if (systemd_watch_thread)
-                xpthread_join(systemd_watch_thread, NULL);
-        la_debug("joined systemd_watch_thread");
-#endif /* HAVE_LIBSYSTEMD */
-
-        unload_la_config();
-#if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
-        free_meta_list();
-#endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
-
-        remove_pidfile();
-        int loglevel = exit_status ? LOG_WARNING : LOG_INFO;
-        la_log(loglevel, "Exiting (status=%u, errno=%u).", exit_status, exit_errno);
-
-        exit(exit_status);
-}
-
 int
 main(int argc, char *argv[])
 {
@@ -439,8 +390,6 @@ main(int argc, char *argv[])
         else
                 register_signal_handler();
 
-        pthread_cleanup_push(cleanup_main, NULL);
-
         la_log(LOG_INFO, "Starting up " PACKAGE_STRING ".");
 
         start_end_queue_thread();
@@ -458,15 +407,50 @@ main(int argc, char *argv[])
 
         la_debug("Main thread going to sleep.");
 
-        /* Wait forever - until thread gets pthread_cancell()ed */
-        while (sleep(INT_MAX))
-                la_debug("Sleep interrupted, going back to sleep");
+        if (file_watch_thread)
+                xpthread_join(file_watch_thread, NULL);
+        la_debug("joined file_watch_thread");
 
-        /* We must have waited for a LONG time to get here... :-) */
-        assert(false);
-        /* Will never be reached, simple here to make potential pthread macros
-         * happy */
-        pthread_cleanup_pop(1);
+#if HAVE_LIBSYSTEMD
+        if (systemd_watch_thread)
+                xpthread_join(systemd_watch_thread, NULL);
+        la_debug("joined systemd_watch_thread");
+#endif /* HAVE_LIBSYSTEMD */
+
+        /* Log that we're going down */
+        la_log(LOG_INFO, "Shutting down");
+
+#if HAVE_LIBSYSTEMD
+        sd_notifyf(0, "STOPPING=1\n"
+                        "STATUS=Exiting (status=%u, errno%u)\n"
+                        "ERRNO=%u\n", exit_status, exit_errno, exit_errno);
+#endif /* HAVE_LIBSYSTEMD */
+
+        /* Wait for all threads to end */
+        if (end_queue_thread)
+                xpthread_join(end_queue_thread, NULL);
+        la_debug("joined end_queue_thread");
+
+#ifndef NOMONITORING
+        if (monitoring_thread)
+                xpthread_join(monitoring_thread, NULL);
+        la_debug("joined status_monitoring_thread");
+#endif /* NOMONITORING */
+
+        if (fifo_thread)
+                xpthread_join(fifo_thread, NULL);
+        la_debug("joined fifo_thread");
+
+        unload_la_config();
+#if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
+        free_meta_list();
+#endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
+
+        remove_pidfile();
+        int loglevel = exit_status ? LOG_WARNING : LOG_INFO;
+        la_log(loglevel, "Exiting (status=%u, errno=%u).", exit_status, exit_errno);
+
+        exit(exit_status);
 }
 
 
