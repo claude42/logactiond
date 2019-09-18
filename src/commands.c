@@ -155,11 +155,11 @@ convert_command(la_command_t *command, la_commandtype_t type)
 {
         /* Don't assert_command() here, as after a reload some commands might
          * not have a rule attached to them anymore */
-        assert(command); assert(command->name); assert(command->end_string);
+        assert(command); assert(command->name);
         assert((type == LA_COMMANDTYPE_BEGIN && command->begin_properties &&
                                 command->begin_string) ||
                         (type == LA_COMMANDTYPE_END && command->end_properties &&
-                         command->end_properties));
+                         command->end_string));
         la_debug("convert_command(%s, %s)", command->name,
                         type == LA_COMMANDTYPE_BEGIN ? "begin" : "end");
 
@@ -441,7 +441,7 @@ trigger_command(la_command_t *command)
                 {
                         la_log_verbose(LOG_INFO, "Host: %s, ignored, action "
                                         "\"%s\" already active (triggered by "
-                                        "rule "\"%s\").", tmp->address->text,
+                                        "rule \"%s\").", tmp->address->text,
                                 tmp->name, tmp->rule->name);
                         return;
                 }

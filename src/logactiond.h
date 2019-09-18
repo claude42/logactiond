@@ -441,6 +441,7 @@ void la_vdebug(char *fmt, ...);
 
 void la_log_errno(unsigned int priority, char *fmt, ...);
 
+void la_log_verbose(unsigned int priority, char *fmt, ...);
 void la_log(unsigned int priority, char *fmt, ...);
 
 void die_hard(char *fmt, ...);
