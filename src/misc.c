@@ -269,6 +269,19 @@ la_log_errno(unsigned int priority, char *fmt, ...)
 }
 
 void
+la_log_verbose(unsigned int priority, char *fmt, ...)
+{
+        va_list myargs;
+
+        if (log_verbose)
+        {
+                va_start(myargs, fmt);
+                log_message(priority, fmt, myargs, NULL);
+                va_end(myargs);
+        }
+}
+
+void
 la_log(unsigned int priority, char *fmt, ...)
 {
         va_list myargs;

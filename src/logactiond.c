@@ -43,6 +43,7 @@ char *cfg_filename = NULL;
 char *pid_file = NULL;
 la_runtype_t run_type = LA_DAEMON_BACKGROUND;
 unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
+bool log_verbose = false;
 unsigned int id_counter = 0;
 char *run_uid_s = NULL;
 unsigned int status_monitoring = 0;
@@ -232,7 +233,7 @@ static void
 print_usage(void)
 {
         fprintf(stderr,
-                "Usage: logactiond [-c configfile] [-d] [-f] [-p pidfile] [-s] [-t]\n");
+                "Usage: logactiond [-c configfile] [-d] [-v] [-f] [-p pidfile] [-s] [-t]\n");
 }
 
 static void
@@ -247,6 +248,7 @@ read_options(int argc, char *argv[])
                         {"foreground", no_argument,       NULL, 'f'},
                         {"configfile", required_argument, NULL, 'c'},
                         {"debug",      optional_argument, NULL, 'd'},
+                        {"verbose",    no_argument,       NULL, 'v'},
                         {"pidfile",    required_argument, NULL, 'p'},
                         {"simulate",   no_argument,       NULL, 's'},
                         {"user",       required_argument, NULL, 'u'},
@@ -254,7 +256,7 @@ read_options(int argc, char *argv[])
                         {0,            0,                 0,    0  }
                 };
 
-                int c = getopt_long(argc, argv, "fc:d::p:su:t", long_options, NULL);
+                int c = getopt_long(argc, argv, "fc:d::vp:su:t", long_options, NULL);
 
                 if (c == -1)
                         break;
@@ -271,6 +273,9 @@ read_options(int argc, char *argv[])
                                 log_level++;
                                 if (optarg && *optarg == 'd')
                                         log_level++;
+                                break;
+                        case 'v':
+                                log_verbose = true;
                                 break;
                         case 'p':
                                 pid_file = optarg;

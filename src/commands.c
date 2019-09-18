@@ -40,8 +40,8 @@ typedef struct la_meta_command_s
         kw_node_t node;
         la_rule_t *rule;
         la_address_t *address;
-        unsigned int meta_n_triggers;
         time_t meta_start_time;
+        unsigned int factor;
 } meta_command_t;
 
 static kw_list_t *meta_list;
@@ -282,14 +282,6 @@ meta_list_length(void)
         return list_length(meta_list);
 }
 
-/*
- * Tries to find a command on the meta list which
- * a.) has last been invoked within the meta_period
- * b.) has the same address as the given command
- *
- * On the fly this also trims the meta list from expired commands.
- */
-
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
 static void
 free_meta_command(meta_command_t *meta_command)
@@ -319,15 +311,25 @@ free_meta_list(void)
 static meta_command_t *
 create_meta_command(la_command_t *command)
 {
+        assert_command(command); assert(command->address);
+        la_debug("create_meta_command()");
         meta_command_t *result = xmalloc(sizeof(meta_command_t));
 
         result->rule = command->rule;
         result->address = dup_address(command->address);
         result->meta_start_time = xtime(NULL);
-        result->meta_n_triggers = 1;
+        result->factor = 1;
 
         return result;
 }
+
+/*
+ * Returns a meta_command with the same IP address as the specified command -
+ * if one is on the meta_list. Returns NULL otherwise.
+ *
+ * While searching through meta_list, will remove (and free) all meta_commands
+ * which have already expired.
+ */
 
 static meta_command_t *
 find_on_meta_list(la_command_t *command)
@@ -344,7 +346,7 @@ find_on_meta_list(la_command_t *command)
         list_command = NEXT_META_COMMAND(list_command);
         while (list_command)
         {
-                if (now - list_command->rule->meta_period)
+                if (now < list_command->meta_start_time + list_command->rule->meta_period)
                 {
                         if (!adrcmp(command->address, list_command->address))
                                 return list_command;
@@ -352,7 +354,7 @@ find_on_meta_list(la_command_t *command)
                 }
                 else
                 {
-                        /* Remove expired commands from trigger list */
+                        /* Remove expired commands from meta list */
                         meta_command_t *tmp = list_command;
                         list_command = NEXT_META_COMMAND(list_command);
                         remove_node((kw_node_t *) tmp);
@@ -365,13 +367,13 @@ find_on_meta_list(la_command_t *command)
 
 /*
  * Checks whether a coresponding command is already on the meta_list (see
- * find_on_meta_list(). If so, increases trigger counter. Returns true if >
- * threshold.
+ * find_on_meta_list(). If so, increases factor, resets meta_start_time and
+ * returns the meta_command to the calling function.
  *
- * If nothings found on the list, clone command and add to the list.
+ * If nothings found on the list, create new meta_command and return it.
  */
 
-static bool
+static float
 check_meta_list(la_command_t *command)
 {
         assert_command(command);
@@ -385,25 +387,26 @@ check_meta_list(la_command_t *command)
 
         if (meta_command)
         {
-                if (++meta_command->meta_n_triggers >= 
-                                meta_command->rule->meta_threshold)
+                if (time(NULL) > meta_command->meta_start_time)
                 {
-                        remove_node((kw_node_t *) meta_command);
-                        free_meta_command(meta_command);
-                        return true;
+                        int old = meta_command->factor;
+                        meta_command->factor *= meta_command->rule->meta_factor;
+                        if (meta_command->factor > meta_command->rule->meta_max)
+                                meta_command->factor = meta_command->rule->meta_max;
+                        la_log(LOG_INFO, "factor increased from %u to %u. meta_factor=%u, meta_max=%u", old,
+                                        meta_command->factor, meta_command->rule->meta_factor,
+                                        meta_command->rule->meta_max);
+                        meta_command->meta_start_time = xtime(NULL) +
+                                meta_command->factor * command->duration;
                 }
-                else
-                {
-                        return false;
-                }
-
         }
         else
         {
                 meta_command = create_meta_command(command);
                 add_head(meta_list, (kw_node_t *) meta_command);
-                return false;
         }
+
+        return meta_command->factor;
 }
 
 static void
@@ -436,11 +439,10 @@ trigger_command(la_command_t *command)
                 la_command_t *tmp = find_end_command(command->address);
                 if (tmp)
                 {
-                        la_log(LOG_INFO, "Host: %s, ignored, action \"%s\" "
-                                        "already active (triggered by rule "
-                                        "\"%s\").",
-                                        tmp->address->text, tmp->name,
-                                        tmp->rule->name);
+                        la_log_verbose(LOG_INFO, "Host: %s, ignored, action "
+                                        "\"%s\" already active (triggered by "
+                                        "rule "\"%s\").", tmp->address->text,
+                                tmp->name, tmp->rule->name);
                         return;
                 }
         }
@@ -454,16 +456,23 @@ trigger_command(la_command_t *command)
         }
         else
         {
-                /* handle meta list, check if meta_duration should be used */
-                if (command->rule->meta_enabled && check_meta_list(command))
+                /* search through meta_list to get correct factor */
+                if (command->rule->meta_enabled)
                 {
-                        command->duration = command->rule->meta_duration;
-                        command->meta = true;
+                        command->factor = check_meta_list(command);
+                        la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
+                                        "by rule \"%s\" (factor %u).",
+                                        command->address->text, command->name,
+                                        command->rule->name, command->factor);
+                }
+                else
+                {
+                        la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
+                                        "by rule \"%s\".",
+                                        command->address->text, command->name,
+                                        command->rule->name);
                 }
 
-                la_log(LOG_INFO, "Host: %s, %saction \"%s\" activated by rule \"%s\".",
-                                command->address->text, command->meta ? "META " : "",
-                                command->name, command->rule->name);
 
                 /* update relevant counters for status monitoring */
                 incr_invocation_counts(command);
@@ -586,6 +595,7 @@ dup_command(la_command_t *command)
         result->rule = command->rule;
 
         result->duration = command->duration;
+        result->factor = command->factor;
         result->need_host = command->need_host;
 
         result->rule_name = xstrdup(command->rule_name);
@@ -631,7 +641,7 @@ create_command_from_template(la_command_t *template, la_pattern_t *pattern,
         result->pattern_properties = dup_property_list(pattern->properties);
         result->address = address ? dup_address(address) : NULL;
         result->end_time = result->n_triggers = result->start_time= 0;
-        result->manual = result->meta = false;
+        result->manual = false;
 
         assert_command(result);
         return result;
@@ -667,7 +677,6 @@ create_manual_command_from_template(la_command_t *template, la_address_t
         result->pattern_properties = NULL;
         result->address = address ? dup_address(address) : NULL;
         result->end_time = result->n_triggers = result->start_time= 0;
-        result->meta = false;
         result->manual = true;
 
         assert_command(result);
@@ -717,6 +726,7 @@ create_template(const char *name, la_rule_t *rule, const char *begin_string,
         result->need_host = need_host;
 
         result->duration = duration;
+        result->factor = 1;
         result->end_time = 0;
 
         result->n_triggers = 0;

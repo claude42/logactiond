@@ -181,8 +181,8 @@ trigger_single_command(la_pattern_t *pattern, la_address_t *address,
         la_command_t *tmp = find_end_command(address);
         if (tmp)
         {
-                la_log(LOG_INFO, "Host: %s, ignored, action \"%s\" already "
-                                "active (triggered by rule \"%s\").",
+                la_log_verbose(LOG_INFO, "Host: %s, ignored, action \"%s\" "
+                                "already active (triggered by rule \"%s\").",
                                 address->text, tmp->name, tmp->rule->name);
                 return;
         }
@@ -268,7 +268,7 @@ trigger_all_commands(la_pattern_t *pattern)
         /* Do nothing if on ignore list */
         if (address_on_ignore_list(address))
         {
-                la_log(LOG_INFO, "Host: %s, always ignored.", host);
+                la_log_verbose(LOG_INFO, "Host: %s, always ignored.", host);
         }
         else
         {
@@ -372,9 +372,9 @@ handle_log_line_for_rule(la_rule_t *rule, const char *line)
  */
 
 la_rule_t *
-create_rule(char *name, la_source_t *source, int threshold, int period, int
-                duration, int meta_enabled, int meta_threshold,
-                int meta_period, int meta_duration, const char *service,
+create_rule(char *name, la_source_t *source, int threshold, int period,
+                int duration, int meta_enabled, int meta_period,
+                int meta_factor, int meta_max, const char *service,
                 const char *systemd_unit)
 {
         assert_source(source);
@@ -399,16 +399,9 @@ create_rule(char *name, la_source_t *source, int threshold, int period, int
         result->meta_enabled = meta_enabled>=0 ? meta_enabled :
                 la_config->default_meta_enabled;
 
-        if (meta_threshold >= 0)
-                result->meta_threshold = meta_threshold;
-        else if (la_config->default_meta_threshold >= 0)
-                result->meta_threshold = la_config->default_meta_threshold;
-        else
-                result->meta_threshold = 3;
-
-        result->meta_duration = meta_duration!=-1 ? meta_duration :
-                la_config->default_meta_duration;
         result->meta_period = meta_period!=-1 ? meta_period : la_config->default_meta_period;
+        result->meta_factor = meta_factor!=-1 ? meta_factor : la_config->default_meta_factor;
+        result->meta_max = meta_max!=-1 ? meta_max : la_config->default_meta_max;
 
         result->service = xstrdup(service);
 #if HAVE_LIBSYSTEMD

@@ -409,7 +409,7 @@ set_end_time(la_command_t *command)
         if (command->duration == INT_MAX)
                 command->end_time = INT_MAX;
         else
-                command->end_time = xtime(NULL) + command->duration;
+                command->end_time = xtime(NULL) + command->duration * command->factor;
 }
 
 /*

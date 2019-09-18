@@ -51,9 +51,9 @@
 #define DEFAULT_DURATION 600
 
 #define DEFAULT_META_ENABLED false
-#define DEFAULT_META_THRESHOLD 3
 #define DEFAULT_META_PERIOD 3600
-#define DEFAULT_META_DURATION 86400
+#define DEFAULT_META_FACTOR 2
+#define DEFAULT_META_MAX 86400
 
 #if HAVE_RUN
 #define RUNDIR "/run"
@@ -77,9 +77,9 @@
 #define LA_DURATION_LABEL "duration"
 
 #define LA_META_ENABLED_LABEL "meta_enabled"
-#define LA_META_THRESHOLD_LABEL "meta_threshold"
 #define LA_META_PERIOD_LABEL "meta_period"
-#define LA_META_DURATION_LABEL "meta_duration"
+#define LA_META_FACTOR_LABEL "meta_factor"
+#define LA_META_MAX_LABEL "meta_max"
 
 #define LA_SERVICE_LABEL "service"
 
@@ -277,9 +277,9 @@ typedef struct la_rule_s
         unsigned int period;
         unsigned int duration;
         bool meta_enabled;
-        unsigned int meta_threshold;
         unsigned int meta_period;
-        unsigned int meta_duration;
+        unsigned int meta_factor;
+        unsigned int meta_max;
         char *systemd_unit;
         kw_list_t *trigger_list;
         kw_list_t *properties;
@@ -307,7 +307,7 @@ typedef struct la_command_s
         la_need_host_t need_host;    /* Command requires host */
         int duration;                /* duration how long command shall stay active,
                                    -1 if none */
-        bool meta;              /* True if META rule been applied */
+        unsigned int factor;
         bool manual;            /* True if command has been manually submitted */
 
         /* only relevant for end_commands */
@@ -366,9 +366,9 @@ typedef struct la_config_s
         int default_period;
         int default_duration;
         int default_meta_enabled; /* should be bool but well... */
-        int default_meta_threshold;
         int default_meta_period;
-        int default_meta_duration;
+        int default_meta_factor;
+        int default_meta_max;
         kw_list_t *default_properties;
         kw_list_t *ignore_addresses;
 } la_config_t;
@@ -389,6 +389,7 @@ extern pthread_mutex_t end_queue_mutex;
 extern kw_list_t *end_queue;
 
 extern unsigned int log_level;
+extern bool log_verbose;
 
 extern unsigned int id_counter;
 
@@ -579,9 +580,9 @@ void assert_rule_ffl(la_rule_t *rule, const char *func, char *file, unsigned int
 void handle_log_line_for_rule(la_rule_t *rule, const char *line);
 
 la_rule_t *create_rule(char *name, la_source_t *source, int threshold,
-                int period, int duration, int meta_enabled,
-                int meta_threshold, int meta_period, int meta_duration,
-                const char *service, const char *systemd_unit);
+                int period, int duration, int meta_enabled, int meta_period,
+                int meta_factor, int meta_max, const char *service,
+                const char *systemd_unit);
 
 void free_rule(la_rule_t *rule);
 

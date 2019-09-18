@@ -257,7 +257,7 @@ dump_queue_status(kw_list_t *queue)
         }
 
         fprintf(hosts_file, "IP address                                     "
-                        "M Time Rule          Action\n"
+                        "Fa Time Rule          Action\n"
                         "======================================"
                         "=========================================\n");
 
@@ -281,17 +281,14 @@ dump_queue_status(kw_list_t *queue)
                 human_readable_time_delta(command->end_time-xtime(NULL),
                                 &timedelta, &unit);
 
-                char flag;
-                if (command->meta)
-                        flag = 'M';
-                else if (command->manual)
-                        flag = 'A';
+                if (command->manual)
+                        fprintf(hosts_file, "%-46.46s Ma %2u%c  %-13.13s %-13.13s\n",
+                                        adr, timedelta, unit,
+                                        command->rule_name, command->name);
                 else
-                        flag = ' ';
-                fprintf(hosts_file,
-                                "%-46.46s %c %2u%c  %-13.13s %-13.13s\n",
-                                adr, flag, timedelta, unit, command->rule_name,
-                                command->name);
+                        fprintf(hosts_file, "%-46.46s %2u %2u%c  %-13.13s %-13.13s\n",
+                                        adr, command->factor, timedelta, unit,
+                                        command->rule_name, command->name);
         }
 
         if (fclose(hosts_file))

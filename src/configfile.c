@@ -678,20 +678,20 @@ load_single_rule(const config_setting_t *uc_rule_def)
                         meta_enabled = -1;
         }
 
-        int meta_threshold = get_rule_unsigned_int(rule_def, uc_rule_def,
-                        LA_META_THRESHOLD_LABEL);
         int meta_period = get_rule_unsigned_int(rule_def, uc_rule_def,
                         LA_META_PERIOD_LABEL);
-        int meta_duration = get_rule_unsigned_int(rule_def, uc_rule_def,
-                        LA_META_DURATION_LABEL);
+        int meta_factor = get_rule_unsigned_int(rule_def, uc_rule_def,
+                        LA_META_FACTOR_LABEL);
+        int meta_max = get_rule_unsigned_int(rule_def, uc_rule_def,
+                        LA_META_MAX_LABEL);
 
         const char *service = get_rule_string(rule_def, uc_rule_def,
                         LA_SERVICE_LABEL);
 
         la_log(LOG_INFO, "Enabling rule \"%s\".", name);
         new_rule = create_rule(name, source, threshold, period, duration,
-                        meta_enabled, meta_threshold, meta_period,
-                        meta_duration, service, systemd_unit);
+                        meta_enabled, meta_period, meta_factor, meta_max,
+                        service, systemd_unit);
         assert_rule(new_rule);
 
         /* Properties from uc_rule_def have priority over those from
@@ -776,22 +776,23 @@ load_defaults(void)
                                         &(la_config->default_meta_enabled)))
                         la_config->default_meta_enabled = DEFAULT_META_ENABLED;
 
-                la_config->default_meta_threshold =
-                        config_get_unsigned_int_or_negative(defaults_section,
-                                        LA_META_THRESHOLD_LABEL);
-                if (la_config->default_meta_threshold == -1)
-                        la_config->default_meta_threshold = DEFAULT_META_THRESHOLD;
                 la_config->default_meta_period =
                         config_get_unsigned_int_or_negative(defaults_section,
                                         LA_META_PERIOD_LABEL);
                 if (la_config->default_meta_period == -1)
                         la_config->default_meta_period = DEFAULT_META_PERIOD;
-                la_config->default_meta_duration =
-                        config_get_unsigned_int_or_negative(defaults_section,
-                                        LA_META_DURATION_LABEL);
-                if (la_config->default_meta_duration == -1)
-                        la_config->default_meta_duration = DEFAULT_META_DURATION;
 
+                la_config->default_meta_factor =
+                        config_get_unsigned_int_or_negative(defaults_section,
+                                        LA_META_FACTOR_LABEL);
+                if (la_config->default_meta_factor == -1)
+                        la_config->default_meta_factor = DEFAULT_META_FACTOR;
+
+                la_config->default_meta_max =
+                        config_get_unsigned_int_or_negative(defaults_section,
+                                        LA_META_MAX_LABEL);
+                if (la_config->default_meta_max == -1)
+                        la_config->default_meta_max = DEFAULT_META_MAX;
 
                 la_config->default_properties = xcreate_list();
                 load_properties(la_config->default_properties, defaults_section);
@@ -806,9 +807,8 @@ load_defaults(void)
                 la_config->default_period = DEFAULT_PERIOD;
                 la_config->default_duration = DEFAULT_DURATION;
                 la_config->default_meta_enabled = DEFAULT_META_ENABLED;
-                la_config->default_meta_threshold = DEFAULT_THRESHOLD;
-                la_config->default_meta_period = DEFAULT_PERIOD;
-                la_config->default_meta_duration = DEFAULT_DURATION;
+                la_config->default_meta_period = DEFAULT_META_PERIOD;
+                la_config->default_meta_max = DEFAULT_META_MAX;
                 la_config->default_properties = NULL;
                 la_config->ignore_addresses = NULL;
         }
