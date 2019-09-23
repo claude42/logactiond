@@ -11,7 +11,6 @@ AC_CONFIG_HEADERS(ac_config.h)
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 AC_MSG_NOTICE([libconfig - made with pride in Colorado])
-sleep 3
 
 AC_DEFINE_UNQUOTED(TARGET, "${target}", [Configured target name.])
 
@@ -101,13 +100,13 @@ AM_CONDITIONAL(BUILDCXX, test x$docxx = xyes)
 
 doexamples=no
 
-AC_ARG_ENABLE(examples,
-AS_HELP_STRING([--disable-examples], [Disable building of the example programs]),
-[if test "$enableval" = "no"; then doexamples="no"; fi],
-[
-doexamples=yes
-]
-)
+#AC_ARG_ENABLE(examples,
+#AS_HELP_STRING([--disable-examples], [Disable building of the example programs]),
+#[if test "$enableval" = "no"; then doexamples="no"; fi],
+#[
+#doexamples=yes
+#]
+#)
 
 AM_CONDITIONAL(BUILDEXAMPLES, test x$doexamples = xyes)
 
