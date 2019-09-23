@@ -20,14 +20,18 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <syslog.h>
 #include <assert.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <stdio.h>
 
+#include <sys/types.h>
 #include <dirent.h>
 #include <fnmatch.h>
 #include <limits.h>
 #include <sys/stat.h>
-#include <pthread.h>
 
 #include <libconfig.h>
 

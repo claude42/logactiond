@@ -18,8 +18,6 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <syslog.h>
-#include <assert.h>
 
 #include "nodelist.h"
 

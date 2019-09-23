@@ -20,11 +20,10 @@
 
 #include <string.h>
 #include <assert.h>
-#include <sys/socket.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <syslog.h>
 
 #include "logactiond.h"
 #include "nodelist.h"

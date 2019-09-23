@@ -19,15 +19,10 @@
 #include <config.h>
 
 #include <string.h>
-#include <sys/select.h>
-#include <syslog.h>
 #include <assert.h>
 #include <stdlib.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <sys/stat.h>
-
-#include <libconfig.h>
+#include <stdio.h>
+#include <stdbool.h>
 
 #include "logactiond.h"
 

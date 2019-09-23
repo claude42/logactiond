@@ -33,8 +33,6 @@
 #include <pthread.h>
 #include <signal.h>
 
-#include <libconfig.h>
-
 #include "logactiond.h"
 
 /* Buffer for reading inotify events */

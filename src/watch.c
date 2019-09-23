@@ -18,7 +18,12 @@
 
 
 #include <config.h>
+
 #include <assert.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdbool.h>
 
 #include "logactiond.h"
 

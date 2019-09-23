@@ -23,9 +23,7 @@
 #include <syslog.h>
 #include <assert.h>
 #include <limits.h>
-#include <sys/socket.h>
-
-#include <libconfig.h>
+#include <stdbool.h>
 
 #include "logactiond.h"
 
@@ -387,7 +385,7 @@ check_meta_list(la_command_t *command)
 
         if (meta_command)
         {
-                if (time(NULL) > meta_command->meta_start_time)
+                if (xtime(NULL) > meta_command->meta_start_time)
                 {
                         int old = meta_command->factor;
                         meta_command->factor *= meta_command->rule->meta_factor;

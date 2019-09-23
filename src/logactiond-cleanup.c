@@ -22,10 +22,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <syslog.h>
-#include <assert.h>
 #include <getopt.h>
-#include <string.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #include "logactiond.h"
 

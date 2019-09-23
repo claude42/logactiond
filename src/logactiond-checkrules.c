@@ -25,6 +25,9 @@
 #include <assert.h>
 #include <getopt.h>
 #include <string.h>
+#include <stdbool.h>
+#include <sys/types.h>
+#include <regex.h>
 
 #include "logactiond.h"
 

@@ -20,17 +20,13 @@
 
 #ifndef NOMONITORING
 
-#include <time.h>
 #include <pthread.h>
 #include <unistd.h>
-#include <string.h>
 #include <assert.h>
 #include <limits.h>
 #include <stdio.h>
 #include <errno.h>
 #include <syslog.h>
-
-//#include <libconfig.h>
 
 #include "logactiond.h"
 #include "nodelist.h"

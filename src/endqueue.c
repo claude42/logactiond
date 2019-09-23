@@ -18,17 +18,14 @@
 
 #include <config.h>
 
-#include <time.h>
+//#include <time.h>
 #include <pthread.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <syslog.h>
+//#include <stdlib.h>
+//#include <unistd.h>
+//#include <syslog.h>
 #include <string.h>
 #include <assert.h>
 #include <limits.h>
-#include <arpa/inet.h>
-
-#include <libconfig.h>
 
 #include "logactiond.h"
 #include "nodelist.h"

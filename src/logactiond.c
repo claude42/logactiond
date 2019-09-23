@@ -21,18 +21,16 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <sys/select.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <syslog.h>
-#include <signal.h>
 #include <assert.h>
 #include <getopt.h>
 #include <pwd.h>
-#include <limits.h>
 #include <pthread.h>
 #include <string.h>
+#include <stdbool.h>
 #if HAVE_LIBSYSTEMD
 #include <systemd/sd-daemon.h>
 #endif /* HAVE_LIBSYSTEMD */

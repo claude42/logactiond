@@ -24,10 +24,10 @@
 #include <stdlib.h>
 #include <systemd/sd-journal.h>
 #include <pthread.h>
-#include <unistd.h>
 #include <assert.h>
-
-#include <libconfig.h>
+#include <stdarg.h>
+#include <string.h>
+#include <stdio.h>
 
 #include "logactiond.h"
 

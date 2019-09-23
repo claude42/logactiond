@@ -20,9 +20,9 @@
 
 #include <string.h>
 #include <assert.h>
-#include <syslog.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdbool.h>
 
 #include "logactiond.h"
 #include "nodelist.h"

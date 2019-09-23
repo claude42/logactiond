@@ -26,7 +26,6 @@
 #endif /* HAVE_PTHREAD_NP_H */
 #include <stdio.h>
 #include <stdlib.h>
-#include <err.h>
 #include <string.h>
 #include <syslog.h>
 #include <errno.h>
@@ -35,6 +34,10 @@
 #include <unistd.h>
 #include <time.h>
 #include <assert.h>
+#include <stdbool.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
 
 
 #include "logactiond.h"

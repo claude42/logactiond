@@ -21,13 +21,16 @@
 
 #if !HAVE_INOTIFY
 
-#include <unistd.h>
 #include <syslog.h>
 #include <assert.h>
-#include <poll.h>
 #include <stdio.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
+#include <pthread.h>
+#include <stdbool.h>
+#include <time.h>
+
 
 #include "logactiond.h"
 

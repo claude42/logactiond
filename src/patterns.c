@@ -18,13 +18,12 @@
 
 #include <config.h>
 
+#include <sys/types.h>
 #include <regex.h>
 #include <string.h>
-#include <syslog.h>
 #include <assert.h>
 #include <stdlib.h>
-
-#include <libconfig.h>
+#include <stdbool.h>
 
 #include "logactiond.h"
 #include "nodelist.h"
