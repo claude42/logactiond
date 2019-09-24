@@ -67,12 +67,6 @@ parse_add_entry_message(char *message, la_address_t **address, la_rule_t **rule,
                         la_log(LOG_ERR, "Cannot convert address in command %s!", message);
                         return false;
                 }
-                if (address_on_ignore_list(*address))
-                {
-                        la_log(LOG_ERR, "Address on ignore list in command %s!", message);
-                        free_address(*address);
-                        return false;
-                }
                 la_debug("Found address %s", (*address)->text);
         }
 

@@ -428,6 +428,13 @@ trigger_manual_command(la_address_t *address, la_command_t *template,
         assert_address(address); assert_command(template); assert(from);
         la_debug("trigger_manual_command()");
 
+
+        if (address_on_ignore_list(address))
+        {
+                la_log_verbose(LOG_INFO, "Host: %s, always ignored.", address->text);
+                return;
+        }
+
         la_command_t *tmp = find_end_command(address);
         if (tmp)
         {
