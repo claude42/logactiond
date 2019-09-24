@@ -60,150 +60,24 @@ create_fifo(void)
 }
 
 static void
-trigger_manual_command(la_address_t *address, la_command_t *template,
-                unsigned int duration)
-{
-        assert_address(address); assert_command(template);
-        la_debug("trigger_manual_command()");
-
-        la_command_t *tmp = find_end_command(address);
-        if (tmp)
-        {
-                la_log(LOG_INFO, "Host: %s, ignored, action \"%s\" already "
-                                "active (triggered by rule \"%s\").",
-                                address->text, tmp->name, tmp->rule->name);
-                return;
-        }
-
-        la_command_t *command = create_manual_command_from_template(template, 
-                        address);
-        if (!command)
-        {
-                la_log(LOG_ERR, "IP address doesn't match what requirements of action!");
-                return;
-        }
-
-        if (duration != 0)
-                command->duration = duration;
-
-        la_log(LOG_INFO, "Host: %s, action \"%s\" activated manually.",
-                        command->address->text, command->name);
-
-        command->rule->queue_count++;
-
-        exec_command(command, LA_COMMANDTYPE_BEGIN);
-        if (command->end_string && command->duration > 0)
-                enqueue_end_command(command);
-        else
-                free_command(command);
-}
-
-static la_rule_t *
-find_rule_for_source(la_source_t *source, char *rulename)
-{
-        assert_source(source); assert(rulename);
-        la_debug("find_rule_for_source(%s)", rulename);
-
-        for (la_rule_t *result = ITERATE_RULES(source->rules);
-                        (result = NEXT_RULE(result));)
-        {
-                if (!strcmp(rulename, result->name))
-                        return result;
-        }
-
-        return NULL;
-}
-
-static la_rule_t *
-find_rule(char *rulename)
-{
-        assert(rulename); assert(la_config);
-        la_debug("find_rule(%s)", rulename);
-
-        la_rule_t *result;
-#if HAVE_LIBSYSTEMD
-        if (la_config->systemd_source)
-        {
-                result = find_rule_for_source(la_config->systemd_source,
-                                rulename);
-                if (result)
-                        return result;
-        }
-#endif /* HAVE_LIBSYSTEMD */
-
-        assert_list(la_config->sources);
-        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
-                        (source = NEXT_SOURCE(source));)
-        {
-                result = find_rule_for_source(source, rulename);
-                if (result)
-                        return result;
-        }
-
-        return NULL;
-}
-
-static void
 add_entry(char *buffer)
 {
         assert(buffer);
         la_debug("add_entry(%s)", buffer);
+        la_address_t *address;
+        la_rule_t *rule;
+        int duration;
 
-        char *comma = strchr(buffer, ',');
-        if (!comma)
+        if (parse_add_entry_message(buffer, &address, &rule, &duration))
         {
-                la_log(LOG_ERR, "Illegal command %s!", buffer);
-                return;
-        }
-        *comma = '\0';
-        
-        char *comma2 = strchr(comma+sizeof(char), ',');
-        if (comma2)
-                *comma2 = '\0';
-
-        la_address_t *address = create_address(buffer+sizeof(char));
-        if (!address)
-        {
-                la_log(LOG_ERR, "Cannot convert address in command %s!", buffer);
-                return;
-        }
-        if (address_on_ignore_list(address))
-        {
-                la_log(LOG_ERR, "Address on ignore list in command %s!", buffer);
-                free_address(address);
-                return;
-        }
-        la_debug("Found address %s", address->text);
-
-        la_rule_t *rule = find_rule(comma+sizeof(char));
-        if (!rule)
-        {
-                la_log(LOG_ERR, "Unable to find rule in command %s!", buffer);
-                free_address(address);
-                return;
-        }
-        la_debug("Found rule %s.", rule->name);
-
-        unsigned int duration = 0;
-        if (comma2)
-        {
-                char *endptr;
-                duration = strtol(comma2+sizeof(char), &endptr, 10);
-                if (*endptr != '\0')
-                {
-                        la_log(LOG_ERR, "Spurious characters in command %s!", buffer);
-                        free_address(address);
-                        return;
-                }
-        }
-
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
-        for (la_command_t *template = ITERATE_COMMANDS(rule->begin_commands);
-                        (template = NEXT_COMMAND(template));)
-                trigger_manual_command(address, template, duration);
+                for (la_command_t *template =
+                                ITERATE_COMMANDS(rule->begin_commands);
+                                (template = NEXT_COMMAND(template));)
+                        trigger_manual_command(address, template, duration, "localhost");
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
-
-        free(address);
+                free(address);
+        }
 }
 
 void

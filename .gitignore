@@ -105,6 +105,8 @@ config.h
 config.log
 config.status
 
+logactiond-*.tar.gz
+
 src/tags
 src/TAGS
 
@@ -112,6 +114,7 @@ src/logactiond
 src/logactiond-checkrules
 src/logactiond-cleanup
 src/logactiond-queue
+src/logactiond-client
 
 libconfig/.gitignore
 libconfig/ac_config.h.in

@@ -409,7 +409,10 @@ load_patterns(la_rule_t *rule, const config_setting_t *rule_def,
                 patterns = config_setting_lookup_or_die(rule_def,
                                 LA_RULE_PATTERNS_LABEL);
 
-        /* TODO: is NULL an acceptable input for config_setting_length()? */
+        if (!patterns)
+                die_hard("No patterns specified for %s!",
+                                config_setting_name(rule_def));
+
         int n = config_setting_length(patterns);
         if (n < 0)
                 die_hard("No patterns specified for %s!",
@@ -428,37 +431,34 @@ load_patterns(la_rule_t *rule, const config_setting_t *rule_def,
 
 
 static void
-load_ignore_addresses(kw_list_t *ignore_addresses,
-                const config_setting_t *section)
+compile_address_list(kw_list_t *list,
+                const config_setting_t *setting)
 {
-        assert_list(ignore_addresses); assert(section);
+        assert_list(list); assert(setting);
 
-        la_debug("load_ignore_addresses(%s)", config_setting_name(section));
+        la_debug("compile_address_list(%s)", config_setting_name(setting));
 
-        config_setting_t *ignore_section =
-                config_setting_get_member(section, "ignore");
-
-        if (!ignore_section)
+        if (!setting)
                 return;
 
-        unsigned int n = config_setting_length(ignore_section);
+        unsigned int n = config_setting_length(setting);
         for (unsigned int i=0; i<n; i++)
         {
                 config_setting_t *elem =
-                        config_setting_get_elem(ignore_section, i);
+                        config_setting_get_elem(setting, i);
                 const char *ip = config_setting_get_string(elem);
                 if (!ip)
-                        die_hard("Only strings allowed for ignore addresses!");
+                        die_hard("Only strings allowed in address list!");
 
                 la_address_t *address = create_address(ip);
                 if (!address)
                         die_err("Invalid IP address %s!", ip);
 
-                la_vdebug("load_ignore_addresses(%s)=%s",
-                                config_setting_name(section), address->text);
-                add_tail(ignore_addresses, (kw_node_t *) address);
+                la_vdebug("compile_address_list(%s)=%s",
+                                config_setting_name(setting), address->text);
+                add_tail(list, (kw_node_t *) address);
         }
-        assert_list(ignore_addresses);
+        assert_list(list);
 
         return;
 }
@@ -737,7 +737,7 @@ load_rules(void)
                         config_setting_get_elem(local_section, i);
 
                 int enabled;
-                if (config_setting_lookup_bool(uc_rule, LA_LOCAL_ENABLED_LABEL,
+                if (config_setting_lookup_bool(uc_rule, LA_ENABLED_LABEL,
                                         &enabled) == CONFIG_TRUE && enabled)
                 {
                         num_rules_enabled++;
@@ -746,6 +746,51 @@ load_rules(void)
         }
 
         return num_rules_enabled;
+}
+
+static void
+load_remote_settings(void)
+{
+        la_debug("load_remote_settings()");
+        assert(la_config);
+
+        la_config->remote_enabled = false;
+
+        config_setting_t *remote_section =
+                config_lookup(&la_config->config_file, LA_REMOTE_LABEL);
+
+        if (!remote_section)
+                return;
+        if (!config_setting_lookup_bool(remote_section, LA_ENABLED_LABEL,
+                                &la_config->remote_enabled))
+                return;
+        if (!la_config->remote_enabled)
+                return;
+
+        la_config->remote_enabled = true;
+
+        la_config->remote_secret = xstrdup(config_get_string_or_null(remote_section,
+                        LA_REMOTE_SECRET_LABEL));
+        if (xstrlen(la_config->remote_secret) == 0)
+                die_hard("Remote handling enabled but no secret specified");
+
+        config_setting_t *receive_from = config_setting_lookup(remote_section,
+                        LA_REMOTE_RECEIVE_FROM_LABEL);
+        la_config->remote_receive_from = xcreate_list();
+        compile_address_list(la_config->remote_receive_from, receive_from);
+
+        config_setting_t *send_to = config_setting_lookup(remote_section,
+                        LA_REMOTE_SEND_TO_LABEL);
+        la_config->remote_send_to = xcreate_list();
+        compile_address_list(la_config->remote_send_to, send_to);
+
+        la_config->remote_bind = xstrdup(config_get_string_or_null(remote_section,
+                        LA_REMOTE_BIND_LABEL));
+
+        la_config->remote_port = config_get_unsigned_int_or_negative(
+                        remote_section, LA_REMOTE_PORT_LABEL);
+        if (la_config->remote_port < 0)
+                la_config->remote_port = DEFAULT_PORT;
 }
 
 static void
@@ -802,8 +847,9 @@ load_defaults(void)
                 load_properties(la_config->default_properties, defaults_section);
 
                 la_config->ignore_addresses = xcreate_list();
-                load_ignore_addresses(la_config->ignore_addresses,
-                                defaults_section);
+                config_setting_t *ignore = config_setting_get_member(
+                                defaults_section, LA_IGNORE_LABEL);
+                compile_address_list(la_config->ignore_addresses, ignore);
         }
         else
         {
@@ -881,6 +927,7 @@ load_la_config(char *filename)
                 xpthread_mutex_unlock(&config_mutex);
                 die_hard("No rules enabledd!");
         }
+        load_remote_settings();
 
         config_destroy(&la_config->config_file);
 
@@ -910,6 +957,12 @@ unload_la_config(void)
         la_config->default_properties = NULL;
         free_address_list(la_config->ignore_addresses);
         la_config->ignore_addresses = NULL;
+        free(la_config->remote_secret);
+        free_address_list(la_config->remote_receive_from);
+        la_config->remote_receive_from = NULL;
+        free_address_list(la_config->remote_send_to);
+        la_config->remote_send_to = NULL;
+        free(la_config->remote_bind);
 
         free(la_config);
         la_config = NULL;

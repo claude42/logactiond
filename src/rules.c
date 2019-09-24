@@ -25,6 +25,7 @@
 #include <limits.h>
 #include <sys/types.h>
 #include <regex.h>
+#include <string.h>
 
 #include "logactiond.h"
 #include "nodelist.h"
@@ -469,5 +470,49 @@ free_rule_list(kw_list_t *list)
 }
 
 
+static la_rule_t *
+find_rule_for_source(la_source_t *source, char *rule_name)
+{
+        assert_source(source); assert(rule_name);
+        la_debug("find_rule_for_source(%s)", rule_name);
+
+        for (la_rule_t *result = ITERATE_RULES(source->rules);
+                        (result = NEXT_RULE(result));)
+        {
+                if (!strcmp(rule_name, result->name))
+                        return result;
+        }
+
+        return NULL;
+}
+
+la_rule_t *
+find_rule(char *rule_name)
+{
+        assert(rule_name); assert(la_config);
+        la_debug("find_rule(%s)", rule_name);
+
+        la_rule_t *result;
+#if HAVE_LIBSYSTEMD
+        if (la_config->systemd_source)
+        {
+                result = find_rule_for_source(la_config->systemd_source,
+                                rule_name);
+                if (result)
+                        return result;
+        }
+#endif /* HAVE_LIBSYSTEMD */
+
+        assert_list(la_config->sources);
+        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+                        (source = NEXT_SOURCE(source));)
+        {
+                result = find_rule_for_source(source, rule_name);
+                if (result)
+                        return result;
+        }
+
+        return NULL;
+}
 
 /* vim: set autowrite expandtab: */

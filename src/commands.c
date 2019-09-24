@@ -418,6 +418,49 @@ incr_invocation_counts(la_command_t *command)
 }
 
 /*
+ * Executes a command submitted manually or from a remote logactiond
+ */
+
+void
+trigger_manual_command(la_address_t *address, la_command_t *template,
+                unsigned int duration, char *from)
+{
+        assert_address(address); assert_command(template); assert(from);
+        la_debug("trigger_manual_command()");
+
+        la_command_t *tmp = find_end_command(address);
+        if (tmp)
+        {
+                la_log(LOG_INFO, "Host: %s, ignored, action \"%s\" already "
+                                "active (triggered by rule \"%s\").",
+                                address->text, tmp->name, tmp->rule->name);
+                return;
+        }
+
+        la_command_t *command = create_manual_command_from_template(template, 
+                        address);
+        if (!command)
+        {
+                la_log(LOG_ERR, "IP address doesn't match what requirements of action!");
+                return;
+        }
+
+        if (duration != 0)
+                command->duration = duration;
+
+        la_log(LOG_INFO, "Host: %s, action \"%s\" activated by host %s.",
+                        command->address->text, command->name, from);
+
+        command->rule->queue_count++;
+
+        exec_command(command, LA_COMMANDTYPE_BEGIN);
+        if (command->end_string && command->duration > 0)
+                enqueue_end_command(command);
+        else
+                free_command(command);
+}
+
+/*
  * Executes a begin_command.
  */
 
@@ -475,6 +518,8 @@ trigger_command(la_command_t *command)
                 /* update relevant counters for status monitoring */
                 incr_invocation_counts(command);
                 command->rule->queue_count++;
+
+                send_add_entry_message(command);
         }
 
         exec_command(command, LA_COMMANDTYPE_BEGIN);

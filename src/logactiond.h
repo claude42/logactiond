@@ -55,6 +55,8 @@
 #define DEFAULT_META_FACTOR 2
 #define DEFAULT_META_MAX 86400
 
+#define DEFAULT_PORT 11111
+
 #if HAVE_RUN
 #define RUNDIR "/run"
 #else
@@ -76,13 +78,14 @@
 #define LA_PERIOD_LABEL "period"
 #define LA_DURATION_LABEL "duration"
 
+#define LA_IGNORE_LABEL "ignore"
+
 #define LA_META_ENABLED_LABEL "meta_enabled"
 #define LA_META_PERIOD_LABEL "meta_period"
 #define LA_META_FACTOR_LABEL "meta_factor"
 #define LA_META_MAX_LABEL "meta_max"
 
 #define LA_SERVICE_LABEL "service"
-
 
 #define LA_ACTIONS_LABEL "actions"
 #define LA_ACTION_INITIALIZE_LABEL "initialize"
@@ -98,7 +101,7 @@
 #define LA_SOURCES_LABEL "sources"
 
 #define LA_LOCAL_LABEL "local"
-#define LA_LOCAL_ENABLED_LABEL "enabled"
+#define LA_ENABLED_LABEL "enabled"
 
 #define LA_RULES_LABEL "rules"
 #define LA_RULE_SOURCE_LABEL "source"
@@ -108,6 +111,13 @@
 
 #define LA_SOURCE_LOCATION "location"
 #define LA_SOURCE_PREFIX "prefix"
+
+#define LA_REMOTE_LABEL "remote"
+#define LA_REMOTE_RECEIVE_FROM_LABEL "receive_from"
+#define LA_REMOTE_SEND_TO_LABEL "send_to"
+#define LA_REMOTE_SECRET_LABEL "secret"
+#define LA_REMOTE_BIND_LABEL "bind"
+#define LA_REMOTE_PORT_LABEL "port"
 
 #define LA_TOKEN_REPL "(.+)"
 #define LA_TOKEN_REPL_LEN 4
@@ -371,6 +381,12 @@ typedef struct la_config_s
         int default_meta_max;
         kw_list_t *default_properties;
         kw_list_t *ignore_addresses;
+        int remote_enabled;
+        kw_list_t *remote_receive_from;
+        kw_list_t *remote_send_to;
+        char *remote_secret;
+        char *remote_bind;
+        unsigned int remote_port;
 } la_config_t;
 
 /* Global variables */
@@ -382,6 +398,7 @@ extern pthread_t systemd_watch_thread;
 extern pthread_t end_queue_thread;
 extern pthread_t monitoring_thread;
 extern pthread_t fifo_thread;
+extern pthread_t remote_thread;
 
 extern pthread_mutex_t config_mutex;
 extern pthread_mutex_t end_queue_mutex;
@@ -466,6 +483,14 @@ void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, size_t on_top);
 
 kw_list_t *xcreate_list(void);
 
+/* messages.c */
+
+bool parse_add_entry_message(char *message, la_address_t **address,
+                la_rule_t **rule, int *duration);
+
+bool create_add_entry_message(char *buffer, size_t buf_len,
+                la_command_t *command, bool send_duration);
+
 /* configfile.c */
 
 void load_la_config(char *filename);
@@ -516,6 +541,9 @@ unsigned int meta_list_length(void);
 void free_meta_list(void);
 
 void assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned int line);
+
+void trigger_manual_command(la_address_t *address, la_command_t *template,
+                unsigned int duration, char *from);
 
 void trigger_command(la_command_t *command);
 
@@ -589,6 +617,8 @@ void free_rule(la_rule_t *rule);
 
 void free_rule_list(kw_list_t *list);
 
+la_rule_t *find_rule(char *rule_name);
+
 /* sources.c */
 
 void assert_source_ffl(la_source_t *source, const char *func, char *file, unsigned int line);
@@ -607,6 +637,7 @@ void empty_source_list(kw_list_t *list);
 void free_source_list(kw_list_t *list);
 
 la_source_t *find_source_by_location(const char *location);
+
 
 #if HAVE_LIBSYSTEMD
 /* systemd.c */
@@ -657,6 +688,12 @@ void shutdown_watching(void);
 /* fifo.c */
 
 void start_fifo_thread(void);
+
+/* remote.c */
+
+void send_add_entry_message(la_command_t *command);
+
+void start_remote_thread(void);
 
 
 #endif /* __logactiond_h */

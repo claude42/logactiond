@@ -170,44 +170,6 @@ iterate_through_all_rules(char *line)
 #endif /* HAVE_LIBSYSTEMD */
 }
 
-static la_rule_t *
-find_rule(const char *rule_name)
-{
-        la_debug("find_rule()");
-        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
-                        (source = NEXT_SOURCE(source));)
-        {
-                for (la_rule_t *rule = ITERATE_RULES(source->rules);
-                                (rule = NEXT_RULE(rule));)
-                {
-                        if (!strcmp(rule_name, rule->name))
-                        {
-                                la_debug("find_rule(%s)", rule_name);
-                                return rule;
-                        }
-                }
-        }
-
-#if HAVE_LIBSYSTEMD
-        if (la_config->systemd_source)
-        {
-                for (la_rule_t *rule = ITERATE_RULES(la_config->systemd_source->rules);
-                                (rule = NEXT_RULE(rule));)
-                {
-                        if (!strcmp(rule_name, rule->name))
-                        {
-                                la_debug("find_rule(%s)", rule_name);
-                                return rule;
-                        }
-                }
-        }
-#endif /* HAVE_LIBSYSTEMD */
-
-
-        la_debug("find_rule(%s)=NULL", rule_name);
-        return NULL;
-}
-
 int
 main(int argc, char *argv[])
 {

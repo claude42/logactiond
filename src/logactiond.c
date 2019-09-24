@@ -73,6 +73,8 @@ trigger_shutdown(int status, int saved_errno)
 #endif /* NOMONITORING */
         if (fifo_thread)
                 pthread_cancel(fifo_thread);
+        if (remote_thread)
+                pthread_cancel(remote_thread);
 }
 
 static void
@@ -402,6 +404,7 @@ main(int argc, char *argv[])
         start_monitoring_thread();
 #endif /* NOMONITORING */
         start_fifo_thread();
+        start_remote_thread();
 
 #if HAVE_LIBSYSTEMD
         sd_notify(0, "READY=1\n"
@@ -443,6 +446,10 @@ main(int argc, char *argv[])
         if (fifo_thread)
                 xpthread_join(fifo_thread, NULL);
         la_debug("joined fifo_thread");
+
+        if (remote_thread)
+                xpthread_join(remote_thread, NULL);
+        la_debug("joined remote_thread");
 
         unload_la_config();
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
