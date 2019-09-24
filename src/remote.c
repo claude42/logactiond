@@ -174,9 +174,6 @@ remote_loop(void *ptr)
                 int duration;
                 
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
-                if (!parse_add_entry_message(buf, &address, &rule, &duration))
-                        continue;
-
                 if (remote_client.ss_family != AF_INET &&
                                 remote_client.ss_family != AF_INET6)
                 {
@@ -184,6 +181,9 @@ remote_loop(void *ptr)
                         free(address);
                         continue;
                 }
+
+                if (!parse_add_entry_message(buf, &address, &rule, &duration))
+                        continue;
 
                 char from[50];
                 if (remote_client.ss_family == AF_INET)
