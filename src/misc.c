@@ -226,7 +226,6 @@ log_message(unsigned int priority, char *fmt, va_list gp, char *add)
                         fprintf(stderr, "<%u>", priority);
                         /* intended fall through! */
                 case LA_UTIL_FOREGROUND:
-                case LA_UTIL_DEBUG:
                         vfprintf(stderr, fmt, gp);
                         if (add)
                                 fprintf(stderr, ": %s", add);

@@ -81,7 +81,6 @@ read_options(int argc, char *argv[])
                                 break;
                         case 'd': 
                                 log_level++;
-                                run_type = LA_UTIL_DEBUG;
                                 if (optarg && *optarg == 'd')
                                         log_level++;
                                 break;

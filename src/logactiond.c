@@ -233,7 +233,7 @@ static void
 print_usage(void)
 {
         fprintf(stderr,
-                "Usage: logactiond [-c configfile] [-d] [-v] [-f] [-p pidfile] [-s] [-t]\n");
+                "Usage: logactiond [-c configfile] [-d] [-v] [-f] [-p pidfile] [-t]\n");
 }
 
 static void
@@ -250,13 +250,12 @@ read_options(int argc, char *argv[])
                         {"debug",      optional_argument, NULL, 'd'},
                         {"verbose",    no_argument,       NULL, 'v'},
                         {"pidfile",    required_argument, NULL, 'p'},
-                        {"simulate",   no_argument,       NULL, 's'},
                         {"user",       required_argument, NULL, 'u'},
                         {"status",     optional_argument, NULL, 't'},
                         {0,            0,                 0,    0  }
                 };
 
-                int c = getopt_long(argc, argv, "fc:d::vp:su:t", long_options, NULL);
+                int c = getopt_long(argc, argv, "fc:d::vp:u:t", long_options, NULL);
 
                 if (c == -1)
                         break;
@@ -279,9 +278,6 @@ read_options(int argc, char *argv[])
                                 break;
                         case 'p':
                                 pid_file = optarg;
-                                break;
-                        case 's': 
-                                run_type = LA_UTIL_FOREGROUND;
                                 break;
                         case 'u':
                                 run_uid_s = optarg;
@@ -379,14 +375,6 @@ main(int argc, char *argv[])
         chdir(CONF_DIR);
 
         read_options(argc, argv);
-
-        if (run_type == LA_UTIL_FOREGROUND)
-        {
-                load_la_config(cfg_filename);
-                unload_la_config();
-                fprintf(stderr, "Simulation successful.\n");
-                exit(EXIT_SUCCESS);
-        }
 
         use_correct_uid();
 

@@ -198,7 +198,7 @@ typedef enum la_need_host_s { LA_NEED_HOST_NO, LA_NEED_HOST_ANY,
         LA_NEED_HOST_IP4, LA_NEED_HOST_IP6 } la_need_host_t;
 
 typedef enum la_runtype_s { LA_DAEMON_BACKGROUND, LA_DAEMON_FOREGROUND,
-        LA_UTIL_FOREGROUND, LA_UTIL_DEBUG } la_runtype_t;
+        LA_UTIL_FOREGROUND } la_runtype_t;
 
 /*
  * bla
