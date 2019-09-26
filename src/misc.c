@@ -30,11 +30,9 @@
 #include <string.h>
 #include <syslog.h>
 #include <errno.h>
-#include <stdarg.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
-#include <assert.h>
 #include <stdbool.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -43,6 +41,7 @@
 
 #include "logactiond.h"
 
+#ifndef CLIENTONLY
 bool created_pidfile = false;
 
 void
@@ -188,6 +187,8 @@ xpthread_join(pthread_t thread, void **retval)
                 die_err("Failed to join thread!");
 }
 
+#endif /* CLIENTONLY */
+
 time_t
 xtime(time_t *tloc)
 {
@@ -204,129 +205,6 @@ void xfree(void *ptr)
         free(ptr);
 }
 
-void
-log_message(unsigned int priority, char *fmt, va_list gp, char *add)
-{
-        assert(fmt);
-
-        if (priority >= log_level ||
-                        (run_type == LA_UTIL_FOREGROUND && priority >= LOG_INFO))
-                return;
-
-        if (priority == LOG_VDEBUG)
-                priority = LOG_DEBUG;
-
-        switch (run_type)
-        {
-                case LA_DAEMON_BACKGROUND:
-                        vsyslog(priority, fmt, gp);
-                        if (add)
-                                syslog(priority, "%s", add);
-                        break;
-                case LA_DAEMON_FOREGROUND:
-                        fprintf(stderr, "<%u>", priority);
-                        /* intended fall through! */
-                case LA_UTIL_FOREGROUND:
-                        vfprintf(stderr, fmt, gp);
-                        if (add)
-                                fprintf(stderr, ": %s", add);
-                        fprintf(stderr, "\n");
-                        break;
-        }
-}
-
-void
-la_debug(char *fmt, ...)
-{
-#ifndef NDEBUG
-        va_list myargs;
-
-        va_start(myargs, fmt);
-        log_message(LOG_DEBUG, fmt, myargs, NULL);
-        va_end(myargs);
-
-#endif /* NDEBUG */
-}
-
-void
-la_vdebug(char *fmt, ...)
-{
-#ifndef NDEBUG
-        va_list myargs;
-
-        va_start(myargs, fmt);
-        log_message(LOG_VDEBUG, fmt, myargs, NULL);
-        va_end(myargs);
-
-#endif /* NDEBUG */
-}
-
-void
-la_log_errno(unsigned int priority, char *fmt, ...)
-{
-        va_list myargs;
-
-        va_start(myargs, fmt);
-        log_message(priority, fmt, myargs, strerror(errno));
-        va_end(myargs);
-}
-
-void
-la_log_verbose(unsigned int priority, char *fmt, ...)
-{
-        va_list myargs;
-
-        if (log_verbose)
-        {
-                va_start(myargs, fmt);
-                log_message(priority, fmt, myargs, NULL);
-                va_end(myargs);
-        }
-}
-
-void
-la_log(unsigned int priority, char *fmt, ...)
-{
-        va_list myargs;
-
-        va_start(myargs, fmt);
-        log_message(priority, fmt, myargs, NULL);
-        va_end(myargs);
-}
-
-void
-die_hard(char *fmt, ...)
-{
-        va_list myargs;
-
-        int save_errno = errno;
-
-        va_start(myargs, fmt);
-        log_message(LOG_ERR, fmt, myargs, NULL);
-        va_end(myargs);
-
-        if (!shutdown_ongoing)
-                trigger_shutdown(EXIT_FAILURE, save_errno);
-
-        pthread_exit(NULL);
-}
-
-void
-die_err(char *fmt, ...)
-{
-        va_list myargs;
-
-        int save_errno = errno;
-
-        va_start(myargs, fmt);
-        log_message(LOG_ERR, fmt, myargs, strerror(errno));
-        va_end(myargs);
-
-        if (!shutdown_ongoing)
-                trigger_shutdown(EXIT_FAILURE, save_errno);
-
-        pthread_exit(NULL);
-}
 
 void *
 xrealloc(void *ptr, size_t n)

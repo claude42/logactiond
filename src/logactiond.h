@@ -205,10 +205,11 @@
  * - MAC
  * - the encrypted message
  */
-#define TOTAL_MSG_LEN ENC_MSG_LEN + crypto_secretbox_NONCEBYTES
+#define TOTAL_MSG_LEN ENC_MSG_LEN + crypto_secretbox_NONCEBYTES + crypto_pwhash_SALTBYTES
 
-#define NONCE_IDX 0
-#define MSG_IDX crypto_secretbox_NONCEBYTES
+#define MSG_IDX 0
+#define SALT_IDX ENC_MSG_LEN
+#define NONCE_IDX ENC_MSG_LEN+crypto_pwhash_SALTBYTES
 
 typedef enum la_commandtype_s { LA_COMMANDTYPE_BEGIN, LA_COMMANDTYPE_END } la_commandtype_t;
 
@@ -477,6 +478,7 @@ void la_vdebug(char *fmt, ...);
 void la_log_errno(unsigned int priority, char *fmt, ...);
 
 void la_log_verbose(unsigned int priority, char *fmt, ...);
+
 void la_log(unsigned int priority, char *fmt, ...);
 
 void die_hard(char *fmt, ...);
@@ -501,12 +503,14 @@ void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, size_t on_top);
 
 kw_list_t *xcreate_list(void);
 
-/* parse-messages.c */
+/* messages.c */
 
 bool parse_add_entry_message(char *message, la_address_t **address,
                 la_rule_t **rule, int *duration);
 
-/* messages.c */
+bool decrypt_message(char *buffer, char *password);
+
+bool encrypt_message(char *buffer, char *password);
 
 char *create_add_message(char *ip, char *rule, char *duration);
 

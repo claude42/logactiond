@@ -28,9 +28,14 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <assert.h>
+#include <syslog.h>
 #include <sodium.h>
 
 #include "logactiond.h"
+
+la_runtype_t run_type = LA_UTIL_FOREGROUND;
+unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
+bool log_verbose = false;
 
 static int socket_fd;
 static struct sockaddr_in server;
@@ -39,15 +44,15 @@ static struct sockaddr_in server;
 static void
 print_usage(void)
 {
-        fprintf(stderr, "Usage: logactiond-queue add address rule [duration]\n"
-                        "       logactiond-queue remove address\n");
+        fprintf(stderr, "Usage: logactiond-queue password host add address rule [duration]\n"
+                        "       logactiond-queue password host remove address\n");
 }
 
 static void
 close_socket(void)
 {
         if (close(socket_fd) == -1)
-                err(1, "Unable to close socket");
+                die_err("Unable to close socket");
 }
 
 static void
@@ -59,33 +64,29 @@ send_message(unsigned char *message)
         if (message_sent == -1)
         {
                 close_socket();
-                err(1, "Unable to send message");
+                die_err("Unable to send message");
         }
         else if (message_sent != TOTAL_MSG_LEN)
         {
                 close_socket();
-                err(1, "Sent truncated message");
+                die_err("Sent truncated message");
         }
 }
 
 
 static void
-setup_socket(void)
+setup_socket(char *host)
 {
-        /* BIG TODO: of course lift restriction to 127.0.0.1 */
         socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
         if (socket_fd == -1)
-                err(1, "Unable to create server socket");
+                die_err("Unable to create server socket");
 
         server.sin_family = AF_INET;
-        server.sin_port = htons(11111);
-        /* TODO: huh? only one is necessary. Preference is inet_aton(), why is
-         * inet_addr() still there?!? TODO */
-        //server.sin_addr.s_addr = inet_addr("127.0.0.1");
-        if (!inet_aton("127.0.0.1", &server.sin_addr))
+        server.sin_port = htons(16473);
+        if (!inet_aton(host, &server.sin_addr))
         {
                 close(socket_fd);
-                err(1, "Unable to convert address");
+                die_err("Unable to convert address");
         }
         memset(server.sin_zero, 0, sizeof(server.sin_zero));
 }
@@ -122,10 +123,13 @@ main(int argc, char *argv[])
                 }
         }
 
-        if (optind >= argc)
-                errx(1, "Wrong number of arguments.");
+        if (optind > argc-3)
+                die_hard("Wrong number of arguments.");
 
+        char *password = argv[optind++];
+        char *host = argv[optind++];
         char *command = argv[optind++];
+        char *message = NULL;
 
         if (!strcmp(command, "add"))
         {
@@ -136,41 +140,34 @@ main(int argc, char *argv[])
                         char *duration = NULL;
                         if (optind < argc)
                                 duration = argv[optind];
-                        /* TODO: error handling */
-                        char *message = create_add_message(ip, rule, duration);
-                        if (!message)
-                                err(1, "Unable to create encrypted message");
-                        setup_socket();
-                        //send_message(message);
-                        free(message);
-                        close_socket();
+                        message = create_add_message(ip, rule, duration);
                 }
                 else
                 {
-                        errx(1, "Wrong number of arguments.");
+                        die_hard("Wrong number of arguments.");
                 }
         }
         else if (!strcmp(command, "remove"))
         {
                 if (optind == argc-1)
-                {
-                        setup_socket();
-                        char *message = create_remove_message(argv[optind]);
-                        if (!message)
-                                err(1, "Unable to create encrypted message");
-                        //send_message(message);
-                        free(message);
-                        close_socket();
-                }
+                        message = create_remove_message(argv[optind]);
                 else
-                {
-                        errx(1, "Wrong number of arguments.");
-                }
+                        die_hard("Wrong number of arguments.");
         }
         else
         {
-                errx(1, "Unknown command \"%s\".", command);
+                die_hard("Unknown command \"%s\".", command);
         }
+
+        if (!message)
+                die_err("Unable to create message");
+        if (!encrypt_message(message, password))
+                die_err("Unable to encrypt message");
+
+        setup_socket(host);
+        send_message(message);
+        free(message);
+        close_socket();
 
         exit(0);
 }

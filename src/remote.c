@@ -67,11 +67,11 @@ send_message_to_single_address(char *message, la_address_t *remote_address)
         if (message_sent == -1)
                 la_log_errno(LOG_ERR, "Unable to send message to %s",
                                 remote_address->text);
-        else if (message_sent != strlen(message)+1)
+        else if (message_sent != TOTAL_MSG_LEN)
                 la_log_errno(LOG_ERR, "Sent truncated message to %s",
                                 remote_address->text);
         else
-                la_debug("Sent %s to %s", message, remote_address->text);
+                la_debug("Sent message '%s' to %s", message, remote_address->text);
 }
 
 void
@@ -88,7 +88,12 @@ send_add_entry_message(la_command_t *command)
         if (!(message = create_add_message(command->address->text,
                                 command->rule_name, NULL)))
         {
-                la_log(LOG_ERR, "String overflow");
+                la_log(LOG_ERR, "Unable to create message");
+                return;
+        }
+        if (!encrypt_message(message, la_config->remote_secret))
+        {
+                la_log(LOG_ERR, "Unable to encrypt message");
                 return;
         }
 
@@ -171,7 +176,6 @@ remote_loop(void *ptr)
                 if (n == -1)
                         die_err("Error while receiving remote messages");
                 buf[n] = '\0';
-                la_debug("Received data: %s", buf);
 
                 la_address_t *address;
                 la_rule_t *rule;
@@ -185,6 +189,11 @@ remote_loop(void *ptr)
                         free(address);
                         continue;
                 }
+
+                if (!decrypt_message(buf, la_config->remote_secret))
+                        continue;
+
+                la_debug("Received message '%s'",  buf);
 
                 if (!parse_add_entry_message(buf, &address, &rule, &duration))
                         continue;
