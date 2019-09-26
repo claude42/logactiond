@@ -87,8 +87,7 @@ parse_add_entry_message(char *message, la_address_t **address, la_rule_t **rule,
                 *rule = find_rule(comma+sizeof(char));
                 if (!*rule)
                 {
-                        la_log_verbose(LOG_ERR, "Unable to find rule in command
-                                        %s!", message);
+                        la_log_verbose(LOG_ERR, "Unable to find rule in command %s!", message);
                         free_address(*address);
                         return false;
                 }
