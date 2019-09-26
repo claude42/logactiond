@@ -71,8 +71,7 @@ send_message_to_single_address(char *message, la_address_t *remote_address)
                 la_log_errno(LOG_ERR, "Sent truncated message to %s",
                                 remote_address->text);
         else
-                la_log(LOG_INFO, "Sent %s to %s", message,
-                                remote_address->text);
+                la_debug("Sent %s to %s", message, remote_address->text);
 }
 
 void
@@ -172,7 +171,7 @@ remote_loop(void *ptr)
                 if (n == -1)
                         die_err("Error while receiving remote messages");
                 buf[n] = '\0';
-                la_log(LOG_INFO, "Received data: %s", buf);
+                la_debug("Received data: %s", buf);
 
                 la_address_t *address;
                 la_rule_t *rule;
