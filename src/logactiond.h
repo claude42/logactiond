@@ -306,7 +306,7 @@ typedef struct la_rule_s
         unsigned int duration;
         bool meta_enabled;
         unsigned int meta_period;
-        unsigned int meta_factor;
+        int meta_factor;
         unsigned int meta_max;
         char *systemd_unit;
         kw_list_t *trigger_list;
@@ -335,7 +335,7 @@ typedef struct la_command_s
         la_need_host_t need_host;    /* Command requires host */
         int duration;                /* duration how long command shall stay active,
                                    -1 if none */
-        unsigned int factor;
+        int factor;
         bool manual;            /* True if command has been manually submitted */
 
         /* only relevant for end_commands */
@@ -568,7 +568,7 @@ void trigger_manual_command(la_address_t *address, la_command_t *template,
 
 void trigger_command(la_command_t *command);
 
-void trigger_end_command(la_command_t *command);
+void trigger_end_command(la_command_t *command, bool suppress_logging);
 
 la_command_t * create_command_from_template(la_command_t *template,
                 la_pattern_t *pattern, la_address_t *address);

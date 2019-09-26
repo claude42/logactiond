@@ -39,7 +39,7 @@ typedef struct la_meta_command_s
         la_rule_t *rule;
         la_address_t *address;
         time_t meta_start_time;
-        unsigned int factor;
+        int factor;
 } meta_command_t;
 
 static kw_list_t *meta_list;
@@ -387,15 +387,29 @@ check_meta_list(la_command_t *command)
         {
                 if (xtime(NULL) > meta_command->meta_start_time)
                 {
-                        int old = meta_command->factor;
-                        meta_command->factor *= meta_command->rule->meta_factor;
-                        if (meta_command->factor > meta_command->rule->meta_max)
-                                meta_command->factor = meta_command->rule->meta_max;
-                        la_log(LOG_INFO, "factor increased from %u to %u. meta_factor=%u, meta_max=%u", old,
-                                        meta_command->factor, meta_command->rule->meta_factor,
-                                        meta_command->rule->meta_max);
+                        if (command->duration * meta_command->factor  *
+                                        command->rule->meta_factor <
+                                        command->rule->meta_max)
+                        {
+                                meta_command->factor *=
+                                        meta_command->rule->meta_factor;
+                                meta_command->meta_start_time = xtime(NULL) +
+                                        meta_command->factor *
+                                        command->duration;
+                        }
+                        else
+                        {
+                                meta_command->factor = -1;
+                                meta_command->meta_start_time = xtime(NULL) +
+                                        command->rule->meta_max;
+                        }
+                        /*if (command->duration * meta_command->factor  *
+                                        meta_command->rule->meta_factor <
+                                        meta_command->rule->meta_max)
+                                meta_command->factor *=
+                                        meta_command->rule->meta_factor;
                         meta_command->meta_start_time = xtime(NULL) +
-                                meta_command->factor * command->duration;
+                                meta_command->factor * command->duration;*/
                 }
         }
         else
@@ -452,11 +466,25 @@ trigger_manual_command(la_address_t *address, la_command_t *template,
                 return;
         }
 
-        if (duration != 0)
-                command->duration = duration;
+        /* TODO: really? better ignore it! */
+        /*if (duration != 0)
+                command->duration = duration;*/
 
-        la_log(LOG_INFO, "Host: %s, action \"%s\" activated by host %s.",
-                        command->address->text, command->name, from);
+        if (command->rule && command->rule->meta_enabled)
+        {
+                command->factor = check_meta_list(command);
+                la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
+                                "by host %s, rule \"%s\" (factor %d).",
+                                command->address->text, command->name, from,
+                                command->rule->name, command->factor);
+        }
+        else
+        {
+                la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
+                                "by host %s, rule \"%s\".",
+                                command->address->text, command->name, from,
+                                command->rule->name);
+        }
 
         command->rule->queue_count++;
 
@@ -505,11 +533,12 @@ trigger_command(la_command_t *command)
         else
         {
                 /* search through meta_list to get correct factor */
+                /* TODO: command->rule always set at this point or better test? */
                 if (command->rule->meta_enabled)
                 {
                         command->factor = check_meta_list(command);
                         la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
-                                        "by rule \"%s\" (factor %u).",
+                                        "by rule \"%s\" (factor %d).",
                                         command->address->text, command->name,
                                         command->rule->name, command->factor);
                 }
@@ -536,11 +565,14 @@ trigger_command(la_command_t *command)
 /*
  * Executes an end_command.
  *
+ * Will suppress any logging, if suppress_logging is true (main use case: avoi
+ * 100s of log lines on shutdown. Will still log in case started with -v.
+ *
  * Runs in end_queue_thread
  */
 
 void
-trigger_end_command(la_command_t *command)
+trigger_end_command(la_command_t *command, bool suppress_logging)
 {
         /* Don't assert_command() here, as after a reload some commands might
          * not have a rule attached to them anymore */
@@ -555,14 +587,28 @@ trigger_end_command(la_command_t *command)
         }
         else
         {
-                if (command->address)
-                        la_log(LOG_INFO, "Host: %s, action \"%s\" ended for "
-                                        "rule \"%s\".", command->address->text,
-                                        command->name, command->rule_name);
+                if (!suppress_logging)
+                {
+                        if (command->address)
+                                la_log(LOG_INFO, "Host: %s, action \"%s\" ended for "
+                                                "rule \"%s\".", command->address->text,
+                                                command->name, command->rule_name);
+                        else
+                                la_log(LOG_INFO, "Action \"%s\" ended for rule "
+                                                "\"%s\".", command->name,
+                                                command->rule_name);
+                }
                 else
-                        la_log(LOG_INFO, "Action \"%s\" ended for rule "
-                                        "\"%s\".", command->name,
-                                        command->rule_name);
+                {
+                        if (command->address)
+                                la_log_verbose(LOG_INFO, "Host: %s, action \"%s\" ended for "
+                                                "rule \"%s\".", command->address->text,
+                                                command->name, command->rule_name);
+                        else
+                                la_log_verbose(LOG_INFO, "Action \"%s\" ended for rule "
+                                                "\"%s\".", command->name,
+                                                command->rule_name);
+                }
 
                 /* After a reload some commands might not have a rule attached
                  * to them anymore */

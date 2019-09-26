@@ -191,8 +191,6 @@ remove_and_trigger(la_address_t *address)
 
         xpthread_mutex_lock(&end_queue_mutex);
 
-        la_debug("remove_and_trigger() - mutex locked");
-
         /* Don't use find_end_command() here but do it ourself so we can keep
          * the mutex locked during the whole function to avoid creating a race
          * condition. */
@@ -209,21 +207,15 @@ remove_and_trigger(la_address_t *address)
 
         if (!command)
         {
-                la_debug("remove_and_trigger() - command not found");
                 xpthread_mutex_unlock(&end_queue_mutex);
                 return -1;
         }
 
-        la_debug("remove_and_trigger() - command found");
-
         remove_node((kw_node_t *) command);
-        trigger_end_command(command);
+        trigger_end_command(command, false);
         free_command(command);
 
-        la_debug("remove_and_trigger() - deed done");
-
         xpthread_mutex_unlock(&end_queue_mutex);
-        la_debug("remove_and_trigger() - unlocked mutex");
 
         return 0;
 }
@@ -254,7 +246,7 @@ empty_end_queue(void)
         for (la_command_t *tmp;
                         (tmp = REM_COMMANDS_HEAD(end_queue));)
         {
-                trigger_end_command(tmp);
+                trigger_end_command(tmp, true);
                 free_command(tmp);
         }
 
@@ -354,7 +346,7 @@ consume_end_queue(void *ptr)
                         /* end_time of next command reached, remove it
                          * and don't sleep but immediately look for more */
                         remove_node((kw_node_t *) command);
-                        trigger_end_command(command);
+                        trigger_end_command(command, false);
                         free_command(command);
 #ifndef NOMONITORING
                         dump_queue_status(end_queue);
@@ -404,9 +396,17 @@ set_end_time(la_command_t *command)
         la_vdebug("set_end_time(%s, %u)", command->end_string, command->duration);
 
         if (command->duration == INT_MAX)
+        {
                 command->end_time = INT_MAX;
+        }
         else
-                command->end_time = xtime(NULL) + command->duration * command->factor;
+        {
+                if (command->factor != -1)
+                        command->end_time = xtime(NULL) + command->duration *
+                                command->factor;
+                else
+                        command->end_time = xtime(NULL) + command->rule->meta_max;
+        }
 }
 
 /*

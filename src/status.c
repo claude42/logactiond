@@ -247,13 +247,27 @@ dump_queue_status(kw_list_t *queue)
 
         if (status_monitoring >= 2)
         {
-                fprintf(hosts_file, "Queue length: %u, meta_command: %u\n\n",
+                unsigned int num_elems = 0;
+                unsigned int num_elems_local = 0;
+                for (la_command_t *command = ITERATE_COMMANDS(queue);
+                                command = NEXT_COMMAND(command);)
+                {
+                        if (!command->is_template)
+                        {
+                                num_elems++;
+                                if (!command->manual)
+                                        num_elems_local++;
+                        }
+                }
+
+                fprintf(hosts_file, "Queue length: %u (%u local), meta_command: %u\n\n",
+                                num_elems, num_elems_local,
                                 list_length(queue),
                                 meta_list_length());
         }
 
-        fprintf(hosts_file, "IP address                                     "
-                        "Fa Time Rule          Action\n"
+        fprintf(hosts_file, "IP address                                  "
+                        "Ma Fa Time Rule          Action\n"
                         "======================================"
                         "=========================================\n");
 
@@ -278,11 +292,11 @@ dump_queue_status(kw_list_t *queue)
                                 &timedelta, &unit);
 
                 if (command->manual)
-                        fprintf(hosts_file, "%-46.46s Ma %2u%c  %-13.13s %-13.13s\n",
-                                        adr, timedelta, unit,
+                        fprintf(hosts_file, "%-43.43s Ma %2d %2u%c  %-13.13s %-13.13s\n",
+                                        adr, command->factor, timedelta, unit,
                                         command->rule_name, command->name);
                 else
-                        fprintf(hosts_file, "%-46.46s %2u %2u%c  %-13.13s %-13.13s\n",
+                        fprintf(hosts_file, "%-43.43s    %2d %2u%c  %-13.13s %-13.13s\n",
                                         adr, command->factor, timedelta, unit,
                                         command->rule_name, command->name);
         }
