@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([logactiond], 0.2, [info@logactiond.org])
+AC_INIT([logactiond],[0.2],[info@logactiond.org])
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([src/logactiond.c])
 AC_CONFIG_HEADERS([config.h])
@@ -20,6 +20,13 @@ AC_CHECK_LIB([config], [config_set_include_func])
 AM_CONDITIONAL([USE_INSTALLED_LIBCONFIG], [test "$ac_cv_lib_config_config_set_include_func" = yes])
 AC_CHECK_LIB([systemd], [sd_journal_open])
 AC_CHECK_LIB([resolv], [inet_net_pton])
+#AC_CHECK_LIB([crypto], [EVP_EncryptInit_ex])
+PKG_CHECK_MODULES([LIBSODIUM], [libsodium], [
+	           AC_DEFINE([WITH_LIBSODIUM], [1], [Use libsodium])
+])
+#PKG_CHECK_MODULES([OPENSSL], [openssl], [
+#	           AC_DEFINE([WITH_OPENSSL], [1], [Use OpenSSL])
+#])
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h limits.h stdlib.h string.h syslog.h unistd.h fcntl.h netinet/in.h sys/socket.h pthread_np.h])
@@ -40,7 +47,7 @@ AC_FUNC_FORK
 AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([regcomp strdup strerror strndup strrchr ftruncate strcasecmp fcntl strtol strchr memset mkfifo])
+AC_CHECK_FUNCS([regcomp strdup strerror strndup strrchr ftruncate strcasecmp fcntl strtol strchr memset mkfifo socket])
 
 AX_PTHREAD
 

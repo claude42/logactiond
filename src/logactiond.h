@@ -192,6 +192,24 @@
 #define assert_property(PROPERTY) assert_property_ffl(PROPERTY, __func__, __FILE__, __LINE__)
 #endif /* NDEBUG */
 
+/* Remote protocol */
+
+#define PROTOCOL_VERSION '0'
+
+/* Length of unencrypted message*/
+#define MSG_LEN 175
+/* Length of encrypted message (i.e. incl. MAC */
+#define ENC_MSG_LEN MSG_LEN + crypto_secretbox_MACBYTES
+/* Length of whole message that will be send, i.e.
+ * - nonce
+ * - MAC
+ * - the encrypted message
+ */
+#define TOTAL_MSG_LEN ENC_MSG_LEN + crypto_secretbox_NONCEBYTES
+
+#define NONCE_IDX 0
+#define MSG_IDX crypto_secretbox_NONCEBYTES
+
 typedef enum la_commandtype_s { LA_COMMANDTYPE_BEGIN, LA_COMMANDTYPE_END } la_commandtype_t;
 
 typedef enum la_need_host_s { LA_NEED_HOST_NO, LA_NEED_HOST_ANY,
@@ -483,13 +501,16 @@ void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, size_t on_top);
 
 kw_list_t *xcreate_list(void);
 
-/* messages.c */
+/* parse-messages.c */
 
 bool parse_add_entry_message(char *message, la_address_t **address,
                 la_rule_t **rule, int *duration);
 
-bool create_add_entry_message(char *buffer, size_t buf_len,
-                la_command_t *command, bool send_duration);
+/* messages.c */
+
+char *create_add_message(char *ip, char *rule, char *duration);
+
+char *create_remove_message(char *ip);
 
 /* configfile.c */
 

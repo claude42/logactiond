@@ -27,12 +27,14 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-
+#include <assert.h>
+#include <sodium.h>
 
 #include "logactiond.h"
 
 static int socket_fd;
 static struct sockaddr_in server;
+
 
 static void
 print_usage(void)
@@ -49,9 +51,9 @@ close_socket(void)
 }
 
 static void
-send_message(char *message, int message_len)
+send_message(unsigned char *message)
 {
-        size_t message_sent = sendto(socket_fd, message, message_len, 0,
+        size_t message_sent = sendto(socket_fd, message, TOTAL_MSG_LEN, 0,
                         (struct sockaddr *) &server, sizeof(server));
 
         if (message_sent == -1)
@@ -59,45 +61,13 @@ send_message(char *message, int message_len)
                 close_socket();
                 err(1, "Unable to send message");
         }
-        else if (message_sent != message_len)
+        else if (message_sent != TOTAL_MSG_LEN)
         {
                 close_socket();
                 err(1, "Sent truncated message");
         }
 }
 
-static void
-command_add(char *ip, char *rule, char *duration)
-{
-        char message[100];
-
-        int message_len = snprintf(message, 99, "+%s,%s%s%s",
-                        ip, rule,
-                        duration ? "," : "",
-                        duration ? duration : "");
-        if (message_len > 99)
-        {
-                close(socket_fd);
-                err(1, "String overflow");
-        }
-
-        send_message(message, message_len+1);
-}
-
-static void
-command_remove(char *ip)
-{
-        char message[100];
-
-        int message_len = snprintf(message, 99, "-%s", ip);
-        if (message_len > 99)
-        {
-                close(socket_fd);
-                err(1, "String overflow");
-        }
-
-        send_message(message, message_len+1);
-}
 
 static void
 setup_socket(void)
@@ -166,8 +136,13 @@ main(int argc, char *argv[])
                         char *duration = NULL;
                         if (optind < argc)
                                 duration = argv[optind];
+                        /* TODO: error handling */
+                        char *message = create_add_message(ip, rule, duration);
+                        if (!message)
+                                err(1, "Unable to create encrypted message");
                         setup_socket();
-                        command_add(ip, rule, duration);
+                        //send_message(message);
+                        free(message);
                         close_socket();
                 }
                 else
@@ -180,7 +155,11 @@ main(int argc, char *argv[])
                 if (optind == argc-1)
                 {
                         setup_socket();
-                        command_remove(argv[optind]);
+                        char *message = create_remove_message(argv[optind]);
+                        if (!message)
+                                err(1, "Unable to create encrypted message");
+                        //send_message(message);
+                        free(message);
                         close_socket();
                 }
                 else

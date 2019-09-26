@@ -29,6 +29,8 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 
+#include <sodium.h>
+
 #include "logactiond.h"
 #include "nodelist.h"
 
@@ -59,7 +61,7 @@ send_message_to_single_address(char *message, la_address_t *remote_address)
         remote_server.sin_port = htons(la_config->remote_port);
         memset(remote_server.sin_zero, 0, sizeof(remote_server.sin_zero));
 
-        size_t message_sent = sendto(client_fd, message, strlen(message)+1, 0,
+        size_t message_sent = sendto(client_fd, message, TOTAL_MSG_LEN, 0,
                         (struct sockaddr *) &remote_server,
                         sizeof(remote_server));
         if (message_sent == -1)
@@ -83,8 +85,9 @@ send_add_entry_message(la_command_t *command)
 
         /* delibarately left out duration here. Receiving end should decide on
          * duration. TODO: does that make sense? */
-        char message[100];
-        if (!create_add_entry_message(message, 100, command, false))
+        char *message;
+        if (!(message = create_add_message(command->address->text,
+                                command->rule_name, NULL)))
         {
                 la_log(LOG_ERR, "String overflow");
                 return;
@@ -97,6 +100,8 @@ send_add_entry_message(la_command_t *command)
         {
                 send_message_to_single_address(message, remote_address);
         }
+
+        free(message);
 }
 
 /*
