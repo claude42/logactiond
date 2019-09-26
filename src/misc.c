@@ -19,6 +19,7 @@
 
 #include <config.h>
 
+/* define _GNU_SOURCE to get pthread_setname_np() */
 #define _GNU_SOURCE
 #include <pthread.h>
 #if HAVE_PTHREAD_NP_H
