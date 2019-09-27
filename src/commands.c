@@ -452,9 +452,11 @@ trigger_manual_command(la_address_t *address, la_command_t *template,
         la_command_t *tmp = find_end_command(address);
         if (tmp)
         {
-                la_log(LOG_INFO, "Host: %s, ignored, action \"%s\" already "
+                la_log_verbose(LOG_INFO, "Host: %s, ignored, action \"%s\" "
+                                "by host %s already "
                                 "active (triggered by rule \"%s\").",
-                                address->text, tmp->name, tmp->rule->name);
+                                address->text, tmp->name, from,
+                                tmp->rule->name);
                 return;
         }
 
