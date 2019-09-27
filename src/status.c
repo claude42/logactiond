@@ -250,7 +250,7 @@ dump_queue_status(kw_list_t *queue)
                 unsigned int num_elems = 0;
                 unsigned int num_elems_local = 0;
                 for (la_command_t *command = ITERATE_COMMANDS(queue);
-                                command = NEXT_COMMAND(command);)
+                                (command = NEXT_COMMAND(command));)
                 {
                         if (!command->is_template)
                         {
@@ -262,7 +262,6 @@ dump_queue_status(kw_list_t *queue)
 
                 fprintf(hosts_file, "Queue length: %u (%u local), meta_command: %u\n\n",
                                 num_elems, num_elems_local,
-                                list_length(queue),
                                 meta_list_length());
         }
 
