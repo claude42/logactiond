@@ -155,24 +155,20 @@ adrcmp(la_address_t *a1, la_address_t *a2)
 }
 
 /*
- * Check whether ip address is on ignore list. Returns false if address==NULL
+ * Check whether ip address is on a list. Returns false if address==NULL
  */
 
 bool
-address_on_ignore_list(la_address_t *address)
+address_on_list(la_address_t *address, kw_list_t *list)
 {
         if (!address)
                 return false;
 
-        assert_address(address);
+        assert_address(address); assert_list(list);
 
-        la_vdebug("address_on_ignore_list(%s)", address->text);
+        la_vdebug("address_on_list(%s)", address->text);
 
-        assert(la_config);
-        if (!la_config->ignore_addresses)
-                return false;
-
-        for (la_address_t *ign_address = ITERATE_ADDRESSES(la_config->ignore_addresses);
+        for (la_address_t *ign_address = ITERATE_ADDRESSES(list);
                         (ign_address = NEXT_ADDRESS(ign_address));)
         {
                 if (address->af != ign_address->af)
@@ -188,6 +184,19 @@ address_on_ignore_list(la_address_t *address)
         }
 
         return false;
+}
+
+/*
+ * Check whether ip address (represented by string) is on a list
+ */
+
+bool
+address_string_on_list(char *host, kw_list_t *list)
+{
+        la_address_t *address = create_address(host);
+        bool  result = address_on_list(address, list);
+        free(address);
+        return result;
 }
 
 /*

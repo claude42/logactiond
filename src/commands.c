@@ -443,7 +443,8 @@ trigger_manual_command(la_address_t *address, la_command_t *template,
         la_debug("trigger_manual_command()");
 
 
-        if (address_on_ignore_list(address))
+        assert(la_config);
+        if (address_on_list(address, la_config->ignore_addresses))
         {
                 la_log_verbose(LOG_INFO, "Host: %s, always ignored.", address->text);
                 return;

@@ -266,7 +266,8 @@ trigger_all_commands(la_pattern_t *pattern)
         }
 
         /* Do nothing if on ignore list */
-        if (address_on_ignore_list(address))
+        assert(la_config);
+        if (address_on_list(address, la_config->ignore_addresses))
         {
                 la_log_verbose(LOG_INFO, "Host: %s, always ignored.", host);
         }

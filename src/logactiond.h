@@ -529,7 +529,9 @@ void assert_address_ffl(la_address_t *address, const char *func, char *file,
 
 int adrcmp(la_address_t *a1, la_address_t *a2);
 
-bool address_on_ignore_list(la_address_t *address);
+bool address_on_list(la_address_t *address, kw_list_t *list);
+
+bool address_string_on_list(char *host, kw_list_t *list);
 
 la_address_t *create_address(const char *ip);
 

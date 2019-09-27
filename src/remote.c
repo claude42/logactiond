@@ -37,7 +37,6 @@
 pthread_t remote_thread = 0;
 static int server_fd;
 static int client_fd;
-static struct sockaddr_in remote_server;
 
 
 static void
@@ -56,6 +55,7 @@ send_message_to_single_address(char *message, la_address_t *remote_address)
                 }
         }
 
+        struct sockaddr_in remote_server;
         remote_server.sin_family = remote_address->af;
         remote_server.sin_addr = remote_address->addr;
         remote_server.sin_port = htons(la_config->remote_port);
@@ -177,26 +177,13 @@ remote_loop(void *ptr)
                         die_err("Error while receiving remote messages");
                 buf[n] = '\0';
 
-                la_address_t *address;
-                la_rule_t *rule;
-                int duration;
-                
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
                 if (remote_client.ss_family != AF_INET &&
                                 remote_client.ss_family != AF_INET6)
                 {
                         la_log(LOG_ERR, "Received message through unknown protocol?!");
-                        free(address);
                         continue;
                 }
-
-                if (!decrypt_message(buf, la_config->remote_secret))
-                        continue;
-
-                la_debug("Received message '%s'",  buf);
-
-                if (!parse_add_entry_message(buf, &address, &rule, &duration))
-                        continue;
 
                 char from[50];
                 if (remote_client.ss_family == AF_INET)
@@ -211,6 +198,27 @@ remote_loop(void *ptr)
                                 (struct sockaddr_in6 *) &remote_client;
                         inet_ntop(AF_INET6, &(remote_client6->sin6_addr), from, 50);
                 }
+
+                /* TODO: of course this code is bad. We convert from in_addr to
+                 * char back to  in_addr... */
+                if  (!address_string_on_list(from, la_config->remote_receive_from))
+                {
+                        la_log(LOG_ERR, "Ignored message from %s - not on "
+                                        "receive_from list!", from);
+                        continue;
+                }
+
+                if (!decrypt_message(buf, la_config->remote_secret))
+                        continue;
+
+                la_debug("Received message '%s'",  buf);
+
+                la_address_t *address;
+                la_rule_t *rule;
+                int duration;
+                
+                if (!parse_add_entry_message(buf, &address, &rule, &duration))
+                        continue;
 
                 for (la_command_t *template =
                                 ITERATE_COMMANDS(rule->begin_commands);
