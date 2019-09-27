@@ -24,6 +24,10 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <syslog.h>
 
 #include "logactiond.h"
 #include "nodelist.h"
@@ -190,26 +194,16 @@ address_on_ignore_list(la_address_t *address)
  * Create an IPv4 address from string
  */
 
-static bool
-create_address4(const char *ip, la_address_t *address)
+static void
+create_address4(const char *host, struct sockaddr_in *sa, la_address_t *address)
 {
-        assert(ip); assert(address); // can't do assert_address() just yet
-        la_vdebug("create_address4(%s)", ip);
-        address->prefix = inet_net_pton(AF_INET, ip, &(address->addr),
-                        sizeof(in_addr_t));
+        assert(host); assert(sa);
+        la_vdebug("create_address4(%s)", host);
+        assert(address); // can't do assert_address() just yet
 
-        if (address->prefix != -1)
-        {
-                address->af = AF_INET;
-                address->text = xstrdup(ip);
-                return true;
-        }
-        else
-        {
-                if (errno != ENOENT)
-                        die_err("Problem converting IP address %s.", ip);
-                return false;
-        }
+        address->addr = sa->sin_addr;
+        address->prefix = 32;
+        address->text = xstrdup(host);
 }
 
 /*
@@ -217,82 +211,111 @@ create_address4(const char *ip, la_address_t *address)
  */
 
 static bool
-create_address6(const char *ip, la_address_t *address)
+create_address6(const char *host, struct sockaddr_in6 *sa,  la_address_t *address)
 {
-        assert(ip); assert(address); // can't do assert_address() just yet
-        la_vdebug("create_address6(%s)", ip);
+        assert(host); assert(address); // can't do assert_address() just yet
+        la_vdebug("create_address6(%s)", host);
 
-        char *sep = strchr(ip, '/');
-        if (sep)
-                *sep = '\0';
+        memcpy(&(address->addr6), &(sa->sin6_addr), sizeof(struct in6_addr));
+        address->prefix = 128;
 
-        int tmp = inet_pton(AF_INET6, ip, &(address->addr6));
-        if (tmp == 1)
-        {
-                if (sep)
-                {
-                        char *endptr;
-                        address->prefix = strtol(sep + 1, &endptr, 10);
-                        if (*endptr != '\0')
-                                return false; // spurious characters after '/'
-                        if (address->prefix < 0 || address->prefix > 128)
-                                return false;
-                }
-                else
-                {
-                        address->prefix = 128;
-                }
-                address->af = AF_INET6;
-                address->text = xmalloc(50);
-                if (inet_ntop(AF_INET6, &(address->addr6), address->text, 50))
-                {
-                        return true;
-                }
-                {
-                        free(address->text);
-                        return false;
-                }
-        }
-        else if (tmp == 0)
-        {
+        address->text = xmalloc(INET6_ADDRSTRLEN + 4); // + 4 for prefix
+        if (!inet_ntop(address->af, &(address->addr6), address->text,
+                                INET6_ADDRSTRLEN - 1))
                 return false;
-        }
-        else
-        {
-                die_err("Problem converting IP address %s.", ip);
-        }
 
-        assert(false);
-        return 0; // avoid compiler warning
+        char *prefix_str = strchr(host, '/');
+        if (prefix_str)
+                strncat(address->text, prefix_str, 4);
+
+        return true;
 }
 
-/*
- * Create new la_address_t. ip must not be NULL
- *
- * Returns NULL in case of an invalid (textual representation of an) IP
- * address.
- */
-
 la_address_t *
-create_address(const char *ip)
+create_address(const char *host)
 {
-        assert(ip);
-        la_vdebug("create_address(%s)", ip);
+        assert(host);
+        la_vdebug("create_address(%s)", host);
+
+        char *prefix_str = strchr(host, '/');
+        if (prefix_str)
+                *prefix_str = '\0';
+
+        struct addrinfo *ai;
+
+        int r = getaddrinfo(host,  NULL, NULL, &ai);
+
+        switch (r) {
+                case 0:
+                        break;
+                case EAI_AGAIN:
+                case EAI_FAIL:
+                case EAI_NONAME:
+                        la_log(LOG_ERR, "Unable to get address for host '%s': %s",
+                                        host, gai_strerror(r));
+                        freeaddrinfo(ai);
+                        return NULL;
+                        break;
+                default:
+                        freeaddrinfo(ai);
+                        die_hard("Error getting address for host '%s': %s",
+                                        host, gai_strerror(r));
+                        break;
+        }
+
+        if (prefix_str)
+                *prefix_str = '/';
 
         la_address_t *result = xmalloc(sizeof(la_address_t));
 
-        if (!create_address4(ip, result))
+        result->af = ai->ai_family;
+
+        if (result->af == AF_INET)
         {
-                if (!create_address6(ip, result))
+                create_address4(host, (struct sockaddr_in *) ai->ai_addr, result);
+        }
+        else if (result->af == AF_INET6)
+        {
+                if (!create_address6(host, (struct sockaddr_in6 *) ai->ai_addr, result))
                 {
+                        free(result->text);
                         free(result);
+                        freeaddrinfo(ai);
+                        return NULL;
+                }
+        }
+        else
+        {
+                la_log(LOG_ERR, "Unsupported address family of incoming message!");
+                free(result);
+                freeaddrinfo(ai);
+                return NULL;
+        }
+
+        if (prefix_str)
+        {
+                char *endptr;
+                result->prefix = strtol(prefix_str+1, &endptr, 10);
+                if (*endptr != '\0')
+                {
+                        la_log(LOG_ERR, "Spurious characters in address!");
+                        free(result->text);
+                        free(result);
+                        freeaddrinfo(ai);
+                        return NULL; // spurious characters after '/'
+                }
+                if (result->prefix <  0 ||
+                                (result->af == AF_INET && result->prefix > 32) ||
+                                (result->af == AF_INET6 && result->prefix > 128))
+                {
+                        la_log(LOG_ERR, "Address prefix out of range!");
+                        free(result->text);
+                        free(result);
+                        freeaddrinfo(ai);
                         return NULL;
                 }
         }
 
-        /* only reached in case IP address could be converted correctly */
-
-        assert_address(result);
         return result;
 }
 

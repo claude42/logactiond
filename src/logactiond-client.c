@@ -19,16 +19,18 @@
 #include <config.h>
 
 #include <unistd.h>
-#include <err.h>
 #include <string.h>
 #include <getopt.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <assert.h>
 #include <syslog.h>
+#include <netdb.h>
+#include <stdbool.h>
 #include <sodium.h>
 
 #include "logactiond.h"
@@ -38,19 +40,21 @@ unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
 bool log_verbose = false;
 
 static int socket_fd;
-static struct sockaddr_in server;
+static struct addrinfo *ai;
+static struct addrinfo hints;
 
 
 static void
 print_usage(void)
 {
-        fprintf(stderr, "Usage: logactiond-queue password host add address rule [duration]\n"
-                        "       logactiond-queue password host remove address\n");
+        fprintf(stderr, "Usage: logactiond-client password host add address rule [duration]\n"
+                        "       logactiond-client password host remove address\n");
 }
 
 static void
-close_socket(void)
+cleanup(void)
 {
+        freeaddrinfo(ai);
         if (close(socket_fd) == -1)
                 die_err("Unable to close socket");
 }
@@ -59,16 +63,16 @@ static void
 send_message(unsigned char *message)
 {
         size_t message_sent = sendto(socket_fd, message, TOTAL_MSG_LEN, 0,
-                        (struct sockaddr *) &server, sizeof(server));
+                        ai->ai_addr, ai->ai_addrlen);
 
         if (message_sent == -1)
         {
-                close_socket();
+                cleanup();
                 die_err("Unable to send message");
         }
         else if (message_sent != TOTAL_MSG_LEN)
         {
-                close_socket();
+                cleanup();
                 die_err("Sent truncated message");
         }
 }
@@ -77,18 +81,19 @@ send_message(unsigned char *message)
 static void
 setup_socket(char *host)
 {
-        socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
-        if (socket_fd == -1)
-                die_err("Unable to create server socket");
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_DGRAM;
+        hints.ai_protocol = IPPROTO_UDP;
+        int r = getaddrinfo(host, "16473", &hints, &ai);
+        if (r)
+                die_hard("Unable to convert address: %s", gai_strerror(r));
 
-        server.sin_family = AF_INET;
-        server.sin_port = htons(16473);
-        if (!inet_aton(host, &server.sin_addr))
+        socket_fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+        if (socket_fd == -1)
         {
-                close(socket_fd);
-                die_err("Unable to convert address");
+                freeaddrinfo(ai);
+                die_err("Unable to create server socket");
         }
-        memset(server.sin_zero, 0, sizeof(server.sin_zero));
 }
 
 
@@ -167,7 +172,7 @@ main(int argc, char *argv[])
         setup_socket(host);
         send_message(message);
         free(message);
-        close_socket();
+        cleanup();
 
         exit(0);
 }
