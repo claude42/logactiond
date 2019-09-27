@@ -41,7 +41,6 @@ bool log_verbose = false;
 
 static int socket_fd;
 static struct addrinfo *ai;
-static struct addrinfo hints;
 
 
 static void
@@ -81,6 +80,7 @@ send_message(unsigned char *message)
 static void
 setup_socket(char *host)
 {
+        static struct addrinfo hints;
         hints.ai_family = AF_INET;
         hints.ai_socktype = SOCK_DGRAM;
         hints.ai_protocol = IPPROTO_UDP;
