@@ -30,18 +30,39 @@
 static unsigned char decrypted_message[MSG_LEN];
 
 /*
- * Parses message and will populate address, rule and duration. If one of
- * parameters address, rule, duration is NULL, it will be skipped.
- *
  * Message format:
  *  - First char is always the protocol version encoded as a single ASCII character
  *  - Second char is the command - encoded as a single ASCII character
  *  - Rest is command specific
- * 
+ *  - Maximum message size is 175 (protocol version '0') determined by the '+'
+ *    command.
+ *
  * Accepted commands:
  *
  *      "0+<ip-address>,<rule-name>,<duation-in-seconds>"
  *      "0-<ip-address>
+ *
+ * Example structure:
+ *      "0+<ip-address>/<prefix>,<rule-name>,<duration-in-seconds>,0"
+ *       || |          | |      | |         | |                    |
+ *       || |          | |      | |         | |                    +-   1 byte
+ *       || |          | |      | |         | +----------------------  20 bytes
+ *       || |          | |      | |         +------------------------   1 byte
+ *       || |          | |      | +---------------------------------- 100 bytes
+ *       || |          | |      +------------------------------------   1 byte
+ *       || |          | +-------------------------------------------   3 bytes
+ *       || |          +--------------------------------------------    1 byte
+ *       || +-------------------------------------------------------   46 bytes
+ *       |+---------------------------------------------------------    1 byte
+ *       +----------------------------------------------------------    1 byte
+ *                                                                   ==========
+ *                                                                    175 bytes
+ */
+
+/*
+ * Parses message and will populate address, rule and duration. If one of
+ * parameters address, rule, duration is NULL, it will be skipped.
+ *
  *
  * Please note: this function will modify the message buffer!
  */
