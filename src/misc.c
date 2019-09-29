@@ -99,10 +99,11 @@ xpthread_create(pthread_t *thread, const pthread_attr_t *attr,
         if (pthread_create(thread, attr, start_routine, arg))
                 die_err("Failed to create thread!");
 #if HAVE_PTHREAD_SETNAME_NP
-        if (pthread_setname_np(*thread, name))
+        if (name && pthread_setname_np(*thread, name))
                 die_err("Failed to set thread name!");
 #elif HAVE_PTHREAD_SET_NAME_NP
-        pthread_set_name_np(*thread, name);
+        if (name)
+                pthread_set_name_np(*thread, name);
 #endif
 }
 
