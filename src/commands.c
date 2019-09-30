@@ -83,14 +83,7 @@ check_for_special_names(la_command_t *command, la_property_t *action_property)
 
                 /* IPVERSION */
                 if (!strcmp(action_property->name, LA_IPVERSION_TOKEN))
-                {
-                        if (command->address->af == AF_INET)
-                                return "4";
-                        else if (command->address->af == AF_INET6)
-                                return "6";
-                        else
-                                return "unknown";
-                }
+                        return get_ip_version(command->address);
         }
 
         /* RULE */
@@ -446,7 +439,7 @@ trigger_manual_command(la_address_t *address, la_command_t *template,
         assert(la_config);
         if (address_on_list(address, la_config->ignore_addresses))
         {
-                la_log_verbose(LOG_INFO, "Host: %s, always ignored.", address->text);
+                la_log_verbose(LOG_INFO, "Host: %s, manual trigger ignored.", address->text);
                 return;
         }
 
@@ -726,11 +719,10 @@ create_command_from_template(la_command_t *template, la_pattern_t *pattern,
         }
         else
         {
-                if ((address->af == AF_INET && template->need_host ==
+                if ((address->sa.ss_family == AF_INET && template->need_host ==
                                         LA_NEED_HOST_IP6) ||
-                                (address->af == AF_INET6 &&
-                                                template->need_host ==
-                                                LA_NEED_HOST_IP4))
+                                (address->sa.ss_family == AF_INET6 &&
+                                 template->need_host == LA_NEED_HOST_IP4))
                         return NULL;
         }
 
@@ -762,9 +754,9 @@ create_manual_command_from_template(la_command_t *template, la_address_t
         }
         else
         {
-                if ((address->af == AF_INET && template->need_host ==
+                if ((address->sa.ss_family == AF_INET && template->need_host ==
                                         LA_NEED_HOST_IP6) ||
-                                (address->af == AF_INET6 &&
+                                (address->sa.ss_family == AF_INET6 &&
                                                 template->need_host ==
                                                 LA_NEED_HOST_IP4))
                         return NULL;

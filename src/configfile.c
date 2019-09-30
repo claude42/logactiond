@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #include <sys/types.h>
 #include <dirent.h>
@@ -36,7 +37,6 @@
 #include <libconfig.h>
 
 #include "logactiond.h"
-#include "nodelist.h"
 
 la_config_t *la_config = NULL;
 
@@ -431,8 +431,8 @@ load_patterns(la_rule_t *rule, const config_setting_t *rule_def,
 
 
 static void
-compile_address_list(kw_list_t *list,
-                const config_setting_t *setting)
+compile_address_list_port(kw_list_t *list,
+                const config_setting_t *setting, in_port_t port)
 {
         assert_list(list); assert(setting);
 
@@ -450,7 +450,7 @@ compile_address_list(kw_list_t *list,
                 if (!ip)
                         die_hard("Only strings allowed in address list!");
 
-                la_address_t *address = create_address(ip);
+                la_address_t *address = create_address_port(ip, port);
                 if (!address)
                         die_err("Invalid IP address %s!", ip);
 
@@ -461,6 +461,13 @@ compile_address_list(kw_list_t *list,
         assert_list(list);
 
         return;
+}
+
+static void
+compile_address_list(kw_list_t *list,
+                const config_setting_t *setting)
+{
+        compile_address_list_port(list, setting, 0);
 }
 
 /*
@@ -779,11 +786,6 @@ load_remote_settings(void)
         la_config->remote_receive_from = xcreate_list();
         compile_address_list(la_config->remote_receive_from, receive_from);
 
-        config_setting_t *send_to = config_setting_lookup(remote_section,
-                        LA_REMOTE_SEND_TO_LABEL);
-        la_config->remote_send_to = xcreate_list();
-        compile_address_list(la_config->remote_send_to, send_to);
-
         la_config->remote_bind = xstrdup(config_get_string_or_null(remote_section,
                         LA_REMOTE_BIND_LABEL));
 
@@ -791,6 +793,14 @@ load_remote_settings(void)
                         remote_section, LA_REMOTE_PORT_LABEL);
         if (la_config->remote_port < 0)
                 la_config->remote_port = DEFAULT_PORT;
+
+	/* Must obviously go after initialization of remote port... */
+        config_setting_t *send_to = config_setting_lookup(remote_section,
+                        LA_REMOTE_SEND_TO_LABEL);
+        la_config->remote_send_to = xcreate_list();
+        compile_address_list_port(la_config->remote_send_to, send_to,
+                        la_config->remote_port);
+
 }
 
 static void

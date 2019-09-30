@@ -27,17 +27,19 @@
 #include <sys/socket.h>
 #include <string.h>
 #include <stdlib.h>
-#include <arpa/inet.h>
+#include <netdb.h>
+#include <stdio.h>
 
 #include <sodium.h>
 
 #include "logactiond.h"
-#include "nodelist.h"
 
 pthread_t remote_thread = 0;
-static int server_fd;
-static int client_fd;
+static int client_fd4;
+static int client_fd6;
 
+/* TODO: check if current implementation really is thread safe */
+/* TODO: maybe connect socket? */
 
 static void
 send_message_to_single_address(char *message, la_address_t *remote_address)
@@ -45,25 +47,47 @@ send_message_to_single_address(char *message, la_address_t *remote_address)
         assert(la_config); assert_address(remote_address);
         la_debug("send_message_to_single_address()");
 
-        if (client_fd == 0 || client_fd == -1)
+        /* Test for shutdown first, just to make sure nobody has closed the fds
+         * already */
+        if (shutdown_ongoing)
+                return;
+
+        /* Select correct file descriptor, open new socket if not already done
+         * so */
+        int *fd_ptr = remote_address->sa.ss_family == AF_INET ? &client_fd4 : &client_fd6;
+        if ((*fd_ptr == 0 || *fd_ptr == -1))
         {
-                client_fd = socket(AF_INET, SOCK_DGRAM, 0);
-                if (client_fd == -1)
+                *fd_ptr = socket(remote_address->sa.ss_family, SOCK_DGRAM, 0);
+                if (*fd_ptr == -1)
                 {
                         la_log_errno(LOG_ERR, "Unable to create server socket");
                         return;
                 }
         }
 
-        struct sockaddr_in remote_server;
-        remote_server.sin_family = remote_address->af;
-        remote_server.sin_addr = remote_address->addr;
-        remote_server.sin_port = htons(la_config->remote_port);
-        memset(remote_server.sin_zero, 0, sizeof(remote_server.sin_zero));
+        /*la_log(LOG_INFO, "family: %u", remote_address->sa.ss_family);
+        if (remote_address->sa.ss_family == AF_INET)
+        {
+                struct sockaddr_in *sa_ptr = (struct sockaddr_in *) &remote_address->sa;
+                la_log(LOG_INFO, "port: %u", sa_ptr->sin_port);
+                char hostname[INET6_ADDRSTRLEN];
+                la_log(LOG_INFO, "Address: %s\n", inet_ntop(AF_INET,
+                                        &sa_ptr->sin_addr, hostname,
+                                        INET6_ADDRSTRLEN));
+        }
+        else
+        {
+                struct sockaddr_in6 *sa_ptr = (struct sockaddr_in6 *) &remote_address->sa;
+                la_log(LOG_INFO, "port: %u", sa_ptr->sin6_port);
+                char hostname[INET6_ADDRSTRLEN];
+                la_log(LOG_INFO, "Address: %s\n", inet_ntop(AF_INET6,
+                                        &sa_ptr->sin6_addr, hostname,
+                                        INET6_ADDRSTRLEN));
+        }*/
 
-        size_t message_sent = sendto(client_fd, message, TOTAL_MSG_LEN, 0,
-                        (struct sockaddr *) &remote_server,
-                        sizeof(remote_server));
+        size_t message_sent = sendto(*fd_ptr, message, TOTAL_MSG_LEN, 0,
+                        (struct sockaddr *) &remote_address->sa,
+                        sizeof(remote_address->sa));
         if (message_sent == -1)
                 la_log_errno(LOG_ERR, "Unable to send message to %s",
                                 remote_address->text);
@@ -116,9 +140,12 @@ static void
 cleanup_remote(void *arg)
 {
         la_debug("cleanup_remote()");
-        if (server_fd > 0 && close(server_fd) == -1)
+        /* TODO: re-enable mt save */
+        /*if (server_fd > 0 && close(server_fd) == -1)
+                die_err("Unable to close socket");*/
+        if (client_fd4 > 0 && close(client_fd4) == -1)
                 die_err("Unable to close socket");
-        if (client_fd > 0 && close(client_fd) == -1)
+        if (client_fd6 > 0 && close(client_fd6) == -1)
                 die_err("Unable to close socket");
 }
 
@@ -131,34 +158,32 @@ remote_loop(void *ptr)
 {
         la_debug("remote_loop()");
 
-        pthread_cleanup_push(cleanup_remote, NULL);
-
-        struct sockaddr_in server;
+        int server_fd;
+        struct addrinfo *ai = (struct addrinfo *) ptr;
         struct sockaddr_storage remote_client;
         char buf[1024];
 
-        server_fd = socket(AF_INET, SOCK_DGRAM, 0);
+        /* TODO: handover server_fd and ai (but ai only once) so cleanup can
+         * close it */
+        pthread_cleanup_push(cleanup_remote, NULL);
+
+        server_fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
         if (server_fd == -1)
                 die_err("Unable to create server socket");
 
-        assert(la_config);
-        if (xstrlen(la_config->remote_bind) == 0 ||
-                        !strcmp("*", la_config->remote_bind))
-        {
-                server.sin_addr.s_addr = INADDR_ANY;
-        }
-        else
-        {
-                if (!inet_aton(la_config->remote_bind, &server.sin_addr))
-                        die_err("Unable to convert IP address %s",
-                                        la_config->remote_bind);
-        }
+        /* Set IPV6_V6ONLY to 1, otherwise it's not possible to bind to both
+         * 0.0.0.0 and :: a the same time. Using only IPv6 would IMHO
+         * complicate things (deal with IPv4 mapped addresses; feature not
+         * available on some platforms). See
+         * https://stackoverflow.com/questions/1618240/how-to-support-both-ipv4-and-ipv6-connections
+         * for a discussion.
+         */
 
-        server.sin_family = AF_INET;
-        server.sin_port = htons(la_config->remote_port);
-        memset(server.sin_zero, 0, sizeof(server.sin_zero));
+        int yes = 1;
+        setsockopt(server_fd, IPPROTO_IPV6, IPV6_V6ONLY, (void *) &yes,
+                        sizeof yes);
 
-        if (bind(server_fd, (struct sockaddr *) &server, sizeof(server)) == -1)
+        if (bind(server_fd, (struct sockaddr *) ai->ai_addr, ai->ai_addrlen) == -1)
                 die_err("Unable to bind to server socket");
 
         for (;;)
@@ -178,30 +203,20 @@ remote_loop(void *ptr)
                 buf[n] = '\0';
 
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
-                if (remote_client.ss_family != AF_INET &&
-                                remote_client.ss_family != AF_INET6)
+                char from[INET6_ADDRSTRLEN];
+                int r = getnameinfo((struct sockaddr *) &remote_client,
+                                sizeof remote_client, from, INET6_ADDRSTRLEN,
+                                NULL, 0, NI_NUMERICHOST);
+                if (r)
                 {
-                        la_log(LOG_ERR, "Received message through unknown protocol?!");
+                        la_log(LOG_ERR, "Cannot determine remote host address: %s",
+                                        gai_strerror(r));
                         continue;
                 }
 
-                char from[50];
-                if (remote_client.ss_family == AF_INET)
-                {
-                        struct sockaddr_in *remote_client4 =
-                                (struct sockaddr_in *) &remote_client;
-                        inet_ntop(AF_INET, &(remote_client4->sin_addr), from, 50);
-                }
-                else if (remote_client.ss_family == AF_INET6)
-                {
-                        struct sockaddr_in6 *remote_client6 =
-                                (struct sockaddr_in6 *) &remote_client;
-                        inet_ntop(AF_INET6, &(remote_client6->sin6_addr), from, 50);
-                }
-
-                /* TODO: of course this code is bad. We convert from in_addr to
-                 * char back to  in_addr... */
-                if  (!address_string_on_list(from, la_config->remote_receive_from))
+                if (!address_on_list_sa((struct sockaddr *) &remote_client,
+                                        sizeof remote_client,
+                                        la_config->remote_receive_from))
                 {
                         la_log(LOG_ERR, "Ignored message from %s - not on "
                                         "receive_from list!", from);
@@ -211,7 +226,7 @@ remote_loop(void *ptr)
                 if (!decrypt_message(buf, la_config->remote_secret))
                         continue;
 
-                la_debug("Received message '%s'",  buf);
+                la_debug("Received message '%s' from %s",  buf, from);
 
                 la_address_t *address;
                 la_rule_t *rule;
@@ -249,7 +264,29 @@ start_remote_thread(void)
                 return;
         assert(!remote_thread);
 
-        xpthread_create(&remote_thread, NULL, remote_loop, NULL, "remote");
+
+        struct addrinfo hints;
+        memset(&hints, 0, sizeof(struct addrinfo));
+        hints.ai_flags = AI_PASSIVE | AI_V4MAPPED | AI_ADDRCONFIG;
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_DGRAM;
+        hints.ai_protocol = IPPROTO_UDP;
+
+        assert(la_config);
+        char *node;
+        if (la_config->remote_bind && !strcmp("*", la_config->remote_bind))
+                node = NULL;
+        else
+                node = la_config->remote_bind;
+        char port[6];
+        snprintf(port, 6, "%u", la_config->remote_port);
+        struct addrinfo *ai;
+        int r = getaddrinfo(node, port, &hints, &ai); 
+        if (r)
+                die_err("Cannot get addrinfo: %s", gai_strerror(r));
+
+        for (; ai; ai = ai->ai_next)
+                xpthread_create(&remote_thread, NULL, remote_loop, ai, "remote");
 }
 
 

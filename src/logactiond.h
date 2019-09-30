@@ -226,9 +226,7 @@ typedef enum la_runtype_s { LA_DAEMON_BACKGROUND, LA_DAEMON_FOREGROUND,
 typedef struct la_address_s
 {
         kw_node_t node;
-        int af;
-        struct in_addr addr;
-        struct in6_addr addr6;
+        struct sockaddr_storage sa;
         int prefix;
         char *text;
 } la_address_t;
@@ -527,11 +525,19 @@ void unload_la_config(void);
 void assert_address_ffl(la_address_t *address, const char *func, char *file,
                 unsigned int line);
 
+const char *get_ip_version(la_address_t *address);
+
 int adrcmp(la_address_t *a1, la_address_t *a2);
 
 bool address_on_list(la_address_t *address, kw_list_t *list);
 
-bool address_string_on_list(char *host, kw_list_t *list);
+bool address_on_list_sa(struct sockaddr *sa, socklen_t salen, kw_list_t *list);
+
+bool address_on_list_str(char *host, kw_list_t *list);
+
+la_address_t *create_address_sa(struct sockaddr *sa, socklen_t salen);
+
+la_address_t *create_address_port(const char *ip, in_port_t port);
 
 la_address_t *create_address(const char *ip);
 
