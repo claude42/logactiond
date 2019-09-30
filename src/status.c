@@ -29,7 +29,6 @@
 #include <syslog.h>
 
 #include "logactiond.h"
-#include "nodelist.h"
 
 pthread_t monitoring_thread = 0;
 

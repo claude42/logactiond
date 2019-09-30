@@ -26,7 +26,6 @@
 #include <stdbool.h>
 
 #include "logactiond.h"
-#include "nodelist.h"
 
 void
 assert_pattern_ffl(la_pattern_t *pattern, const char *func, char *file, unsigned int line)

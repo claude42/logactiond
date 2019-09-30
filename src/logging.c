@@ -26,6 +26,7 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include "logactiond.h"
 

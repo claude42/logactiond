@@ -28,7 +28,6 @@
 #include <string.h>
 
 #include "logactiond.h"
-#include "nodelist.h"
 
 /* FIXME: trigger_list should definitely be a hash */
 

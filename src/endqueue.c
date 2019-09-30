@@ -28,7 +28,6 @@
 #include <limits.h>
 
 #include "logactiond.h"
-#include "nodelist.h"
 
 kw_list_t *end_queue = NULL;
 pthread_t end_queue_thread = 0;

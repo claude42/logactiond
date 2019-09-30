@@ -25,7 +25,6 @@
 #include <stdbool.h>
 
 #include "logactiond.h"
-#include "nodelist.h"
 
 void
 assert_property_ffl(la_property_t *property, const char *func, char *file,
