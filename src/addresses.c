@@ -158,6 +158,8 @@ cidr_match(la_address_t *addr, la_address_t *net)
                 struct sockaddr_in6 *n = (struct sockaddr_in6 *) &net->sa;
                 return cidr6_match(a->sin6_addr, n->sin6_addr, net->prefix);
         }
+
+        return false; // will never be reached, just make compiler happy
 }
 
 /*
