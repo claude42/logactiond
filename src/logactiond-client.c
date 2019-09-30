@@ -57,7 +57,7 @@ cleanup(void)
 }
 
 static void
-send_message(unsigned char *message)
+send_message(char *message)
 {
         size_t message_sent = sendto(socket_fd, message, TOTAL_MSG_LEN, 0,
                         ai->ai_addr, ai->ai_addrlen);
