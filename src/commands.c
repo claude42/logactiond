@@ -24,6 +24,11 @@
 #include <assert.h>
 #include <limits.h>
 #include <stdbool.h>
+/* keep these 3 in, even if deheader says to remote them. Necessary e.g. for
+ * FreeBSD */
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #include "logactiond.h"
 

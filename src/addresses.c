@@ -23,6 +23,11 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
+/* keep these 3 in, even if deheader says to remote them. Necessary e.g. for
+ * FreeBSD */
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <netdb.h>
 #include <syslog.h>
 #include <stdio.h>
