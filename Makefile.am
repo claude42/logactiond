@@ -2,7 +2,7 @@
 SUBDIRS = libconfig src
 
 confdir = $(sysconfdir)/logactiond
-dist_conf_DATA = conf/logactiond.cfg
+dist_conf_DATA = conf/logactiond.cfg conf/remote.cfg
 
 actionsdir = $(confdir)/actions
 dist_actions_DATA = conf/actions/*.cfg
