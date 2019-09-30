@@ -21,9 +21,10 @@
 
 #include <assert.h>
 #include <string.h>
-#include <stdbool.h>
 #include <syslog.h>
 #include <sodium.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "logactiond.h"
 
@@ -117,6 +118,9 @@ parse_add_entry_message(char *message, la_address_t **address, la_rule_t **rule,
                 *rule = find_rule(comma+sizeof(char));
                 if (!*rule)
                 {
+                        *comma = ',';
+                        if (comma2)
+                                *comma2 = ',';
                         la_log_verbose(LOG_ERR, "Unable to find rule in command %s!", message);
                         free_address(*address);
                         return false;
