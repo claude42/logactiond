@@ -227,7 +227,7 @@ trigger_single_command(la_pattern_t *pattern, la_address_t *address,
         if  (pattern->rule->dnsbl_enabled && pattern->rule->threshold > 1)
         {
                 for (kw_node_t *bl = &pattern->rule->blacklists->head;
-                                bl = bl->succ->succ ? bl->succ : NULL;) {
+                                (bl = bl->succ->succ ? bl->succ : NULL);) {
                         if (host_on_dnsbl(address, bl->name))
                         {
                                 la_log(LOG_INFO, "Host: %s blacklisted on %s.",
@@ -474,7 +474,7 @@ free_rule(la_rule_t *rule)
         free_command_list(rule->begin_commands);
         free_command_list(rule->trigger_list);
         free_property_list(rule->properties);
-        for (kw_node_t *node; node = rem_head(rule->blacklists);)
+        for (kw_node_t *node; ((node = rem_head(rule->blacklists)));)
         {
                 free(node->name);
                 free(node);
