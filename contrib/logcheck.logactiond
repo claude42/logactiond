@@ -9,7 +9,7 @@
 ^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Disabling rule "[_[:alnum:]-]+"\.$
 ^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Host: [.:[:xdigit:]]+, always ignored\.$
 ^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Host: [.:[:xdigit:]]+, trigger [[:digit:]]+ for rule "[_[:alnum:]-]+"\.$
-^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Host: [.:[:xdigit:]]+, action "[_[:alnum:]-]+" activated by \(host [.:[:xdigit:]]+, \)?rule "[_[:alnum:]-]+" \(factor [[:digit:]]+\)\.$
+^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Host: [.:[:xdigit:]]+, action "[_[:alnum:]-]+" activated by (host [.:[:xdigit:]]+, )?rule "[_[:alnum:]-]+" \(factor [[:digit:]]+\)\.$
 ^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Host: [.:[:xdigit:]]+, ignored, action "[_[:alnum:]-]+" already active \(triggered by rule "[_[:alnum:]-]+"\)\.$
 ^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Host: [.:[:xdigit:]]+, action "[_[:alnum:]-]+" ended for rule "[_[:alnum:]-]+"\.$
 ^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Action "[_[:alnum:]-]+" ended for rule "[_[:alnum:]-]+"\.$
