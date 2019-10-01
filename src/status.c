@@ -72,10 +72,8 @@ dump_rule_diagnostics(FILE *diag_file, la_rule_t *rule)
         assert(diag_file), assert_rule(rule);
         la_vdebug("dump_rule_diagnostics(%s)", rule->name);
 
-        xpthread_mutex_lock(&config_mutex);
         fprintf(diag_file, "%s, list length=%u\n", rule->name,
                         list_length(rule->trigger_list));
-        xpthread_mutex_unlock(&config_mutex);
 }
 
 /*
@@ -235,6 +233,12 @@ start_monitoring_thread(void)
  * Runs in end_queue_thread
  */
 
+/* TODO: as this accesses meta_list_length() this might necessitate locking the
+ * config_mutex. It is called from endqueue_end_command() (which has the mutex
+ * locked already) as well as empty_end_queue() and consume_end_queue() which
+ * don't have that lock. Should have a good look at it!
+ */
+
 void
 dump_queue_status(kw_list_t *queue)
 {
@@ -261,11 +265,9 @@ dump_queue_status(kw_list_t *queue)
                         }
                 }
 
-                xpthread_mutex_lock(&config_mutex);
                 fprintf(hosts_file, "Queue length: %u (%u local), meta_command: %u\n\n",
                                 num_elems, num_elems_local,
                                 meta_list_length());
-                xpthread_mutex_unlock(&config_mutex);
         }
 
         fprintf(hosts_file, "IP address                                  "
