@@ -115,6 +115,7 @@ src/logactiond-checkrules
 src/logactiond-cleanup
 src/logactiond-queue
 src/logactiond-client
+src/testerli
 
 libconfig/.gitignore
 libconfig/ac_config.h.in

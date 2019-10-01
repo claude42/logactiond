@@ -15,3 +15,4 @@
 ^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Action "[_[:alnum:]-]+" ended for rule "[_[:alnum:]-]+"\.$
 ^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Enabling rule "[_[:alnum:]-]+"\.$
 ^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Exiting \(status=[[:digit:]]+, errno=[[:digit:]]+\)\.$
+^\w{3} [ :[:digit:]]{11} [._[:alnum:]-]+ logactiond\[[[:digit:]]+\]: Host: [.:[:xdigit:]]+ blacklisted on [^[:space:]]+\.$
