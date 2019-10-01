@@ -192,7 +192,12 @@ trigger_single_command(la_pattern_t *pattern, la_address_t *address,
          */
         command = find_trigger(template, address);
 
-        if (!command)
+        bool from_trigger_list;
+        if (command)
+        {
+                from_trigger_list = true;
+        }
+        else
         {
                 /* Don't trigger command if need_host==true but no host
                  * property exists */
@@ -211,6 +216,29 @@ trigger_single_command(la_pattern_t *pattern, la_address_t *address,
                 {
                         la_log(LOG_ERR, "IP address doesn't match what requirements of action!");
                         return;
+                }
+                from_trigger_list = false;
+        }
+
+        /* Check whether address is on a dnsbl, if so trigger_command directly
+         * on first sight. Only do dnsbl lookup if dnsbl_enabled==true and
+         * threshold>1 */
+
+        if  (pattern->rule->dnsbl_enabled && pattern->rule->threshold > 1)
+        {
+                for (kw_node_t *bl = &pattern->rule->blacklists->head;
+                                (bl = bl->succ->succ ? bl->succ : NULL);) {
+                        if (host_on_dnsbl(address, bl->name))
+                        {
+                                la_log(LOG_INFO, "Host: %s blacklisted on %s.",
+                                                address->text, bl->name);
+                                if (from_trigger_list)
+                                        remove_node((kw_node_t *) command);
+                                trigger_command(command);
+                                if (command->end_string && command->duration > 0)
+                                        enqueue_end_command(command);
+                                return;
+                        }
                 }
         }
 
@@ -374,8 +402,8 @@ handle_log_line_for_rule(la_rule_t *rule, const char *line)
 la_rule_t *
 create_rule(char *name, la_source_t *source, int threshold, int period,
                 int duration, int meta_enabled, int meta_period,
-                int meta_factor, int meta_max, const char *service,
-                const char *systemd_unit)
+                int meta_factor, int meta_max, int dnsbl_enabled, const char
+                *service, const char *systemd_unit)
 {
         assert_source(source);
         la_debug("create_rule(%s)", name);
@@ -403,6 +431,8 @@ create_rule(char *name, la_source_t *source, int threshold, int period,
         result->meta_factor = meta_factor!=-1 ? meta_factor : la_config->default_meta_factor;
         result->meta_max = meta_max!=-1 ? meta_max : la_config->default_meta_max;
 
+        result->dnsbl_enabled = dnsbl_enabled;
+
         result->service = xstrdup(service);
 #if HAVE_LIBSYSTEMD
         result->systemd_unit = xstrdup(systemd_unit);
@@ -414,6 +444,7 @@ create_rule(char *name, la_source_t *source, int threshold, int period,
         result->begin_commands = xcreate_list();
         result->trigger_list = xcreate_list();
         result->properties = xcreate_list();
+        result->blacklists = xcreate_list();
 
         result->detection_count = result->invocation_count =
                 result->queue_count = 0;
@@ -443,6 +474,11 @@ free_rule(la_rule_t *rule)
         free_command_list(rule->begin_commands);
         free_command_list(rule->trigger_list);
         free_property_list(rule->properties);
+        for (kw_node_t *node; ((node = rem_head(rule->blacklists)));)
+        {
+                free(node->name);
+                free(node);
+        }
 
         free(rule->name);
 

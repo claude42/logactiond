@@ -352,6 +352,57 @@ compile_list_of_actions(la_rule_t *rule,
 }
 
 /*
+ * Reads all blacklists assigned to a rule
+ */
+
+static void
+load_blacklists(la_rule_t *rule, const config_setting_t *uc_rule_def)
+{
+        assert_rule(rule); assert(uc_rule_def);
+
+        la_debug("load_blacklists(%s)", rule->name);
+        const config_setting_t *blacklist_reference;
+
+        /* again unclear why this cast is necessary */
+        blacklist_reference = config_setting_lookup((config_setting_t *)
+                        uc_rule_def, LA_BLACKLISTS_LABEL);
+        if (!blacklist_reference)
+        {
+                config_setting_t *defaults_section =
+                        config_lookup(&la_config->config_file, LA_DEFAULTS_LABEL);
+                if (defaults_section)
+                        blacklist_reference = config_setting_lookup(
+                                        defaults_section, LA_BLACKLISTS_LABEL);
+        }
+
+        int type = config_setting_type(blacklist_reference);
+
+        if (type == CONFIG_TYPE_STRING)
+        {
+                kw_node_t *new = xmalloc(sizeof(kw_node_t));
+                new->name = xstrdup(config_setting_get_string(
+                                        blacklist_reference));
+                add_tail(rule->blacklists, new);
+        }
+        else if (type == CONFIG_TYPE_LIST)
+        {
+                unsigned int n_items = config_setting_length(
+                                blacklist_reference);
+                for (unsigned int i=0; i<n_items; i++)
+                {
+                        config_setting_t *list_item = 
+                                config_setting_get_elem(blacklist_reference, i);
+                        kw_node_t *new = xmalloc(sizeof(kw_node_t));
+                        new->name = xstrdup(config_setting_get_string(
+                                                list_item));
+                        add_tail(rule->blacklists, new);
+                }
+        }
+        else
+                die_hard("Element neither string nor list!");
+}
+
+/*
  * Return a list of all actions (i.e. struct la_action_s) assigned to a rule
  */
 
@@ -696,13 +747,18 @@ load_single_rule(const config_setting_t *uc_rule_def)
         int meta_max = get_rule_unsigned_int(rule_def, uc_rule_def,
                         LA_META_MAX_LABEL);
 
+        /* dnsbl_enabled can only be set in the local section, not in the rules
+         * section and also not in the defaults section! */
+        int dnsbl_enabled = false;
+        config_setting_lookup_bool(uc_rule_def, LA_DNSBL_ENABLED_LABEL, &dnsbl_enabled);
+
         const char *service = get_rule_string(rule_def, uc_rule_def,
                         LA_SERVICE_LABEL);
 
         la_log(LOG_INFO, "Enabling rule \"%s\".", name);
         new_rule = create_rule(name, source, threshold, period, duration,
                         meta_enabled, meta_period, meta_factor, meta_max,
-                        service, systemd_unit);
+                        dnsbl_enabled, service, systemd_unit);
         assert_rule(new_rule);
 
         /* Properties from uc_rule_def have priority over those from
@@ -716,6 +772,11 @@ load_single_rule(const config_setting_t *uc_rule_def)
 
         /* actions are only taken from uc_rule_def (or default settings) */
         load_actions(new_rule, uc_rule_def);
+
+        /* blacklists are only taken from uc_rule_def (or default settings) */
+        load_blacklists(new_rule, uc_rule_def);
+        la_debug("Done");
+
         add_tail(source->rules, (kw_node_t *) new_rule);
 }
 

@@ -55,6 +55,8 @@
 #define DEFAULT_META_FACTOR 2
 #define DEFAULT_META_MAX 86400
 
+#define DEFAULT_DNSBL_ENABLED false
+
 #define DEFAULT_PORT 11111
 
 #if HAVE_RUN
@@ -85,6 +87,8 @@
 #define LA_META_FACTOR_LABEL "meta_factor"
 #define LA_META_MAX_LABEL "meta_max"
 
+#define LA_DNSBL_ENABLED_LABEL "dnsbl_enabled"
+
 #define LA_SERVICE_LABEL "service"
 
 #define LA_ACTIONS_LABEL "actions"
@@ -102,6 +106,8 @@
 
 #define LA_LOCAL_LABEL "local"
 #define LA_ENABLED_LABEL "enabled"
+
+#define LA_BLACKLISTS_LABEL "blacklists"
 
 #define LA_RULES_LABEL "rules"
 #define LA_RULE_SOURCE_LABEL "source"
@@ -313,6 +319,8 @@ typedef struct la_rule_s
         unsigned long int detection_count;
         unsigned long int invocation_count;
         unsigned long int queue_count;
+        bool dnsbl_enabled;
+        kw_list_t *blacklists;
 } la_rule_t;
 
 typedef struct la_command_s
@@ -643,8 +651,8 @@ void handle_log_line_for_rule(la_rule_t *rule, const char *line);
 
 la_rule_t *create_rule(char *name, la_source_t *source, int threshold,
                 int period, int duration, int meta_enabled, int meta_period,
-                int meta_factor, int meta_max, const char *service,
-                const char *systemd_unit);
+                int meta_factor, int meta_max, int dnsbl_enabled, const char
+                *service, const char *systemd_unit);
 
 void free_rule(la_rule_t *rule);
 
@@ -728,6 +736,9 @@ void send_add_entry_message(la_command_t *command);
 
 void start_remote_thread(void);
 
+/* dnsbl.c */
+
+bool host_on_dnsbl(la_address_t *address, char *dnsbl_domainname);
 
 #endif /* __logactiond_h */
 

@@ -28,7 +28,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-
 int
 main(int argc, char *argv[])
 {
@@ -41,7 +40,7 @@ main(int argc, char *argv[])
         hints.ai_socktype = SOCK_DGRAM;
         hints.ai_protocol = IPPROTO_UDP;
 
-        int r = getaddrinfo(NULL, "16473", &hints, &res);
+        int r = getaddrinfo("nirvana.aw.net", "16473", &hints, &res);
         if (r)
                 printf("Failed: %s\n", gai_strerror(r));
 
@@ -64,7 +63,6 @@ main(int argc, char *argv[])
                         char hostname[INET_ADDRSTRLEN];
                         printf("Address: %s\n", inet_ntop(AF_INET, &sa->sin_addr,
                                                 hostname, INET_ADDRSTRLEN));
-
                 }
                 else
                 {
