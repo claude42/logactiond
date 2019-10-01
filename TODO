@@ -2,7 +2,6 @@ TODOs in no particular order
 
 * Limit regexes to one instance per token
 * error message if log file is lost for longer time
-* check for root / add option to run as non-root
 * better NDEBUG support for la_debug() - how varargs with macro?
 * Debian package
 ---
@@ -10,4 +9,39 @@ TODOs in no particular order
   trigger_single_command expects otherwise
 * can create_command with address==NULL happen?
 * is code right to expect that command->address is never NULL?
-* SIGPIPE not handled correctly!
+* use sd_journal_send
+* local macros in m4 directory (https://www.gnu.org/savannah-checkouts/gnu/automake/manual/automake.html#Local-Macros)
+* does not shutdown correctly on a crash or when an assert() fails
+  pthread_cancel(pthread_self()) doesn't invoke cleanup action
+* improve ITERATE macros
+* add assert()s everywhere :-)
+* don't initially wait 5s in dump loop
+
+* General: frequently does not shut down correctly on error, e.g. doesn't
+  remove fifo. More specifically: is die_err() etc. allowed in cleanup actions?
+* fifo should probably lock queue mutex right from the start
+
+* simple syntax error in config file on reload leads to crash, eg.:
+<3>logactiond.cfg:33 - syntax error!
+<3>inotify.c:157: find_source_by_file_wd: Assertion 'list' failed.
+<3>watch.c:158: shutdown_watching: Assertion 'list' failed.
+<6>Host: 211.35.76.241, action "route" ended for rule "sshd".
+<3>watch.c:158: shutdown_watching: Assertion 'list' failed.
+<3>watch.c:158: shutdown_watching: Assertion 'list' failed.
+Speicherzugriffsfehler
+
+* Wildcards for log files
+
+* ist die Reihenfolge rule/uc_rule richtig bei remote bzw. meta_enabled - oder
+  müsste es genau andersrum sein?
+
+* include_func hat mehrere Probleme
+  - wird kein match gefunden, crasht sie. Liegt daran, daß in diesem Fall
+    niemals der Teil aufgerufen wird in dem Speicher gerealloct wird, dann aber
+    am Schluß (mit "*result_next = NULL") versucht reingeschrieben zu werden
+  - verwendet man @include "filename" (also ohne einen Verzeichnisnamen), dann
+    findet sie die Datei nicht. @include "./filename" funktioniert aber. Lösung
+    könnte sein, den Teil "if(include_path_len) == 0)..." rauszunehmen. Bin mir
+    aber nicht sicher, ob das nebenwirkungsfrei geht
+
+* Send startup errors to standard out instead of syslog - really??
