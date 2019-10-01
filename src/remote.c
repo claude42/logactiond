@@ -235,11 +235,15 @@ remote_loop(void *ptr)
                 if (!parse_add_entry_message(buf, &address, &rule, &duration))
                         continue;
 
+                xpthread_mutex_lock(&config_mutex);
+
                 for (la_command_t *template =
                                 ITERATE_COMMANDS(rule->begin_commands);
                                 (template = NEXT_COMMAND(template));)
                         trigger_manual_command(address, template, duration,
                                         from);
+
+                xpthread_mutex_unlock(&config_mutex);
 
                 free(address);
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */

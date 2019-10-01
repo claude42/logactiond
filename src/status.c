@@ -72,8 +72,10 @@ dump_rule_diagnostics(FILE *diag_file, la_rule_t *rule)
         assert(diag_file), assert_rule(rule);
         la_vdebug("dump_rule_diagnostics(%s)", rule->name);
 
+        xpthread_mutex_lock(&config_mutex);
         fprintf(diag_file, "%s, list length=%u\n", rule->name,
                         list_length(rule->trigger_list));
+        xpthread_mutex_unlock(&config_mutex);
 }
 
 /*
@@ -259,9 +261,11 @@ dump_queue_status(kw_list_t *queue)
                         }
                 }
 
+                xpthread_mutex_lock(&config_mutex);
                 fprintf(hosts_file, "Queue length: %u (%u local), meta_command: %u\n\n",
                                 num_elems, num_elems_local,
                                 meta_list_length());
+                xpthread_mutex_unlock(&config_mutex);
         }
 
         fprintf(hosts_file, "IP address                                  "
