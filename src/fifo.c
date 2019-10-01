@@ -70,11 +70,16 @@ add_entry(char *buffer)
         if (parse_add_entry_message(buffer, &address, &rule, &duration))
         {
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
+                xpthread_mutex_lock(&config_mutex);
+
                 for (la_command_t *template =
                                 ITERATE_COMMANDS(rule->begin_commands);
                                 (template = NEXT_COMMAND(template));)
                         trigger_manual_command(address, template, duration, "localhost");
+
+                xpthread_mutex_unlock(&config_mutex);
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
+                /* TODO: not free_address(address)? */
                 free(address);
         }
 }
@@ -92,7 +97,11 @@ remove_entry(char *buffer)
                 return;
         }
 
-        if (remove_and_trigger(address) == -1)
+        xpthread_mutex_lock(&config_mutex);
+        int r = remove_and_trigger(address);
+        xpthread_mutex_unlock(&config_mutex);
+
+        if (r == -1)
         {
                 la_log(LOG_ERR, "Address %s not in end queue!", buffer);
                 return;
