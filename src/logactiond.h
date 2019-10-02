@@ -411,7 +411,7 @@ typedef struct la_config_s
         kw_list_t *remote_send_to;
         char *remote_secret;
         char *remote_bind;
-        unsigned int remote_port;
+        int remote_port;
 } la_config_t;
 
 /* Global variables */
