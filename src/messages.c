@@ -28,8 +28,6 @@
 
 #include "logactiond.h"
 
-static unsigned char decrypted_message[MSG_LEN];
-
 /*
  * Message format:
  *  - First char is always the protocol version encoded as a single ASCII character

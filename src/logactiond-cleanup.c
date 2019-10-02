@@ -35,7 +35,6 @@ unsigned int id_counter = 0;
 
 static char *cfg_filename = NULL;
 static char *log_filename = NULL;
-static char *rule_name = NULL;
 bool shutdown_ongoing = false;
 int exit_status = EXIT_SUCCESS;
 bool show_undetected = false;
@@ -103,8 +102,6 @@ read_options(int argc, char *argv[])
 int
 main(int argc, char *argv[])
 {
-        FILE *file;
-
         read_options(argc, argv);
 
         chdir(CONF_DIR);

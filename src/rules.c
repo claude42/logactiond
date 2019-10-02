@@ -366,7 +366,6 @@ handle_log_line_for_rule(la_rule_t *rule, const char *line)
         assert_rule(rule); assert(line);
         la_vdebug("handle_log_line_for_rule(%s)", rule->name);
 
-        unsigned int count = 0;
         for (la_pattern_t *pattern = ITERATE_PATTERNS(rule->patterns);
                         (pattern = NEXT_PATTERN(pattern));)
         {
@@ -380,7 +379,6 @@ handle_log_line_for_rule(la_rule_t *rule, const char *line)
                         clear_property_values(pattern->properties);
                         return;
                 }
-                count++;
         }
 }
 
