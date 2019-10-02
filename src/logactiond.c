@@ -31,6 +31,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <stdbool.h>
+#include <limits.h>
 #if HAVE_LIBSYSTEMD
 #include <systemd/sd-daemon.h>
 #endif /* HAVE_LIBSYSTEMD */
@@ -312,7 +313,7 @@ getrunuid(const char *uid_s)
         
         /* Don't accept empty string */
         if (*uid_s == '\0')
-                return -1;
+                return UINT_MAX;
 
         /* First test whether a UID has been specified on the command line. In
          * case endptr points to a 0, the argument was a number. If otherwise
@@ -328,7 +329,7 @@ getrunuid(const char *uid_s)
         if (pw)
                 return pw->pw_uid;
 
-        return -1;
+        return UINT_MAX;
 }
 
 /* Run with correct UID. Correct if,
@@ -345,7 +346,7 @@ use_correct_uid(void)
 {
         uid_t cur_uid = geteuid();
         uid_t run_uid = getrunuid(run_uid_s);
-        if (run_uid == -1)
+        if (run_uid == UINT_MAX)
                 die_hard("Can't determine uid!");
 
         la_debug("use_correct_uid() - uid=%d, runuid=%d", cur_uid, run_uid);
