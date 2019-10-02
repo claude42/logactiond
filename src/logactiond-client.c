@@ -59,7 +59,7 @@ cleanup(void)
 static void
 send_message(char *message)
 {
-        size_t message_sent = sendto(socket_fd, message, TOTAL_MSG_LEN, 0,
+        int message_sent = sendto(socket_fd, message, TOTAL_MSG_LEN, 0,
                         ai->ai_addr, ai->ai_addrlen);
 
         if (message_sent == -1)

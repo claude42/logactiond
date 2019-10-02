@@ -85,7 +85,7 @@ send_message_to_single_address(char *message, la_address_t *remote_address)
                                         INET6_ADDRSTRLEN));
         }*/
 
-        size_t message_sent = sendto(*fd_ptr, message, TOTAL_MSG_LEN, 0,
+        int message_sent = sendto(*fd_ptr, message, TOTAL_MSG_LEN, 0,
                         (struct sockaddr *) &remote_address->sa,
                         sizeof(remote_address->sa));
         if (message_sent == -1)
