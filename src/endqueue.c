@@ -273,7 +273,10 @@ empty_end_queue(void)
 static void
 wait_for_next_end_command(la_command_t *command)
 {
-        assert_command(command);
+        /* Commented out assert_command() as going through this from the
+         * endqueue thread would actually require locking the config_mutex. But
+         * obviously that's a bit much "just for" an assert() */
+        /* assert_command(command);*/
         assert(command->end_string);
         la_vdebug("wait_for_next_end_command(%s, %u)", command->end_string,
                         command->end_time);
