@@ -36,6 +36,7 @@
 #include <stdbool.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <termios.h>
 
 
 
@@ -337,6 +338,50 @@ xcreate_list(void)
         assert_list(result);
 
         return result;
+}
+
+static ssize_t
+_getpass (char **lineptr, size_t *n, FILE *stream)
+{
+        struct termios old, new;
+        int nread;
+
+        /* Turn echoing off and fail if we can't. */
+        if (tcgetattr (fileno (stream), &old) != 0)
+                return -1;
+        new = old;
+        new.c_lflag &= ~ECHO;
+        if (tcsetattr (fileno (stream), TCSAFLUSH, &new) != 0)
+                return -1;
+
+        /* Read the password. */
+        nread = getline (lineptr, n, stream);
+
+        /* Restore terminal. */
+        (void) tcsetattr (fileno (stream), TCSAFLUSH, &old);
+
+        return nread;
+}
+
+size_t password_size = 32;
+static char *password_buffer = NULL;
+
+char *
+xgetpass(const char *prompt)
+{
+        printf("%s", prompt);
+        FILE *tty = fopen("/dev/tty", "r");
+        if (!tty)
+                die_err("Can't open /dev/tty");
+
+        (void) _getpass(&password_buffer, &password_size, tty);
+
+        if (fclose(tty) == EOF)
+                die_err("Can't close /dev/tty");
+
+        puts("");
+
+        return password_buffer;
 }
 
 

@@ -78,13 +78,9 @@ trigger_shutdown(int status, int saved_errno)
                 pthread_cancel(remote_thread);
 }
 
-static void
-handle_signal(int signal)
+void
+trigger_reload(void)
 {
-        la_debug("handle_signal(%u)", signal);
-
-        if (signal == SIGHUP)
-        {
 #if HAVE_LIBSYSTEMD
                 sd_notify(0, "RELOADING=1\n"
                                 "STATUS=Reloading configuration.\n");
@@ -99,6 +95,16 @@ handle_signal(int signal)
                                 "RELOADING=0\n"
                                 "STATUS=Configuration reloaded - monitoring log files.\n");
 #endif /* HAVE_LIBSYSTEMD */
+}
+
+static void
+handle_signal(int signal)
+{
+        la_debug("handle_signal(%u)", signal);
+
+        if (signal == SIGHUP)
+        {
+                trigger_reload();
         }
         else if (signal == SIGUSR1)
         {

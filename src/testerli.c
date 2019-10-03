@@ -31,6 +31,12 @@
 int
 main(int argc, char *argv[])
 {
+        if (argc != 2)
+        {
+                fprintf(stderr, "Wrong number of arguments.\n");
+                exit(1);
+        }
+
         struct addrinfo hints;
         memset(&hints, 0, sizeof(hints));
         struct addrinfo *res;
@@ -40,7 +46,7 @@ main(int argc, char *argv[])
         hints.ai_socktype = SOCK_DGRAM;
         hints.ai_protocol = IPPROTO_UDP;
 
-        int r = getaddrinfo("nirvana.aw.net", "16473", &hints, &res);
+        int r = getaddrinfo(argv[1], "16473", &hints, &res);
         if (r)
                 printf("Failed: %s\n", gai_strerror(r));
 

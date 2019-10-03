@@ -35,6 +35,7 @@ log_message(unsigned int priority, char *fmt, va_list gp, char *add)
 {
         assert(fmt);
 
+#ifndef CLIENTONLY
         if (priority >= log_level ||
                         (run_type == LA_UTIL_FOREGROUND && priority >= LOG_INFO))
                 return;
@@ -53,12 +54,15 @@ log_message(unsigned int priority, char *fmt, va_list gp, char *add)
                         fprintf(stderr, "<%u>", priority);
                         /* intended fall through! */
                 case LA_UTIL_FOREGROUND:
+#endif /* CLIENTONLY */
                         vfprintf(stderr, fmt, gp);
                         if (add)
                                 fprintf(stderr, ": %s", add);
                         fprintf(stderr, "\n");
+#ifndef CLIENTONLY
                         break;
         }
+#endif /* CLIENTONLY */
 }
 
 void
@@ -102,7 +106,9 @@ la_log_verbose(unsigned int priority, char *fmt, ...)
 {
         va_list myargs;
 
+#ifndef CLIENTONLY
         if (log_verbose)
+#endif /* CLIENTONLY */
         {
                 va_start(myargs, fmt);
                 log_message(priority, fmt, myargs, NULL);

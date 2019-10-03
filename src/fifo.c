@@ -58,58 +58,6 @@ create_fifo(void)
                 die_err("Cannot open fifo");
 }
 
-static void
-add_entry(char *buffer)
-{
-        assert(buffer);
-        la_debug("add_entry(%s)", buffer);
-        la_address_t *address;
-        la_rule_t *rule;
-        int duration;
-
-        if (parse_add_entry_message(buffer, &address, &rule, &duration))
-        {
-#if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
-                xpthread_mutex_lock(&config_mutex);
-
-                for (la_command_t *template =
-                                ITERATE_COMMANDS(rule->begin_commands);
-                                (template = NEXT_COMMAND(template));)
-                        trigger_manual_command(address, template, duration, "localhost");
-
-                xpthread_mutex_unlock(&config_mutex);
-#endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
-                /* TODO: not free_address(address)? */
-                free(address);
-        }
-}
-
-void
-remove_entry(char *buffer)
-{
-        assert(buffer);
-        la_debug("remove_entry(%s)", buffer);
-
-        la_address_t *address = create_address(buffer+sizeof(char));
-        if (!address)
-        {
-                la_log(LOG_ERR, "Cannot convert address in command %s!", buffer);
-                return;
-        }
-
-        xpthread_mutex_lock(&config_mutex);
-        int r = remove_and_trigger(address);
-        xpthread_mutex_unlock(&config_mutex);
-
-        if (r == -1)
-        {
-                la_log(LOG_ERR, "Address %s not in end queue!", buffer);
-                return;
-        }
-
-        free_address(address);
-}
-
 static void *
 fifo_loop(void *ptr)
 {
@@ -117,8 +65,11 @@ fifo_loop(void *ptr)
 
         pthread_cleanup_push(cleanup_fifo, NULL);
 
-        char *linebuffer = xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
-        size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE*sizeof(char);
+        /* For whatever reason, getline doesn't like a pointer to 
+         * char buf[DEFAULT_LINEBUFFER_SIZE]; as an argument?!? */
+        /* TODO: free this buffer in cleanup_fifo() */
+        char *buf = xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
+        size_t buf_size = DEFAULT_LINEBUFFER_SIZE*sizeof(char);
 
         for (;;)
         {
@@ -128,7 +79,7 @@ fifo_loop(void *ptr)
                         pthread_exit(NULL);
                 }
 
-                ssize_t num_read = getline(&linebuffer, &linebuffer_size, fifo);
+                ssize_t num_read = getline(&buf, &buf_size, fifo);
                 if (num_read == -1)
                 {
                         if (feof(fifo))
@@ -137,25 +88,14 @@ fifo_loop(void *ptr)
                                 die_err("Reading from fifo failed");
                 }
 
-                if (linebuffer[num_read-1] == '\n')
-                        linebuffer[num_read-1] = '\0';
+                if (buf[num_read-1] == '\n')
+                        buf[num_read-1] = '\0';
 
-                switch (*linebuffer)
-                {
-                        case '+':
-                                add_entry(linebuffer);
-                                break;
-                        case '-':
-                                remove_entry(linebuffer);
-                                break;
-                        case '0':
-                                empty_end_queue();
-                                break;
-                        default:
-                                la_log(LOG_ERR, "Unknown command: %s", linebuffer);
-                                break;
-                }
+                la_debug("Received message '%s'", buf);
 
+#if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
+                parse_message_trigger_command(buf, "localhost");
+#endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
         }
 
         assert(false);

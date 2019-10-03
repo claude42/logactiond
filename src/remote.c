@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <netdb.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include <sodium.h>
 
@@ -64,26 +65,6 @@ send_message_to_single_address(char *message, la_address_t *remote_address)
                         return;
                 }
         }
-
-        /*la_log(LOG_INFO, "family: %u", remote_address->sa.ss_family);
-        if (remote_address->sa.ss_family == AF_INET)
-        {
-                struct sockaddr_in *sa_ptr = (struct sockaddr_in *) &remote_address->sa;
-                la_log(LOG_INFO, "port: %u", sa_ptr->sin_port);
-                char hostname[INET6_ADDRSTRLEN];
-                la_log(LOG_INFO, "Address: %s\n", inet_ntop(AF_INET,
-                                        &sa_ptr->sin_addr, hostname,
-                                        INET6_ADDRSTRLEN));
-        }
-        else
-        {
-                struct sockaddr_in6 *sa_ptr = (struct sockaddr_in6 *) &remote_address->sa;
-                la_log(LOG_INFO, "port: %u", sa_ptr->sin6_port);
-                char hostname[INET6_ADDRSTRLEN];
-                la_log(LOG_INFO, "Address: %s\n", inet_ntop(AF_INET6,
-                                        &sa_ptr->sin6_addr, hostname,
-                                        INET6_ADDRSTRLEN));
-        }*/
 
         int message_sent = sendto(*fd_ptr, message, TOTAL_MSG_LEN, 0,
                         (struct sockaddr *) &remote_address->sa,
@@ -149,6 +130,8 @@ cleanup_remote(void *arg)
                 die_err("Unable to close socket");
 }
 
+
+
 /*
  * Main loop
  */
@@ -161,7 +144,7 @@ remote_loop(void *ptr)
         int server_fd;
         struct addrinfo *ai = (struct addrinfo *) ptr;
         struct sockaddr_storage remote_client;
-        char buf[1024];
+        char buf[DEFAULT_LINEBUFFER_SIZE];
 
         /* TODO: handover server_fd and ai (but ai only once) so cleanup can
          * close it */
@@ -195,12 +178,18 @@ remote_loop(void *ptr)
                 }
 
                 socklen_t remote_client_size = sizeof(remote_client);
-                ssize_t n = recvfrom(server_fd, &buf, 1023, MSG_TRUNC,
+                ssize_t num_read = recvfrom(server_fd, &buf, 1023, MSG_TRUNC,
                                 (struct sockaddr *) &remote_client,
                                 &remote_client_size);
-                if (n == -1)
-                        die_err("Error while receiving remote messages");
-                buf[n] = '\0';
+                if (num_read == -1)
+                {
+                        if (errno == EINTR)
+                                continue;
+                        else
+                                die_err("Error while receiving remote messages");
+                }
+
+                buf[num_read] = '\0';
 
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
                 char from[INET6_ADDRSTRLEN];
@@ -228,24 +217,8 @@ remote_loop(void *ptr)
 
                 la_debug("Received message '%s' from %s",  buf, from);
 
-                la_address_t *address;
-                la_rule_t *rule;
-                int duration;
+                parse_message_trigger_command(buf, from);
                 
-                if (!parse_add_entry_message(buf, &address, &rule, &duration))
-                        continue;
-
-                xpthread_mutex_lock(&config_mutex);
-
-                for (la_command_t *template =
-                                ITERATE_COMMANDS(rule->begin_commands);
-                                (template = NEXT_COMMAND(template));)
-                        trigger_manual_command(address, template, duration,
-                                        from);
-
-                xpthread_mutex_unlock(&config_mutex);
-
-                free(address);
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
         }
 

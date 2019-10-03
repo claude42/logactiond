@@ -29,27 +29,36 @@
 #include <syslog.h>
 #include <netdb.h>
 #include <stdbool.h>
+
 #include <sodium.h>
 
 #include "logactiond.h"
 
-la_runtype_t run_type = LA_UTIL_FOREGROUND;
-unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
-bool log_verbose = false;
+static char *password = NULL;
+static char *host = NULL;
+static char *port = NULL;
 
 static int socket_fd;
 static struct addrinfo *ai;
 
-
 static void
 print_usage(void)
 {
-        fprintf(stderr, "Usage: logactiond-client password host add address rule [duration]\n"
-                        "       logactiond-client password host remove address\n");
+        fprintf(stderr,
+                        "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "add address rule [duration]\n"
+                        "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "del address\n"
+                        "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "flush\n"
+                        "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "reload\n"
+                        "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "shutdown\n");
 }
 
 static void
-cleanup(void)
+cleanup_socket(void)
 {
         freeaddrinfo(ai);
         if (close(socket_fd) == -1)
@@ -57,32 +66,15 @@ cleanup(void)
 }
 
 static void
-send_message(char *message)
-{
-        int message_sent = sendto(socket_fd, message, TOTAL_MSG_LEN, 0,
-                        ai->ai_addr, ai->ai_addrlen);
-
-        if (message_sent == -1)
-        {
-                cleanup();
-                die_err("Unable to send message");
-        }
-        else if (message_sent != TOTAL_MSG_LEN)
-        {
-                cleanup();
-                die_err("Sent truncated message");
-        }
-}
-
-
-static void
 setup_socket(char *host)
 {
         static struct addrinfo hints;
-        hints.ai_family = AF_INET;
+        memset(&hints, 0, sizeof(hints));
+
+        hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_DGRAM;
         hints.ai_protocol = IPPROTO_UDP;
-        int r = getaddrinfo(host, "16473", &hints, &ai);
+        int r = getaddrinfo(host, port, &hints, &ai);
         if (r)
                 die_hard("Unable to convert address: %s", gai_strerror(r));
 
@@ -94,6 +86,44 @@ setup_socket(char *host)
         }
 }
 
+static void
+send_remote_message(char *host, char *message)
+{
+        setup_socket(host);
+
+        int message_sent = sendto(socket_fd, message, TOTAL_MSG_LEN, 0,
+                        ai->ai_addr, ai->ai_addrlen);
+
+        if (message_sent == -1)
+        {
+                cleanup_socket();
+                die_err("Unable to send message");
+        }
+        else if (message_sent != TOTAL_MSG_LEN)
+        {
+                cleanup_socket();
+                die_err("Sent truncated message");
+        }
+
+        cleanup_socket();
+}
+
+static void
+send_local_message(char *message)
+{
+        FILE *fifo = fopen(FIFOFILE, "a");
+        if (!fifo)
+                die_err("Unable to open fifo");
+
+        if (fprintf(fifo, "%s\n", message) < 0)
+        {
+                fclose(fifo);
+                die_err("Unable to write to fifo");
+        }
+
+        if (fclose(fifo) == EOF)
+                die_err("Unable to close fifo");
+}
 
 int
 main(int argc, char *argv[])
@@ -104,10 +134,13 @@ main(int argc, char *argv[])
                 {
                         {"debug",      optional_argument, NULL, 'd'},
                         {"verbose",    no_argument,       NULL, 'v'},
+                        {"password",   required_argument, NULL, 'p'},
+                        {"port",       required_argument, NULL, 's'},
+                        {"host",       required_argument, NULL, 'h'},
                         {0,            0,                 0,    0  }
                 };
 
-                int c = getopt_long(argc, argv, "c:d::v", long_options, NULL);
+                int c = getopt_long(argc, argv, "d::vp:h:s:", long_options, NULL);
 
                 if (c == -1)
                         break;
@@ -115,6 +148,15 @@ main(int argc, char *argv[])
                 switch (c)
                 {
                         case 'v': 
+                                break;
+                        case 'p':
+                                password = optarg;
+                                break;
+                        case 'h':
+                                host = optarg;
+                                break;
+                        case 's':
+                                port = optarg;
                                 break;
                         case '?':
                                 print_usage();
@@ -126,36 +168,53 @@ main(int argc, char *argv[])
                 }
         }
 
-        if (optind > argc-3)
+        if (host && !password)
+        {
+                ssize_t passwd_size = 32;
+                password = xgetpass("Password: ");
+                if (!strlen(password))
+                        die_hard("No password entered!");
+        }
+
+        if (host && !port)
+                port = DEFAULT_PORT_STR;
+
+        if (optind > argc-1)
                 die_hard("Wrong number of arguments.");
 
-        char *password = argv[optind++];
-        char *host = argv[optind++];
         char *command = argv[optind++];
         char *message = NULL;
 
         if (!strcmp(command, "add"))
         {
-                if (optind == argc-2 || optind == argc-3)
-                {
-                        char *ip = argv[optind++];
-                        char *rule = argv[optind++];
-                        char *duration = NULL;
-                        if (optind < argc)
-                                duration = argv[optind];
-                        message = create_add_message(ip, rule, duration);
-                }
-                else
-                {
+                if (optind != argc-2 && optind != argc-3)
                         die_hard("Wrong number of arguments.");
-                }
+
+                char *ip = argv[optind++];
+                char *rule = argv[optind++];
+                char *duration = NULL;
+                if (optind < argc)
+                        duration = argv[optind];
+                message = create_add_message(ip, rule, duration);
         }
-        else if (!strcmp(command, "remove"))
+        else if (!strcmp(command, "del"))
         {
-                if (optind == argc-1)
-                        message = create_remove_message(argv[optind]);
-                else
+                if (optind != argc-1)
                         die_hard("Wrong number of arguments.");
+
+                message = create_del_message(argv[optind]);
+        }
+        else if (!strcmp(command, "flush"))
+        {
+                message = create_flush_message();
+        }
+        else if (!strcmp(command, "reload"))
+        {
+                message = create_reload_message();
+        }
+        else if (!strcmp(command, "shutdown"))
+        {
+                message = create_shutdown_message();
         }
         else
         {
@@ -164,17 +223,22 @@ main(int argc, char *argv[])
 
         if (!message)
                 die_err("Unable to create message");
-        if (!encrypt_message(message, password))
-                die_err("Unable to encrypt message");
 
-        setup_socket(host);
-        send_message(message);
+        if (host)
+        {
+                if (!encrypt_message(message, password))
+                        die_err("Unable to encrypt message");
+                send_remote_message(host, message);
+        }
+        else
+        {
+                send_local_message(message);
+        }
+
         free(message);
-        cleanup();
 
         exit(0);
 }
 
 
 /* vim: set autowrite expandtab: */
-

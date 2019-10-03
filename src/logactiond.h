@@ -57,7 +57,8 @@
 
 #define DEFAULT_DNSBL_ENABLED false
 
-#define DEFAULT_PORT 11111
+#define DEFAULT_PORT 16473
+#define DEFAULT_PORT_STR "16473"
 
 #if HAVE_RUN
 #define RUNDIR "/run"
@@ -449,6 +450,8 @@ extern int exit_status;
 
 void trigger_shutdown(int status, int saved_errno);
 
+void trigger_reload(void);
+
 /* misc.c */
 
 void remove_pidfile(void);
@@ -509,10 +512,16 @@ void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, size_t on_top);
 
 kw_list_t *xcreate_list(void);
 
+char *xgetpass (const char *prompt);
+
 /* messages.c */
 
+#ifndef CLIENTONLY
 bool parse_add_entry_message(char *message, la_address_t **address,
                 la_rule_t **rule, int *duration);
+
+void parse_message_trigger_command(char *buf, char *from);
+#endif /* CLIENTONLY */
 
 bool decrypt_message(char *buffer, char *password);
 
@@ -520,7 +529,15 @@ bool encrypt_message(char *buffer, char *password);
 
 char *create_add_message(char *ip, char *rule, char *duration);
 
-char *create_remove_message(char *ip);
+char *create_del_message(char *ip);
+
+char *create_empty_queue_message(void);
+
+char *create_flush_message(void);
+
+char *create_reload_message(void);
+
+char *create_shutdown_message(void);
 
 /* configfile.c */
 

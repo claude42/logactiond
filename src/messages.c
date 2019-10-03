@@ -25,6 +25,7 @@
 #include <sodium.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include "logactiond.h"
 
@@ -75,17 +76,8 @@ parse_add_entry_message(char *message, la_address_t **address, la_rule_t **rule,
         assert(message);
         la_debug("parse_add_entry_message(%s)", message);
 
-        if (*message != PROTOCOL_VERSION)
-        {
-                la_log(LOG_ERR, "Wrong protocol version '%c'!", *message);
-                return false;
-        }
-
-        if (*(message+1) != '+')
-        {
-                la_log(LOG_ERR, "Unexpected message command '%c'!", *(message+1));
-                return false;
-        }
+        /* this assumes that char 0 + 1 (i.e. protocol version and commnad)
+         * have already been checked before this function was called */
 
         char *comma = strchr(message, ',');
         if (!comma)
@@ -144,6 +136,114 @@ parse_add_entry_message(char *message, la_address_t **address, la_rule_t **rule,
         }
 
         return true;
+}
+
+/*
+ * Actions
+ */
+
+static void
+add_entry(char *buffer, char *from)
+{
+        assert(buffer);
+        la_debug("add_entry(%s)", buffer);
+        la_address_t *address;
+        la_rule_t *rule;
+        int duration;
+
+        if (parse_add_entry_message(buffer, &address, &rule, &duration))
+        {
+#if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
+                xpthread_mutex_lock(&config_mutex);
+
+                for (la_command_t *template =
+                                ITERATE_COMMANDS(rule->begin_commands);
+                                (template = NEXT_COMMAND(template));)
+                        trigger_manual_command(address, template, duration, from);
+
+                xpthread_mutex_unlock(&config_mutex);
+#endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
+                /* TODO: not free_address(address)? */
+                free(address);
+        }
+}
+
+static void
+del_entry(char *buffer)
+{
+        assert(buffer);
+        la_debug("del_entry(%s)", buffer);
+
+        la_address_t *address = create_address(buffer+2);
+        if (!address)
+        {
+                la_log(LOG_ERR, "Cannot convert address in command %s!", buffer);
+                return;
+        }
+
+        xpthread_mutex_lock(&config_mutex);
+        int r = remove_and_trigger(address);
+        xpthread_mutex_unlock(&config_mutex);
+
+        if (r == -1)
+        {
+                la_log(LOG_ERR, "Address %s not in end queue!", buffer);
+                return;
+        }
+
+        free_address(address);
+}
+
+static void
+perform_flush(void)
+{
+        la_log(LOG_INFO, "Flushing end queue.");
+        empty_end_queue();
+}
+
+static void
+perform_reload(void)
+{
+        trigger_reload();
+}
+
+static void
+perform_shutdown(void)
+{
+        trigger_shutdown(EXIT_SUCCESS, errno);
+}
+
+void
+parse_message_trigger_command(char *buf, char *from)
+{
+        if (*buf != PROTOCOL_VERSION)
+        {
+                la_log(LOG_ERR, "Wrong protocol version '%c'!");
+                return;
+        }
+
+        switch (*(buf+1))
+        {
+                case '+':
+                        add_entry(buf, from);
+                        break;
+                case '-':
+                        del_entry(buf);
+                        break;
+                case '0':
+                        perform_flush();
+                        break;
+                case 'R':
+                        perform_reload();
+                        break;
+                case 'S':
+                        perform_shutdown();
+                        break;
+                default:
+                        la_log(LOG_ERR, "Unknown command: '%c'",
+                                        *(buf+1));
+                        break;
+        }
 }
 
 #endif /* CLIENTONLY */
@@ -265,7 +365,7 @@ create_add_message(char *ip, char *rule, char *duration)
 }
 
 char *
-create_remove_message(char *ip)
+create_del_message(char *ip)
 {
 	assert(ip);
         char *buffer = xmalloc(TOTAL_MSG_LEN);
@@ -274,6 +374,48 @@ create_remove_message(char *ip)
                         PROTOCOL_VERSION, ip);
         if (msg_len > MSG_LEN-1)
                 return NULL;
+
+        /* pad right here, cannot hurt even if we don't encrypt... */
+        pad(buffer, msg_len+1);
+
+        return buffer;
+}
+
+char *
+create_flush_message(void)
+{
+        char *buffer = xmalloc(TOTAL_MSG_LEN);
+
+        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%c0",
+                        PROTOCOL_VERSION);
+
+        /* pad right here, cannot hurt even if we don't encrypt... */
+        pad(buffer, msg_len+1);
+
+        return buffer;
+}
+
+char *
+create_reload_message(void)
+{
+        char *buffer = xmalloc(TOTAL_MSG_LEN);
+
+        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%c0R",
+                        PROTOCOL_VERSION);
+
+        /* pad right here, cannot hurt even if we don't encrypt... */
+        pad(buffer, msg_len+1);
+
+        return buffer;
+}
+
+char *
+create_shutdown_message(void)
+{
+        char *buffer = xmalloc(TOTAL_MSG_LEN);
+
+        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%c0S",
+                        PROTOCOL_VERSION);
 
         /* pad right here, cannot hurt even if we don't encrypt... */
         pad(buffer, msg_len+1);
