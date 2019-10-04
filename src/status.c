@@ -295,14 +295,17 @@ dump_queue_status(kw_list_t *queue)
                 human_readable_time_delta(command->end_time-xtime(NULL),
                                 &timedelta, &unit);
 
+                char *type;
                 if (command->manual)
-                        fprintf(hosts_file, "%-43.43s Ma %2d %2u%c  %-13.13s %-13.13s\n",
-                                        adr, command->factor, timedelta, unit,
-                                        command->rule_name, command->name);
+                        type = "Ma";
+                else if (command->blacklist)
+                        type = "BL";
                 else
-                        fprintf(hosts_file, "%-43.43s    %2d %2u%c  %-13.13s %-13.13s\n",
-                                        adr, command->factor, timedelta, unit,
-                                        command->rule_name, command->name);
+                        type = "  ";
+
+                fprintf(hosts_file, "%-43.43s %s %2d %2u%c  %-13.13s %-13.13s\n",
+                                adr, type, command->factor, timedelta, unit,
+                                command->rule_name, command->name);
         }
 
         if (fclose(hosts_file))

@@ -16,7 +16,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 #include <config.h>
 
 #include <assert.h>
@@ -28,6 +27,10 @@
 #include <errno.h>
 
 #include "logactiond.h"
+
+static char *send_key_password;
+static unsigned char send_key[crypto_secretbox_KEYBYTES];
+static unsigned char send_salt[crypto_pwhash_SALTBYTES];
 
 /*
  * Message format:
@@ -57,6 +60,12 @@
  *       +----------------------------------------------------------   1 byte
  *                                                                  ==========
  *                                                                   175 bytes
+ * Encrypted message format:
+ *      <Encrypted message><salt><nonce>
+ *       |                  |     |
+ *       |                  |     +- crypto_pwhash_NONCEBYTES
+ *       |                  +------- crypto_pwhash_SALTBYTES
+ *       +-------------------------- 175 bytes - see above
  */
 
 /*
@@ -90,7 +99,6 @@ parse_add_entry_message(char *message, la_address_t **address, la_rule_t **rule,
         char *comma2 = strchr(comma+sizeof(char), ',');
         if (comma2)
                 *comma2 = '\0';
-
 
         if (address)
         {
@@ -128,6 +136,9 @@ parse_add_entry_message(char *message, la_address_t **address, la_rule_t **rule,
                         *duration = strtol(comma2+sizeof(char), &endptr, 10);
                         if (*endptr != '\0')
                         {
+                                *comma = ',';
+                                if (comma2)
+                                        *comma2 = ',';
                                 la_log(LOG_ERR, "Spurious characters in command %s!", message);
                                 free_address(*address);
                                 return false;
@@ -265,8 +276,20 @@ generate_key(unsigned char *key, unsigned int key_len, char *password,
         return true;
 }
 
+
 bool
-decrypt_message(char *buffer, char *password)
+generate_send_key_and_salt(unsigned char *key, char *password,
+                unsigned char *salt)
+{
+	/* First initialize salt with randomness */
+        randombytes_buf(salt, crypto_pwhash_SALTBYTES);
+
+	/* Then generate secret key from password and salt */
+        return generate_key(key, crypto_secretbox_KEYBYTES, password, salt);
+}
+
+bool
+decrypt_message(char *buffer, char *password, la_address_t *from_addr)
 {
 	assert(buffer); assert(password);
         unsigned char *ubuffer = (unsigned char *) buffer;
@@ -277,17 +300,27 @@ decrypt_message(char *buffer, char *password)
                 return false;
         }
 
-	/* Generate secret key based on password and transmitted salt */
-        unsigned char key[crypto_secretbox_KEYBYTES];
-        if (!generate_key(key, crypto_secretbox_KEYBYTES, password,
-                                &ubuffer[SALT_IDX]))
-                return false;
+        /* check wether salt is the same as last time for host. If not,
+         * regenerate key */
+        if (strncmp(from_addr->salt, &ubuffer[SALT_IDX], crypto_pwhash_SALTBYTES))
+        {
+                memcpy(from_addr->salt, &ubuffer[SALT_IDX], crypto_pwhash_SALTBYTES);
+                if (!generate_key(from_addr->key, crypto_secretbox_KEYBYTES,
+                                        password, &ubuffer[SALT_IDX]))
+                {
+                        la_log_errno(LOG_ERR, "Unable to generate receive key for "
+                                        "host %s", from_addr->text);
+                        return false;
+                }
+        }
 
 	/* Decrypt encrypted message with key and nonce */
         if (crypto_secretbox_open_easy(&ubuffer[MSG_IDX], &ubuffer[MSG_IDX],
-                                ENC_MSG_LEN, &ubuffer[NONCE_IDX], key) == -1)
+                                ENC_MSG_LEN, &ubuffer[NONCE_IDX],
+                                from_addr->key) == -1)
         {
-                la_log_errno(LOG_ERR, "Unable to decrypt message");
+                la_log_errno(LOG_ERR, "Unable to decrypt message from host %s",
+                                from_addr->text);
                 return false;
         }
         return true;
@@ -305,21 +338,22 @@ encrypt_message(char *buffer, char *password)
                 return false;
         }
 
-	/* First initialize salt with randomness */
-        randombytes_buf(&ubuffer[SALT_IDX], crypto_pwhash_SALTBYTES);
+        if (!send_key_password || strcmp(send_key_password, password))
+        {
+                la_log(LOG_INFO, "Generating send key");
+                free(send_key_password);
+                send_key_password = xstrdup(password);
+                generate_send_key_and_salt(send_key, password, send_salt);
+        }
 
-	/* Then generate secret key from password and salt */
-        unsigned char key[crypto_secretbox_KEYBYTES];
-        if (!generate_key(key, crypto_secretbox_KEYBYTES, password,
-                                &ubuffer[SALT_IDX]))
-                return false;
+        memcpy(&ubuffer[SALT_IDX], send_salt, crypto_pwhash_SALTBYTES);
 
 	/* Initialize nonce with random data */
         randombytes_buf(&ubuffer[NONCE_IDX], crypto_secretbox_NONCEBYTES);
 
 	/* And then encrypt the the message with key and nonce */
         if (crypto_secretbox_easy(&ubuffer[MSG_IDX], &ubuffer[MSG_IDX], MSG_LEN,
-                                &ubuffer[NONCE_IDX], key) == -1)
+                                &ubuffer[NONCE_IDX], send_key) == -1)
         {
                 la_log_errno(LOG_ERR, "Unable to encrypt message");
                 return false;
@@ -400,7 +434,7 @@ create_reload_message(void)
 {
         char *buffer = xmalloc(TOTAL_MSG_LEN);
 
-        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%c0R",
+        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cR",
                         PROTOCOL_VERSION);
 
         /* pad right here, cannot hurt even if we don't encrypt... */
@@ -414,7 +448,7 @@ create_shutdown_message(void)
 {
         char *buffer = xmalloc(TOTAL_MSG_LEN);
 
-        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%c0S",
+        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cS",
                         PROTOCOL_VERSION);
 
         /* pad right here, cannot hurt even if we don't encrypt... */

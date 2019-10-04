@@ -203,16 +203,19 @@ remote_loop(void *ptr)
                         continue;
                 }
 
-                if (!address_on_list_sa((struct sockaddr *) &remote_client,
-                                        sizeof remote_client,
-                                        la_config->remote_receive_from))
+                la_address_t *from_addr = address_on_list_sa(
+                                (struct sockaddr *) &remote_client,
+                                sizeof remote_client,
+                                la_config->remote_receive_from);
+
+                if (!from_addr)
                 {
                         la_log(LOG_ERR, "Ignored message from %s - not on "
                                         "receive_from list!", from);
                         continue;
                 }
 
-                if (!decrypt_message(buf, la_config->remote_secret))
+                if (!decrypt_message(buf, la_config->remote_secret, from_addr))
                         continue;
 
                 la_debug("Received message '%s' from %s",  buf, from);

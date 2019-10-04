@@ -234,7 +234,7 @@ trigger_single_command(la_pattern_t *pattern, la_address_t *address,
                                                 address->text, bl->name);
                                 if (from_trigger_list)
                                         remove_node((kw_node_t *) command);
-                                trigger_command(command);
+                                trigger_command_from_blacklist(command);
                                 if (command->end_string && command->duration > 0)
                                         enqueue_end_command(command);
                                 return;

@@ -210,7 +210,7 @@ adrcmp(la_address_t *a1, la_address_t *a2)
  * Check whether ip address is on a list. Returns false if address==NULL
  */
 
-bool
+la_address_t *
 address_on_list(la_address_t *address, kw_list_t *list)
 {
         if (!address)
@@ -220,25 +220,25 @@ address_on_list(la_address_t *address, kw_list_t *list)
 
         la_vdebug("address_on_list(%s)", address->text);
 
-        for (la_address_t *ign_address = ITERATE_ADDRESSES(list);
-                        (ign_address = NEXT_ADDRESS(ign_address));)
+        for (la_address_t *list_address = ITERATE_ADDRESSES(list);
+                        (list_address = NEXT_ADDRESS(list_address));)
         {
-                if (cidr_match(address, ign_address))
-                        return true;
+                if (cidr_match(address, list_address))
+                        return list_address;
         }
 
-        return false;
+        return NULL;
 }
 
 /*
  * Check whether ip address (represented by sockaddr) is on a list
  */
 
-bool
+la_address_t *
 address_on_list_sa(struct sockaddr *sa, socklen_t salen, kw_list_t *list)
 {
         la_address_t *address = create_address_sa(sa, salen);
-        bool  result = address_on_list(address, list);
+        la_address_t *result = address_on_list(address, list);
         free(address);
         return result;
 }
@@ -247,11 +247,11 @@ address_on_list_sa(struct sockaddr *sa, socklen_t salen, kw_list_t *list)
  * Check whether ip address (represented by string) is on a list
  */
 
-bool
+la_address_t *
 address_on_list_str(char *host, kw_list_t *list)
 {
         la_address_t *address = create_address(host);
-        bool  result = address_on_list(address, list);
+        la_address_t *result = address_on_list(address, list);
         free(address);
         return result;
 }

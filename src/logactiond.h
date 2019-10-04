@@ -31,6 +31,7 @@
 #include <pthread.h>
 
 #include <libconfig.h>
+#include <sodium.h>
 
 #include "nodelist.h"
 
@@ -236,6 +237,10 @@ typedef struct la_address_s
         struct sockaddr_storage sa;
         int prefix;
         char *text;
+
+        /* only used for hosts that we receive messages from */
+        unsigned char key[crypto_secretbox_KEYBYTES];
+        unsigned char salt[crypto_pwhash_SALTBYTES];
 } la_address_t;
 
 /*
@@ -345,6 +350,7 @@ typedef struct la_command_s
                                    -1 if none */
         int factor;
         bool manual;            /* True if command has been manually submitted */
+        bool blacklist;         /* True if command has been triggered via blacklist */
 
         /* only relevant for end_commands */
         time_t end_time;        /* specific time for enqueued end_commands */
@@ -516,6 +522,9 @@ char *xgetpass (const char *prompt);
 
 /* messages.c */
 
+bool generate_send_key_and_salt(unsigned char *key, char *password,
+                unsigned char *salt);
+
 #ifndef CLIENTONLY
 bool parse_add_entry_message(char *message, la_address_t **address,
                 la_rule_t **rule, int *duration);
@@ -523,7 +532,7 @@ bool parse_add_entry_message(char *message, la_address_t **address,
 void parse_message_trigger_command(char *buf, char *from);
 #endif /* CLIENTONLY */
 
-bool decrypt_message(char *buffer, char *password);
+bool decrypt_message(char *buffer, char *password, la_address_t *from_addr);
 
 bool encrypt_message(char *buffer, char *password);
 
@@ -554,11 +563,11 @@ const char *get_ip_version(la_address_t *address);
 
 int adrcmp(la_address_t *a1, la_address_t *a2);
 
-bool address_on_list(la_address_t *address, kw_list_t *list);
+la_address_t *address_on_list(la_address_t *address, kw_list_t *list);
 
-bool address_on_list_sa(struct sockaddr *sa, socklen_t salen, kw_list_t *list);
+la_address_t *address_on_list_sa(struct sockaddr *sa, socklen_t salen, kw_list_t *list);
 
-bool address_on_list_str(char *host, kw_list_t *list);
+la_address_t *address_on_list_str(char *host, kw_list_t *list);
 
 la_address_t *create_address_sa(struct sockaddr *sa, socklen_t salen);
 
@@ -604,6 +613,8 @@ void trigger_manual_command(la_address_t *address, la_command_t *template,
                 unsigned int duration, char *from);
 
 void trigger_command(la_command_t *command);
+
+void trigger_command_from_blacklist(la_command_t *command);
 
 void trigger_end_command(la_command_t *command, bool suppress_logging);
 

@@ -561,6 +561,15 @@ trigger_command(la_command_t *command)
 
         exec_command(command, LA_COMMANDTYPE_BEGIN);
 }
+
+void
+trigger_command_from_blacklist(la_command_t *command)
+{
+        trigger_command(command);
+        command->blacklist = true;
+}
+
+
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
 
 /*
@@ -738,6 +747,7 @@ create_command_from_template(la_command_t *template, la_pattern_t *pattern,
         result->address = address ? dup_address(address) : NULL;
         result->end_time = result->n_triggers = result->start_time= 0;
         result->manual = false;
+        result->blacklist = false;
 
         assert_command(result);
         return result;
