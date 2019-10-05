@@ -86,6 +86,8 @@ trigger_reload(void)
                                 "STATUS=Reloading configuration.\n");
 #endif /* HAVE_LIBSYSTEMD */
                 shutdown_watching();
+                /* TODO: must do more, e.g. shutdown remote thread in case
+                 * configuration changes apply to it */
                 unload_la_config();
                 load_la_config(cfg_filename);
                 update_queue_count_numbers();
