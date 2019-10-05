@@ -341,7 +341,6 @@ encrypt_message(char *buffer, char *password)
 
         if (!send_key_password || strcmp(send_key_password, password))
         {
-                la_log(LOG_INFO, "Generating send key");
                 free(send_key_password);
                 send_key_password = xstrdup(password);
                 generate_send_key_and_salt(send_key, password, send_salt);
