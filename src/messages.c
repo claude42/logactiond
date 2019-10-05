@@ -302,9 +302,10 @@ decrypt_message(char *buffer, char *password, la_address_t *from_addr)
 
         /* check wether salt is the same as last time for host. If not,
          * regenerate key */
-        if (strncmp(from_addr->salt, &ubuffer[SALT_IDX], crypto_pwhash_SALTBYTES))
+        if (sodium_memcmp(&(from_addr->salt), &ubuffer[SALT_IDX],
+                                crypto_pwhash_SALTBYTES))
         {
-                memcpy(from_addr->salt, &ubuffer[SALT_IDX], crypto_pwhash_SALTBYTES);
+                memcpy(&(from_addr->salt), &ubuffer[SALT_IDX], crypto_pwhash_SALTBYTES);
                 if (!generate_key(from_addr->key, crypto_secretbox_KEYBYTES,
                                         password, &ubuffer[SALT_IDX]))
                 {
