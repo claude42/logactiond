@@ -17,6 +17,9 @@ dist_sources_DATA = conf/sources/*
 testdir = $(confdir)/test
 dist_test_DATA = conf/test/*
 
+statedir = $(libdir)/logactiond
+dist_state_DATA = README.state
+
 EXTRA_DIST = contrib/* README.md 
 
 

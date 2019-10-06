@@ -46,6 +46,7 @@ bool log_verbose = false;
 unsigned int id_counter = 0;
 char *run_uid_s = NULL;
 unsigned int status_monitoring = 0;
+char *saved_state = NULL;
 bool shutdown_ongoing = false;
 int exit_status = EXIT_SUCCESS;
 static int exit_errno = 0;
@@ -261,10 +262,12 @@ read_options(int argc, char *argv[])
                         {"pidfile",    required_argument, NULL, 'p'},
                         {"user",       required_argument, NULL, 'u'},
                         {"status",     optional_argument, NULL, 't'},
+                        {"restore",    optional_argument, NULL, 'r'},
                         {0,            0,                 0,    0  }
                 };
 
-                int c = getopt_long(argc, argv, "fc:d::vp:u:t", long_options, NULL);
+                /* TODO: two colons seem to be a GNU extension?! */
+                int c = getopt_long(argc, argv, "fc:d::vp:u:t::r::", long_options, NULL);
 
                 if (c == -1)
                         break;
@@ -296,6 +299,12 @@ read_options(int argc, char *argv[])
                                 if (optarg && *optarg == 't')
                                         status_monitoring++;
                                 break;
+                        case 'r':
+                                if (optarg)
+                                        saved_state = optarg;
+                                else
+                                        saved_state = STATE_DIR "/" STATE_FILE;
+                                break;
                         case '?':
                                 print_usage();
                                 exit(0);
@@ -306,6 +315,53 @@ read_options(int argc, char *argv[])
 
                 }
         }
+}
+
+void
+restore_state(char *state_file_name)
+{
+        assert(state_file_name);
+        la_debug("restore_state(%s)", state_file_name);
+
+        FILE *stream = fopen(state_file_name, "r");
+        if (!stream)
+                die_err("Unable to open state file \"%s\"", state_file_name);
+
+        char *linebuffer = xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
+        size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE*sizeof(char);
+        xpthread_mutex_lock(&config_mutex);
+
+        for (int i=1; ; i++)
+        {
+                ssize_t num_read = getline(&linebuffer, &linebuffer_size, stream);
+                if (num_read == -1)
+                {
+                        if (feof(stream))
+                                break;
+                        else
+                                die_err("Reading from state file \"%s\" failed",
+                                                state_file_name);
+                }
+
+                la_address_t *address; la_rule_t * rule; time_t end_time;
+                int factor;
+
+                int r = parse_add_entry_message(linebuffer, &address, &rule,
+                                        &end_time, &factor);
+                if (r == -1)
+                        die_hard("Error parsing state file \"%s\" at line %u!",
+                                        state_file_name, i);
+                else if (r > 0)
+                        trigger_manual_commands_for_rule(address, rule,
+                                        end_time, factor, "statefile");
+
+                free_address(address);
+        }
+
+        xpthread_mutex_unlock(&config_mutex);
+
+        if (fclose(stream) == EOF)
+                die_err("Unable to close state file");
 }
 
 /* Determine UID belonging to what's been specified on the command line. This
@@ -396,6 +452,8 @@ main(int argc, char *argv[])
 
         start_end_queue_thread();
         load_la_config(cfg_filename);
+        if (saved_state)
+                restore_state(saved_state);
         start_watching_threads();
 #ifndef NOMONITORING
         start_monitoring_thread();

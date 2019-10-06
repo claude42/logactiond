@@ -312,6 +312,23 @@ trigger_all_commands(la_pattern_t *pattern)
         free_address(address);
 }
 
+
+#if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
+void
+trigger_manual_commands_for_rule(la_address_t *address, la_rule_t *rule,
+                time_t end_time, int factor, char *from)
+{
+        la_debug("trigger_manual_command_for_rule()");
+        assert_address(address); assert_rule(rule); assert(end_time > 0);
+        assert(from);
+
+        for (la_command_t *template = ITERATE_COMMANDS(rule->begin_commands);
+                        (template = NEXT_COMMAND(template));)
+                trigger_manual_command(address, template, end_time, factor,
+                                from);
+}
+#endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
+
 /*
  * Assign values to existing properties from matched pattern
  *

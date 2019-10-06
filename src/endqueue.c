@@ -18,11 +18,11 @@
 
 #include <config.h>
 
-//#include <time.h>
+#include <time.h>
 #include <pthread.h>
 //#include <stdlib.h>
 //#include <unistd.h>
-//#include <syslog.h>
+#include <syslog.h>
 #include <string.h>
 #include <assert.h>
 #include <limits.h>
@@ -229,7 +229,7 @@ empty_end_queue(void)
 {
         /* Always remember: don't call die_xxx() from in here as this will
          * call shutdown_daemon() again and we will end up in a fun loop... */
-        la_debug("empty_end_queue()");
+        la_log(LOG_INFO, "Flushing end queue.");
 
         if (!end_queue)
                 return;
@@ -261,6 +261,45 @@ empty_end_queue(void)
         }
 }
 #endif /* NOCOMMANDS */
+
+#if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
+void
+save_queue_state(void)
+{
+        assert_list(end_queue);
+        la_log(LOG_INFO, "Dumping current state to \"" STATE_DIR "/"
+                        STATE_FILE "\"");
+
+        FILE *stream = fopen(STATE_DIR "/" STATE_FILE, "w");
+        if (!stream)
+        {
+                la_log_errno(LOG_ERR, "Unable to open state file");
+                return;
+        }
+
+        time_t now = xtime(NULL);
+        fprintf(stream, "# logactiond state %s\n", ctime(&now));
+
+        xpthread_mutex_lock(&end_queue_mutex);
+
+        for (la_command_t *command = ITERATE_COMMANDS(end_queue);
+                        (command = NEXT_COMMAND(command));)
+        {
+                if (!command->is_template &&
+                                print_add_message(stream, command) < 0)
+                {
+                        la_log_errno(LOG_ERR, "Failure to dump queue.");
+                        break;
+                }
+        }
+
+        xpthread_mutex_unlock(&end_queue_mutex);
+
+        if (fclose(stream) == EOF)
+                la_log_errno(LOG_ERR, "Unable to close state file");
+}
+#endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
+
 
 /*
  * Will wait until the next end command has to be executed. In case the next

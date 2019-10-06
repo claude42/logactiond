@@ -47,6 +47,12 @@
 
 #define CONFIG_FILE "logactiond.cfg"
 
+#if !defined(STATE_DIR)
+#define STATE_DIR "/var/lib/logactiond"
+#endif /* !defined(STATE_DIR) */
+
+#define STATE_FILE "logactiond.state"
+
 #define DEFAULT_THRESHOLD 3
 #define DEFAULT_PERIOD 600
 #define DEFAULT_DURATION 600
@@ -520,23 +526,29 @@ kw_list_t *xcreate_list(void);
 
 char *xgetpass (const char *prompt);
 
-/* messages.c */
+/* crypto.c */
 
 bool generate_send_key_and_salt(unsigned char *key, char *password,
                 unsigned char *salt);
-
-#ifndef CLIENTONLY
-bool parse_add_entry_message(char *message, la_address_t **address,
-                la_rule_t **rule, int *duration);
-
-void parse_message_trigger_command(char *buf, char *from);
-#endif /* CLIENTONLY */
 
 bool decrypt_message(char *buffer, char *password, la_address_t *from_addr);
 
 bool encrypt_message(char *buffer, char *password);
 
-char *create_add_message(char *ip, char *rule, char *duration);
+void pad(char *buffer, size_t msg_len);
+
+/* messages.c */
+
+#ifndef CLIENTONLY
+int parse_add_entry_message(char *message, la_address_t **address,
+                la_rule_t **rule, time_t *end_time, int *factor);
+
+void parse_message_trigger_command(char *buf, char *from);
+#endif /* CLIENTONLY */
+
+char *create_add_message(char *ip, char *rule, char *end_time, char *factor);
+
+int print_add_message(FILE *stream, la_command_t *command);
 
 char *create_del_message(char *ip);
 
@@ -547,6 +559,10 @@ char *create_flush_message(void);
 char *create_reload_message(void);
 
 char *create_shutdown_message(void);
+
+char *create_save_message(void);
+
+char *create_restore_message(void);
 
 /* configfile.c */
 
@@ -593,6 +609,8 @@ int remove_and_trigger(la_address_t *address);
 
 void empty_end_queue();
 
+void save_queue_state(void);
+
 void enqueue_end_command(la_command_t *end_command);
 
 void init_end_queue(void);
@@ -610,7 +628,7 @@ void free_meta_list(void);
 void assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned int line);
 
 void trigger_manual_command(la_address_t *address, la_command_t *template,
-                unsigned int duration, char *from);
+                time_t end_time, int factor, char *from);
 
 void trigger_command(la_command_t *command);
 
@@ -676,6 +694,9 @@ void free_pattern_list(kw_list_t *list);
 void assert_rule_ffl(la_rule_t *rule, const char *func, char *file, unsigned int line);
 
 void handle_log_line_for_rule(la_rule_t *rule, const char *line);
+
+void trigger_manual_commands_for_rule(la_address_t *address, la_rule_t *rule,
+                time_t end_time, int factor, char *from);
 
 la_rule_t *create_rule(char *name, la_source_t *source, int threshold,
                 int period, int duration, int meta_enabled, int meta_period,

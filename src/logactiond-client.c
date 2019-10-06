@@ -26,9 +26,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <syslog.h>
 #include <netdb.h>
-#include <stdbool.h>
 
 #include <sodium.h>
 
@@ -46,7 +44,7 @@ print_usage(void)
 {
         fprintf(stderr,
                         "Usage: logactiond-client [-h host][-p password][-s port] "
-                        "add address rule [duration]\n"
+                        "add address rule [end_time]\n"
                         "Usage: logactiond-client [-h host][-p password][-s port] "
                         "del address\n"
                         "Usage: logactiond-client [-h host][-p password][-s port] "
@@ -54,7 +52,9 @@ print_usage(void)
                         "Usage: logactiond-client [-h host][-p password][-s port] "
                         "reload\n"
                         "Usage: logactiond-client [-h host][-p password][-s port] "
-                        "shutdown\n");
+                        "shutdown\n"
+                        "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "save\n");
 }
 
 static void
@@ -192,10 +192,10 @@ main(int argc, char *argv[])
 
                 char *ip = argv[optind++];
                 char *rule = argv[optind++];
-                char *duration = NULL;
+                char *end_time = NULL;
                 if (optind < argc)
-                        duration = argv[optind];
-                message = create_add_message(ip, rule, duration);
+                        end_time = argv[optind];
+                message = create_add_message(ip, rule, end_time, NULL);
         }
         else if (!strcmp(command, "del"))
         {
@@ -215,6 +215,10 @@ main(int argc, char *argv[])
         else if (!strcmp(command, "shutdown"))
         {
                 message = create_shutdown_message();
+        }
+        else if (!strcmp(command, "save"))
+        {
+                message = create_save_message();
         }
         else
         {

@@ -370,7 +370,7 @@ find_on_meta_list(la_command_t *command)
  */
 
 static float
-check_meta_list(la_command_t *command)
+check_meta_list(la_command_t *command, int set_factor)
 {
         assert_command(command);
         la_debug("check_meta_list(%s, %u)", command->address->text,
@@ -381,10 +381,35 @@ check_meta_list(la_command_t *command)
 
         meta_command_t *meta_command = find_on_meta_list(command);
 
+        /* TODO: stuff below could probably be written a bit more concisely */
         if (meta_command)
         {
-                if (xtime(NULL) > meta_command->meta_start_time)
+                /* if factor has been explicitely specified - use it */
+                if (set_factor)
                 {
+                        /* if new duration would bebelow meta_max, use it */
+                        if (command->duration * set_factor <
+                                        command->rule->meta_max)
+                        {
+                                meta_command->factor = set_factor;
+                                meta_command->meta_start_time = xtime(NULL) +
+                                        meta_command->factor *
+                                        command->duration;
+                        }
+                        /* otherwise set factor to -1 and use meta_max */
+                        else
+                        {
+                                meta_command->factor = -1;
+                                meta_command->meta_start_time = xtime(NULL) +
+                                        command->rule->meta_max;
+                        }
+                }
+
+                /* otherwise check whether enough time has passed and if so,
+                 * multiply curent factor by meta_factor */
+                else if (xtime(NULL) > meta_command->meta_start_time)
+                {
+                        /* if new duration would bebelow meta_max, use it */
                         if (command->duration * meta_command->factor  *
                                         command->rule->meta_factor <
                                         command->rule->meta_max)
@@ -395,24 +420,20 @@ check_meta_list(la_command_t *command)
                                         meta_command->factor *
                                         command->duration;
                         }
+                        /* otherwise set factor to -1 and use meta_max */
                         else
                         {
                                 meta_command->factor = -1;
                                 meta_command->meta_start_time = xtime(NULL) +
                                         command->rule->meta_max;
                         }
-                        /*if (command->duration * meta_command->factor  *
-                                        meta_command->rule->meta_factor <
-                                        meta_command->rule->meta_max)
-                                meta_command->factor *=
-                                        meta_command->rule->meta_factor;
-                        meta_command->meta_start_time = xtime(NULL) +
-                                meta_command->factor * command->duration;*/
                 }
         }
         else
         {
                 meta_command = create_meta_command(command);
+                if (set_factor)
+                        meta_command->factor = set_factor;
                 add_head(meta_list, (kw_node_t *) meta_command);
         }
 
@@ -435,7 +456,7 @@ incr_invocation_counts(la_command_t *command)
 
 void
 trigger_manual_command(la_address_t *address, la_command_t *template,
-                unsigned int duration, char *from)
+                time_t end_time, int factor, char *from)
 {
         assert_address(address); assert_command(template); assert(from);
         la_debug("trigger_manual_command()");
@@ -467,13 +488,18 @@ trigger_manual_command(la_address_t *address, la_command_t *template,
                 return;
         }
 
-        /* TODO: really? better ignore it! */
-        /*if (duration != 0)
-                command->duration = duration;*/
+        /* If end_time was specified, check whether it's already in the past.
+         * If so, do nothing */
+        if (end_time && xtime(NULL) > end_time)
+        {
+                la_log_verbose(LOG_INFO, "Manual command ignored as end time "
+                                "is in the past.");
+                return;
+        }
 
         if (command->rule && command->rule->meta_enabled)
         {
-                command->factor = check_meta_list(command);
+                command->factor = check_meta_list(command, factor);
                 la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
                                 "by host %s, rule \"%s\" (factor %d).",
                                 command->address->text, command->name, from,
@@ -491,9 +517,16 @@ trigger_manual_command(la_address_t *address, la_command_t *template,
 
         exec_command(command, LA_COMMANDTYPE_BEGIN);
         if (command->end_string && command->duration > 0)
+        {
                 enqueue_end_command(command);
+                /* If end_time was specified, overwrite computed end_time */
+                if (end_time)
+                        command->end_time = end_time;
+        }
         else
+        {
                 free_command(command);
+        }
 }
 
 /*
@@ -537,7 +570,7 @@ trigger_command(la_command_t *command)
                 /* TODO: command->rule always set at this point or better test? */
                 if (command->rule->meta_enabled)
                 {
-                        command->factor = check_meta_list(command);
+                        command->factor = check_meta_list(command, 0);
                         la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
                                         "by rule \"%s\" (factor %d).",
                                         command->address->text, command->name,

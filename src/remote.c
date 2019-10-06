@@ -75,10 +75,11 @@ send_message_to_single_address(char *message, la_address_t *remote_address)
         else if (message_sent != TOTAL_MSG_LEN)
                 la_log_errno(LOG_ERR, "Sent truncated message to %s",
                                 remote_address->text);
-        else
-                la_debug("Sent message '%s' to %s", message, remote_address->text);
 }
 
+/*
+ * Currently only called from trigger_command()
+ */
 void
 send_add_entry_message(la_command_t *command)
 {
@@ -87,11 +88,11 @@ send_add_entry_message(la_command_t *command)
         if (!la_config->remote_enabled)
                 return;
 
-        /* delibarately left out duration here. Receiving end should decide on
-         * duration. TODO: does that make sense? */
+        /* delibarately left out end_time and factor  here. Receiving end
+         * should decide on duration. TODO: does that make sense? */
         char *message;
         if (!(message = create_add_message(command->address->text,
-                                command->rule_name, NULL)))
+                                command->rule_name, NULL, NULL)))
         {
                 la_log(LOG_ERR, "Unable to create message");
                 return;
