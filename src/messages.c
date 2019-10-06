@@ -365,7 +365,7 @@ print_add_message(FILE *stream, la_command_t *command)
 #endif /* CLIENTONLY */
         la_debug("print_add_message(%s)", command->address->text);
 
-        return fprintf(stream, "%c+%s,%s,%d,%d\n", PROTOCOL_VERSION,
+        return fprintf(stream, "%c+%s,%s,%ld,%d\n", PROTOCOL_VERSION,
                         command->address->text, command->rule_name,
                         command->end_time, command->factor);
 }
