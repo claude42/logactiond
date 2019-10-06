@@ -52,3 +52,6 @@ servers
 * save/reload state
 
 * make sure remote configuration gets properly updated on reload as well
+
+* don't activate crypto (and messaging) stuff in case libsodium is not
+  available
