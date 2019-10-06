@@ -16,6 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#ifndef NOCRYPTO
 #include <config.h>
 
 #include <assert.h>
@@ -158,5 +159,6 @@ pad(char *buffer, size_t msg_len)
                 buffer[MSG_IDX+i] = pad;
 }
 
+#endif /* NOCRYPTO */
 
 /* vim: set autowrite expandtab: */

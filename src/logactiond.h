@@ -31,7 +31,9 @@
 #include <pthread.h>
 
 #include <libconfig.h>
+#ifndef NOCRYPTO
 #include <sodium.h>
+#endif /* NOCRYPTO */
 
 #include "nodelist.h"
 
@@ -245,8 +247,10 @@ typedef struct la_address_s
         char *text;
 
         /* only used for hosts that we receive messages from */
+#ifndef NOCRYPTO
         unsigned char key[crypto_secretbox_KEYBYTES];
         unsigned char salt[crypto_pwhash_SALTBYTES];
+#endif
 } la_address_t;
 
 /*
