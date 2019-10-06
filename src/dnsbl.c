@@ -19,7 +19,6 @@
 
 #include <config.h>
 
-#include <netinet/in.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <assert.h>
