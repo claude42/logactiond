@@ -775,7 +775,6 @@ load_single_rule(const config_setting_t *uc_rule_def)
 
         /* blacklists are only taken from uc_rule_def (or default settings) */
         load_blacklists(new_rule, uc_rule_def);
-        la_debug("Done");
 
         add_tail(source->rules, (kw_node_t *) new_rule);
 }
