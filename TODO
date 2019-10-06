@@ -45,3 +45,10 @@ Speicherzugriffsfehler
     aber nicht sicher, ob das nebenwirkungsfrei geht
 
 * Send startup errors to standard out instead of syslog - really??
+
+"dontroute" rule configuration directive so it doesn't get send to other
+servers
+
+* save/reload state
+
+* make sure remote configuration gets properly updated on reload as well
