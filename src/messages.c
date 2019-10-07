@@ -102,7 +102,7 @@ parse_add_entry_message(char *message, la_address_t **address, la_rule_t **rule,
         unsigned int msg_len = xstrlen(message);
 
         /* Empty line or comment */
-        if (!msg_len || *message == '#')
+        if (!msg_len || *message == '#' || *message =='\n')
         {
                 *address = NULL; *rule = NULL; *end_time = 0; *factor = 0;
                 return 0;
