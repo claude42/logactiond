@@ -324,7 +324,7 @@ void
 restore_state(char *state_file_name)
 {
         assert(state_file_name);
-        la_debug("restore_state(%s)", state_file_name);
+        la_log(LOG_INFO, "Restoring state from \"%s\"", state_file_name);
 
         FILE *stream = fopen(state_file_name, "r");
         if (!stream)
