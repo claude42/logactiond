@@ -52,7 +52,7 @@ generate_key(unsigned char *key, unsigned int key_len, char *password,
                                 crypto_pwhash_MEMLIMIT_INTERACTIVE,
                                 crypto_pwhash_ALG_DEFAULT) == -1)
         {
-                la_log_errno(LOG_ERR, "Unable to encryption generate key");
+                la_log(LOG_ERR, "Unable to encryption generate key!");
                 return false;
         }
 
@@ -79,7 +79,7 @@ decrypt_message(char *buffer, char *password, la_address_t *from_addr)
 
         if (sodium_init() < 0)
         {
-                la_log_errno(LOG_ERR, "Unable to  initialize libsodium");
+                la_log(LOG_ERR, "Unable to  initialize libsodium!");
                 return false;
         }
 
@@ -92,8 +92,8 @@ decrypt_message(char *buffer, char *password, la_address_t *from_addr)
                 if (!generate_key(from_addr->key, crypto_secretbox_KEYBYTES,
                                         password, &ubuffer[SALT_IDX]))
                 {
-                        la_log_errno(LOG_ERR, "Unable to generate receive key for "
-                                        "host %s", from_addr->text);
+                        la_log(LOG_ERR, "Unable to generate receive key for "
+                                        "host %s!", from_addr->text);
                         return false;
                 }
         }
@@ -103,7 +103,7 @@ decrypt_message(char *buffer, char *password, la_address_t *from_addr)
                                 ENC_MSG_LEN, &ubuffer[NONCE_IDX],
                                 from_addr->key) == -1)
         {
-                la_log_errno(LOG_ERR, "Unable to decrypt message from host %s",
+                la_log(LOG_ERR, "Unable to decrypt message from host %s",
                                 from_addr->text);
                 return false;
         }
@@ -118,7 +118,7 @@ encrypt_message(char *buffer, char *password)
 
         if (sodium_init() < 0)
         {
-                la_log_errno(LOG_ERR, "Unable to  initialize libsodium");
+                la_log(LOG_ERR, "Unable to  initialize libsodium!");
                 return false;
         }
 
@@ -138,7 +138,7 @@ encrypt_message(char *buffer, char *password)
         if (crypto_secretbox_easy(&ubuffer[MSG_IDX], &ubuffer[MSG_IDX], MSG_LEN,
                                 &ubuffer[NONCE_IDX], send_key) == -1)
         {
-                la_log_errno(LOG_ERR, "Unable to encrypt message");
+                la_log(LOG_ERR, "Unable to encrypt message!");
                 return false;
         }
 
