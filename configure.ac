@@ -23,7 +23,7 @@ AC_CHECK_LIB([resolv], [inet_net_pton])
 #AC_CHECK_LIB([crypto], [EVP_EncryptInit_ex])
 PKG_CHECK_MODULES([LIBSODIUM], [libsodium], [
 	           AC_DEFINE([WITH_LIBSODIUM], [1], [Use libsodium])
-])
+],[1])
 #PKG_CHECK_MODULES([OPENSSL], [openssl], [
 #	           AC_DEFINE([WITH_OPENSSL], [1], [Use OpenSSL])
 #])

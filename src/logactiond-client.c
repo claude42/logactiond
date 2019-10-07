@@ -28,7 +28,9 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
+#ifdef WITH_LIBSODIUM
 #include <sodium.h>
+#endif /* WITH_LIBSODIUM */
 
 #include "logactiond.h"
 
@@ -230,8 +232,10 @@ main(int argc, char *argv[])
 
         if (host)
         {
+#ifdef WITH_LIBSODIUM
                 if (!encrypt_message(message, password))
                         die_err("Unable to encrypt message");
+#endif /* WITH_LIBSODIUM */
                 send_remote_message(host, message);
         }
         else

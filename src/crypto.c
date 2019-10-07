@@ -22,10 +22,12 @@
 #include <assert.h>
 #include <string.h>
 #include <syslog.h>
-#include <sodium.h>
 #include <stdlib.h>
 
 #include "logactiond.h"
+
+#ifdef WITH_LIBSODIUM
+#include <sodium.h>
 
 static char *send_key_password;
 static unsigned char send_key[crypto_secretbox_KEYBYTES];
@@ -142,6 +144,7 @@ encrypt_message(char *buffer, char *password)
 
         return true;
 }
+#endif /* WITH_LIBSODIUM */
 
 /* 
  * Apply PKCS#7 padding to buffer.

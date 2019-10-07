@@ -32,7 +32,9 @@
 
 #include <libconfig.h>
 #ifndef NOCRYPTO
+#ifdef WITH_LIBSODIUM
 #include <sodium.h>
+#endif /* WITH_LIBSODIUM */
 #endif /* NOCRYPTO */
 
 #include "nodelist.h"
@@ -213,7 +215,7 @@
 #define PROTOCOL_VERSION '0'
 
 /* Length of unencrypted message*/
-#define MSG_LEN 175
+#define MSG_LEN 180
 /* Length of encrypted message (i.e. incl. MAC */
 #define ENC_MSG_LEN MSG_LEN + crypto_secretbox_MACBYTES
 /* Length of whole message that will be send, i.e.
@@ -221,7 +223,11 @@
  * - MAC
  * - the encrypted message
  */
+#ifdef WITH_LIBSODIUM
 #define TOTAL_MSG_LEN ENC_MSG_LEN + crypto_secretbox_NONCEBYTES + crypto_pwhash_SALTBYTES
+#else
+#define TOTAL_MSG_LEN MSG_LEN
+#endif
 
 #define MSG_IDX 0
 #define SALT_IDX ENC_MSG_LEN
@@ -248,9 +254,11 @@ typedef struct la_address_s
 
         /* only used for hosts that we receive messages from */
 #ifndef NOCRYPTO
+#ifdef WITH_LIBSODIUM
         unsigned char key[crypto_secretbox_KEYBYTES];
         unsigned char salt[crypto_pwhash_SALTBYTES];
-#endif
+#endif /* WITH_LIBSODIUM */
+#endif /* NOCRYPTO */
 } la_address_t;
 
 /*
