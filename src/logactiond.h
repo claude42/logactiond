@@ -621,7 +621,7 @@ int remove_and_trigger(la_address_t *address);
 
 void empty_end_queue();
 
-void save_queue_state(void);
+void save_queue_state(char *state_file_name);
 
 void enqueue_end_command(la_command_t *end_command);
 
@@ -640,7 +640,7 @@ void free_meta_list(void);
 void assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned int line);
 
 void trigger_manual_command(la_address_t *address, la_command_t *template,
-                time_t end_time, int factor, char *from);
+                time_t end_time, int factor, char *from, bool suppress_logging);
 
 void trigger_command(la_command_t *command);
 
@@ -708,7 +708,7 @@ void assert_rule_ffl(la_rule_t *rule, const char *func, char *file, unsigned int
 void handle_log_line_for_rule(la_rule_t *rule, const char *line);
 
 void trigger_manual_commands_for_rule(la_address_t *address, la_rule_t *rule,
-                time_t end_time, int factor, char *from);
+                time_t end_time, int factor, char *from, bool suppress_logging);
 
 la_rule_t *create_rule(char *name, la_source_t *source, int threshold,
                 int period, int duration, int meta_enabled, int meta_period,

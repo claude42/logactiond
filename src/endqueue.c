@@ -264,13 +264,15 @@ empty_end_queue(void)
 
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
 void
-save_queue_state(void)
+save_queue_state(char *state_file_name)
 {
         assert_list(end_queue);
-        la_log(LOG_INFO, "Dumping current state to \"" STATE_DIR "/"
-                        STATE_FILE "\"");
+        if (!state_file_name)
+                state_file_name = STATE_DIR "/" STATE_FILE;
 
-        FILE *stream = fopen(STATE_DIR "/" STATE_FILE, "w");
+        la_log(LOG_INFO, "Dumping current state to \"%s\"", state_file_name);
+
+        FILE *stream = fopen(state_file_name, "w");
         if (!stream)
         {
                 la_log_errno(LOG_ERR, "Unable to open state file");

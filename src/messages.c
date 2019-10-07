@@ -229,11 +229,8 @@ add_entry(char *buffer, char *from)
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
                 xpthread_mutex_lock(&config_mutex);
 
-                for (la_command_t *template =
-                                ITERATE_COMMANDS(rule->begin_commands);
-                                (template = NEXT_COMMAND(template));)
-                        trigger_manual_command(address, template, end_time,
-                                        factor, from);
+                trigger_manual_commands_for_rule(address, rule, end_time,
+                                factor, from, false);
 
                 xpthread_mutex_unlock(&config_mutex);
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
@@ -288,7 +285,7 @@ perform_shutdown(void)
 static void
 perform_save(void)
 {
-        save_queue_state();
+        save_queue_state(NULL);
 }
 
 void

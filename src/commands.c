@@ -456,9 +456,9 @@ incr_invocation_counts(la_command_t *command)
 
 void
 trigger_manual_command(la_address_t *address, la_command_t *template,
-                time_t end_time, int factor, char *from)
+                time_t end_time, int factor, char *from, bool suppress_logging)
 {
-        assert_address(address); assert_command(template); assert(from);
+        assert_address(address); assert_command(template);
         la_debug("trigger_manual_command()");
 
 
@@ -473,9 +473,11 @@ trigger_manual_command(la_address_t *address, la_command_t *template,
         if (tmp)
         {
                 la_log_verbose(LOG_INFO, "Host: %s, ignored, action \"%s\" "
-                                "by host %s already "
+                                "%s%salready "
                                 "active (triggered by rule \"%s\").",
-                                address->text, tmp->name, from,
+                                address->text, tmp->name, 
+                                from ? "by host " : "",
+                                from ? from : "",
                                 tmp->rule->name);
                 return;
         }
@@ -497,20 +499,49 @@ trigger_manual_command(la_address_t *address, la_command_t *template,
                 return;
         }
 
-        if (command->rule && command->rule->meta_enabled)
+        if (!suppress_logging)
         {
-                command->factor = check_meta_list(command, factor);
-                la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
-                                "by host %s, rule \"%s\" (factor %d).",
-                                command->address->text, command->name, from,
-                                command->rule->name, command->factor);
+                if (command->rule && command->rule->meta_enabled)
+                {
+                        command->factor = check_meta_list(command, factor);
+                        la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
+                                        "%s%s, rule \"%s\" (factor %d).",
+                                        command->address->text, command->name,
+                                        from ? "by host " : "",
+                                        from ? from : "",
+                                        command->rule->name, command->factor);
+                }
+                else
+                {
+                        la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
+                                        "%s%s, rule \"%s\".",
+                                        command->address->text, command->name,
+                                        from ? "by host " : "",
+                                        from ? from : "",
+                                        command->rule->name);
+                }
         }
         else
         {
-                la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
-                                "by host %s, rule \"%s\".",
-                                command->address->text, command->name, from,
-                                command->rule->name);
+                if (command->rule && command->rule->meta_enabled)
+                {
+                        command->factor = check_meta_list(command, factor);
+                        la_log_verbose(LOG_INFO, "Host: %s, action \"%s\" activated "
+                                        "%s%s, rule \"%s\" (factor %d).",
+                                        command->address->text, command->name,
+                                        from ? "by host " : "",
+                                        from ? from : "",
+                                        command->rule->name, command->factor);
+                }
+                else
+                {
+                        la_log_verbose(LOG_INFO, "Host: %s, action \"%s\" activated "
+                                        "%s%s, rule \"%s\".",
+                                        command->address->text, command->name,
+                                        from ? "by host " : "",
+                                        from ? from : "",
+                                        command->rule->name);
+                }
         }
 
         command->rule->queue_count++;

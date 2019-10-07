@@ -61,6 +61,9 @@ trigger_shutdown(int status, int saved_errno)
         exit_errno = saved_errno;
         shutdown_ongoing = true;
 
+        if (saved_state)
+                save_queue_state(saved_state);
+
         if (file_watch_thread)
                 pthread_cancel(file_watch_thread);
 #if HAVE_LIBSYSTEMD
@@ -325,7 +328,11 @@ restore_state(char *state_file_name)
 
         FILE *stream = fopen(state_file_name, "r");
         if (!stream)
-                die_err("Unable to open state file \"%s\"", state_file_name);
+        {
+                la_log_errno(LOG_ERR, "Unable to open state file \"%s\"",
+                                state_file_name);
+                return;
+        }
 
         char *linebuffer = xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
         size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE*sizeof(char);
@@ -353,7 +360,7 @@ restore_state(char *state_file_name)
                                         state_file_name, i);
                 else if (r > 0)
                         trigger_manual_commands_for_rule(address, rule,
-                                        end_time, factor, "statefile");
+                                        end_time, factor, NULL, true);
 
                 free_address(address);
         }
@@ -469,13 +476,17 @@ main(int argc, char *argv[])
         la_debug("Main thread going to sleep.");
 
         if (file_watch_thread)
+        {
                 xpthread_join(file_watch_thread, NULL);
-        la_debug("joined file_watch_thread");
+                la_debug("joined file_watch_thread");
+        }
 
 #if HAVE_LIBSYSTEMD
         if (systemd_watch_thread)
+        {
                 xpthread_join(systemd_watch_thread, NULL);
-        la_debug("joined systemd_watch_thread");
+                la_debug("joined systemd_watch_thread");
+        }
 #endif /* HAVE_LIBSYSTEMD */
 
         /* Log that we're going down */
@@ -489,22 +500,30 @@ main(int argc, char *argv[])
 
         /* Wait for all threads to end */
         if (end_queue_thread)
+        {
                 xpthread_join(end_queue_thread, NULL);
-        la_debug("joined end_queue_thread");
+                la_debug("joined end_queue_thread");
+        }
 
 #ifndef NOMONITORING
         if (monitoring_thread)
+        {
                 xpthread_join(monitoring_thread, NULL);
-        la_debug("joined status_monitoring_thread");
+                la_debug("joined status_monitoring_thread");
+        }
 #endif /* NOMONITORING */
 
         if (fifo_thread)
+        {
                 xpthread_join(fifo_thread, NULL);
-        la_debug("joined fifo_thread");
+                la_debug("joined fifo_thread");
+        }
 
         if (remote_thread)
+        {
                 xpthread_join(remote_thread, NULL);
-        la_debug("joined remote_thread");
+                la_debug("joined remote_thread");
+        }
 
         unload_la_config();
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
