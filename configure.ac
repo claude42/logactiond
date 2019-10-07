@@ -10,6 +10,7 @@ AC_CONFIG_SUBDIRS([libconfig])
 
 # Checks for programs.
 AC_PROG_CC_C99
+AC_PROG_MKDIR_P
 
 #necessary for gnulib
 #gl_EARLY

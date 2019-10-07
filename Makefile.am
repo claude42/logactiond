@@ -17,8 +17,8 @@ dist_sources_DATA = conf/sources/*
 testdir = $(confdir)/test
 dist_test_DATA = conf/test/*
 
-statedir = $(libdir)/logactiond
-dist_state_DATA = README.state
+install-data-local:
+	    $(MKDIR_P) $(DESTDIR)$(libdir)/logactiond
 
 EXTRA_DIST = contrib/* README.md 
 
