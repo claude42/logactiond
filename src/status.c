@@ -38,7 +38,7 @@ pthread_t monitoring_thread = 0;
  */
 
 static void
-human_readable_time_delta(time_t delta, int *value, char *unit)
+human_readable_time_delta(time_t delta, time_t *value, char *unit)
 {
         assert(value); assert(unit);
         *value = delta;
@@ -290,7 +290,7 @@ dump_queue_status(kw_list_t *queue)
 
                 char *adr = command->address ? command->address->text : "-";
 
-                int timedelta;
+                time_t timedelta;
                 char unit;
                 human_readable_time_delta(command->end_time-xtime(NULL),
                                 &timedelta, &unit);
@@ -303,7 +303,7 @@ dump_queue_status(kw_list_t *queue)
                 else
                         type = "  ";
 
-                fprintf(hosts_file, "%-43.43s %s %2d %2u%c  %-13.13s %-13.13s\n",
+                fprintf(hosts_file, "%-43.43s %s %2d %2ld%c  %-13.13s %-13.13s\n",
                                 adr, type, command->factor, timedelta, unit,
                                 command->rule_name, command->name);
         }
