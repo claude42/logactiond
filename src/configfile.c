@@ -375,6 +375,9 @@ load_blacklists(la_rule_t *rule, const config_setting_t *uc_rule_def)
                                         defaults_section, LA_BLACKLISTS_LABEL);
         }
 
+        if (!blacklist_reference)
+                return;
+
         int type = config_setting_type(blacklist_reference);
 
         if (type == CONFIG_TYPE_STRING)
