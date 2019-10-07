@@ -31,7 +31,9 @@
 #include <stdio.h>
 #include <errno.h>
 
+#ifdef WITH_LIBSODIUM
 #include <sodium.h>
+#endif /* WITH_LIBSODIUM */
 
 #include "logactiond.h"
 
@@ -97,11 +99,13 @@ send_add_entry_message(la_command_t *command)
                 la_log(LOG_ERR, "Unable to create message");
                 return;
         }
+#ifdef WITH_LIBSODIUM
         if (!encrypt_message(message, la_config->remote_secret))
         {
                 la_log(LOG_ERR, "Unable to encrypt message");
                 return;
         }
+#endif /* WITH_LIBSODIUM */
 
         assert_list(la_config->remote_send_to);
         for (la_address_t *remote_address =
@@ -216,8 +220,10 @@ remote_loop(void *ptr)
                         continue;
                 }
 
+#ifdef WITH_LIBSODIUM
                 if (!decrypt_message(buf, la_config->remote_secret, from_addr))
                         continue;
+#endif /* WITH_LIBSODIUM */
 
                 la_debug("Received message '%s' from %s",  buf, from);
 
