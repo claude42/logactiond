@@ -387,7 +387,7 @@ check_meta_list(la_command_t *command, int set_factor)
                 /* if factor has been explicitely specified - use it */
                 if (set_factor)
                 {
-                        /* if new duration would bebelow meta_max, use it */
+                        /* if new duration would be below meta_max, use it */
                         if (command->duration * set_factor <
                                         command->rule->meta_max)
                         {
@@ -409,7 +409,7 @@ check_meta_list(la_command_t *command, int set_factor)
                  * multiply curent factor by meta_factor */
                 else if (xtime(NULL) > meta_command->meta_start_time)
                 {
-                        /* if new duration would bebelow meta_max, use it */
+                        /* if new duration would be below meta_max, use it */
                         if (command->duration * meta_command->factor  *
                                         command->rule->meta_factor <
                                         command->rule->meta_max)

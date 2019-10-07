@@ -347,6 +347,8 @@ create_address_port(const char *host, in_port_t port)
         {
                 char *endptr;
                 result->prefix = strtol(prefix_str+1, &endptr, 10);
+                /* Fail if there are spurious characters or prefix is out of
+                 * bounds */
                 if (*endptr != '\0' ||
                                 result->prefix < 0 ||
                                 (ai->ai_family == AF_INET && result->prefix > 32) ||
