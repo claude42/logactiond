@@ -9,7 +9,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SUBDIRS([libconfig])
 
 # Checks for programs.
-AC_PROG_CC
+AC_PROG_CC_C99
 
 #necessary for gnulib
 #gl_EARLY
@@ -20,10 +20,10 @@ AC_CHECK_LIB([config], [config_set_include_func])
 AM_CONDITIONAL([USE_INSTALLED_LIBCONFIG], [test "$ac_cv_lib_config_config_set_include_func" = yes])
 AC_CHECK_LIB([systemd], [sd_journal_open])
 AC_CHECK_LIB([resolv], [inet_net_pton])
-#AC_CHECK_LIB([crypto], [EVP_EncryptInit_ex])
+AC_CHECK_LIB([socket], [getaddrinfo])
 PKG_CHECK_MODULES([LIBSODIUM], [libsodium], [
 	           AC_DEFINE([WITH_LIBSODIUM], [1], [Use libsodium])
-],[1])
+],[true])
 #PKG_CHECK_MODULES([OPENSSL], [openssl], [
 #	           AC_DEFINE([WITH_OPENSSL], [1], [Use OpenSSL])
 #])
