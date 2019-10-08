@@ -319,7 +319,7 @@ trigger_manual_commands_for_rule(la_address_t *address, la_rule_t *rule,
                 time_t end_time, int factor, char *from, bool suppress_logging)
 {
         la_debug("trigger_manual_commands_for_rule()");
-        assert_address(address); assert_rule(rule); assert(end_time > 0);
+        assert_address(address); assert_rule(rule);
 
         for (la_command_t *template = ITERATE_COMMANDS(rule->begin_commands);
                         (template = NEXT_COMMAND(template));)
