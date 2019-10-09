@@ -336,6 +336,7 @@ restore_state(char *state_file_name)
 
         char *linebuffer = xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
         size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE*sizeof(char);
+
         xpthread_mutex_lock(&config_mutex);
 
         for (int i=1; ; i++)
@@ -366,6 +367,8 @@ restore_state(char *state_file_name)
         }
 
         xpthread_mutex_unlock(&config_mutex);
+
+        free(linebuffer);
 
         if (fclose(stream) == EOF)
                 die_err("Unable to close state file");
