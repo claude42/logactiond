@@ -32,11 +32,16 @@
 pthread_t fifo_thread = 0;
 
 static FILE *fifo;
+static char *buf = NULL;
+static size_t buf_size;
 
 static void
 cleanup_fifo(void *arg)
 {
         la_debug("cleanup_fifo()");
+
+        if (buf)
+                free(buf);
 
         if (fifo && fclose(fifo))
                 la_log_errno(LOG_ERR, "Problem closing fifo");
@@ -64,12 +69,6 @@ fifo_loop(void *ptr)
         la_debug("fifo_loop()");
 
         pthread_cleanup_push(cleanup_fifo, NULL);
-
-        /* For whatever reason, getline doesn't like a pointer to 
-         * char buf[DEFAULT_LINEBUFFER_SIZE]; as an argument?!? */
-        /* TODO: free this buffer in cleanup_fifo() */
-        char *buf = xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
-        size_t buf_size = DEFAULT_LINEBUFFER_SIZE*sizeof(char);
 
         for (;;)
         {
@@ -115,6 +114,9 @@ start_fifo_thread(void)
         assert(!fifo_thread);
 
         create_fifo();
+
+        buf = xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
+        buf_size = DEFAULT_LINEBUFFER_SIZE*sizeof(char);
 
         xpthread_create(&fifo_thread, NULL, fifo_loop, NULL, "fifo");
 }
