@@ -549,10 +549,10 @@ trigger_manual_command(la_address_t *address, la_command_t *template,
         exec_command(command, LA_COMMANDTYPE_BEGIN);
         if (command->end_string && command->duration > 0)
         {
-                enqueue_end_command(command);
-                /* If end_time was specified, overwrite computed end_time */
-                if (end_time)
-                        command->end_time = end_time;
+                /* If end_time was specified, us this. Otherwise  (i.e. if
+                 * end_time is 0), end_time will becomputed based on duration
+                 * and factor */
+                enqueue_end_command(command, end_time);
         }
         else
         {

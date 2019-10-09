@@ -432,13 +432,17 @@ start_end_queue_thread(void)
  */
 
 static void
-set_end_time(la_command_t *command)
+set_end_time(la_command_t *command, time_t manual_end_time)
 {
         assert_command(command);
         assert(command->end_string);
         la_vdebug("set_end_time(%s, %u)", command->end_string, command->duration);
 
-        if (command->duration == INT_MAX)
+        if (manual_end_time)
+        {
+                command->end_time = manual_end_time;
+        }
+        else if (command->duration == INT_MAX)
         {
                 command->end_time = INT_MAX;
         }
@@ -458,12 +462,13 @@ set_end_time(la_command_t *command)
  */
 
 void
-enqueue_end_command(la_command_t *end_command)
+enqueue_end_command(la_command_t *end_command, time_t manual_end_time)
 {
         assert_command(end_command); assert(end_command->end_string);
         assert_list(end_queue);
         la_debug("enqueue_end_command(%s, %u)", end_command->end_string,
                         end_command->duration);
+        assert(end_command->end_time < xtime(NULL));
 
         if (shutdown_ongoing)
                 return;
@@ -471,7 +476,7 @@ enqueue_end_command(la_command_t *end_command)
         if (end_command->duration <= 0)
                 return;
 
-        set_end_time(end_command);
+        set_end_time(end_command, manual_end_time);
 
         xpthread_mutex_lock(&end_queue_mutex);
 

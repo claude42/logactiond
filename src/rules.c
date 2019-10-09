@@ -138,7 +138,7 @@ handle_command_on_trigger_list(la_command_t *command)
                         remove_node((kw_node_t *) command);
                         trigger_command(command);
                         if (command->end_string && command->duration > 0)
-                                enqueue_end_command(command);
+                                enqueue_end_command(command, 0);
                         else
                                 free_command(command);
                 }
@@ -236,7 +236,7 @@ trigger_single_command(la_pattern_t *pattern, la_address_t *address,
                                         remove_node((kw_node_t *) command);
                                 trigger_command_from_blacklist(command);
                                 if (command->end_string && command->duration > 0)
-                                        enqueue_end_command(command);
+                                        enqueue_end_command(command, 0);
                                 return;
                         }
                 }
