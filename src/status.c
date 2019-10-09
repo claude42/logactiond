@@ -40,6 +40,7 @@ pthread_t monitoring_thread = 0;
 static void
 human_readable_time_delta(time_t delta, time_t *value, char *unit)
 {
+        assert(delta > 0);
         assert(value); assert(unit);
         *value = delta;
         if (*value < 60)
@@ -189,7 +190,6 @@ dump_loop(void *ptr)
 
         for (;;)
         {
-                sleep(5);
                 if (shutdown_ongoing)
                 {
                         la_debug("Shutting down monitoring thread.");
@@ -201,6 +201,8 @@ dump_loop(void *ptr)
                 xpthread_mutex_lock(&end_queue_mutex);
                 dump_queue_status(end_queue);
                 xpthread_mutex_unlock(&end_queue_mutex);
+
+                sleep(5);
         }
 
         assert(false);
@@ -274,8 +276,6 @@ dump_queue_status(kw_list_t *queue)
                         "Ma Fa Time Rule          Action\n"
                         "======================================"
                         "=========================================\n");
-
-        /* INET6_ADDRSTRLEN 46 + "/123" */
 
         assert_list(queue);
         for (la_command_t *command = ITERATE_COMMANDS(queue);
