@@ -186,7 +186,6 @@ create_property_from_token(const char *name, size_t length, unsigned int pos,
         if (!strcmp(result->name, LA_HOST_TOKEN))
         {
                 result->is_host_property = true;
-                // TODO: why are we strdup()in these constants?!
                 result->replacement = xstrdup(LA_HOST_TOKEN_REPL);
         }
         else if (rule && rule->service && !strcmp(result->name, LA_SERVICE_TOKEN))
