@@ -40,8 +40,14 @@ pthread_t monitoring_thread = 0;
 static void
 human_readable_time_delta(time_t delta, time_t *value, char *unit)
 {
-        assert(delta > 0);
         assert(value); assert(unit);
+        
+        if (delta <= 0)
+        {
+                *value = 0;
+                *unit = 's';
+                return;
+        }
         *value = delta;
         if (*value < 60)
         {
