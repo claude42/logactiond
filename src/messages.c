@@ -356,10 +356,11 @@ create_add_message(char *ip, char *rule, char *end_time, char *factor)
 int
 print_add_message(FILE *stream, la_command_t *command)
 {
+	/* Don't assert_command() here to make sure this also works in case
+	 * no proper configuration (la_config...) is available at the
+	 * moment */
         assert(stream);
-#ifndef CLIENTONLY
-        assert_command(command);
-#endif /* CLIENTONLY */
+
         la_debug("print_add_message(%s)", command->address->text);
 
         return fprintf(stream, "%c+%s,%s,%ld,%d\n", PROTOCOL_VERSION,

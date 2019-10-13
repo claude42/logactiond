@@ -160,7 +160,13 @@ shutdown_watching(void)
         la_debug("shutdown_watching()");
 
 #ifndef NOWATCH
-        assert(la_config); assert_list(la_config->sources);
+        assert(la_config);
+
+	/* Bail out if configuration is currently not available (e.g.
+	 * during a reload*/
+	if (!la_config->sources)
+		return;
+
         if (!is_list_empty(la_config->sources))
         {
                 xpthread_mutex_lock(&config_mutex);

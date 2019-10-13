@@ -50,7 +50,7 @@ static void *
 watch_forever_polling(void *ptr)
 {
         la_debug("watch_forever_polling()");
-        assert(la_config); assert(la_config->sources);
+        assert(la_config); assert_list(la_config->sources);
 
         struct stat sb;
 
