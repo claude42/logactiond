@@ -74,7 +74,7 @@ static la_command_t *
 find_trigger(la_command_t *template, la_address_t *address)
 {
         assert_command(template);
-        la_debug("find_trigger(%s, %u)", template->rule->name, template->id);
+        la_debug("find_trigger(%s, %u)", template->rule_name, template->id);
 
         if (!address)
                 return NULL;
@@ -98,7 +98,7 @@ find_trigger(la_command_t *template, la_address_t *address)
                 if (now - tmp->start_time > tmp->rule->period)
                 {
                         /*la_log(LOG_INFO, "NOTE: Removed IP %s from \"%s\"",
-                                        tmp->address->text, tmp->rule->name);*/
+                                        tmp->address->text, tmp->rule_name);*/
                         remove_node((kw_node_t *) tmp);
                 }
         }
@@ -132,7 +132,7 @@ handle_command_on_trigger_list(la_command_t *command)
                 la_log(LOG_INFO, "Host: %s, trigger %u for rule \"%s\".",
                                 command->address->text,
                                 command->n_triggers,
-                                command->rule->name);
+                                command->rule_name);
                 if (command->n_triggers >= command->rule->threshold)
                 {
                         remove_node((kw_node_t *) command);
@@ -150,7 +150,7 @@ handle_command_on_trigger_list(la_command_t *command)
                 command->n_triggers = 1;
                 la_log(LOG_INFO, "Host: %s, trigger 1 for rule \"%s\".",
                                 command->address->text,
-                                command->rule->name);
+                                command->rule_name);
         }
 }
 
@@ -182,7 +182,7 @@ trigger_single_command(la_pattern_t *pattern, la_address_t *address,
         {
                 la_log_verbose(LOG_INFO, "Host: %s, ignored, action \"%s\" "
                                 "already active (triggered by rule \"%s\").",
-                                address->text, tmp->name, tmp->rule->name);
+                                address->text, tmp->name, tmp->rule_name);
                 return;
         }
 

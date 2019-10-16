@@ -361,6 +361,12 @@ print_add_message(FILE *stream, la_command_t *command)
 	 * moment */
         assert(stream);
 
+        /* TODO: would this make sense for commands w/o address as well? Then
+         * maybe we should reflect this in the protocol and then implement
+         * here... */
+        if (!command->address)
+                return 0;
+
         la_debug("print_add_message(%s)", command->address->text);
 
         return fprintf(stream, "%c+%s,%s,%ld,%d\n", PROTOCOL_VERSION,

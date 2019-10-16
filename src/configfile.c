@@ -315,6 +315,7 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
                 la_command_t *template = create_template(name, rule,
                                 initialize, shutdown, INT_MAX, false);
 #ifndef ONLYCLEANUPCOMMANDS
+                convert_both_commands(template);
                 trigger_command(template);
 #endif /* ONLYCLEANUPCOMMANDS */
                 if (template->end_string)
@@ -857,7 +858,7 @@ load_remote_settings(void)
         if (la_config->remote_port < 0)
                 la_config->remote_port = DEFAULT_PORT;
 
-	/* Must obviously go after initialization of remote port... */
+        /* Must obviously go after initialization of remote port... */
         config_setting_t *send_to = config_setting_lookup(remote_section,
                         LA_REMOTE_SEND_TO_LABEL);
         la_config->remote_send_to = xcreate_list();

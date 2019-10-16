@@ -86,9 +86,20 @@ void
 send_add_entry_message(la_command_t *command)
 {
         la_debug("send_add_entry_message()");
-        assert(la_config);
+        assert(la_config); assert_command(command);
+
         if (!la_config->remote_enabled)
                 return;
+
+        /* TODO: would this make sense for commands w/o address as well? Then
+         * maybe we should reflect this in the protocol and then implement
+         * here... */
+        if (!command->address)
+        {
+                la_log(LOG_ERR, "Can't create message for command without "
+                                "address");
+                return;
+        }
 
         /* delibarately left out end_time and factor  here. Receiving end
          * should decide on duration. TODO: does that make sense? */
@@ -247,10 +258,8 @@ start_remote_thread(void)
 {
         la_debug("start_remote_thread()");
         assert(la_config);
-        if (!la_config->remote_enabled)
+        if (!la_config->remote_enabled || remote_thread)
                 return;
-        assert(!remote_thread);
-
 
         struct addrinfo hints;
         memset(&hints, 0, sizeof(struct addrinfo));

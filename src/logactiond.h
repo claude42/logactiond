@@ -354,9 +354,11 @@ typedef struct la_command_s
         unsigned int id;        /* unique id */
         bool is_template;       /* true for templates, false for derived commands */
         char *begin_string;        /* string with tokens */
+        char *begin_string_converted;
         kw_list_t *begin_properties;        /* detected tokens */
         unsigned int n_begin_properties;/* number of detected tokens */
         char *end_string;        /* string with tokens */
+        char *end_string_converted;
         kw_list_t *end_properties;        /* detected tokens */
         unsigned int n_end_properties;/* number of detected tokens */
         struct la_rule_s *rule;        /* related rule */
@@ -630,6 +632,8 @@ void init_end_queue(void);
 void start_end_queue_thread(void);
 
 /* commands.c */
+
+void convert_both_commands(la_command_t *command);
 
 void exec_command(la_command_t *command, la_commandtype_t type);
 
