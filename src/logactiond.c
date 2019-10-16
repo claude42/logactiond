@@ -356,6 +356,9 @@ restore_state(char *state_file_name)
 
                 int r = parse_add_entry_message(linebuffer, &address, &rule,
                                         &end_time, &factor);
+                la_vdebug("adr: %s, rule: %s, end_time: %u, factor: %u",
+                                address ? address->text : "no address",
+                                rule ? rule->name : "no rule", end_time, factor);
                 if (r == -1)
                         die_hard("Error parsing state file \"%s\" at line %u!",
                                         state_file_name, i);
