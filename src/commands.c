@@ -93,7 +93,7 @@ check_for_special_names(la_command_t *command, la_property_t *action_property)
 
         /* RULE */
         if (!strcmp(action_property->name, LA_RULENAME_TOKEN))
-                return command->rule->name;
+                return command->rule_name;
 
         /* SOURCE */
         if (!strcmp(action_property->name, LA_SOURCENAME_TOKEN))
@@ -152,12 +152,14 @@ convert_command(la_command_t *command, la_commandtype_t type)
         /* Don't assert_command() here, as after a reload some commands might
          * not have a rule attached to them anymore */
         assert(command); assert(command->name);
-        assert((type == LA_COMMANDTYPE_BEGIN && command->begin_properties &&
-                                command->begin_string) ||
-                        (type == LA_COMMANDTYPE_END && command->end_properties &&
-                         command->end_string));
         la_debug("convert_command(%s, %s)", command->name,
                         type == LA_COMMANDTYPE_BEGIN ? "begin" : "end");
+
+        if (!((type == LA_COMMANDTYPE_BEGIN && command->begin_properties &&
+                                command->begin_string) ||
+                        (type == LA_COMMANDTYPE_END && command->end_properties &&
+                         command->end_string)))
+                return NULL;
 
         const char *source_string = (type == LA_COMMANDTYPE_BEGIN) ?
                 command->begin_string : command->end_string;
@@ -235,6 +237,16 @@ convert_command(la_command_t *command, la_commandtype_t type)
         return result;
 }
 
+void
+convert_both_commands(la_command_t *command)
+{
+        assert_command(command);
+        command->begin_string_converted = convert_command(command,
+                        LA_COMMANDTYPE_BEGIN);
+        command->end_string_converted = convert_command(command,
+                        LA_COMMANDTYPE_END);
+}
+
 
 /*
  * Executes command string via system() and logs result.
@@ -249,7 +261,9 @@ exec_command(la_command_t *command, la_commandtype_t type)
         assert(command->name);
         la_debug("exec_command(%s)", command->name);
 
-        int result = system(convert_command(command, type));
+        int result = system(type == LA_COMMANDTYPE_BEGIN ?
+                        command->begin_string_converted :
+                        command->end_string_converted);
         switch (result)
         {
                 case 0:
@@ -330,7 +344,7 @@ create_meta_command(la_command_t *command)
 static meta_command_t *
 find_on_meta_list(la_command_t *command)
 {
-        assert_command(command);
+        assert_command(command); assert(command->address);
         la_debug("find_on_meta_list(%s)", command->name);
 
         time_t now = xtime(NULL);
@@ -372,7 +386,7 @@ find_on_meta_list(la_command_t *command)
 static float
 check_meta_list(la_command_t *command, int set_factor)
 {
-        assert_command(command);
+        assert_command(command); assert(command->address);
         la_debug("check_meta_list(%s, %u)", command->address->text,
                         command->duration);
 
@@ -478,7 +492,7 @@ trigger_manual_command(la_address_t *address, la_command_t *template,
                                 address->text, tmp->name, 
                                 from ? "by host " : "",
                                 from ? from : "",
-                                tmp->rule->name);
+                                tmp->rule_name);
                 return;
         }
 
@@ -501,7 +515,7 @@ trigger_manual_command(la_address_t *address, la_command_t *template,
 
         if (!suppress_logging)
         {
-                if (command->rule && command->rule->meta_enabled)
+                if (command->rule->meta_enabled)
                 {
                         command->factor = check_meta_list(command, factor);
                         la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
@@ -509,7 +523,7 @@ trigger_manual_command(la_address_t *address, la_command_t *template,
                                         command->address->text, command->name,
                                         from ? "by host " : "",
                                         from ? from : "",
-                                        command->rule->name, command->factor);
+                                        command->rule_name, command->factor);
                 }
                 else
                 {
@@ -518,12 +532,12 @@ trigger_manual_command(la_address_t *address, la_command_t *template,
                                         command->address->text, command->name,
                                         from ? "by host " : "",
                                         from ? from : "",
-                                        command->rule->name);
+                                        command->rule_name);
                 }
         }
         else
         {
-                if (command->rule && command->rule->meta_enabled)
+                if (command->rule->meta_enabled)
                 {
                         command->factor = check_meta_list(command, factor);
                         la_log_verbose(LOG_INFO, "Host: %s, action \"%s\" activated "
@@ -531,7 +545,7 @@ trigger_manual_command(la_address_t *address, la_command_t *template,
                                         command->address->text, command->name,
                                         from ? "by host " : "",
                                         from ? from : "",
-                                        command->rule->name, command->factor);
+                                        command->rule_name, command->factor);
                 }
                 else
                 {
@@ -540,7 +554,7 @@ trigger_manual_command(la_address_t *address, la_command_t *template,
                                         command->address->text, command->name,
                                         from ? "by host " : "",
                                         from ? from : "",
-                                        command->rule->name);
+                                        command->rule_name);
                 }
         }
 
@@ -583,36 +597,42 @@ trigger_command(la_command_t *command)
                         la_log_verbose(LOG_INFO, "Host: %s, ignored, action "
                                         "\"%s\" already active (triggered by "
                                         "rule \"%s\").", tmp->address->text,
-                                tmp->name, tmp->rule->name);
+                                tmp->name, tmp->rule_name);
                         return;
                 }
         }
 
         if (command->is_template)
         {
-                la_debug("Initializing action \"%s\" for rule \"%s\", "
-                                "source \"%s\".", command->name,
-                                command->rule->name,
+                la_log_verbose(LOG_INFO, "Initializing action \"%s\" for "
+                                "rule \"%s\", source \"%s\".", command->name,
+                                command->rule_name,
                                 command->rule->source->name);
         }
         else
         {
-                /* search through meta_list to get correct factor */
-                /* TODO: command->rule always set at this point or better test? */
-                if (command->rule->meta_enabled)
+                if (!command->address)
                 {
+                        la_log(LOG_INFO, "Action \"%s\" activated by rule \"%s\".",
+                                        command->name, command->rule_name);
+                }
+                else if (command->rule->meta_enabled)
+                {
+                        /* search through meta_list to get correct factor */
+                        /* TODO: command->rule always set at this point or
+                         * better test? */
                         command->factor = check_meta_list(command, 0);
                         la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
                                         "by rule \"%s\" (factor %d).",
                                         command->address->text, command->name,
-                                        command->rule->name, command->factor);
+                                        command->rule_name, command->factor);
                 }
                 else
                 {
                         la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
                                         "by rule \"%s\".",
                                         command->address->text, command->name,
-                                        command->rule->name);
+                                        command->rule_name);
                 }
 
 
@@ -657,7 +677,7 @@ trigger_end_command(la_command_t *command, bool suppress_logging)
         if (command->is_template)
         {
                 la_log(LOG_INFO, "Disabling rule \"%s\".",
-                                command->rule->name);
+                                command->rule_name);
         }
         else
         {
@@ -813,6 +833,8 @@ create_command_from_template(la_command_t *template, la_pattern_t *pattern,
         result->manual = false;
         result->blacklist = false;
 
+        convert_both_commands(result);
+
         assert_command(result);
         return result;
 }
@@ -849,6 +871,8 @@ create_manual_command_from_template(la_command_t *template, la_address_t
         result->end_time = result->n_triggers = result->start_time= 0;
         result->manual = true;
 
+        convert_both_commands(result);
+
         assert_command(result);
         return result;
 }
@@ -880,11 +904,13 @@ create_template(const char *name, la_rule_t *rule, const char *begin_string,
         result->is_template = true;
 
         result->begin_string = xstrdup(begin_string);
+        result->begin_string_converted = NULL;
         result->begin_properties = xcreate_list();
         result->n_begin_properties =
                 scan_action_tokens(result->begin_properties, begin_string);
 
         result->end_string = xstrdup(end_string);
+        result->end_string_converted = NULL;
         result->end_properties = xcreate_list();
         result->n_end_properties = end_string ?
                 scan_action_tokens(result->end_properties, end_string) : 0;
@@ -926,7 +952,9 @@ free_command(la_command_t *command)
 
         free(command->name);
         free(command->begin_string);
+        free(command->begin_string_converted);
         free(command->end_string);
+        free(command->end_string_converted);
         free_property_list(command->begin_properties);
         free_property_list(command->end_properties);
         free_property_list(command->pattern_properties);

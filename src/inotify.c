@@ -116,8 +116,13 @@ static la_source_t *
 find_source_by_parent_wd(int parent_wd, char *file_name)
 {
         assert(parent_wd); assert(file_name);
-        assert(la_config); assert_list(la_config->sources);
+        assert(la_config);
         la_vdebug("find_source_by_parent_wd(%s)", file_name);
+
+	/* Bail out if configuration is currently not available (e.g.
+	 * during a reload*/
+	if (!la_config->sources)
+		return NULL;
 
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                         (source = NEXT_SOURCE(source));)
@@ -152,8 +157,13 @@ static la_source_t *
 find_source_by_file_wd(int file_wd)
 {
         assert(file_wd);
-        assert(la_config); assert_list(la_config->sources);
+        assert(la_config);
         la_vdebug("find_source_by_file_wd(%u)", file_wd);
+
+	/* Bail out if configuration is currently not available (e.g.
+	 * during a reload*/
+	if (!la_config->sources)
+		return NULL;
 
         for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
                         (source = NEXT_SOURCE(source));)
