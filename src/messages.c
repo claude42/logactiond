@@ -91,120 +91,61 @@ int
 parse_add_entry_message(char *message, la_address_t **address, la_rule_t **rule,
                 time_t *end_time, int *factor)
 {
-        assert(message);
+        assert(message); assert(address); assert(rule);
         la_debug("parse_add_entry_message(%s)", message);
-
-        /* this assumes that char 0 + 1 (i.e. protocol version and commnad)
-         * have already been checked before this function was called */
-
-        /* TODO: do the same with scanf (0+%50s,%100s,%u,%u) */
 
         unsigned int msg_len = xstrlen(message);
 
-        /* Empty line or comment */
+        /* Ignore empty lines or comments */
         if (!msg_len || *message == '#' || *message =='\n')
         {
-                *address = NULL; *rule = NULL; *end_time = 0; *factor = 0;
+                *address = NULL; *rule = NULL;
+                if (end_time)
+                        *end_time = 0;
+                if (*factor)
+                        *factor = 0;
                 return 0;
         }
 
-        if (message[msg_len - 1] == '\n')
-                message[msg_len - 1] = '\0';
+        char parsed_address_str[MSG_ADDRESS_LENGTH + 1];
+        char parsed_rule_str[MSG_RULE_LENGTH + 1];
+        int parsed_end_time; int parsed_factor;
+        int n = sscanf(message, PROTOCOL_VERSION_STR "+%50[^,],%100[^,],%u,%u",
+                        parsed_address_str,
+                        parsed_rule_str, &parsed_end_time, &parsed_factor);
 
-        char *comma;
-        char *comma2;
-        char *comma3;
-        comma = strchr(message, ',');
-        if (!comma)
+        if (n < 2)
         {
-                la_log(LOG_ERR, "Illegal command %s!", message);
+                la_log(LOG_ERR, "Ignoring illegal command \"%s\"!", message);
                 return -1;
         }
-        *comma = '\0';
-        
-        comma2 = strchr(comma + 1, ',');
-        if (comma2)
-        {
-                *comma2 = '\0';
 
-                char *comma3 = strchr(comma2 + 1, ',');
-                if (comma3)
-                        *comma3 = '\0';
-        }
-        else
-        {
-                comma3 = NULL;
-        }
-
-        *address = create_address(message+2*sizeof(char));
+        *address = create_address(parsed_address_str);
         if (!*address)
         {
-                *comma = ',';
-                if (comma2)
-                        *comma2 = ',';
-                if (comma3)
-                        *comma3 = ',';
                 la_log(LOG_ERR, "Cannot convert address in command %s!", message);
                 return -1;
         }
         la_debug("Found address %s", (*address)->text);
 
-        *rule = find_rule(comma+sizeof(char));
+        *rule = find_rule(parsed_rule_str);
         if (!*rule)
         {
-                *comma = ',';
-                if (comma2)
-                        *comma2 = ',';
-                if (comma3)
-                        *comma3 = ',';
                 la_log_verbose(LOG_ERR, "Ignoring remote message \'%s\' "
                                 "- rule not active on local system", message);
                 free_address(*address);
                 return -1;
         }
-        la_debug("Found rule %s.", (*rule)->name);
 
-        if (end_time)
-        {
+        if (end_time && n >= 3)
+                *end_time = parsed_end_time;
+        else
                 *end_time = 0;
-                if (comma2)
-                {
-                        char *endptr;
-                        *end_time = strtol(comma2+sizeof(char), &endptr, 10);
-                        if (*endptr != '\0')
-                        {
-                                *comma = ',';
-                                if (comma2)
-                                        *comma2 = ',';
-                                if (comma3)
-                                        *comma3 = ',';
-                                la_log(LOG_ERR, "Spurious characters in command %s!", message);
-                                free_address(*address);
-                                return -1;
-                        }
-                }
-        }
 
-        if (factor)
-        {
+        if (factor && n >= 4)
+                *factor = parsed_factor;
+        else
                 *factor = 0;
-                if (comma3)
-                {
-                        char *endptr;
-                        *factor = strtol(comma3+sizeof(char), &endptr, 4);
-                        if (*endptr != '\0')
-                        {
-                                *comma = ',';
-                                if (comma2)
-                                        *comma2 = ',';
-                                if (comma3)
-                                        *comma3 = ',';
-                                la_log(LOG_ERR, "Spurious characters in command %s!", message);
-                                free_address(*address);
-                                return -1;
-                        }
-                }
-        }
 
         return 1;
 }
