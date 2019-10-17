@@ -19,8 +19,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "nodelist.h"
-
 #include "logactiond.h"
 
 void

@@ -20,12 +20,11 @@
 
 #include <time.h>
 #include <pthread.h>
-//#include <stdlib.h>
-//#include <unistd.h>
 #include <syslog.h>
 #include <string.h>
 #include <assert.h>
 #include <limits.h>
+#include <stdio.h>
 
 #include "logactiond.h"
 

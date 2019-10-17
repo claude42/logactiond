@@ -27,11 +27,9 @@
 #include <unistd.h>
 #include <syslog.h>
 #include <assert.h>
-#include <syslog.h>
 #include <libgen.h>
 #include <errno.h>
 #include <pthread.h>
-#include <signal.h>
 
 #include "logactiond.h"
 
