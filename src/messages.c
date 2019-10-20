@@ -136,6 +136,7 @@ parse_add_entry_message(char *message, la_address_t **address, la_rule_t **rule,
                 free_address(*address);
                 return -1;
         }
+        la_debug("Found rule %s", (*rule)->name);
 
         if (end_time && n >= 3)
                 *end_time = parsed_end_time;

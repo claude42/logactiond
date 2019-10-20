@@ -335,7 +335,7 @@ create_meta_command(la_command_t *command)
 
 /*
  * Returns a meta_command with the same IP address as the specified command -
- * if one is on the meta_list. Returns NULL otherwise.
+ * if one is on the meta_list and has not expired yet. Returns NULL otherwise.
  *
  * While searching through meta_list, will remove (and free) all meta_commands
  * which have already expired.
@@ -395,60 +395,43 @@ check_meta_list(la_command_t *command, int set_factor)
 
         meta_command_t *meta_command = find_on_meta_list(command);
 
-        /* TODO: stuff below could probably be written a bit more concisely */
-        if (meta_command)
-        {
-                /* if factor has been explicitely specified - use it */
-                if (set_factor)
-                {
-                        /* if new duration would be below meta_max, use it */
-                        if (command->duration * set_factor <
-                                        command->rule->meta_max)
-                        {
-                                meta_command->factor = set_factor;
-                                meta_command->meta_start_time = xtime(NULL) +
-                                        meta_command->factor *
-                                        command->duration;
-                        }
-                        /* otherwise set factor to -1 and use meta_max */
-                        else
-                        {
-                                meta_command->factor = -1;
-                                meta_command->meta_start_time = xtime(NULL) +
-                                        command->rule->meta_max;
-                        }
-                }
+        time_t now = xtime(NULL);
 
-                /* otherwise check whether enough time has passed and if so,
-                 * multiply curent factor by meta_factor */
-                else if (xtime(NULL) > meta_command->meta_start_time)
-                {
-                        /* if new duration would be below meta_max, use it */
-                        if (command->duration * meta_command->factor  *
-                                        command->rule->meta_factor <
-                                        command->rule->meta_max)
-                        {
-                                meta_command->factor *=
-                                        meta_command->rule->meta_factor;
-                                meta_command->meta_start_time = xtime(NULL) +
-                                        meta_command->factor *
-                                        command->duration;
-                        }
-                        /* otherwise set factor to -1 and use meta_max */
-                        else
-                        {
-                                meta_command->factor = -1;
-                                meta_command->meta_start_time = xtime(NULL) +
-                                        command->rule->meta_max;
-                        }
-                }
-        }
-        else
+        if (!meta_command)
         {
                 meta_command = create_meta_command(command);
                 if (set_factor)
                         meta_command->factor = set_factor;
+                meta_command->meta_start_time = now +
+                        meta_command->factor * command->duration;
                 add_head(meta_list, (kw_node_t *) meta_command);
+        }
+        else if (now > meta_command->meta_start_time)
+        {
+                if  (meta_command->factor == -1 && set_factor == 0)
+                {
+                        meta_command->meta_start_time = now +
+                                command->rule->meta_max;
+                }
+                else
+                {
+                        int new_factor = set_factor ? set_factor :
+                                meta_command->factor *
+                                command->rule->meta_factor;
+                        if (command->duration * new_factor <
+                                        command->rule->meta_max)
+                        {
+                                meta_command->factor = new_factor;
+                                meta_command->meta_start_time = now +
+                                        command->duration * new_factor;
+                        }
+                        else
+                        {
+                                meta_command->factor = -1;
+                                meta_command->meta_start_time = now +
+                                        command->rule->meta_max;
+                        }
+                }
         }
 
         return meta_command->factor;
@@ -563,7 +546,7 @@ trigger_manual_command(la_address_t *address, la_command_t *template,
         exec_command(command, LA_COMMANDTYPE_BEGIN);
         if (command->end_string && command->duration > 0)
         {
-                /* If end_time was specified, us this. Otherwise  (i.e. if
+                /* If end_time was specified, use this. Otherwise  (i.e. if
                  * end_time is 0), end_time will becomputed based on duration
                  * and factor */
                 enqueue_end_command(command, end_time);
