@@ -962,20 +962,17 @@ init_config_mutex(void)
         pthread_mutex_init(&config_mutex, &config_mutex_attr);
 }*/
 
-void
-load_la_config(char *filename)
+bool
+init_la_config(char *filename)
 {
         if (!filename)
                 filename = CONFIG_FILE;
 
-        //init_config_mutex();
-
-        xpthread_mutex_lock(&config_mutex);
-
         la_log(LOG_INFO, "Loading configuration from \"%s/%s\".", CONF_DIR,
                         filename);
 
-        la_config = xmalloc0(sizeof(la_config_t));
+        if (!la_config)
+                la_config = xmalloc0(sizeof(la_config_t));
 
         config_init(&la_config->config_file);
 
@@ -987,13 +984,25 @@ load_la_config(char *filename)
                         config_error_file(&la_config->config_file);
                 xpthread_mutex_unlock(&config_mutex);
                 if (config_error_file)
-                        die_hard("%s:%d - %s!",
+                        la_log(LOG_ERR, "%s:%d - %s!",
                                         config_error_file(&la_config->config_file),
                                         config_error_line(&la_config->config_file),
                                         config_error_text(&la_config->config_file));
                 else
-                        die_hard("%s!", config_error_text(&la_config->config_file));
+                        la_log(LOG_ERR, "%s!", config_error_text(&la_config->config_file));
+
+                return false;
         }
+
+        return true;
+}
+
+void
+load_la_config(void)
+{
+        //init_config_mutex();
+
+        xpthread_mutex_lock(&config_mutex);
 
         load_defaults();
         if (!load_rules())
@@ -1037,9 +1046,6 @@ unload_la_config(void)
         free_address_list(la_config->remote_send_to);
         la_config->remote_send_to = NULL;
         free(la_config->remote_bind);
-
-        free(la_config);
-        la_config = NULL;
 
         if (!shutdown_ongoing)
                 xpthread_mutex_unlock(&config_mutex);

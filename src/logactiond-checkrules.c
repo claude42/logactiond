@@ -178,7 +178,9 @@ main(int argc, char *argv[])
 
         chdir(CONF_DIR);
 
-        load_la_config(cfg_filename);
+        if (!init_la_config(cfg_filename))
+                die_hard("Error loading configuration");
+        load_la_config();
 
         if (log_filename)
         {

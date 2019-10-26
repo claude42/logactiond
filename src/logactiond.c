@@ -85,22 +85,25 @@ trigger_shutdown(int status, int saved_errno)
 void
 trigger_reload(void)
 {
-#if HAVE_LIBSYSTEMD
-                sd_notify(0, "RELOADING=1\n"
-                                "STATUS=Reloading configuration.\n");
-#endif /* HAVE_LIBSYSTEMD */
-                shutdown_watching();
                 /* TODO: must do more, e.g. shutdown remote thread in case
                  * configuration changes apply to it */
-                unload_la_config();
-                load_la_config(cfg_filename);
-                update_queue_count_numbers();
-                init_watching();
+                if (init_la_config(cfg_filename))
+                {
 #if HAVE_LIBSYSTEMD
-                sd_notify(0, "READY=1\n"
-                                "RELOADING=0\n"
-                                "STATUS=Configuration reloaded - monitoring log files.\n");
+                        sd_notify(0, "RELOADING=1\n"
+                                        "STATUS=Reloading configuration.\n");
 #endif /* HAVE_LIBSYSTEMD */
+                        shutdown_watching();
+                        unload_la_config();
+                        load_la_config();
+                        update_queue_count_numbers();
+                        init_watching();
+#if HAVE_LIBSYSTEMD
+                        sd_notify(0, "READY=1\n"
+                                        "RELOADING=0\n"
+                                        "STATUS=Configuration reloaded - monitoring log files.\n");
+#endif /* HAVE_LIBSYSTEMD */
+                }
 }
 
 static void
@@ -464,7 +467,9 @@ main(int argc, char *argv[])
         la_log(LOG_INFO, "Starting up " PACKAGE_STRING ".");
 
         start_end_queue_thread();
-        load_la_config(cfg_filename);
+        if (!init_la_config(cfg_filename))
+                die_hard("Error loading configuration");
+        load_la_config();
         if (saved_state)
                 restore_state(saved_state);
         start_watching_threads();

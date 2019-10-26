@@ -588,7 +588,9 @@ char *create_restore_message(void);
 
 /* configfile.c */
 
-void load_la_config(char *filename);
+bool init_la_config(char *filename);
+
+void load_la_config(void);
 
 void unload_la_config(void);
 

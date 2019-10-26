@@ -107,7 +107,9 @@ main(int argc, char *argv[])
         chdir(CONF_DIR);
 
         init_end_queue();
-        load_la_config(cfg_filename);
+        if (!init_la_config(cfg_filename))
+                die_hard("Error loading configuration");
+        load_la_config();
         la_debug("done load_la_config()");
 
         empty_end_queue();
