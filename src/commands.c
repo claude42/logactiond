@@ -279,6 +279,7 @@ exec_command(la_command_t *command, la_commandtype_t type)
                 default:
                         la_log(LOG_ERR, "Action \"%s\" returned with error "
                                         "code %d.", command->name, result);
+                        la_log(LOG_ERR, "Tried to execute \"%s\"", command->name);
                         break;
         }
 }
