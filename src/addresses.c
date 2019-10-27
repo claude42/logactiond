@@ -31,6 +31,7 @@
 #include <netdb.h>
 #include <syslog.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include "logactiond.h"
 
@@ -346,11 +347,11 @@ create_address_port(const char *host, in_port_t port)
         if (prefix_str)
         {
                 char *endptr;
+                errno = 0;
                 result->prefix = strtol(prefix_str+1, &endptr, 10);
                 /* Fail if there are spurious characters or prefix is out of
                  * bounds */
-                if (*endptr != '\0' ||
-                                result->prefix < 0 ||
+                if (errno || *endptr != '\0' || result->prefix < 0 ||
                                 (ai->ai_family == AF_INET && result->prefix > 32) ||
                                 (ai->ai_family == AF_INET6 && result->prefix > 128))
                 {

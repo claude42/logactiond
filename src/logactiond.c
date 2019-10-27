@@ -32,6 +32,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <limits.h>
+#include <errno.h>
 #if HAVE_LIBSYSTEMD
 #include <systemd/sd-daemon.h>
 #endif /* HAVE_LIBSYSTEMD */
@@ -323,7 +324,7 @@ read_options(int argc, char *argv[])
         }
 }
 
-void
+static void
 restore_state(char *state_file_name)
 {
         assert(state_file_name);
@@ -348,10 +349,16 @@ restore_state(char *state_file_name)
                 if (num_read == -1)
                 {
                         if (feof(stream))
+                        {
                                 break;
+                        }
                         else
+                        {
+                                /* Don't override state file in case of error */
+                                saved_state = NULL;
                                 die_err("Reading from state file \"%s\" failed",
                                                 state_file_name);
+                        }
                 }
 
                 la_address_t *address; la_rule_t * rule; time_t end_time;
@@ -363,8 +370,12 @@ restore_state(char *state_file_name)
                                 address ? address->text : "no address",
                                 rule ? rule->name : "no rule", end_time, factor);
                 if (r == -1)
+                {
+                        /* Don't override state file in case of error */
+                        saved_state = NULL;
                         die_hard("Error parsing state file \"%s\" at line %u!",
                                         state_file_name, i);
+                }
                 else if (r > 0)
                         trigger_manual_commands_for_rule(address, rule,
                                         end_time, factor, NULL, true);
@@ -377,7 +388,11 @@ restore_state(char *state_file_name)
         free(linebuffer);
 
         if (fclose(stream) == EOF)
+        {
+                /* Don't override state file in case of error */
+                saved_state = NULL;
                 die_err("Unable to close state file");
+        }
 }
 
 /* Determine UID belonging to what's been specified on the command line. This
@@ -400,8 +415,9 @@ getrunuid(const char *uid_s)
          * there are spurious characters after the number and we don't accept
          * the argument. */
         char *endptr;
+        errno = 0;
         int value = strtol(uid_s,  &endptr, 10);
-        if (*endptr == '\0')
+        if (!errno && *endptr == '\0')
                 return value;
 
         /* If its not a number, we test for a username. */
