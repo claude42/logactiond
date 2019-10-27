@@ -586,6 +586,8 @@ char *create_save_message(void);
 
 char *create_restore_message(void);
 
+char *create_log_level_message(unsigned int new_log_level);
+
 /* configfile.c */
 
 bool init_la_config(char *filename);

@@ -43,6 +43,7 @@
  *  "0R"
  *  "0S"
  *  "0>"
+ *  "0L<log-level>"
  *
  * Example structure:
  *  "0+<ip-address>/<prefix>,<rule-name>,<end-time-in-secs>,<factor>0"
@@ -230,6 +231,26 @@ perform_save(void)
         save_queue_state(NULL);
 }
 
+static void
+update_log_level(char *buffer)
+{
+        assert(buffer);
+        la_debug("update_log_level(%s)", buffer);
+
+        char *endptr;
+        errno = 0;
+
+        int new_log_level = strtol(buffer+2, &endptr, 10);
+        if (errno || *endptr != '\0' || new_log_level < 0 || new_log_level > 8)
+        {
+                la_log(LOG_ERR, "Cannot convert log level %s!", buffer);
+                return;
+        }
+
+        la_log (LOG_INFO, "Set log level to %u", new_log_level);
+        log_level = new_log_level;
+}
+
 void
 parse_message_trigger_command(char *buf, char *from)
 {
@@ -258,6 +279,9 @@ parse_message_trigger_command(char *buf, char *from)
                         break;
                 case '>':
                         perform_save();
+                        break;
+                case 'L':
+                        update_log_level(buf);
                         break;
                 default:
                         la_log(LOG_ERR, "Unknown command: '%c'",
@@ -382,6 +406,22 @@ create_save_message(void)
 
         int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%c>",
                         PROTOCOL_VERSION);
+
+        /* pad right here, cannot hurt even if we don't encrypt... */
+        pad(buffer, msg_len+1);
+
+        return buffer;
+}
+
+char *
+create_log_level_message(unsigned int new_log_level)
+{
+        assert(new_log_level >= 0); assert(new_log_level <= LOG_DEBUG+2);
+
+        char *buffer = xmalloc(TOTAL_MSG_LEN);
+
+        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cL%u",
+                        PROTOCOL_VERSION, new_log_level);
 
         /* pad right here, cannot hurt even if we don't encrypt... */
         pad(buffer, msg_len+1);

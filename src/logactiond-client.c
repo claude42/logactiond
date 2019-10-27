@@ -27,6 +27,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <syslog.h>
 
 #ifdef WITH_LIBSODIUM
 #include <sodium.h>
@@ -55,6 +56,8 @@ print_usage(void)
                         "reload\n"
                         "Usage: logactiond-client [-h host][-p password][-s port] "
                         "shutdown\n"
+                        "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "(no|v)?debug\n"
                         "Usage: logactiond-client [-h host][-p password][-s port] "
                         "save\n");
 }
@@ -221,6 +224,18 @@ main(int argc, char *argv[])
         else if (!strcmp(command, "save"))
         {
                 message = create_save_message();
+        }
+        else if (!strcmp(command, "debug"))
+        {
+                message = create_log_level_message(LOG_DEBUG+1);
+        }
+        else if (!strcmp(command, "vdebug"))
+        {
+                message = create_log_level_message(LOG_DEBUG+2);
+        }
+        else if (!strcmp(command, "nodebug"))
+        {
+                message = create_log_level_message(LOG_INFO+1);
         }
         else
         {
