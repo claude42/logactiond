@@ -55,6 +55,9 @@ create_fifo(void)
 {
         la_debug("create_fifo()");
 
+        if (remove(FIFOFILE) && errno != ENOENT)
+                die_err("Cannot create fifo.");
+
         if (mkfifo(FIFOFILE, 0666) == -1)
                 die_err("Cannot create fifo");
 

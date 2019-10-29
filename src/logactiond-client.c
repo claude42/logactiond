@@ -116,9 +116,30 @@ send_remote_message(char *host, char *message)
 static void
 send_local_message(char *message)
 {
-        FILE *fifo = fopen(FIFOFILE, "a");
+        FILE *fifo = fopen(FIFOFILE, "w");
         if (!fifo)
                 die_err("Unable to open fifo");
+
+        int fd = fileno(fifo);
+        if (fd == -1)
+        {
+                fclose(fifo);
+                die_hard("Unable to get FD for fifo");
+        }
+
+        struct stat stats;
+        if (fstat(fd, &stats) == -1)
+        {
+                fclose(fifo);
+                die_err("Unable to stat fifo");
+        }
+
+        if (!S_ISFIFO(stats.st_mode))
+        {
+                fclose(fifo);
+                die_hard("Fifo is not a fifo");
+        }
+
 
         if (fprintf(fifo, "%s\n", message) < 0)
         {
