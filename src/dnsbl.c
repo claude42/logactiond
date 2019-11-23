@@ -22,6 +22,7 @@
 #include <netdb.h>
 #include <stdio.h>
 #include <assert.h>
+#include <sys/socket.h>
 
 #include "logactiond.h"
 
@@ -35,6 +36,7 @@ convert_to_dnsbl_hostname_sa(struct sockaddr *sa, char *dnsbl_domainname, char *
         la_debug("convert_to_dnsbl_hostname_sa()");
         assert(sa); assert(dnsbl_domainname); assert(hostname);
         int r;
+
         if (sa->sa_family == AF_INET)
         {
                 struct sockaddr_in *si = (struct sockaddr_in *) sa;
@@ -59,7 +61,26 @@ convert_to_dnsbl_hostname_sa(struct sockaddr *sa, char *dnsbl_domainname, char *
                                 b[1]&0x0f, b[1]>>4, b[0]&0x0f, b[0]>>4,
                                 dnsbl_domainname);
         }
-        return r<=NI_MAXHOST;
+
+        if (r>=NI_MAXHOST)
+                return false;
+
+        /* Make sure there's a dot at the end of the hostname to avoid lookups
+         * of local domains like 1.2.3.4.sbl.spamhaus.org.localdomain.com */
+        if (hostname[r-1] != '.')
+        {
+                if (r>=NI_MAXHOST-1)
+                {
+                        return false;
+                }
+                else
+                {
+                        hostname[r++] = '.';
+                        hostname[r] = '\0';
+                }
+        }
+
+        return true;
 }
 
 /*
