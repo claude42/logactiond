@@ -175,7 +175,10 @@ convert_regex(const char *string, la_pattern_t *pattern)
                 else if (*src_ptr == '\\')
                 {
                         // In case of '\', copy next character without any
-                        // interpretation
+                        // interpretation unless next character is \0...
+                        if (*(src_ptr+1) == '\0') 
+                                die_hard("Last character of regex \"%s\" is \\!",
+                                                string);
                         realloc_buffer(&result, &dst_ptr, &dst_len, 2);
                         *dst_ptr++ = *src_ptr++;
                         *dst_ptr++ = *src_ptr++;
