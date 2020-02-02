@@ -212,7 +212,8 @@ init_watching_systemd(void)
          * See also: https://bugs.freedesktop.org/show_bug.cgi?id=64614
          */
         sd_journal_previous(journal);
-
+        if (r < 0)
+                die_systemd(r, "Seeking to end of systemd journal failed");
 }
 
 void
