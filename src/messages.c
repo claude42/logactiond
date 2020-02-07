@@ -37,16 +37,25 @@
  *
  * Accepted commands:
  *
- *  "0+<ip-address>/<prefix>,<rule-name>,<end-time-in-secs>,<factor>0"
- *  "0-<ip-address>"
- *  "00"
- *  "0R"
- *  "0S"
- *  "0>"
- *  "0L<log-level>"
+ *  "0+<ip-address>/<prefix>,<rule-name>,<end-time-in-secs>,<factor>\0"
+ *    add ip address
+ *  "0-<ip-address>\0"
+ *    remove ip address
+ *  "0F\0"
+ *    flush
+ *  "0R\0"
+ *    reload
+ *  "0S\0"
+ *    shutdown
+ *  "0>\0"
+ *    save
+ *  "0L<log-level>\0"
+ *    adjust log level
+ *  "00\0"
+ *    reset counts
  *
- * Example structure:
- *  "0+<ip-address>/<prefix>,<rule-name>,<end-time-in-secs>,<factor>0"
+ * Example structure (with maximum lengths):
+ *  "0+<ip-address>/<prefix>,<rule-name>,<end-time-in-secs>,<factor>\0"
  *   || |          | |      | |         | |                | |      |
  *   || |          | |      | |         | |                | |      +-   1 byte
  *   || |          | |      | |         | |                | +--------   4 byte
@@ -63,6 +72,13 @@
  *                                                                    ==========
  *                                                                     180 bytes
  */
+
+static bool is_empty_line(char *message)
+{
+        assert(message);
+
+        return (*message == '\0' || *message == '#' || *message == '\n');
+}
 
 /*
  * Parses message and will populate address, rule, end time and factor. You
@@ -95,15 +111,13 @@ parse_add_entry_message(char *message, la_address_t **address, la_rule_t **rule,
         assert(message); assert(address); assert(rule);
         la_debug("parse_add_entry_message(%s)", message);
 
-        unsigned int msg_len = xstrlen(message);
-
         /* Ignore empty lines or comments */
-        if (!msg_len || *message == '#' || *message =='\n')
+        if (is_empty_line(message))
         {
                 *address = NULL; *rule = NULL;
                 if (end_time)
                         *end_time = 0;
-                if (*factor)
+                if (factor)
                         *factor = 0;
                 return 0;
         }
@@ -139,15 +153,11 @@ parse_add_entry_message(char *message, la_address_t **address, la_rule_t **rule,
         }
         la_debug("Found rule %s", (*rule)->name);
 
-        if (end_time && n >= 3)
-                *end_time = parsed_end_time;
-        else
-                *end_time = 0;
+        if (end_time)
+                *end_time = n >= 3 ? parsed_end_time : 0;
 
-        if (factor && n >= 4)
-                *factor = parsed_factor;
-        else
-                *factor = 0;
+        if (factor)
+                *factor = n >= 4 ? parsed_factor : 0;
 
         return 1;
 }
@@ -159,6 +169,7 @@ parse_add_entry_message(char *message, la_address_t **address, la_rule_t **rule,
 static void
 add_entry(char *buffer, char *from)
 {
+#if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
         assert(buffer);
         la_debug("add_entry(%s)", buffer);
         la_address_t *address;
@@ -169,16 +180,15 @@ add_entry(char *buffer, char *from)
         if (parse_add_entry_message(buffer, &address, &rule, &end_time,
                                 &factor) == 1)
         {
-#if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
                 xpthread_mutex_lock(&config_mutex);
 
                 trigger_manual_commands_for_rule(address, rule, end_time,
                                 factor, from, false);
 
                 xpthread_mutex_unlock(&config_mutex);
-#endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
                 free_address(address);
         }
+#endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
 }
 
 static void
@@ -254,6 +264,8 @@ update_log_level(char *buffer)
 void
 parse_message_trigger_command(char *buf, char *from)
 {
+        assert(buf);
+
         if (*buf != PROTOCOL_VERSION)
         {
                 la_log(LOG_ERR, "Wrong protocol version '%c'!");
@@ -268,7 +280,7 @@ parse_message_trigger_command(char *buf, char *from)
                 case '-':
                         del_entry(buf);
                         break;
-                case '0':
+                case 'F':
                         perform_flush();
                         break;
                 case 'R':
@@ -282,6 +294,9 @@ parse_message_trigger_command(char *buf, char *from)
                         break;
                 case 'L':
                         update_log_level(buf);
+                        break;
+                case '0':
+                        reset_counts();
                         break;
                 default:
                         la_log(LOG_ERR, "Unknown command: '%c'",
@@ -362,7 +377,7 @@ create_flush_message(void)
 {
         char *buffer = xmalloc(TOTAL_MSG_LEN);
 
-        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%c0",
+        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cF",
                         PROTOCOL_VERSION);
 
         /* pad right here, cannot hurt even if we don't encrypt... */
@@ -422,6 +437,20 @@ create_log_level_message(unsigned int new_log_level)
 
         int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cL%u",
                         PROTOCOL_VERSION, new_log_level);
+
+        /* pad right here, cannot hurt even if we don't encrypt... */
+        pad(buffer, msg_len+1);
+
+        return buffer;
+}
+
+char *
+create_reset_counts_message(void)
+{
+        char *buffer = xmalloc(TOTAL_MSG_LEN);
+
+        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%c0",
+                        PROTOCOL_VERSION);
 
         /* pad right here, cannot hurt even if we don't encrypt... */
         pad(buffer, msg_len+1);

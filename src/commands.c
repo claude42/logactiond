@@ -279,7 +279,10 @@ exec_command(la_command_t *command, la_commandtype_t type)
                 default:
                         la_log(LOG_ERR, "Action \"%s\" returned with error "
                                         "code %d.", command->name, result);
-                        la_log(LOG_ERR, "Tried to execute \"%s\"", command->name);
+                        la_log(LOG_ERR, "Tried to execute \"%s\"",
+                                        type == LA_COMMANDTYPE_BEGIN ?
+                                        command->begin_string_converted :
+                                        command->end_string_converted);
                         break;
         }
 }
@@ -446,6 +449,21 @@ incr_invocation_counts(la_command_t *command)
                 command->rule->invocation_count++;
         if (command->pattern->invocation_count < ULONG_MAX)
                 command->pattern->invocation_count++;
+
+        command->rule->queue_count++;
+}
+
+void
+reset_counts(void)
+{
+        assert(la_config->sources);
+        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
+                        (source = NEXT_SOURCE(source));)
+        {
+                for (la_rule_t *rule = ITERATE_RULES(source->rules);
+                                (rule = NEXT_RULE(rule));)
+                        rule->invocation_count = rule->detection_count = 0;
+        }
 }
 
 /*
@@ -622,7 +640,6 @@ trigger_command(la_command_t *command)
 
                 /* update relevant counters for status monitoring */
                 incr_invocation_counts(command);
-                command->rule->queue_count++;
 
                 send_add_entry_message(command);
         }

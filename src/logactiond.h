@@ -324,6 +324,7 @@ typedef struct la_pattern_s
         struct la_rule_s *rule;
         char *string; /* already converted regex, doesn't contain tokens anymore */
         regex_t *regex; /* compiled regex */
+        la_property_t *host_property;
         kw_list_t *properties; /* list of la_property_t */
         unsigned long int detection_count;
         unsigned long int invocation_count;
@@ -588,6 +589,8 @@ char *create_restore_message(void);
 
 char *create_log_level_message(unsigned int new_log_level);
 
+char *create_reset_counts_message(void);
+
 /* configfile.c */
 
 bool init_la_config(char *filename);
@@ -655,6 +658,8 @@ void free_meta_list(void);
 
 void assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned int line);
 
+void reset_counts(void);
+
 void trigger_manual_command(la_address_t *address, la_command_t *template,
                 time_t end_time, int factor, char *from, bool suppress_logging);
 
@@ -684,8 +689,6 @@ void assert_property_ffl(la_property_t *property, const char *func, char *file,
                 unsigned int line);
 
 size_t token_length(const char *string);
-
-const char *get_host_property_value(kw_list_t *property_list);
 
 la_property_t *get_property_from_property_list(kw_list_t *property_list,
                 const char *name);

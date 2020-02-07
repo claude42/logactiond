@@ -66,27 +66,6 @@ token_length(const char *string)
         return 0; // avoid compiler warning
 }
 
-
-/*
- * Return value assigned to %HOST% property, NULL if not found.
- */
-
-const char *
-get_host_property_value(kw_list_t *property_list)
-{
-        assert_list(property_list);
-        la_vdebug("get_host_property_value()");
-
-        for (la_property_t *property = ITERATE_PROPERTIES(property_list);
-                        (property = NEXT_PROPERTY(property));)
-        {
-                if (property->is_host_property)
-                        return property->value;
-        }
-
-        return NULL;
-}
-
 /*
  * Go through property_list and find property with the same name as given as
  * second parameter. If such a property is found, return the whole property.

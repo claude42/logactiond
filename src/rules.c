@@ -276,11 +276,11 @@ trigger_all_commands(la_pattern_t *pattern)
         assert_pattern(pattern); assert_rule(pattern->rule);
         la_debug("trigger_all_commands(%s)", pattern->rule->name);
 
-        const char *host = get_host_property_value(pattern->properties);
-
+        const char *host = NULL;
         la_address_t *address = NULL;
-        if (host)
+        if (pattern->host_property)
         {
+                host = pattern->host_property->value;
                 address = create_address(host);
                 /* in case IP address cannot be converted, ignore trigger
                  * altogether */

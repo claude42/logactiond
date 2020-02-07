@@ -69,6 +69,13 @@ count_open_braces(const char *string)
         return result;
 }
 
+static void add_property(la_pattern_t *pattern, la_property_t *property)
+{
+        add_tail(pattern->properties, (kw_node_t *) property);
+        if (property->is_host_property)
+                pattern->host_property = property;
+}
+
 /*
  * Replaces first occurance of "%HOST%" in string by "([.:[:xdigit:]]+)".
  * Replaces all other "%SOMETHING%" tokens by "(.+)".
@@ -141,8 +148,7 @@ convert_regex(const char *string, la_pattern_t *pattern)
                                                                 "\"%s\"!", string);
 
                                         new_prop->subexpression = subexpression + 1;
-                                        add_tail(pattern->properties, (kw_node_t *)
-                                                        new_prop);
+                                        add_property(pattern, new_prop);
                                         subexpression += braces;
                                 }
 
@@ -223,6 +229,7 @@ create_pattern(const char *string_from_configfile, unsigned int num,
 
         result->num = num;
         result->rule = rule;
+        result->host_property = NULL;
         result->properties = xcreate_list();
         result->string = convert_regex(full_string, result);
         free(full_string);

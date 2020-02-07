@@ -59,6 +59,8 @@ print_usage(void)
                         "Usage: logactiond-client [-h host][-p password][-s port] "
                         "(no|v)?debug\n"
                         "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "reset-counts\n"
+                        "Usage: logactiond-client [-h host][-p password][-s port] "
                         "save\n");
 }
 
@@ -257,6 +259,10 @@ main(int argc, char *argv[])
         else if (!strcmp(command, "nodebug"))
         {
                 message = create_log_level_message(LOG_INFO+1);
+        }
+        else if (!strcmp(command, "reset-counts"))
+        {
+                message = create_reset_counts_message();
         }
         else
         {

@@ -122,6 +122,7 @@ encrypt_message(char *buffer, char *password)
                 return false;
         }
 
+        /* TODO: avoid always strcmp()ing */
         if (!send_key_password || strcmp(send_key_password, password))
         {
                 free(send_key_password);

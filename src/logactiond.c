@@ -343,24 +343,11 @@ restore_state(char *state_file_name)
 
         xpthread_mutex_lock(&config_mutex);
 
-        for (int i=1; ; i++)
-        {
-                ssize_t num_read = getline(&linebuffer, &linebuffer_size, stream);
-                if (num_read == -1)
-                {
-                        if (feof(stream))
-                        {
-                                break;
-                        }
-                        else
-                        {
-                                /* Don't override state file in case of error */
-                                saved_state = NULL;
-                                die_err("Reading from state file \"%s\" failed",
-                                                state_file_name);
-                        }
-                }
+        int line_no = 1;
+        size_t num_read;
 
+        while ((num_read = getline(&linebuffer, &linebuffer_size,stream)) != -1)
+        {
                 la_address_t *address; la_rule_t * rule; time_t end_time;
                 int factor;
 
@@ -374,13 +361,22 @@ restore_state(char *state_file_name)
                         /* Don't override state file in case of error */
                         saved_state = NULL;
                         die_hard("Error parsing state file \"%s\" at line %u!",
-                                        state_file_name, i);
+                                        state_file_name, line_no);
                 }
                 else if (r > 0)
                         trigger_manual_commands_for_rule(address, rule,
                                         end_time, factor, NULL, true);
 
                 free_address(address);
+                line_no++;
+        }
+
+        if (!feof(stream))
+        {
+                /* Don't override state file in case of error */
+                saved_state = NULL;
+                die_err("Reading from state file \"%s\" failed",
+                                state_file_name);
         }
 
         xpthread_mutex_unlock(&config_mutex);
