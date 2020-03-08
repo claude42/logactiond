@@ -129,10 +129,7 @@ watch_forever_polling(void *ptr)
 
                 xpthread_mutex_unlock(&config_mutex);
 
-                struct timespec blink;
-                blink.tv_sec = 2;
-                blink.tv_nsec = 500000000;
-                nanosleep(&blink, NULL);
+                xnanosleep(2, 500000000);
         }
 
         assert(false);

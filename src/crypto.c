@@ -29,7 +29,6 @@
 #ifdef WITH_LIBSODIUM
 #include <sodium.h>
 
-static char *send_key_password;
 static unsigned char send_key[crypto_secretbox_KEYBYTES];
 static unsigned char send_salt[crypto_pwhash_SALTBYTES];
 
@@ -61,14 +60,13 @@ generate_key(unsigned char *key, unsigned int key_len, char *password,
 
 
 bool
-generate_send_key_and_salt(unsigned char *key, char *password,
-                unsigned char *salt)
+generate_send_key_and_salt(char *password)
 {
 	/* First initialize salt with randomness */
-        randombytes_buf(salt, crypto_pwhash_SALTBYTES);
+        randombytes_buf(send_salt, crypto_pwhash_SALTBYTES);
 
 	/* Then generate secret key from password and salt */
-        return generate_key(key, crypto_secretbox_KEYBYTES, password, salt);
+        return generate_key(send_key, crypto_secretbox_KEYBYTES, password, send_salt);
 }
 
 bool
@@ -111,23 +109,15 @@ decrypt_message(char *buffer, char *password, la_address_t *from_addr)
 }
 
 bool
-encrypt_message(char *buffer, char *password)
+encrypt_message(char *buffer)
 {
-	assert(buffer); assert(password);
+	assert(buffer);
         unsigned char *ubuffer = (unsigned char *) buffer;
 
         if (sodium_init() < 0)
         {
                 la_log(LOG_ERR, "Unable to  initialize libsodium!");
                 return false;
-        }
-
-        /* TODO: avoid always strcmp()ing */
-        if (!send_key_password || strcmp(send_key_password, password))
-        {
-                free(send_key_password);
-                send_key_password = xstrdup(password);
-                generate_send_key_and_salt(send_key, password, send_salt);
         }
 
         memcpy(&ubuffer[SALT_IDX], send_salt, crypto_pwhash_SALTBYTES);

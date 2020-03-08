@@ -51,6 +51,7 @@ char *saved_state = NULL;
 bool shutdown_ongoing = false;
 int exit_status = EXIT_SUCCESS;
 static int exit_errno = 0;
+bool sync_on_startup = false;
 
 void
 trigger_shutdown(int status, int saved_errno)
@@ -250,7 +251,7 @@ static void
 print_usage(void)
 {
         fprintf(stderr,
-                "Usage: logactiond [-c configfile] [-d] [-v] [-f] [-p pidfile] [-t]\n");
+                "Usage: logactiond [-c configfile] [-d] [-v] [-f] [-p pidfile] [-t] [-s]\n");
 }
 
 static void
@@ -270,6 +271,7 @@ read_options(int argc, char *argv[])
                         {"user",       required_argument, NULL, 'u'},
                         {"status",     optional_argument, NULL, 't'},
                         {"restore",    optional_argument, NULL, 'r'},
+                        {"sync",       no_argument,       NULL, 's'},
                         {0,            0,                 0,    0  }
                 };
 
@@ -312,6 +314,9 @@ read_options(int argc, char *argv[])
                                 else
                                         saved_state = STATE_DIR "/" STATE_FILE;
                                 break;
+                        case 's':
+                                sync_on_startup = true;
+                                break;
                         case '?':
                                 print_usage();
                                 exit(0);
@@ -328,7 +333,6 @@ static void
 restore_state(char *state_file_name)
 {
         assert(state_file_name);
-        la_log(LOG_INFO, "Restoring state from \"%s\"", state_file_name);
 
         FILE *stream = fopen(state_file_name, "r");
         if (!stream)
@@ -337,6 +341,8 @@ restore_state(char *state_file_name)
                                 state_file_name);
                 return;
         }
+
+        la_log(LOG_INFO, "Restoring state from \"%s\"", state_file_name);
 
         char *linebuffer = xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
         size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE*sizeof(char);
@@ -388,6 +394,23 @@ restore_state(char *state_file_name)
                 /* Don't override state file in case of error */
                 saved_state = NULL;
                 die_err("Unable to close state file");
+        }
+}
+
+static void
+sync_with_other_instances(void)
+{
+        /* make sure remote thread is already set up and running */
+        sleep(1);
+
+        assert_list(la_config->remote_send_to);
+        for (la_address_t *remote_address =
+                        ITERATE_ADDRESSES(la_config->remote_send_to);
+                        (remote_address = NEXT_ADDRESS(remote_address));)
+        {
+                char *message = create_sync_message(NULL);
+                send_message_to_single_address(message, remote_address);
+                free(message);
         }
 }
 
@@ -482,14 +505,19 @@ main(int argc, char *argv[])
         if (!init_la_config(cfg_filename))
                 die_hard("Error loading configuration");
         load_la_config();
+
         if (saved_state)
                 restore_state(saved_state);
+
         start_watching_threads();
 #ifndef NOMONITORING
         start_monitoring_thread();
 #endif /* NOMONITORING */
         start_fifo_thread();
         start_remote_thread();
+
+        if (sync_on_startup)
+                sync_with_other_instances();
 
 #if HAVE_LIBSYSTEMD
         sd_notify(0, "READY=1\n"

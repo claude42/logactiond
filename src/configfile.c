@@ -150,9 +150,6 @@ get_action(const char *action_name)
  * Return config_setting_t for given source name.
  *
  * Return NULL in case of an error -e.g. when source == NULL.
- *
- *
- * TODO: not needed anymore?
  */
 
 static config_setting_t *
@@ -842,6 +839,7 @@ load_remote_settings(void)
 
         la_config->remote_secret = xstrdup(config_get_string_or_null(remote_section,
                         LA_REMOTE_SECRET_LABEL));
+        la_config->remote_secret_changed = true;
         if (xstrlen(la_config->remote_secret) == 0)
                 die_hard("Remote handling enabled but no secret specified");
 
@@ -1128,8 +1126,7 @@ include_func(config_t *config, const char *include_dir, const char *path, const 
                                 result_next = result + result_count;
                         }
 
-                        /* TODO: error checking */
-                        *result_next = strdup(file_path);
+                        *result_next = xstrdup(file_path);
                         ++result_next;
                         ++result_count;
                 }

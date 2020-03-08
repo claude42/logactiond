@@ -499,7 +499,7 @@ trigger_manual_command(la_address_t *address, la_command_t *template,
         }
 
         la_command_t *command = create_manual_command_from_template(template, 
-                        address);
+                        address, from);
         if (!command)
         {
                 la_log(LOG_ERR, "IP address doesn't match what requirements of action!");
@@ -641,7 +641,7 @@ trigger_command(la_command_t *command)
                 /* update relevant counters for status monitoring */
                 incr_invocation_counts(command);
 
-                send_add_entry_message(command);
+                send_add_entry_message(command, NULL);
         }
 
         exec_command(command, LA_COMMANDTYPE_BEGIN);
@@ -831,7 +831,7 @@ create_command_from_template(la_command_t *template, la_pattern_t *pattern,
         result->pattern_properties = dup_property_list(pattern->properties);
         result->address = address ? dup_address(address) : NULL;
         result->end_time = result->n_triggers = result->start_time= 0;
-        result->manual = false;
+        result->submission_type = LA_SUBMISSION_LOCAL;
         result->blacklist = false;
 
         convert_both_commands(result);
@@ -840,9 +840,16 @@ create_command_from_template(la_command_t *template, la_pattern_t *pattern,
         return result;
 }
 
+static
+bool is_local_address(char *address)
+{
+        return (!address || !strcmp("127.0.0.1", address) ||
+                        !strcmp("::1", address) || !strcmp(LA_FIFO, address));
+}
+
 la_command_t *
-create_manual_command_from_template(la_command_t *template, la_address_t
-                *address)
+create_manual_command_from_template(la_command_t *template,
+                la_address_t *address, char *from)
 {
         assert_command(template);
         la_debug("create_manual_command_from_template(%s)", template->name);
@@ -870,7 +877,9 @@ create_manual_command_from_template(la_command_t *template, la_address_t
         result->pattern_properties = NULL;
         result->address = address ? dup_address(address) : NULL;
         result->end_time = result->n_triggers = result->start_time= 0;
-        result->manual = true;
+        result->submission_type = is_local_address(from) ?
+                LA_SUBMISSION_MANUAL : LA_SUBMISSION_REMOTE;
+
 
         convert_both_commands(result);
 

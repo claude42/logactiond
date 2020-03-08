@@ -44,11 +44,11 @@ static int client_fd6;
 /* TODO: check if current implementation really is thread safe */
 /* TODO: maybe connect socket? */
 
-static void
+void
 send_message_to_single_address(char *message, la_address_t *remote_address)
 {
         assert(la_config); assert_address(remote_address);
-        la_debug("send_message_to_single_address()");
+        la_debug("send_message_to_single_address(%s)", remote_address->text);
 
         /* Test for shutdown first, just to make sure nobody has closed the fds
          * already */
@@ -83,7 +83,7 @@ send_message_to_single_address(char *message, la_address_t *remote_address)
  * Currently only called from trigger_command()
  */
 void
-send_add_entry_message(la_command_t *command)
+send_add_entry_message(la_command_t *command, la_address_t *address)
 {
         la_debug("send_add_entry_message()");
         assert(la_config); assert_command(command);
@@ -111,20 +111,33 @@ send_add_entry_message(la_command_t *command)
                 return;
         }
 #ifdef WITH_LIBSODIUM
-        if (!encrypt_message(message, la_config->remote_secret))
+        if (la_config->remote_secret_changed)
+        {
+                generate_send_key_and_salt(la_config->remote_secret);
+                la_config->remote_secret_changed = false;
+        }
+        if (!encrypt_message(message))
         {
                 la_log(LOG_ERR, "Unable to encrypt message");
                 return;
         }
 #endif /* WITH_LIBSODIUM */
 
-        assert_list(la_config->remote_send_to);
-        for (la_address_t *remote_address =
-                        ITERATE_ADDRESSES(la_config->remote_send_to);
-                        (remote_address = NEXT_ADDRESS(remote_address));)
+        if (address)
         {
-                send_message_to_single_address(message, remote_address);
+                send_message_to_single_address(message, address);
         }
+        else
+        {
+                assert_list(la_config->remote_send_to);
+                for (la_address_t *remote_address =
+                                ITERATE_ADDRESSES(la_config->remote_send_to);
+                                (remote_address = NEXT_ADDRESS(remote_address));)
+                {
+                        send_message_to_single_address(message, remote_address);
+                }
+        }
+
 
         free(message);
 }

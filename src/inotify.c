@@ -77,7 +77,7 @@ la_vdebug_inotify_event(struct inotify_event *event, uint32_t monitored)
 }
 
 /*
- * Removes inotify watch for file but not for parent directory
+ * Removes inotify watch for file and parent directory
  */
 
 void
@@ -131,15 +131,9 @@ find_source_by_parent_wd(int parent_wd, char *file_name)
                          * modify the original string... */
                         char *tmp = xstrdup(source->location);
                         char *base_name = basename(tmp);
+                        free(tmp);
                         if (!strcmp(file_name, base_name))
-                        {
-                                free(tmp);
                                 return source;
-                        }
-                        else
-                        {
-                                free(tmp);
-                        }
                 }
         }
 

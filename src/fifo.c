@@ -96,7 +96,7 @@ fifo_loop(void *ptr)
                 la_debug("Received message '%s'", buf);
 
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
-                parse_message_trigger_command(buf, "localhost");
+                parse_message_trigger_command(buf, LA_FIFO);
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
         }
 

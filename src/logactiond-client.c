@@ -61,7 +61,9 @@ print_usage(void)
                         "Usage: logactiond-client [-h host][-p password][-s port] "
                         "reset-counts\n"
                         "Usage: logactiond-client [-h host][-p password][-s port] "
-                        "save\n");
+                        "save\n"
+                        "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "sync [host]\n");
 }
 
 static void
@@ -101,18 +103,14 @@ send_remote_message(char *host, char *message)
         int message_sent = sendto(socket_fd, message, TOTAL_MSG_LEN, 0,
                         ai->ai_addr, ai->ai_addrlen);
 
-        if (message_sent == -1)
-        {
-                cleanup_socket();
-                die_err("Unable to send message");
-        }
-        else if (message_sent != TOTAL_MSG_LEN)
-        {
-                cleanup_socket();
-                die_err("Sent truncated message");
-        }
-
         cleanup_socket();
+
+        if (message_sent == -1)
+                die_err("Unable to send message");
+        else if (message_sent != TOTAL_MSG_LEN)
+                die_err("Sent truncated message");
+        else
+                return;
 }
 
 static void
@@ -264,6 +262,15 @@ main(int argc, char *argv[])
         {
                 message = create_reset_counts_message();
         }
+        else if (!strcmp(command, "sync"))
+        {
+                if (optind == argc)
+                        message = create_sync_message(NULL);
+                else if (optind == argc-1)
+                        message = create_sync_message(argv[optind++]);
+                else
+                        die_hard("Wrong num ber of arguments.");
+        }
         else
         {
                 die_hard("Unknown command \"%s\".", command);
@@ -275,7 +282,8 @@ main(int argc, char *argv[])
         if (host)
         {
 #ifdef WITH_LIBSODIUM
-                if (!encrypt_message(message, password))
+                generate_send_key_and_salt(password);
+                if (!encrypt_message(message))
                         die_err("Unable to encrypt message");
 #endif /* WITH_LIBSODIUM */
                 send_remote_message(host, message);

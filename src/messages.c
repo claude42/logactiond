@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "logactiond.h"
 
@@ -53,6 +54,10 @@
  *    adjust log level
  *  "00\0"
  *    reset counts
+ *  "0X"
+ *  "0X<host>"
+ *    send all banned addresses to other host (or sending host if <host> is
+ *    empta) via + command
  *
  * Example structure (with maximum lengths):
  *  "0+<ip-address>/<prefix>,<rule-name>,<end-time-in-secs>,<factor>\0"
@@ -251,14 +256,131 @@ update_log_level(char *buffer)
         errno = 0;
 
         int new_log_level = strtol(buffer+2, &endptr, 10);
-        if (errno || *endptr != '\0' || new_log_level < 0 || new_log_level > 8)
+        if (errno || *endptr != '\0' || new_log_level < 0 || new_log_level > 9)
         {
-                la_log(LOG_ERR, "Cannot convert log level %s!", buffer);
+                la_log(LOG_ERR, "Cannot change to log level %s!", buffer);
                 return;
         }
 
         la_log (LOG_INFO, "Set log level to %u", new_log_level);
         log_level = new_log_level;
+}
+
+/* iterates through end_queue, returns array of strings wiht add commands for
+ * all non-template commands in end_queue
+ */
+
+// TODO
+
+/*
+static char **
+create_add_messages_for_end_queue(void)
+{
+        xpthread_mutex_lock(&end_queue_mutex);
+
+        int queue_length = list_length(end_queue);
+        char **message_array = (char **) xmalloc((queue_length + 1) *
+                        sizeof (char *));
+        int message_array_length = 0;
+
+        for (la_command_t *command = ITERATE_COMMANDS(end_queue);
+                        (command = NEXT_COMMAND(command));)
+        {
+                if (!command->is_template && command->address)
+
+                {
+                        assert(message_array_length < queue_length);
+                        message_array[message_array_length++] =
+                                create_add_message(command->address->text,
+                                                command->rule_name, NULL,
+                                                NULL);
+                }
+        }
+
+        xpthread_mutex_unlock(&end_queue_mutex);
+
+        return message_array;
+}
+*/
+
+/* 
+ * start_routine for pthread_create called from sync_entries(). ptr points to a
+ * string with the destination IP address.
+ */
+
+static void *
+sync_all_entries(void *ptr)
+{
+        la_address_t *address = create_address_port((char *) ptr,
+                        la_config->remote_port);
+
+        if (!address)
+        {
+                la_log(LOG_ERR, "Cannot convert address in command %s!", ptr);
+                return NULL;
+        }
+
+        xpthread_mutex_lock(&end_queue_mutex);
+
+        int queue_length = list_length(end_queue);
+        char **message_array = (char **) xmalloc((queue_length + 1) *
+                        sizeof (char *));
+        int message_array_length = 0;
+
+        for (la_command_t *command = ITERATE_COMMANDS(end_queue);
+                        (command = NEXT_COMMAND(command));)
+        {
+                if (!command->is_template && command->address)
+
+                {
+                        assert(message_array_length < queue_length);
+                        message_array[message_array_length++] =
+                                create_add_message(command->address->text,
+                                                command->rule_name, NULL,
+                                                NULL);
+                }
+        }
+
+        xpthread_mutex_unlock(&end_queue_mutex);
+
+        for (int i = 0; i < message_array_length; i++)
+        {
+#ifdef WITH_LIBSODIUM
+                if (la_config->remote_secret_changed)
+                {
+                        generate_send_key_and_salt(la_config->remote_secret);
+                        la_config->remote_secret_changed = false;
+                }
+                if (!encrypt_message(message_array[i]))
+                {
+                        la_log(LOG_ERR, "Unable to encrypt message");
+                        free(address);
+                        return NULL;
+                }
+#endif /* WITH_LIBSODIUM */
+                send_message_to_single_address(message_array[i], address);
+                free(message_array[i]);
+                xnanosleep(0, 200000000);
+        }
+
+        free(message_array);
+        free_address(address);
+
+        return NULL;
+}
+
+static void
+sync_entries(char *buffer, char *from)
+{
+        assert(buffer);
+        la_debug("sync_entries(%s)", buffer);
+
+        char *ptr = buffer[2] ? buffer+2 : from;
+
+        pthread_t sync_entries_thread = 0;
+        xpthread_create(&sync_entries_thread, NULL, sync_all_entries, ptr,
+                        "sync");
+
 }
 
 void
@@ -298,6 +420,9 @@ parse_message_trigger_command(char *buf, char *from)
                 case '0':
                         reset_counts();
                         break;
+                case 'X':
+                        sync_entries(buf, from);
+                        break;
                 default:
                         la_log(LOG_ERR, "Unknown command: '%c'",
                                         *(buf+1));
@@ -316,8 +441,8 @@ create_add_message(char *ip, char *rule, char *end_time, char *factor)
 
         char *buffer = xmalloc(TOTAL_MSG_LEN);
 
-        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%c+%s,%s%s%s%s%s",
-                        PROTOCOL_VERSION, ip, rule,
+        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, PROTOCOL_VERSION_STR
+                        "+%s,%s%s%s%s%s", ip, rule,
                         end_time ? "," : "",
                         end_time ? end_time : "",
                         factor ? "," : "",
@@ -350,7 +475,7 @@ print_add_message(FILE *stream, la_command_t *command)
 
         la_debug("print_add_message(%s)", command->address->text);
 
-        return fprintf(stream, "%c+%s,%s,%ld,%d\n", PROTOCOL_VERSION,
+        return fprintf(stream, PROTOCOL_VERSION_STR "+%s,%s,%ld,%d\n",
                         command->address->text, command->rule_name,
                         command->end_time, command->factor);
 }
@@ -361,8 +486,8 @@ create_del_message(char *ip)
 	assert(ip);
         char *buffer = xmalloc(TOTAL_MSG_LEN);
 
-        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%c-%s",
-                        PROTOCOL_VERSION, ip);
+        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, PROTOCOL_VERSION_STR
+                        "-%s", ip);
         if (msg_len > MSG_LEN-1)
                 return NULL;
 
@@ -373,59 +498,42 @@ create_del_message(char *ip)
 }
 
 char *
-create_flush_message(void)
+create_simple_message(char c)
 {
         char *buffer = xmalloc(TOTAL_MSG_LEN);
 
-        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cF",
-                        PROTOCOL_VERSION);
+        buffer[MSG_IDX] = PROTOCOL_VERSION;
+        buffer[MSG_IDX+1] = c;
+        buffer[MSG_IDX+2] = '\0';
 
         /* pad right here, cannot hurt even if we don't encrypt... */
-        pad(buffer, msg_len+1);
+        pad(buffer, 2+1);
 
         return buffer;
+}
+
+char *
+create_flush_message(void)
+{
+        return create_simple_message('F');
 }
 
 char *
 create_reload_message(void)
 {
-        char *buffer = xmalloc(TOTAL_MSG_LEN);
-
-        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cR",
-                        PROTOCOL_VERSION);
-
-        /* pad right here, cannot hurt even if we don't encrypt... */
-        pad(buffer, msg_len+1);
-
-        return buffer;
+        return create_simple_message('R');
 }
 
 char *
 create_shutdown_message(void)
 {
-        char *buffer = xmalloc(TOTAL_MSG_LEN);
-
-        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cS",
-                        PROTOCOL_VERSION);
-
-        /* pad right here, cannot hurt even if we don't encrypt... */
-        pad(buffer, msg_len+1);
-
-        return buffer;
+        return create_simple_message('S');
 }
 
 char *
 create_save_message(void)
 {
-        char *buffer = xmalloc(TOTAL_MSG_LEN);
-
-        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%c>",
-                        PROTOCOL_VERSION);
-
-        /* pad right here, cannot hurt even if we don't encrypt... */
-        pad(buffer, msg_len+1);
-
-        return buffer;
+        return create_simple_message('>');
 }
 
 char *
@@ -447,10 +555,16 @@ create_log_level_message(unsigned int new_log_level)
 char *
 create_reset_counts_message(void)
 {
+        return create_simple_message('0');
+}
+
+char *
+create_sync_message(char *host)
+{
         char *buffer = xmalloc(TOTAL_MSG_LEN);
 
-        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%c0",
-                        PROTOCOL_VERSION);
+        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cX%s",
+                        PROTOCOL_VERSION, host ? host : "");
 
         /* pad right here, cannot hurt even if we don't encrypt... */
         pad(buffer, msg_len+1);

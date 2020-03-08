@@ -83,11 +83,10 @@ static void add_property(la_pattern_t *pattern, la_property_t *property)
  * Returns newly allocated string, doesn't modify original.
  *
  * TODO 1: really no error handling necessary?
- * TODO 2: clumsy code, better directly assign converted string to
  * pattern->string instead of returning it
  */
 
-static char*
+static void
 convert_regex(const char *string, la_pattern_t *pattern)
 {
         assert(string);
@@ -207,7 +206,7 @@ convert_regex(const char *string, la_pattern_t *pattern)
         *dst_ptr = 0;
         la_vdebug("convert_regex()=%s, subexpression=%u", result, subexpression);
 
-        return result;
+        pattern->string = result;
 }
 
 /*
@@ -231,7 +230,7 @@ create_pattern(const char *string_from_configfile, unsigned int num,
         result->rule = rule;
         result->host_property = NULL;
         result->properties = xcreate_list();
-        result->string = convert_regex(full_string, result);
+        convert_regex(full_string, result);
         free(full_string);
 
         result->regex = xmalloc(sizeof(regex_t));

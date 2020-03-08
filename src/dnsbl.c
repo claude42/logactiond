@@ -23,6 +23,8 @@
 #include <stdio.h>
 #include <assert.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "logactiond.h"
 
@@ -35,6 +37,7 @@ convert_to_dnsbl_hostname_sa(struct sockaddr *sa, char *dnsbl_domainname, char *
 {
         la_debug("convert_to_dnsbl_hostname_sa()");
         assert(sa); assert(dnsbl_domainname); assert(hostname);
+        assert(xstrlen(hostname) < NI_MAXHOST);
         int r;
 
         if (sa->sa_family == AF_INET)
@@ -91,7 +94,8 @@ static bool
 convert_to_dnsbl_hostname(la_address_t *address, char *dnsbl_domainname, char *hostname)
 {
         la_debug("convert_to_dnsbl_hostname()");
-        return convert_to_dnsbl_hostname_sa((struct sockaddr *) &address->sa, dnsbl_domainname, hostname);
+        return convert_to_dnsbl_hostname_sa((struct sockaddr *) &address->sa,
+                        dnsbl_domainname, hostname);
 }
 
 bool

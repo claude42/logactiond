@@ -150,6 +150,8 @@
 #define LA_PATTERNNAME_TOKEN "patternname"
 #define LA_IPVERSION_TOKEN "ipversion"
 
+#define LA_FIFO "fifo"
+
 // maximum number of tokens that can be matched
 
 #define MAX_NMATCH 20
@@ -248,6 +250,9 @@ typedef enum la_need_host_s { LA_NEED_HOST_NO, LA_NEED_HOST_ANY,
 
 typedef enum la_runtype_s { LA_DAEMON_BACKGROUND, LA_DAEMON_FOREGROUND,
         LA_UTIL_FOREGROUND } la_runtype_t;
+
+typedef enum la_submission_s { LA_SUBMISSION_LOCAL, LA_SUBMISSION_MANUAL,
+        LA_SUBMISSION_REMOTE } la_submission_t;
 
 /*
  * bla
@@ -378,7 +383,7 @@ typedef struct la_command_s
         int duration;                /* duration how long command shall stay active,
                                    -1 if none */
         int factor;
-        bool manual;            /* True if command has been manually submitted */
+        la_submission_t submission_type;
         bool blacklist;         /* True if command has been triggered via blacklist */
 
         /* only relevant for end_commands */
@@ -446,6 +451,7 @@ typedef struct la_config_s
         kw_list_t *remote_receive_from;
         kw_list_t *remote_send_to;
         char *remote_secret;
+        bool remote_secret_changed;
         char *remote_bind;
         int remote_port;
 } la_config_t;
@@ -549,14 +555,15 @@ kw_list_t *xcreate_list(void);
 
 char *xgetpass (const char *prompt);
 
+int xnanosleep(time_t secs, long nanosecs);
+
 /* crypto.c */
 
-bool generate_send_key_and_salt(unsigned char *key, char *password,
-                unsigned char *salt);
+bool generate_send_key_and_salt(char *password);
 
 bool decrypt_message(char *buffer, char *password, la_address_t *from_addr);
 
-bool encrypt_message(char *buffer, char *password);
+bool encrypt_message(char *buffer);
 
 void pad(char *buffer, size_t msg_len);
 
@@ -577,6 +584,8 @@ char *create_del_message(char *ip);
 
 char *create_empty_queue_message(void);
 
+char *create_simple_message(char c);
+
 char *create_flush_message(void);
 
 char *create_reload_message(void);
@@ -590,6 +599,8 @@ char *create_restore_message(void);
 char *create_log_level_message(unsigned int new_log_level);
 
 char *create_reset_counts_message(void);
+
+char *create_sync_message(char *host);
 
 /* configfile.c */
 
@@ -673,7 +684,7 @@ la_command_t * create_command_from_template(la_command_t *template,
                 la_pattern_t *pattern, la_address_t *address);
 
 la_command_t * create_manual_command_from_template(la_command_t *template,
-                la_address_t *address);
+                la_address_t *address, char *from);
 
 la_command_t *create_template(const char *name, la_rule_t *rule,
                 const char *begin_string, const char *end_string,
@@ -812,9 +823,11 @@ void start_fifo_thread(void);
 
 /* remote.c */
 
-void send_add_entry_message(la_command_t *command);
+void send_add_entry_message(la_command_t *command, la_address_t *address);
 
 void start_remote_thread(void);
+
+void send_message_to_single_address(char *message, la_address_t *remote_address);
 
 /* dnsbl.c */
 

@@ -340,6 +340,9 @@ xcreate_list(void)
         return result;
 }
 
+/* Taken from https://www.gnu.org/software/libc/manual/html_node/getpass.html
+ */
+
 static ssize_t
 _getpass (char **lineptr, size_t *n, FILE *stream)
 {
@@ -360,10 +363,14 @@ _getpass (char **lineptr, size_t *n, FILE *stream)
         /* Restore terminal. */
         (void) tcsetattr (fileno (stream), TCSAFLUSH, &old);
 
+        /* Replace trailing newline - if any */
+        if (nread > 0 && (*lineptr)[nread-1] == '\n')
+                (*lineptr)[nread-1] = '\0';
+
         return nread;
 }
 
-size_t password_size = 32;
+size_t password_size = 0;
 static char *password_buffer = NULL;
 
 char *
@@ -382,6 +389,17 @@ xgetpass(const char *prompt)
         puts("");
 
         return password_buffer;
+}
+
+int
+xnanosleep(time_t secs, long nanosecs)
+{
+        struct timespec blink;
+
+        blink.tv_sec = secs;
+        blink.tv_nsec = nanosecs;
+
+        return nanosleep(&blink, NULL);
 }
 
 

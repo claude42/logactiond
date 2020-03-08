@@ -268,7 +268,7 @@ dump_queue_status(kw_list_t *queue)
                         if (!command->is_template)
                         {
                                 num_elems++;
-                                if (!command->manual)
+                                if (command->submission_type == LA_SUBMISSION_LOCAL)
                                         num_elems_local++;
                         }
                 }
@@ -302,8 +302,10 @@ dump_queue_status(kw_list_t *queue)
                                 &timedelta, &unit);
 
                 char *type;
-                if (command->manual)
+                if (command->submission_type == LA_SUBMISSION_MANUAL)
                         type = "Ma";
+                else if (command->submission_type == LA_SUBMISSION_REMOTE)
+                        type = "Re";
                 else if (command->blacklist)
                         type = "BL";
                 else
