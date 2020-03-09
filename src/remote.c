@@ -30,6 +30,7 @@
 #include <netdb.h>
 #include <stdio.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #ifdef WITH_LIBSODIUM
 #include <sodium.h>
