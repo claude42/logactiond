@@ -48,10 +48,29 @@ unsigned int id_counter = 0;
 char *run_uid_s = NULL;
 unsigned int status_monitoring = 0;
 char *saved_state = NULL;
+bool create_backup_file = false;
 bool shutdown_ongoing = false;
 int exit_status = EXIT_SUCCESS;
 static int exit_errno = 0;
 bool sync_on_startup = false;
+
+static void
+move_state_file_to_backup(void)
+{
+        const unsigned int length = strlen(saved_state) + strlen(".bak");
+        char *backup_file_name = xmalloc(length + 1);
+
+        if (snprintf(backup_file_name, length + 1, "%s%s", saved_state, ".bak") !=
+                        length)
+        {
+                la_log(LOG_ERR, "Unable to create backup file name!");
+                free(backup_file_name);
+                return;
+        }
+        if (rename(saved_state, backup_file_name) == -1)
+                la_log_errno(LOG_ERR, "Unable to create backup file!");
+        free(backup_file_name);
+}
 
 void
 trigger_shutdown(int status, int saved_errno)
@@ -64,7 +83,11 @@ trigger_shutdown(int status, int saved_errno)
         shutdown_ongoing = true;
 
         if (saved_state)
+        {
+                if (create_backup_file)
+                        move_state_file_to_backup();
                 save_queue_state(saved_state);
+        }
 
         if (file_watch_thread)
                 pthread_cancel(file_watch_thread);
@@ -271,12 +294,13 @@ read_options(int argc, char *argv[])
                         {"user",       required_argument, NULL, 'u'},
                         {"status",     optional_argument, NULL, 't'},
                         {"restore",    optional_argument, NULL, 'r'},
+                        {"backup",     no_argument,       NULL, 'b'},
                         {"sync",       no_argument,       NULL, 's'},
                         {0,            0,                 0,    0  }
                 };
 
                 /* TODO: two colons seem to be a GNU extension?! */
-                int c = getopt_long(argc, argv, "fc:d::vp:u:t::r::", long_options, NULL);
+                int c = getopt_long(argc, argv, "fc:d::vp:u:t::r::bs", long_options, NULL);
 
                 if (c == -1)
                         break;
@@ -313,6 +337,9 @@ read_options(int argc, char *argv[])
                                         saved_state = optarg;
                                 else
                                         saved_state = STATE_DIR "/" STATE_FILE;
+                                break;
+                        case 'b':
+                                create_backup_file = true;
                                 break;
                         case 's':
                                 sync_on_startup = true;
