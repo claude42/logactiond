@@ -77,7 +77,7 @@
  *                                                                     180 bytes
  */
 
-static bool is_empty_line(char *message)
+static bool is_empty_line(const char *message)
 {
         assert(message);
 
@@ -109,7 +109,7 @@ static bool is_empty_line(char *message)
 #ifndef CLIENTONLY
 
 int
-parse_add_entry_message(char *message, la_address_t **address, la_rule_t **rule,
+parse_add_entry_message(const char *message, la_address_t **address, la_rule_t **rule,
                 time_t *end_time, int *factor)
 {
         assert(message); assert(address); assert(rule);
@@ -129,7 +129,7 @@ parse_add_entry_message(char *message, la_address_t **address, la_rule_t **rule,
         char parsed_address_str[MSG_ADDRESS_LENGTH + 1];
         char parsed_rule_str[MSG_RULE_LENGTH + 1];
         int parsed_end_time; int parsed_factor;
-        int n = sscanf(message, PROTOCOL_VERSION_STR "+%50[^,],%100[^,],%u,%u",
+        const int n = sscanf(message, PROTOCOL_VERSION_STR "+%50[^,],%100[^,],%u,%u",
                         parsed_address_str,
                         parsed_rule_str, &parsed_end_time, &parsed_factor);
 
@@ -171,7 +171,7 @@ parse_add_entry_message(char *message, la_address_t **address, la_rule_t **rule,
  */
 
 static void
-add_entry(char *buffer, char *from)
+add_entry(const char *buffer, const char *from)
 {
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
         assert(buffer);
@@ -196,7 +196,7 @@ add_entry(char *buffer, char *from)
 }
 
 static void
-del_entry(char *buffer)
+del_entry(const char *buffer)
 {
         assert(buffer);
         la_debug("del_entry(%s)", buffer);
@@ -209,7 +209,7 @@ del_entry(char *buffer)
         }
 
         xpthread_mutex_lock(&config_mutex);
-        int r = remove_and_trigger(address);
+        const int r = remove_and_trigger(address);
         xpthread_mutex_unlock(&config_mutex);
 
         if (r == -1)
@@ -246,7 +246,7 @@ perform_save(void)
 }
 
 static void
-update_log_level(char *buffer)
+update_log_level(const char *buffer)
 {
         assert(buffer);
         la_debug("update_log_level(%s)", buffer);
@@ -254,7 +254,7 @@ update_log_level(char *buffer)
         char *endptr;
         errno = 0;
 
-        int new_log_level = strtol(buffer+2, &endptr, 10);
+        const int new_log_level = strtol(buffer+2, &endptr, 10);
         if (errno || *endptr != '\0' || new_log_level < 0 || new_log_level > 9)
         {
                 la_log(LOG_ERR, "Cannot change to log level %s!", buffer);
@@ -316,12 +316,15 @@ sync_all_entries(void *ptr)
         if (!address)
         {
                 la_log(LOG_ERR, "Cannot convert address in command %s!", ptr);
+                free(ptr);
                 return NULL;
         }
 
+        free(ptr);
+
         xpthread_mutex_lock(&end_queue_mutex);
 
-        int queue_length = list_length(end_queue);
+        const int queue_length = list_length(end_queue);
         char **message_array = (char **) xmalloc((queue_length + 1) *
                         sizeof (char *));
         int message_array_length = 0;
@@ -369,12 +372,13 @@ sync_all_entries(void *ptr)
 }
 
 static void
-sync_entries(char *buffer, char *from)
+sync_entries(const char *buffer, const char *from)
 {
         assert(buffer);
         la_debug("sync_entries(%s)", buffer);
 
-        char *ptr = buffer[2] ? buffer+2 : from;
+        char *ptr = xstrdup(buffer[2] ? buffer+2 : from);
+        //char *ptr = buffer[2] ? buffer+2 : from;
 
         pthread_t sync_entries_thread = 0;
         xpthread_create(&sync_entries_thread, NULL, sync_all_entries, ptr,
@@ -383,7 +387,7 @@ sync_entries(char *buffer, char *from)
 }
 
 void
-parse_message_trigger_command(char *buf, char *from)
+parse_message_trigger_command(const char *buf, const char *from)
 {
         assert(buf);
 
@@ -432,7 +436,7 @@ parse_message_trigger_command(char *buf, char *from)
 #endif /* CLIENTONLY */
 
 char *
-create_add_message(char *ip, char *rule, char *end_time, char *factor)
+create_add_message(const char *ip, const char *rule, const char *end_time, const char *factor)
 {
 	assert(ip); assert(rule);
         /* if factor is specified, end_time must be specified as well */
@@ -440,7 +444,7 @@ create_add_message(char *ip, char *rule, char *end_time, char *factor)
 
         char *buffer = xmalloc(TOTAL_MSG_LEN);
 
-        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, PROTOCOL_VERSION_STR
+        const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, PROTOCOL_VERSION_STR
                         "+%s,%s%s%s%s%s", ip, rule,
                         end_time ? "," : "",
                         end_time ? end_time : "",
@@ -459,7 +463,7 @@ create_add_message(char *ip, char *rule, char *end_time, char *factor)
 }
 
 int
-print_add_message(FILE *stream, la_command_t *command)
+print_add_message(FILE *stream, const la_command_t *command)
 {
 	/* Don't assert_command() here to make sure this also works in case
 	 * no proper configuration (la_config...) is available at the
@@ -480,13 +484,13 @@ print_add_message(FILE *stream, la_command_t *command)
 }
 
 char *
-create_del_message(char *ip)
+create_del_message(const char *ip)
 {
 	assert(ip);
         char *buffer = xmalloc(TOTAL_MSG_LEN);
 
-        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, PROTOCOL_VERSION_STR
-                        "-%s", ip);
+        const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN,
+                        PROTOCOL_VERSION_STR "-%s", ip);
         if (msg_len > MSG_LEN-1)
                 return NULL;
 
@@ -497,7 +501,7 @@ create_del_message(char *ip)
 }
 
 char *
-create_simple_message(char c)
+create_simple_message(const char c)
 {
         char *buffer = xmalloc(TOTAL_MSG_LEN);
 
@@ -536,13 +540,13 @@ create_save_message(void)
 }
 
 char *
-create_log_level_message(unsigned int new_log_level)
+create_log_level_message(const unsigned int new_log_level)
 {
         assert(new_log_level >= 0); assert(new_log_level <= LOG_DEBUG+2);
 
         char *buffer = xmalloc(TOTAL_MSG_LEN);
 
-        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cL%u",
+        const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cL%u",
                         PROTOCOL_VERSION, new_log_level);
 
         /* pad right here, cannot hurt even if we don't encrypt... */
@@ -558,11 +562,11 @@ create_reset_counts_message(void)
 }
 
 char *
-create_sync_message(char *host)
+create_sync_message(const char *host)
 {
         char *buffer = xmalloc(TOTAL_MSG_LEN);
 
-        int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cX%s",
+        const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cX%s",
                         PROTOCOL_VERSION, host ? host : "");
 
         /* pad right here, cannot hurt even if we don't encrypt... */

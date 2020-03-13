@@ -32,7 +32,7 @@
 /* FIXME: trigger_list should definitely be a hash */
 
 void
-assert_rule_ffl(la_rule_t *rule, const char *func, char *file, unsigned int line)
+assert_rule_ffl(const la_rule_t *rule, const char *func, char *file, unsigned int line)
 {
         if (!rule)
                 die_hard("%s:%u: %s: Assertion 'rule' failed. ", file, line, func);
@@ -71,7 +71,7 @@ add_trigger(la_command_t *command)
  */
 
 static la_command_t *
-find_trigger(la_command_t *template, la_address_t *address)
+find_trigger(const la_command_t *template, const la_address_t *address)
 {
         assert_command(template);
         la_debug("find_trigger(%s, %u)", template->rule_name, template->id);
@@ -79,7 +79,7 @@ find_trigger(la_command_t *template, la_address_t *address)
         if (!address)
                 return NULL;
 
-        time_t now = xtime(NULL);
+        const time_t now = xtime(NULL);
 
         /* Don't use standard ITERATE_COMMANDS/NEXT_COMMAND idiom here to avoid
          * that remove_node() breaks the whole thing */
@@ -163,8 +163,8 @@ handle_command_on_trigger_list(la_command_t *command)
  */
 
 static void
-trigger_single_command(la_pattern_t *pattern, la_address_t *address,
-                la_command_t *template)
+trigger_single_command(la_pattern_t *pattern, const la_address_t *address,
+                const la_command_t *template)
 {
         if  (run_type == LA_UTIL_FOREGROUND)
                 return;
@@ -177,7 +177,7 @@ trigger_single_command(la_pattern_t *pattern, la_address_t *address,
 
         /* First check whether a command for this host is still active on
          * end_queue. In this case, ignore new command */
-        la_command_t *tmp = find_end_command(address);
+        const la_command_t *tmp = find_end_command(address);
         if (tmp)
         {
                 la_log_verbose(LOG_INFO, "Host: %s, ignored, action \"%s\" "
@@ -315,8 +315,9 @@ trigger_all_commands(la_pattern_t *pattern)
 
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
 void
-trigger_manual_commands_for_rule(la_address_t *address, la_rule_t *rule,
-                time_t end_time, int factor, char *from, bool suppress_logging)
+trigger_manual_commands_for_rule(const la_address_t *address,const  la_rule_t *rule,
+                const time_t end_time, const int factor, const char *from,
+                const bool suppress_logging)
 {
         la_debug("trigger_manual_commands_for_rule()");
         assert_address(address); assert_rule(rule);
@@ -338,7 +339,7 @@ trigger_manual_commands_for_rule(la_address_t *address, la_rule_t *rule,
  */
 
 static void
-assign_value_to_properties(kw_list_t *property_list, const char *line,
+assign_value_to_properties(const kw_list_t *property_list, const char *line,
                 regmatch_t pmatch[])
 {
         assert_list(property_list); assert(line);
@@ -358,7 +359,7 @@ assign_value_to_properties(kw_list_t *property_list, const char *line,
  */
 
 static void
-clear_property_values(kw_list_t *property_list)
+clear_property_values(const kw_list_t *property_list)
 {
         assert_list(property_list);
         la_debug("clear_property_values()");
@@ -377,7 +378,7 @@ clear_property_values(kw_list_t *property_list)
  */
 
 void
-handle_log_line_for_rule(la_rule_t *rule, const char *line)
+handle_log_line_for_rule(const la_rule_t *rule, const char *line)
 {
         assert_rule(rule); assert(line);
         la_vdebug("handle_log_line_for_rule(%s)", rule->name);
@@ -414,10 +415,11 @@ handle_log_line_for_rule(la_rule_t *rule, const char *line)
  */
 
 la_rule_t *
-create_rule(char *name, la_source_t *source, int threshold, int period,
-                int duration, int meta_enabled, int meta_period,
-                int meta_factor, int meta_max, int dnsbl_enabled, const char
-                *service, const char *systemd_unit)
+create_rule(const char *name, la_source_t *source, const int threshold,
+                const int period, const int duration, const int meta_enabled,
+                const int meta_period, const int meta_factor,
+                const int meta_max, const int dnsbl_enabled,
+                const char *service, const char *systemd_unit)
 {
         assert_source(source);
         la_debug("create_rule(%s)", name);
@@ -521,7 +523,7 @@ free_rule_list(kw_list_t *list)
 
 
 static la_rule_t *
-find_rule_for_source(la_source_t *source, char *rule_name)
+find_rule_for_source(const la_source_t *source, const char *rule_name)
 {
         assert_source(source); assert(rule_name);
         la_debug("find_rule_for_source(%s)", rule_name);
@@ -537,7 +539,7 @@ find_rule_for_source(la_source_t *source, char *rule_name)
 }
 
 la_rule_t *
-find_rule(char *rule_name)
+find_rule(const char *rule_name)
 {
         assert(rule_name); assert(la_config);
         la_debug("find_rule(%s)", rule_name);

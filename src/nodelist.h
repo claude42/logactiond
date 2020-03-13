@@ -64,21 +64,23 @@ void add_tail(kw_list_t *list, kw_node_t *node);
 
 kw_node_t *rem_head(kw_list_t *list);
 
-kw_node_t *get_list_iterator(kw_list_t *list);
+kw_node_t *get_list_iterator(const kw_list_t *list);
 
 kw_node_t *get_next_node(kw_node_t **iterator);
 
-unsigned int list_length(kw_list_t *list);
+unsigned int list_length(const kw_list_t *list);
 
-kw_node_t * get_head(kw_list_t *list);
+kw_node_t *get_head(const kw_list_t *list);
+
+kw_node_t *get_tail(const kw_list_t *list);
 
 void insert_node_before(kw_node_t *ex_node, kw_node_t *new_node);
 
 void remove_node(kw_node_t *node);
 
-void assert_node_ffl(kw_node_t *node, const char *func, char *file, unsigned int line);
+void assert_node_ffl(const kw_node_t *node, const char *func, char *file, unsigned int line);
 
-void assert_list_ffl(kw_list_t *list, const char *func, char *file, unsigned int line);
+void assert_list_ffl(const kw_list_t *list, const char *func, char *file, unsigned int line);
 
 
 #endif /* __nodelist_h */

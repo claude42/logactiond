@@ -28,7 +28,7 @@
 #include "logactiond.h"
 
 void
-assert_pattern_ffl(la_pattern_t *pattern, const char *func, char *file, unsigned int line)
+assert_pattern_ffl(const la_pattern_t *pattern, const char *func, char *file, unsigned int line)
 {
         if (!pattern)
                 die_hard("%s:%u: %s: Assertion 'pattern' failed. ", file, line, func);
@@ -156,7 +156,7 @@ convert_regex(const char *string, la_pattern_t *pattern)
                                 // string and increment src_ptr and dst_ptr
                                 // accordingly (and of course make sure we have
                                 // enough space...)
-                                size_t repl_len = xstrlen(new_prop->replacement);
+                                const size_t repl_len = xstrlen(new_prop->replacement);
                                 realloc_buffer(&result, &dst_ptr, &dst_len,
                                                 repl_len);
                                 dst_ptr = stpncpy(dst_ptr, new_prop->replacement,
@@ -214,7 +214,7 @@ convert_regex(const char *string, la_pattern_t *pattern)
  */
 
 la_pattern_t *
-create_pattern(const char *string_from_configfile, unsigned int num,
+create_pattern(const char *string_from_configfile, const unsigned int num,
                 la_rule_t *rule)
 {
         assert(string_from_configfile); assert_rule(rule);
@@ -234,7 +234,8 @@ create_pattern(const char *string_from_configfile, unsigned int num,
         free(full_string);
 
         result->regex = xmalloc(sizeof(regex_t));
-        int r = regcomp(result->regex, result->string, REG_EXTENDED | REG_NEWLINE);
+        const int r = regcomp(result->regex, result->string, REG_EXTENDED |
+                        REG_NEWLINE);
         if (r)
         {
                 // TODO: improve error handling

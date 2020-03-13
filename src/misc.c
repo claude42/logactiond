@@ -95,7 +95,7 @@ create_pidfile(void)
 
 void
 xpthread_create(pthread_t *thread, const pthread_attr_t *attr,
-                void *(*start_routine)(void *), void *arg, char *name)
+                void *(*start_routine)(void *), void *arg, const char *name)
 {
         if (pthread_create(thread, attr, start_routine, arg))
                 die_err("Failed to create thread!");
@@ -127,7 +127,7 @@ void
 xpthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
                 const struct timespec *abstime)
 {
-        int ret = pthread_cond_timedwait(cond, mutex, abstime);
+        const int ret = pthread_cond_timedwait(cond, mutex, abstime);
         la_vdebug("xpthread_cond_timedwait()=%u", ret);
 
         switch (ret)
@@ -194,7 +194,7 @@ xpthread_join(pthread_t thread, void **retval)
 time_t
 xtime(time_t *tloc)
 {
-        time_t result = time(tloc);
+        const time_t result = time(tloc);
         if (result == -1)
                 die_hard("Can't get time!");
 
@@ -284,8 +284,8 @@ concat(const char *s1, const char *s2)
         if (!s2)
                 return xstrdup(s1);
 
-        size_t len1 = strlen(s1);
-        size_t len2 = strlen(s2);
+        const size_t len1 = strlen(s1);
+        const size_t len2 = strlen(s2);
         char *result = xmalloc(len1 + len2 + 1);
 
         memcpy(result, s1, len1);
@@ -308,7 +308,7 @@ concat(const char *s1, const char *s2)
  * 2 * dst_len + on_topsize
  */
 
-void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, size_t on_top)
+void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, const size_t on_top)
 {
         la_vdebug("realloc_buffer(%u, %u)", *dst_len, on_top);
 
@@ -392,7 +392,7 @@ xgetpass(const char *prompt)
 }
 
 int
-xnanosleep(time_t secs, long nanosecs)
+xnanosleep(const time_t secs, const long nanosecs)
 {
         struct timespec blink;
 

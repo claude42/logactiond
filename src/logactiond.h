@@ -500,7 +500,7 @@ void remove_pidfile(void);
 void create_pidfile(void);
 
 void xpthread_create(pthread_t *thread, const pthread_attr_t *attr,
-                void *(*start_routine)(void *), void *arg, char *name);
+                void *(*start_routine)(void *), void *arg, const char *name);
 
 void xpthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
 
@@ -519,21 +519,21 @@ time_t xtime(time_t *tloc);
 
 void xfree (void *ptr);
 
-void log_message(unsigned int priority, char *fmt, va_list gp, char *add);
+void log_message(unsigned int priority, const char *fmt, va_list gp, const char *add);
 
-void la_debug(char *fmt, ...);
+void la_debug(const char *fmt, ...);
 
-void la_vdebug(char *fmt, ...);
+void la_vdebug(const char *fmt, ...);
 
-void la_log_errno(unsigned int priority, char *fmt, ...);
+void la_log_errno(unsigned int priority, const char *fmt, ...);
 
-void la_log_verbose(unsigned int priority, char *fmt, ...);
+void la_log_verbose(unsigned int priority, const char *fmt, ...);
 
-void la_log(unsigned int priority, char *fmt, ...);
+void la_log(unsigned int priority, const char *fmt, ...);
 
-void die_hard(char *fmt, ...);
+void die_hard(const char *fmt, ...);
 
-void die_err(char *fmt, ...);
+void die_err(const char *fmt, ...);
 
 void *xrealloc(void *ptr, size_t n);
 
@@ -549,7 +549,7 @@ size_t xstrlen(const char *s);
 
 char *concat(const char *s1, const char *s2);
 
-void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, size_t on_top);
+void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, const size_t on_top);
 
 kw_list_t *xcreate_list(void);
 
@@ -559,9 +559,9 @@ int xnanosleep(time_t secs, long nanosecs);
 
 /* crypto.c */
 
-bool generate_send_key_and_salt(char *password);
+bool generate_send_key_and_salt(const char *password);
 
-bool decrypt_message(char *buffer, char *password, la_address_t *from_addr);
+bool decrypt_message(char *buffer, const char *password, la_address_t *from_addr);
 
 bool encrypt_message(char *buffer);
 
@@ -570,17 +570,17 @@ void pad(char *buffer, size_t msg_len);
 /* messages.c */
 
 #ifndef CLIENTONLY
-int parse_add_entry_message(char *message, la_address_t **address,
+int parse_add_entry_message(const char *message, la_address_t **address,
                 la_rule_t **rule, time_t *end_time, int *factor);
 
-void parse_message_trigger_command(char *buf, char *from);
+void parse_message_trigger_command(const char *buf, const char *from);
 #endif /* CLIENTONLY */
 
-char *create_add_message(char *ip, char *rule, char *end_time, char *factor);
+char *create_add_message(const char *ip, const char *rule, const char *end_time, const char *factor);
 
-int print_add_message(FILE *stream, la_command_t *command);
+int print_add_message(FILE *stream, const la_command_t *command);
 
-char *create_del_message(char *ip);
+char *create_del_message(const char *ip);
 
 char *create_empty_queue_message(void);
 
@@ -600,7 +600,7 @@ char *create_log_level_message(unsigned int new_log_level);
 
 char *create_reset_counts_message(void);
 
-char *create_sync_message(char *host);
+char *create_sync_message(const char *host);
 
 /* configfile.c */
 
@@ -612,26 +612,26 @@ void unload_la_config(void);
 
 /* addresses.c */
 
-void assert_address_ffl(la_address_t *address, const char *func, char *file,
+void assert_address_ffl(const la_address_t *address, const char *func, char *file,
                 unsigned int line);
 
-const char *get_ip_version(la_address_t *address);
+const char *get_ip_version(const la_address_t *address);
 
-int adrcmp(la_address_t *a1, la_address_t *a2);
+int adrcmp(const la_address_t *a1, const la_address_t *a2);
 
-la_address_t *address_on_list(la_address_t *address, kw_list_t *list);
+la_address_t *address_on_list(const la_address_t *address, const kw_list_t *list);
 
-la_address_t *address_on_list_sa(struct sockaddr *sa, socklen_t salen, kw_list_t *list);
+la_address_t *address_on_list_sa(const struct sockaddr *sa, socklen_t salen, const kw_list_t *list);
 
-la_address_t *address_on_list_str(char *host, kw_list_t *list);
+la_address_t *address_on_list_str(const char *host, const kw_list_t *list);
 
-la_address_t *create_address_sa(struct sockaddr *sa, socklen_t salen);
+la_address_t *create_address_sa(const struct sockaddr *sa, socklen_t salen);
 
 la_address_t *create_address_port(const char *ip, in_port_t port);
 
 la_address_t *create_address(const char *ip);
 
-la_address_t *dup_address(la_address_t *address);
+la_address_t *dup_address(const la_address_t *address);
 
 void free_address(la_address_t *address);
 
@@ -643,13 +643,13 @@ void free_address_list(kw_list_t *list);
 
 void update_queue_count_numbers(void);
 
-la_command_t *find_end_command(la_address_t *address);
+la_command_t *find_end_command(const la_address_t *address);
 
 int remove_and_trigger(la_address_t *address);
 
 void empty_end_queue();
 
-void save_queue_state(char *state_file_name);
+void save_queue_state(const char *state_file_name);
 
 void enqueue_end_command(la_command_t *end_command, time_t manual_end_time);
 
@@ -661,30 +661,31 @@ void start_end_queue_thread(void);
 
 void convert_both_commands(la_command_t *command);
 
-void exec_command(la_command_t *command, la_commandtype_t type);
+void exec_command(const la_command_t *command, la_commandtype_t type);
 
 unsigned int meta_list_length(void);
 
 void free_meta_list(void);
 
-void assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned int line);
+void assert_command_ffl(const la_command_t *command, const char *func, char *file, unsigned int line);
 
 void reset_counts(void);
 
-void trigger_manual_command(la_address_t *address, la_command_t *template,
-                time_t end_time, int factor, char *from, bool suppress_logging);
+void trigger_manual_command(const la_address_t *address,
+                const la_command_t *template, time_t end_time, int factor,
+                const char *from, bool suppress_logging);
 
 void trigger_command(la_command_t *command);
 
 void trigger_command_from_blacklist(la_command_t *command);
 
-void trigger_end_command(la_command_t *command, bool suppress_logging);
+void trigger_end_command(const la_command_t *command, bool suppress_logging);
 
-la_command_t * create_command_from_template(la_command_t *template,
-                la_pattern_t *pattern, la_address_t *address);
+la_command_t * create_command_from_template(const la_command_t *template,
+                la_pattern_t *pattern, const la_address_t *address);
 
-la_command_t * create_manual_command_from_template(la_command_t *template,
-                la_address_t *address, char *from);
+la_command_t * create_manual_command_from_template(const la_command_t *template,
+                const la_address_t *address, const char *from);
 
 la_command_t *create_template(const char *name, la_rule_t *rule,
                 const char *begin_string, const char *end_string,
@@ -696,15 +697,15 @@ void free_command_list(kw_list_t *list);
 
 /* properties.c */
 
-void assert_property_ffl(la_property_t *property, const char *func, char *file,
+void assert_property_ffl(const la_property_t *property, const char *func, char *file,
                 unsigned int line);
 
 size_t token_length(const char *string);
 
-la_property_t *get_property_from_property_list(kw_list_t *property_list,
+la_property_t *get_property_from_property_list(const kw_list_t *property_list,
                 const char *name);
 
-const char *get_value_from_property_list(kw_list_t *property_list,
+const char *get_value_from_property_list(const kw_list_t *property_list,
                 const char *name);
 
 la_property_t *scan_single_token(const char *string, unsigned int pos,
@@ -712,7 +713,7 @@ la_property_t *scan_single_token(const char *string, unsigned int pos,
 
 la_property_t *create_property_from_config(const char *name, const char *value);
 
-kw_list_t *dup_property_list(kw_list_t *list);
+kw_list_t *dup_property_list(const kw_list_t *list);
 
 void free_property(la_property_t *property);
 
@@ -722,7 +723,7 @@ void free_property_list(kw_list_t *list);
 
 /* patterns.c */
 
-void assert_pattern_ffl(la_pattern_t *pattern, const char *func, char *file, unsigned int line);
+void assert_pattern_ffl(const la_pattern_t *pattern, const char *func, char *file, unsigned int line);
 
 la_pattern_t *create_pattern(const char *string_from_configfile,
                 unsigned int num, la_rule_t *rule);
@@ -733,14 +734,15 @@ void free_pattern_list(kw_list_t *list);
 
 /* rules.c */
 
-void assert_rule_ffl(la_rule_t *rule, const char *func, char *file, unsigned int line);
+void assert_rule_ffl(const la_rule_t *rule, const char *func, char *file, unsigned int line);
 
-void handle_log_line_for_rule(la_rule_t *rule, const char *line);
+void handle_log_line_for_rule(const la_rule_t *rule, const char *line);
 
-void trigger_manual_commands_for_rule(la_address_t *address, la_rule_t *rule,
-                time_t end_time, int factor, char *from, bool suppress_logging);
+void trigger_manual_commands_for_rule(const la_address_t *address, const
+                la_rule_t *rule, time_t end_time, int factor, const char *from,
+                bool suppress_logging);
 
-la_rule_t *create_rule(char *name, la_source_t *source, int threshold,
+la_rule_t *create_rule(const char *name, la_source_t *source, int threshold,
                 int period, int duration, int meta_enabled, int meta_period,
                 int meta_factor, int meta_max, int dnsbl_enabled, const char
                 *service, const char *systemd_unit);
@@ -749,15 +751,15 @@ void free_rule(la_rule_t *rule);
 
 void free_rule_list(kw_list_t *list);
 
-la_rule_t *find_rule(char *rule_name);
+la_rule_t *find_rule(const char *rule_name);
 
 /* sources.c */
 
-void assert_source_ffl(la_source_t *source, const char *func, char *file, unsigned int line);
+void assert_source_ffl(const la_source_t *source, const char *func, char *file, unsigned int line);
 
-void handle_log_line(la_source_t *source, const char *line, const char *systemd_unit);
+void handle_log_line(const la_source_t *source, const char *line, const char *systemd_unit);
 
-bool handle_new_content(la_source_t *source);
+bool handle_new_content(const la_source_t *source);
 
 la_source_t *create_source(const char *name, const char *location,
                 const char *prefix);
@@ -803,7 +805,7 @@ void start_watching_polling_thread(void);
 
 void start_monitoring_thread(void);
 
-void dump_queue_status(kw_list_t *queue);
+void dump_queue_status(const kw_list_t *queue);
 
 /* watch.c */
 
@@ -823,15 +825,16 @@ void start_fifo_thread(void);
 
 /* remote.c */
 
-void send_add_entry_message(la_command_t *command, la_address_t *address);
+void send_add_entry_message(const la_command_t *command, const la_address_t *address);
 
 void start_remote_thread(void);
 
-void send_message_to_single_address(char *message, la_address_t *remote_address);
+void send_message_to_single_address(const char *message,
+                const la_address_t *remote_address);
 
 /* dnsbl.c */
 
-bool host_on_dnsbl(la_address_t *address, char *dnsbl_domainname);
+bool host_on_dnsbl(const la_address_t *address, const char *dnsbl_domainname);
 
 #endif /* __logactiond_h */
 

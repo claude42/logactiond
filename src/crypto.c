@@ -42,8 +42,8 @@ static unsigned char send_salt[crypto_pwhash_SALTBYTES];
  */
 
 static bool
-generate_key(unsigned char *key, unsigned int key_len, char *password,
-                unsigned char *salt)
+generate_key(unsigned char *key, unsigned int key_len, const char *password,
+                const unsigned char *salt)
 {
 	assert(key); assert(key_len > 0); assert(password); assert(salt);
         if (crypto_pwhash(key, key_len, password, strlen(password), salt,
@@ -60,7 +60,7 @@ generate_key(unsigned char *key, unsigned int key_len, char *password,
 
 
 bool
-generate_send_key_and_salt(char *password)
+generate_send_key_and_salt(const char *password)
 {
 	/* First initialize salt with randomness */
         randombytes_buf(send_salt, crypto_pwhash_SALTBYTES);
@@ -70,7 +70,7 @@ generate_send_key_and_salt(char *password)
 }
 
 bool
-decrypt_message(char *buffer, char *password, la_address_t *from_addr)
+decrypt_message(char *buffer, const char *password, la_address_t *from_addr)
 {
 	assert(buffer); assert(password);
         unsigned char *ubuffer = (unsigned char *) buffer;
@@ -142,13 +142,13 @@ encrypt_message(char *buffer)
  */
 
 void
-pad(char *buffer, size_t msg_len)
+pad(char *buffer, const size_t msg_len)
 {
 	assert(buffer);
         assert(msg_len > 0); assert(msg_len <= MSG_LEN);
         assert(MSG_LEN - msg_len < 256);
 
-        unsigned char pad = MSG_LEN - msg_len;
+        const unsigned char pad = MSG_LEN - msg_len;
         for (int i=msg_len; i<MSG_LEN; i++)
                 buffer[MSG_IDX+i] = pad;
 }

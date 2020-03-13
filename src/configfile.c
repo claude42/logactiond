@@ -252,10 +252,9 @@ get_source_location(const config_setting_t *rule, const config_setting_t *uc_rul
 {
         assert(uc_rule);
 
-        config_setting_t *source_def;
         const char *result;
 
-        source_def = get_source_uc_rule_or_rule(rule, uc_rule);
+        const config_setting_t *source_def = get_source_uc_rule_or_rule(rule, uc_rule);
 
         if (!config_setting_lookup_string(source_def, LA_SOURCE_LOCATION, &result))
                 die_hard("Source location missing for rule %s!",
@@ -338,7 +337,7 @@ compile_list_of_actions(la_rule_t *rule,
 
         la_debug("compile_list_of_actions(%s)", rule->name);
 
-        unsigned int n_items = config_setting_length(action_def);
+        const unsigned int n_items = config_setting_length(action_def);
 
         for (unsigned int i=0; i<n_items; i++)
         {
@@ -387,7 +386,7 @@ load_blacklists(la_rule_t *rule, const config_setting_t *uc_rule_def)
         }
         else if (type == CONFIG_TYPE_LIST)
         {
-                unsigned int n_items = config_setting_length(
+                const unsigned int n_items = config_setting_length(
                                 blacklist_reference);
                 for (unsigned int i=0; i<n_items; i++)
                 {
@@ -432,7 +431,7 @@ load_actions(la_rule_t *rule, const config_setting_t *uc_rule_def)
                                         config_setting_name(rule));
         }
 
-        int type = config_setting_type(action_reference);
+        const int type = config_setting_type(action_reference);
 
         if (type == CONFIG_TYPE_STRING)
                 compile_actions(rule, get_action(
@@ -465,7 +464,7 @@ load_patterns(la_rule_t *rule, const config_setting_t *rule_def,
                 die_hard("No patterns specified for %s!",
                                 config_setting_name(rule_def));
 
-        int n = config_setting_length(patterns);
+        const int n = config_setting_length(patterns);
         if (n < 0)
                 die_hard("No patterns specified for %s!",
                                 config_setting_name(rule_def));
@@ -484,7 +483,7 @@ load_patterns(la_rule_t *rule, const config_setting_t *rule_def,
 
 static void
 compile_address_list_port(kw_list_t *list,
-                const config_setting_t *setting, in_port_t port)
+                const config_setting_t *setting, const in_port_t port)
 {
         assert_list(list); assert(setting);
 
@@ -493,10 +492,10 @@ compile_address_list_port(kw_list_t *list,
         if (!setting)
                 return;
 
-        unsigned int n = config_setting_length(setting);
+        const unsigned int n = config_setting_length(setting);
         for (unsigned int i=0; i<n; i++)
         {
-                config_setting_t *elem =
+                const config_setting_t *elem =
                         config_setting_get_elem(setting, i);
                 const char *ip = config_setting_get_string(elem);
                 if (!ip)
@@ -541,10 +540,10 @@ load_properties(kw_list_t *properties, const config_setting_t *section)
         if (!properties_section)
                 return;
 
-        unsigned int n = config_setting_length(properties_section);
+        const unsigned int n = config_setting_length(properties_section);
         for (unsigned int i=0; i<n; i++)
         {
-                config_setting_t *elem =
+                const config_setting_t *elem =
                         config_setting_get_elem(properties_section, i);
                 const char *name = config_setting_name(elem);
                 if (!name)
@@ -696,7 +695,7 @@ load_single_rule(const config_setting_t *uc_rule_def)
         la_rule_t *new_rule;
         la_source_t *source;
 
-        char *name = config_setting_name(uc_rule_def);
+        const char *name = config_setting_name(uc_rule_def);
         la_debug("load_single_rule(%s)", name);
         const config_setting_t *rule_def = get_rule(name);
 
@@ -723,11 +722,11 @@ load_single_rule(const config_setting_t *uc_rule_def)
         assert_source(source);
 
         /* get parameters either from rule or uc_rule */
-        int threshold = get_rule_unsigned_int(rule_def, uc_rule_def,
+        const int threshold = get_rule_unsigned_int(rule_def, uc_rule_def,
                         LA_THRESHOLD_LABEL);
-        int period = get_rule_unsigned_int(rule_def, uc_rule_def,
+        const int period = get_rule_unsigned_int(rule_def, uc_rule_def,
                         LA_PERIOD_LABEL);
-        int duration = get_rule_unsigned_int(rule_def, uc_rule_def,
+        const int duration = get_rule_unsigned_int(rule_def, uc_rule_def,
                         LA_DURATION_LABEL);
 
         /* meta_enabled could either be 1 (enabled for rule), 0 (disabled for
@@ -741,11 +740,11 @@ load_single_rule(const config_setting_t *uc_rule_def)
                         meta_enabled = -1;
         }
 
-        int meta_period = get_rule_unsigned_int(rule_def, uc_rule_def,
+        const int meta_period = get_rule_unsigned_int(rule_def, uc_rule_def,
                         LA_META_PERIOD_LABEL);
-        int meta_factor = get_rule_unsigned_int(rule_def, uc_rule_def,
+        const int meta_factor = get_rule_unsigned_int(rule_def, uc_rule_def,
                         LA_META_FACTOR_LABEL);
-        int meta_max = get_rule_unsigned_int(rule_def, uc_rule_def,
+        const int meta_max = get_rule_unsigned_int(rule_def, uc_rule_def,
                         LA_META_MAX_LABEL);
 
         /* dnsbl_enabled can only be set in the local section, not in the rules
@@ -787,12 +786,12 @@ load_rules(void)
         la_debug("load_rules()");
         assert(la_config);
 
-        config_setting_t *local_section = 
+        const config_setting_t *local_section = 
                 config_lookup(&la_config->config_file, LA_LOCAL_LABEL);
         if (!local_section)
                 return 0;
 
-        int n = config_setting_length(local_section);
+        const int n = config_setting_length(local_section);
         if (n < 0)
                 return 0;
 
@@ -843,7 +842,7 @@ load_remote_settings(void)
         if (xstrlen(la_config->remote_secret) == 0)
                 die_hard("Remote handling enabled but no secret specified");
 
-        config_setting_t *receive_from = config_setting_lookup(remote_section,
+        const config_setting_t *receive_from = config_setting_lookup(remote_section,
                         LA_REMOTE_RECEIVE_FROM_LABEL);
         la_config->remote_receive_from = xcreate_list();
         compile_address_list(la_config->remote_receive_from, receive_from);
@@ -857,7 +856,7 @@ load_remote_settings(void)
                 la_config->remote_port = DEFAULT_PORT;
 
         /* Must obviously go after initialization of remote port... */
-        config_setting_t *send_to = config_setting_lookup(remote_section,
+        const config_setting_t *send_to = config_setting_lookup(remote_section,
                         LA_REMOTE_SEND_TO_LABEL);
         la_config->remote_send_to = xcreate_list();
         compile_address_list_port(la_config->remote_send_to, send_to,
@@ -871,7 +870,7 @@ load_defaults(void)
         la_debug("load_defaults()");
         assert(la_config);
 
-        config_setting_t *defaults_section =
+        const config_setting_t *defaults_section =
                 config_lookup(&la_config->config_file, LA_DEFAULTS_LABEL);
 
         if (defaults_section)
@@ -919,7 +918,7 @@ load_defaults(void)
                 load_properties(la_config->default_properties, defaults_section);
 
                 la_config->ignore_addresses = xcreate_list();
-                config_setting_t *ignore = config_setting_get_member(
+                const config_setting_t *ignore = config_setting_get_member(
                                 defaults_section, LA_IGNORE_LABEL);
                 compile_address_list(la_config->ignore_addresses, ignore);
         }

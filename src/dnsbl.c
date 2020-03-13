@@ -33,7 +33,7 @@
  */
 
 static bool
-convert_to_dnsbl_hostname_sa(struct sockaddr *sa, char *dnsbl_domainname, char *hostname)
+convert_to_dnsbl_hostname_sa(const struct sockaddr *sa, const char *dnsbl_domainname, char *hostname)
 {
         la_debug("convert_to_dnsbl_hostname_sa()");
         assert(sa); assert(dnsbl_domainname); assert(hostname);
@@ -91,7 +91,7 @@ convert_to_dnsbl_hostname_sa(struct sockaddr *sa, char *dnsbl_domainname, char *
  */
 
 static bool
-convert_to_dnsbl_hostname(la_address_t *address, char *dnsbl_domainname, char *hostname)
+convert_to_dnsbl_hostname(const la_address_t *address, const char *dnsbl_domainname, char *hostname)
 {
         la_debug("convert_to_dnsbl_hostname()");
         return convert_to_dnsbl_hostname_sa((struct sockaddr *) &address->sa,
@@ -99,7 +99,7 @@ convert_to_dnsbl_hostname(la_address_t *address, char *dnsbl_domainname, char *h
 }
 
 bool
-host_on_dnsbl(la_address_t *address, char *dnsbl_domainname)
+host_on_dnsbl(const la_address_t *address, const char *dnsbl_domainname)
 {
         la_debug("host_on_dnsbl()");
         assert(address); assert(dnsbl_domainname);
@@ -108,7 +108,7 @@ host_on_dnsbl(la_address_t *address, char *dnsbl_domainname)
         if (!convert_to_dnsbl_hostname(address, dnsbl_domainname, hostname))
                 return false;
 
-        int r = getaddrinfo(hostname , NULL, NULL, &ai);
+        const int r = getaddrinfo(hostname , NULL, NULL, &ai);
 
         if (r)
         {

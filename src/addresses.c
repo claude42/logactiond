@@ -36,7 +36,7 @@
 #include "logactiond.h"
 
 void
-assert_address_ffl(la_address_t *address, const char *func, char *file, unsigned int line)
+assert_address_ffl(const la_address_t *address, const char *func, char *file, unsigned int line)
 {
         if (!address)
                 die_hard("%s:%u: %s: Assertion 'address' failed. ", file, line,
@@ -73,7 +73,7 @@ assert_address_ffl(la_address_t *address, const char *func, char *file, unsigned
  */
 
 const char *
-get_ip_version(la_address_t *address)
+get_ip_version(const la_address_t *address)
 {
 	if (address->sa.ss_family == AF_INET)
 		return "4";
@@ -89,7 +89,7 @@ get_ip_version(la_address_t *address)
  * From https://stackoverflow.com/questions/7213995/ip-cidr-match-function
  */
 static bool
-cidr4_match(struct in_addr addr, struct in_addr net, uint8_t prefix)
+cidr4_match(const struct in_addr addr, const struct in_addr net, const uint8_t prefix)
 {
         la_vdebug("cidr4_match()");
 
@@ -106,7 +106,8 @@ cidr4_match(struct in_addr addr, struct in_addr net, uint8_t prefix)
         return !((addr.s_addr ^ net.s_addr) & htonl(0xFFFFFFFFu << (32 - prefix)));
 }
 
-bool cidr6_match(struct in6_addr addr, struct in6_addr net, uint8_t prefix)
+static bool
+cidr6_match(const struct in6_addr addr, const struct in6_addr net, const uint8_t prefix)
 {
         la_vdebug("cidr6_match()");
         assert(prefix<=128);
@@ -133,7 +134,7 @@ bool cidr6_match(struct in6_addr addr, struct in6_addr net, uint8_t prefix)
 
 	if (prefix_incomplete)
 	{
-		uint32_t mask = htonl((0xFFFFFFFFu) << (32 - prefix_incomplete));
+		const uint32_t mask = htonl((0xFFFFFFFFu) << (32 - prefix_incomplete));
 		if ((a[prefix_whole] ^ n[prefix_whole]) & mask)
 			return false;
 	}
@@ -142,7 +143,7 @@ bool cidr6_match(struct in6_addr addr, struct in6_addr net, uint8_t prefix)
 }
 
 static bool
-cidr_match(la_address_t *addr, la_address_t *net)
+cidr_match(const la_address_t *addr, const la_address_t *net)
 {
         if (addr->sa.ss_family != net->sa.ss_family)
                 return false;
@@ -169,7 +170,7 @@ cidr_match(la_address_t *addr, la_address_t *net)
  */
 
 int
-adrcmp(la_address_t *a1, la_address_t *a2)
+adrcmp(const la_address_t *a1, const la_address_t *a2)
 {
         la_vdebug("adrcmp()");
 
@@ -212,7 +213,7 @@ adrcmp(la_address_t *a1, la_address_t *a2)
  */
 
 la_address_t *
-address_on_list(la_address_t *address, kw_list_t *list)
+address_on_list(const la_address_t *address, const kw_list_t *list)
 {
         if (!address)
                 return false;
@@ -236,7 +237,7 @@ address_on_list(la_address_t *address, kw_list_t *list)
  */
 
 la_address_t *
-address_on_list_sa(struct sockaddr *sa, socklen_t salen, kw_list_t *list)
+address_on_list_sa(const struct sockaddr *sa, const socklen_t salen, const kw_list_t *list)
 {
         la_address_t *address = create_address_sa(sa, salen);
         la_address_t *result = address_on_list(address, list);
@@ -249,7 +250,7 @@ address_on_list_sa(struct sockaddr *sa, socklen_t salen, kw_list_t *list)
  */
 
 la_address_t *
-address_on_list_str(char *host, kw_list_t *list)
+address_on_list_str(const char *host, const kw_list_t *list)
 {
         la_address_t *address = create_address(host);
         la_address_t *result = address_on_list(address, list);
@@ -262,7 +263,7 @@ address_on_list_str(char *host, kw_list_t *list)
  */
 
 la_address_t *
-create_address_sa(struct sockaddr *sa, socklen_t salen)
+create_address_sa(const struct sockaddr *sa, const socklen_t salen)
 {
         assert(sa);
         la_vdebug("create_address_sa()");
@@ -297,7 +298,7 @@ create_address_sa(struct sockaddr *sa, socklen_t salen)
  */
 
 la_address_t *
-create_address_port(const char *host, in_port_t port)
+create_address_port(const char *host, const in_port_t port)
 {
         assert(host);
         la_vdebug("create_address(%s)", host);
@@ -310,7 +311,7 @@ create_address_port(const char *host, in_port_t port)
 
         char port_str[6];
         snprintf(port_str, 6, "%u", port);
-        int r = getaddrinfo(host, port ? port_str : NULL, NULL, &ai);
+        const int r = getaddrinfo(host, port ? port_str : NULL, NULL, &ai);
 
         switch (r) {
                 case 0:
@@ -357,9 +358,7 @@ create_address_port(const char *host, in_port_t port)
                 {
                         la_log(LOG_ERR, "Cannot convert address prefix!");
                         freeaddrinfo(ai);
-                        free(result->text);
-                        free(result);
-                        freeaddrinfo(ai);
+                        free_address(result);
                         return NULL;
                 }
 
@@ -380,7 +379,7 @@ create_address(const char *host)
  */
 
 la_address_t *
-dup_address(la_address_t *address)
+dup_address(const la_address_t *address)
 {
         assert_address(address);
         la_vdebug("dup_address(%s)", address->text);

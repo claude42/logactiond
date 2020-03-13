@@ -27,7 +27,7 @@
 #include "logactiond.h"
 
 void
-assert_property_ffl(la_property_t *property, const char *func, char *file,
+assert_property_ffl(const la_property_t *property, const char *func, char *file,
                 unsigned int line)
 {
         if (!property)
@@ -73,7 +73,7 @@ token_length(const char *string)
  */
 
 la_property_t *
-get_property_from_property_list(kw_list_t *property_list, const char *name)
+get_property_from_property_list(const kw_list_t *property_list, const char *name)
 {
         assert(name);
         la_vdebug("get_property_from_property_list(%s)", name);
@@ -102,9 +102,9 @@ get_property_from_property_list(kw_list_t *property_list, const char *name)
  */
 
 const char *
-get_value_from_property_list(kw_list_t *property_list, const char *name)
+get_value_from_property_list(const kw_list_t *property_list, const char *name)
 {
-        la_property_t *property = get_property_from_property_list(
+        const la_property_t *property = get_property_from_property_list(
                                 property_list, name);
 
         return property ? property->value : NULL;
@@ -116,7 +116,7 @@ get_value_from_property_list(kw_list_t *property_list, const char *name)
  */
 
 static char *
-dup_str_and_tolower(const char *s, size_t n)
+dup_str_and_tolower(const char *s, const size_t n)
 {
         assert(s); assert(n>1);
         la_vdebug("dup_str_and_tolower(%s, %u)", s, n);
@@ -150,8 +150,8 @@ dup_str_and_tolower(const char *s, size_t n)
  */
 
 static la_property_t *
-create_property_from_token(const char *name, size_t length, unsigned int pos,
-                la_rule_t *rule)
+create_property_from_token(const char *name, const size_t length,
+                const unsigned int pos, la_rule_t *rule)
 {
         assert(name); assert(length>2);
         la_vdebug("create_property_from_token(%s)", name);
@@ -192,12 +192,12 @@ create_property_from_token(const char *name, size_t length, unsigned int pos,
  */
 
 la_property_t *
-scan_single_token(const char *string, unsigned int pos, la_rule_t *rule)
+scan_single_token(const char *string, const unsigned int pos, la_rule_t *rule)
 {
         assert(string);
         la_vdebug("scan_single_token(%s)", string);
 
-        size_t length = token_length(string);
+        const size_t length = token_length(string);
 
         if (length > 2) /* so it's NOT just "%%" */
                 return create_property_from_token(string, length, pos, rule);
@@ -227,7 +227,7 @@ create_property_from_config(const char *name, const char *value)
  */
 
 static la_property_t *
-duplicate_property(la_property_t *property)
+duplicate_property(const la_property_t *property)
 {
         assert_property(property);
         la_vdebug("duplicate_property(%s)", property->name);
@@ -246,7 +246,7 @@ duplicate_property(la_property_t *property)
 }
 
 kw_list_t *
-dup_property_list(kw_list_t *list)
+dup_property_list(const kw_list_t *list)
 {
         assert_list(list);
         la_vdebug("dup_property_list()");

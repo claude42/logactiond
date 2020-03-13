@@ -31,7 +31,7 @@
 #include "logactiond.h"
 
 void
-log_message(unsigned int priority, char *fmt, va_list gp, char *add)
+log_message(unsigned int priority, const char *fmt, va_list gp, const char *add)
 {
         assert(fmt);
 
@@ -66,7 +66,7 @@ log_message(unsigned int priority, char *fmt, va_list gp, char *add)
 }
 
 void
-la_debug(char *fmt, ...)
+la_debug(const char *fmt, ...)
 {
 #ifndef NDEBUG
         va_list myargs;
@@ -79,7 +79,7 @@ la_debug(char *fmt, ...)
 }
 
 void
-la_vdebug(char *fmt, ...)
+la_vdebug(const char *fmt, ...)
 {
 #ifndef NDEBUG
         va_list myargs;
@@ -92,7 +92,7 @@ la_vdebug(char *fmt, ...)
 }
 
 void
-la_log_errno(unsigned int priority, char *fmt, ...)
+la_log_errno(const unsigned int priority, const char *fmt, ...)
 {
         va_list myargs;
 
@@ -102,7 +102,7 @@ la_log_errno(unsigned int priority, char *fmt, ...)
 }
 
 void
-la_log_verbose(unsigned int priority, char *fmt, ...)
+la_log_verbose(const unsigned int priority, const char *fmt, ...)
 {
         va_list myargs;
 
@@ -117,7 +117,7 @@ la_log_verbose(unsigned int priority, char *fmt, ...)
 }
 
 void
-la_log(unsigned int priority, char *fmt, ...)
+la_log(const unsigned int priority, const char *fmt, ...)
 {
         va_list myargs;
 
@@ -127,7 +127,7 @@ la_log(unsigned int priority, char *fmt, ...)
 }
 
 void
-die_hard(char *fmt, ...)
+die_hard(const char *fmt, ...)
 {
         va_list myargs;
 
@@ -148,7 +148,7 @@ die_hard(char *fmt, ...)
 }
 
 void
-die_err(char *fmt, ...)
+die_err(const char *fmt, ...)
 {
         va_list myargs;
 

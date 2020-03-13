@@ -36,7 +36,7 @@ pthread_t file_watch_thread = 0;
  */
 
 void
-watch_source(la_source_t *source, int whence)
+watch_source(la_source_t *source, const int whence)
 {
         if (run_type == LA_UTIL_FOREGROUND)
                 return;

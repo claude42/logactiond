@@ -132,7 +132,7 @@ trigger_reload(void)
 }
 
 static void
-handle_signal(int signal)
+handle_signal(const int signal)
 {
         la_debug("handle_signal(%u)", signal);
 
@@ -162,7 +162,7 @@ handle_signal(int signal)
 }
 
 static void
-set_signal(struct sigaction new_act, int signum)
+set_signal(struct sigaction new_act, const int signum)
 {
         struct sigaction old_act;
 
@@ -357,7 +357,7 @@ read_options(int argc, char *argv[])
 }
 
 static void
-restore_state(char *state_file_name)
+restore_state(const char *state_file_name)
 {
         assert(state_file_name);
 
@@ -384,8 +384,8 @@ restore_state(char *state_file_name)
                 la_address_t *address; la_rule_t * rule; time_t end_time;
                 int factor;
 
-                int r = parse_add_entry_message(linebuffer, &address, &rule,
-                                        &end_time, &factor);
+                const int r = parse_add_entry_message(linebuffer, &address,
+                                &rule, &end_time, &factor);
                 la_vdebug("adr: %s, rule: %s, end_time: %u, factor: %u",
                                 address ? address->text : "no address",
                                 rule ? rule->name : "no rule", end_time, factor);
@@ -462,7 +462,7 @@ getrunuid(const char *uid_s)
          * the argument. */
         char *endptr;
         errno = 0;
-        int value = strtol(uid_s,  &endptr, 10);
+        const int value = strtol(uid_s,  &endptr, 10);
         if (!errno && *endptr == '\0')
                 return value;
 
@@ -486,8 +486,8 @@ getrunuid(const char *uid_s)
 static void
 use_correct_uid(void)
 {
-        uid_t cur_uid = geteuid();
-        uid_t run_uid = getrunuid(run_uid_s);
+        const uid_t cur_uid = geteuid();
+        const uid_t run_uid = getrunuid(run_uid_s);
         if (run_uid == UINT_MAX)
                 die_hard("Can't determine uid!");
 
@@ -609,7 +609,7 @@ main(int argc, char *argv[])
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
 
         remove_pidfile();
-        int loglevel = exit_status ? LOG_WARNING : LOG_INFO;
+        const int loglevel = exit_status ? LOG_WARNING : LOG_INFO;
         la_log(loglevel, "Exiting (status=%u, errno=%u).", exit_status, exit_errno);
 
         exit(exit_status);

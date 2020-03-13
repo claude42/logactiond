@@ -30,7 +30,7 @@ static char *linebuffer = NULL;
 size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE;
 
 void
-assert_source_ffl(la_source_t *source, const char *func, char *file, unsigned int line)
+assert_source_ffl(const la_source_t *source, const char *func, char *file, unsigned int line)
 {
         if (!source)
                 die_hard("%s:%u: %s: Assertion 'source' failed. ", file, line, func);
@@ -46,7 +46,8 @@ assert_source_ffl(la_source_t *source, const char *func, char *file, unsigned in
  */
 
 void
-handle_log_line(la_source_t *source, const char *line, const char *systemd_unit)
+handle_log_line(const la_source_t *source, const char *line,
+                const char *systemd_unit)
 {
         assert(line); assert_source(source);
         /* Don't do this otherwise this will end in an endless "log-loop" when
@@ -76,7 +77,7 @@ handle_log_line(la_source_t *source, const char *line, const char *systemd_unit)
  */
 
 bool
-handle_new_content(la_source_t *source)
+handle_new_content(const la_source_t *source)
 {
         assert_source(source); assert(source->file);
         la_vdebug("handle_new_content(%s)", source->name);
@@ -88,7 +89,7 @@ handle_new_content(la_source_t *source)
 
         /* TODO: can't remember why this extra read before the loop could be
          * necessary?!? */
-        ssize_t num_read = getline(&linebuffer, &linebuffer_size, source->file);
+        const ssize_t num_read = getline(&linebuffer, &linebuffer_size, source->file);
         if (num_read==-1)
         {
                 if (feof(source->file))
@@ -104,7 +105,8 @@ handle_new_content(la_source_t *source)
 
         for (;;)
         {
-                ssize_t num_read = getline(&linebuffer, &linebuffer_size, source->file);
+                const ssize_t num_read = getline(&linebuffer, &linebuffer_size,
+                                source->file);
                 if (num_read==-1)
                 {
                         if (feof(source->file))
@@ -115,10 +117,6 @@ handle_new_content(la_source_t *source)
                 handle_log_line(source, linebuffer, NULL);
         }
 }
-
-
-
-
 
 /*
  * Create a new la_source for the given filename, wd. But don't add to

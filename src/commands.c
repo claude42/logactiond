@@ -50,7 +50,7 @@ typedef struct la_meta_command_s
 static kw_list_t *meta_list;
 
 void
-assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned int line)
+assert_command_ffl(const la_command_t *command, const char *func, char *file, unsigned int line)
 {
         if (!command)
                 die_hard("%s:%u: %s: Assertion 'command' failed. ", file, line, func);
@@ -75,7 +75,7 @@ assert_command_ffl(la_command_t *command, const char *func, char *file, unsigned
  */
 
 static const char*
-check_for_special_names(la_command_t *command, la_property_t *action_property)
+check_for_special_names(const la_command_t *command, const la_property_t *action_property)
 {
         assert_command(command), assert_property(action_property);
         la_vdebug("check_for_special_names(%s)", action_property->name);
@@ -114,8 +114,8 @@ check_for_special_names(la_command_t *command, la_property_t *action_property)
  */
 
 static const char *
-get_value_for_action_property(la_command_t *command,
-                la_property_t *action_property)
+get_value_for_action_property(const la_command_t *command,
+                const la_property_t *action_property)
 {
         assert_command(command); assert_property(action_property);
         la_vdebug("get_value_for_action_property(%s)", action_property->name);
@@ -146,8 +146,12 @@ get_value_for_action_property(la_command_t *command,
                         action_property->name);
 }
 
+/* Convert command->begin_string / end_string (depending on command type. I.e.
+ * replace any %SOMETHING% with the corresponding property value.
+ */
+
 static char *
-convert_command(la_command_t *command, la_commandtype_t type)
+convert_command(const la_command_t *command, const la_commandtype_t type)
 {
         /* Don't assert_command() here, as after a reload some commands might
          * not have a rule attached to them anymore */
@@ -253,7 +257,7 @@ convert_both_commands(la_command_t *command)
  */
 
 void
-exec_command(la_command_t *command, la_commandtype_t type)
+exec_command(const la_command_t *command, const la_commandtype_t type)
 {
         /* Don't assert_command() here, as after a reload some commands might
          * not have a rule attached to them anymore */
@@ -261,7 +265,7 @@ exec_command(la_command_t *command, la_commandtype_t type)
         assert(command->name);
         la_debug("exec_command(%s)", command->name);
 
-        int result = system(type == LA_COMMANDTYPE_BEGIN ?
+        const int result = system(type == LA_COMMANDTYPE_BEGIN ?
                         command->begin_string_converted :
                         command->end_string_converted);
         switch (result)
@@ -323,7 +327,7 @@ free_meta_list(void)
 }
 
 static meta_command_t *
-create_meta_command(la_command_t *command)
+create_meta_command(const la_command_t *command)
 {
         assert_command(command); assert(command->address);
         la_debug("create_meta_command()");
@@ -346,12 +350,12 @@ create_meta_command(la_command_t *command)
  */
 
 static meta_command_t *
-find_on_meta_list(la_command_t *command)
+find_on_meta_list(const la_command_t *command)
 {
         assert_command(command); assert(command->address);
         la_debug("find_on_meta_list(%s)", command->name);
 
-        time_t now = xtime(NULL);
+        const time_t now = xtime(NULL);
 
         /* Don't use standard ITERATE_COMMANDS/NEXT_COMMAND idiom here to avoid
          * that remove_node() breaks the whole thing */
@@ -382,13 +386,13 @@ find_on_meta_list(la_command_t *command)
 /*
  * Checks whether a coresponding command is already on the meta_list (see
  * find_on_meta_list(). If so, increases factor, resets meta_start_time and
- * returns the meta_command to the calling function.
+ * returns the factor to the calling function.
  *
- * If nothings found on the list, create new meta_command and return it.
+ * If nothings found on the list, create new meta_command with default factor.
  */
 
 static float
-check_meta_list(la_command_t *command, int set_factor)
+check_meta_list(const la_command_t *command, const int set_factor)
 {
         assert_command(command); assert(command->address);
         la_debug("check_meta_list(%s, %u)", command->address->text,
@@ -399,7 +403,7 @@ check_meta_list(la_command_t *command, int set_factor)
 
         meta_command_t *meta_command = find_on_meta_list(command);
 
-        time_t now = xtime(NULL);
+        const time_t now = xtime(NULL);
 
         if (!meta_command)
         {
@@ -471,8 +475,10 @@ reset_counts(void)
  */
 
 void
-trigger_manual_command(la_address_t *address, la_command_t *template,
-                time_t end_time, int factor, char *from, bool suppress_logging)
+trigger_manual_command(const la_address_t *address,
+                const la_command_t *template, const time_t end_time,
+                const int factor, const char *from,
+                const bool suppress_logging)
 {
         assert_address(address); assert_command(template);
         la_debug("trigger_manual_command()");
@@ -485,7 +491,7 @@ trigger_manual_command(la_address_t *address, la_command_t *template,
                 return;
         }
 
-        la_command_t *tmp = find_end_command(address);
+        const la_command_t *tmp = find_end_command(address);
         if (tmp)
         {
                 la_log_verbose(LOG_INFO, "Host: %s, ignored, action \"%s\" "
@@ -593,7 +599,7 @@ trigger_command(la_command_t *command)
          * template) is still active */
         if (command->address)
         {
-                la_command_t *tmp = find_end_command(command->address);
+                const la_command_t *tmp = find_end_command(command->address);
                 if (tmp)
                 {
                         la_log_verbose(LOG_INFO, "Host: %s, ignored, action "
@@ -667,7 +673,7 @@ trigger_command_from_blacklist(la_command_t *command)
  */
 
 void
-trigger_end_command(la_command_t *command, bool suppress_logging)
+trigger_end_command(const la_command_t *command, const bool suppress_logging)
 {
         /* Don't assert_command() here, as after a reload some commands might
          * not have a rule attached to them anymore */
@@ -763,7 +769,7 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
  * content ever? */
 
 static la_command_t *
-dup_command(la_command_t *command)
+dup_command(const la_command_t *command)
 {
         assert_command(command);
         la_vdebug("dup_command(%s)", command->name);
@@ -802,8 +808,8 @@ dup_command(la_command_t *command)
  */
 
 la_command_t *
-create_command_from_template(la_command_t *template, la_pattern_t *pattern,
-                la_address_t *address)
+create_command_from_template(const la_command_t *template, la_pattern_t *pattern,
+                const la_address_t *address)
 {
         assert_command(template); assert_pattern(pattern);
         assert_list(pattern->properties);
@@ -841,15 +847,15 @@ create_command_from_template(la_command_t *template, la_pattern_t *pattern,
 }
 
 static
-bool is_local_address(char *address)
+bool is_local_address(const char *address)
 {
         return (!address || !strcmp("127.0.0.1", address) ||
                         !strcmp("::1", address) || !strcmp(LA_FIFO, address));
 }
 
 la_command_t *
-create_manual_command_from_template(la_command_t *template,
-                la_address_t *address, char *from)
+create_manual_command_from_template(const la_command_t *template,
+                const la_address_t *address, const char *from)
 {
         assert_command(template);
         la_debug("create_manual_command_from_template(%s)", template->name);
@@ -902,7 +908,8 @@ create_manual_command_from_template(la_command_t *template,
 
 la_command_t *
 create_template(const char *name, la_rule_t *rule, const char *begin_string,
-                const char *end_string, unsigned int duration, la_need_host_t need_host)
+                const char *end_string, const unsigned int duration,
+                const la_need_host_t need_host)
 {
         assert(name); assert_rule(rule); assert(begin_string);
         la_debug("create_template(%s, %d)", name, duration);

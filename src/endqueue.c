@@ -39,7 +39,7 @@ pthread_cond_t end_queue_condition = PTHREAD_COND_INITIALIZER;
  */
 
 static la_rule_t *
-find_source_rule_by_name(la_source_t *source, char *name)
+find_source_rule_by_name(const la_source_t *source, const char *name)
 {
         assert_source(source), assert(name);
         la_debug("find_source_rule_by_name(%s, %s)", source->name, name);
@@ -61,7 +61,7 @@ find_source_rule_by_name(la_source_t *source, char *name)
  */
 
 static la_rule_t *
-find_rule_by_name(char *name)
+find_rule_by_name(const char *name)
 {
         assert(name);
         assert(la_config);
@@ -138,7 +138,7 @@ update_queue_count_numbers(void)
  */
 
 la_command_t *
-find_end_command(la_address_t *address)
+find_end_command(const la_address_t *address)
 {
         la_debug("find_end_command()");
 
@@ -263,7 +263,7 @@ empty_end_queue(void)
 
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
 void
-save_queue_state(char *state_file_name)
+save_queue_state(const char *state_file_name)
 {
         assert_list(end_queue);
         if (!state_file_name)
@@ -278,7 +278,7 @@ save_queue_state(char *state_file_name)
                 return;
         }
 
-        time_t now = xtime(NULL);
+        const time_t now = xtime(NULL);
         fprintf(stream, "# logactiond state %s\n", ctime(&now));
 
         xpthread_mutex_lock(&end_queue_mutex);
@@ -311,7 +311,7 @@ save_queue_state(char *state_file_name)
  */
 
 static void
-wait_for_next_end_command(la_command_t *command)
+wait_for_next_end_command(const la_command_t *command)
 {
         /* Commented out assert_command() as going through this from the
          * endqueue thread would actually require locking the config_mutex. But
@@ -431,7 +431,7 @@ start_end_queue_thread(void)
  */
 
 static void
-set_end_time(la_command_t *command, time_t manual_end_time)
+set_end_time(la_command_t *command, const time_t manual_end_time)
 {
         assert_command(command);
         assert(command->end_string);
@@ -461,7 +461,7 @@ set_end_time(la_command_t *command, time_t manual_end_time)
  */
 
 void
-enqueue_end_command(la_command_t *end_command, time_t manual_end_time)
+enqueue_end_command(la_command_t *end_command, const time_t manual_end_time)
 {
         assert_command(end_command); assert(end_command->end_string);
         assert_list(end_queue);

@@ -46,7 +46,7 @@ static int client_fd6;
 /* TODO: maybe connect socket? */
 
 void
-send_message_to_single_address(char *message, la_address_t *remote_address)
+send_message_to_single_address(const char *message, const la_address_t *remote_address)
 {
         assert(la_config); assert_address(remote_address);
         la_debug("send_message_to_single_address(%s)", remote_address->text);
@@ -69,7 +69,7 @@ send_message_to_single_address(char *message, la_address_t *remote_address)
                 }
         }
 
-        int message_sent = sendto(*fd_ptr, message, TOTAL_MSG_LEN, 0,
+        const int message_sent = sendto(*fd_ptr, message, TOTAL_MSG_LEN, 0,
                         (struct sockaddr *) &remote_address->sa,
                         sizeof(remote_address->sa));
         if (message_sent == -1)
@@ -84,7 +84,7 @@ send_message_to_single_address(char *message, la_address_t *remote_address)
  * Currently only called from trigger_command()
  */
 void
-send_add_entry_message(la_command_t *command, la_address_t *address)
+send_add_entry_message(const la_command_t *command, const la_address_t *address)
 {
         la_debug("send_add_entry_message()");
         assert(la_config); assert_command(command);
@@ -208,7 +208,7 @@ remote_loop(void *ptr)
                 }
 
                 socklen_t remote_client_size = sizeof(remote_client);
-                ssize_t num_read = recvfrom(server_fd, &buf, 1023, MSG_TRUNC,
+                const ssize_t num_read = recvfrom(server_fd, &buf, 1023, MSG_TRUNC,
                                 (struct sockaddr *) &remote_client,
                                 &remote_client_size);
                 if (num_read == -1)
@@ -223,7 +223,7 @@ remote_loop(void *ptr)
 
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
                 char from[INET6_ADDRSTRLEN];
-                int r = getnameinfo((struct sockaddr *) &remote_client,
+                const int r = getnameinfo((struct sockaddr *) &remote_client,
                                 sizeof remote_client, from, INET6_ADDRSTRLEN,
                                 NULL, 0, NI_NUMERICHOST);
                 if (r)

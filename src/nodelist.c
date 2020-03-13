@@ -22,7 +22,7 @@
 #include "logactiond.h"
 
 void
-assert_node_ffl(kw_node_t *node, const char *func, char *file, unsigned int line)
+assert_node_ffl(const kw_node_t *node, const char *func, char *file, unsigned int line)
 {
         if (!(node->succ || node->pred))
                 die_hard("%s:%u: %s: Assertion 'node->succ || node->pred' failed.",
@@ -42,7 +42,7 @@ assert_node_ffl(kw_node_t *node, const char *func, char *file, unsigned int line
 }
 
 void
-assert_list_ffl(kw_list_t *list, const char *func, char *file, unsigned int line)
+assert_list_ffl(const kw_list_t *list, const char *func, char *file, unsigned int line)
 {
         if (!list)
                 die_hard("%s:%u: %s: Assertion 'list' failed.", file, line, func);
@@ -179,7 +179,7 @@ add_tail(kw_list_t *list, kw_node_t *node)
 }
 
 kw_node_t *
-get_head(kw_list_t *list)
+get_head(const kw_list_t *list)
 {
         /* TODO: something's wrong here */
         if (is_list_empty(list))
@@ -189,7 +189,7 @@ get_head(kw_list_t *list)
 }
 
 kw_node_t *
-get_tail(kw_list_t *list)
+get_tail(const kw_list_t *list)
 {
         if (is_list_empty(list))
                 return NULL;
@@ -237,7 +237,7 @@ rem_tail(kw_list_t *list)
 }
 
 kw_node_t *
-get_list_iterator(kw_list_t *list)
+get_list_iterator(const kw_list_t *list)
 {
         assert_list(list);
 
@@ -277,7 +277,7 @@ free_list(kw_list_t *list)
 }
 
 unsigned int
-list_length(kw_list_t *list)
+list_length(const kw_list_t *list)
 {
         assert_list(list);
 

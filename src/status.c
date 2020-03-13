@@ -38,7 +38,7 @@ pthread_t monitoring_thread = 0;
  */
 
 static void
-human_readable_time_delta(time_t delta, time_t *value, char *unit)
+human_readable_time_delta(const time_t delta, time_t *value, char *unit)
 {
         assert(value); assert(unit);
         
@@ -74,7 +74,7 @@ human_readable_time_delta(time_t delta, time_t *value, char *unit)
 }
 
 static void
-dump_rule_diagnostics(FILE *diag_file, la_rule_t *rule)
+dump_rule_diagnostics(FILE *diag_file, const la_rule_t *rule)
 {
         assert(diag_file), assert_rule(rule);
         la_vdebug("dump_rule_diagnostics(%s)", rule->name);
@@ -88,7 +88,7 @@ dump_rule_diagnostics(FILE *diag_file, la_rule_t *rule)
  */
 
 static void
-dump_single_rule(FILE *rules_file, la_rule_t *rule)
+dump_single_rule(FILE *rules_file, const la_rule_t *rule)
 {
         assert(rules_file), assert_rule(rule);
         la_vdebug("dump_single_rule(%s)", rule->name);
@@ -248,7 +248,7 @@ start_monitoring_thread(void)
  */
 
 void
-dump_queue_status(kw_list_t *queue)
+dump_queue_status(const kw_list_t *queue)
 {
         la_vdebug("dump_queue_status()");
         if (!status_monitoring || shutdown_ongoing)
@@ -294,7 +294,7 @@ dump_queue_status(kw_list_t *queue)
                 if (command->end_time == INT_MAX)
                         break;
 
-                char *adr = command->address ? command->address->text : "-";
+                const char *adr = command->address ? command->address->text : "-";
 
                 time_t timedelta;
                 char unit;

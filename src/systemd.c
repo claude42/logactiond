@@ -35,7 +35,7 @@ pthread_t systemd_watch_thread = 0;
 static sd_journal *journal = NULL;
 
 static void
-die_systemd(int systemd_errno, char *fmt, ...)
+die_systemd(const int systemd_errno, const char *fmt, ...)
 {
         va_list myargs;
 
@@ -176,7 +176,7 @@ add_matches(void)
         for (kw_node_t *unit = &(la_config->systemd_source->systemd_units)->head;
                         (unit = unit->succ->succ ? unit->succ : NULL);)
         {
-                len = xstrlen("_SYSTEMD_UNIT=") + xstrlen(unit->name)+1;
+                const len = xstrlen("_SYSTEMD_UNIT=") + xstrlen(unit->name)+1;
                 match = xrealloc(match, len);
                 snprintf(match, len, "_SYSTEMD_UNIT=%s", unit->name);
                 int r = sd_journal_add_match(journal, match, 0);

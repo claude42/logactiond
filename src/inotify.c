@@ -40,7 +40,7 @@
 static int inotify_fd = 0;
 
 static void
-la_vdebug_inotify_event(struct inotify_event *event, uint32_t monitored)
+la_vdebug_inotify_event(const struct inotify_event *event, const uint32_t monitored)
 {
         assert(event);
         char *str = "unkown";
@@ -111,7 +111,7 @@ unwatch_source_inotify(la_source_t *source)
  */
 
 static la_source_t *
-find_source_by_parent_wd(int parent_wd, char *file_name)
+find_source_by_parent_wd(const int parent_wd, const char *file_name)
 {
         assert(parent_wd); assert(file_name);
         assert(la_config);
@@ -146,7 +146,7 @@ find_source_by_parent_wd(int parent_wd, char *file_name)
  */
 
 static la_source_t *
-find_source_by_file_wd(int file_wd)
+find_source_by_file_wd(const int file_wd)
 {
         assert(file_wd);
         assert(la_config);
@@ -243,7 +243,7 @@ watched_file_deleted(la_source_t *source)
 
 
 static void
-handle_inotify_directory_event(struct inotify_event *event)
+handle_inotify_directory_event(const struct inotify_event *event)
 {
         assert(event);
         la_vdebug("handle_inotify_directory_event()");
@@ -278,7 +278,7 @@ handle_inotify_directory_event(struct inotify_event *event)
 
 
 static void
-handle_inotify_file_event(struct inotify_event *event)
+handle_inotify_file_event(const struct inotify_event *event)
 {
         assert(event);
         la_vdebug("handle_inotify_file_event()");
@@ -298,7 +298,7 @@ handle_inotify_file_event(struct inotify_event *event)
 }
 
 static void
-handle_inotify_event(struct inotify_event *event)
+handle_inotify_event(const struct inotify_event *event)
 {
         assert(event);
         la_vdebug("handle_inotify_event()");

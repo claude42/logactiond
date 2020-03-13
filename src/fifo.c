@@ -73,6 +73,8 @@ fifo_loop(void *ptr)
 
         pthread_cleanup_push(cleanup_fifo, NULL);
 
+        size_t num_read;
+
         for (;;)
         {
                 if (shutdown_ongoing)
@@ -81,7 +83,7 @@ fifo_loop(void *ptr)
                         pthread_exit(NULL);
                 }
 
-                ssize_t num_read = getline(&buf, &buf_size, fifo);
+                num_read = getline(&buf, &buf_size, fifo);
                 if (num_read == -1)
                 {
                         if (feof(fifo))
