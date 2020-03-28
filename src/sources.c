@@ -30,7 +30,8 @@ static char *linebuffer = NULL;
 size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE;
 
 void
-assert_source_ffl(const la_source_t *source, const char *func, char *file, unsigned int line)
+assert_source_ffl(const la_source_t *source, const char *func,
+                const char *file, unsigned int line)
 {
         if (!source)
                 die_hard("%s:%u: %s: Assertion 'source' failed. ", file, line, func);
@@ -89,7 +90,7 @@ handle_new_content(const la_source_t *source)
 
         /* TODO: can't remember why this extra read before the loop could be
          * necessary?!? */
-        const ssize_t num_read = getline(&linebuffer, &linebuffer_size, source->file);
+        ssize_t num_read = getline(&linebuffer, &linebuffer_size, source->file);
         if (num_read==-1)
         {
                 if (feof(source->file))
@@ -105,7 +106,7 @@ handle_new_content(const la_source_t *source)
 
         for (;;)
         {
-                const ssize_t num_read = getline(&linebuffer, &linebuffer_size,
+                num_read = getline(&linebuffer, &linebuffer_size,
                                 source->file);
                 if (num_read==-1)
                 {

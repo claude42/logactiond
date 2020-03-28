@@ -31,6 +31,13 @@
 
 #include "logactiond.h"
 
+// _LEN includes terminal '\0'
+
+#define MESSAGE "MESSAGE"
+#define MESSAGE_LEN 8
+#define UNIT "_SYSTEMD_UNIT"
+#define UNIT_LEN 14
+
 pthread_t systemd_watch_thread = 0;
 static sd_journal *journal = NULL;
 
@@ -81,10 +88,6 @@ watch_forever_systemd(void *ptr)
 
         for (;;)
         {
-#define MESSAGE "MESSAGE"
-#define MESSAGE_LEN 8
-#define UNIT "_SYSTEMD_UNIT"
-#define UNIT_LEN 14
                 const void *data;
                 size_t size;
 
@@ -127,6 +130,7 @@ watch_forever_systemd(void *ptr)
                 if (r < 0)
                         die_systemd(r, "sd_journal_get_data() failed");
 
+                /* TODO: put next two blocks in separate function */
                 /* sd_journal_get_data() interface is, well, not ideal. Let's
                  * create some nice, 0-terminated strings for further usage. */
                 if (size+1 > message_buffer_length)
@@ -168,7 +172,6 @@ add_matches(void)
         assert_source(la_config->systemd_source);
         assert_list(la_config->systemd_source->systemd_units);
 
-        unsigned int len;
         char *match = NULL;
 
         sd_journal_flush_matches(journal);
@@ -176,9 +179,10 @@ add_matches(void)
         for (kw_node_t *unit = &(la_config->systemd_source->systemd_units)->head;
                         (unit = unit->succ->succ ? unit->succ : NULL);)
         {
-                const len = xstrlen("_SYSTEMD_UNIT=") + xstrlen(unit->name)+1;
+                // space for "_SYSTEMD_UNIT=" + unit->name + '\0'
+                const unsigned int len = UNIT_LEN + 1 + xstrlen(unit->name);
                 match = xrealloc(match, len);
-                snprintf(match, len, "_SYSTEMD_UNIT=%s", unit->name);
+                snprintf(match, len, UNIT "=%s", unit->name);
                 int r = sd_journal_add_match(journal, match, 0);
                 if (r < 0)
                         die_systemd(r, "sd_journal_add_match() failed");

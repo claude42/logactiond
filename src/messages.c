@@ -77,6 +77,8 @@
  *                                                                     180 bytes
  */
 
+#ifndef CLIENTONLY
+
 static bool is_empty_line(const char *message)
 {
         assert(message);
@@ -105,9 +107,6 @@ static bool is_empty_line(const char *message)
  * NB2: this function will modify the message buffer!
  */
 
-
-#ifndef CLIENTONLY
-
 int
 parse_add_entry_message(const char *message, la_address_t **address, la_rule_t **rule,
                 time_t *end_time, int *factor)
@@ -128,10 +127,10 @@ parse_add_entry_message(const char *message, la_address_t **address, la_rule_t *
 
         char parsed_address_str[MSG_ADDRESS_LENGTH + 1];
         char parsed_rule_str[MSG_RULE_LENGTH + 1];
-        int parsed_end_time; int parsed_factor;
+        unsigned int parsed_end_time; unsigned int parsed_factor;
         const int n = sscanf(message, PROTOCOL_VERSION_STR "+%50[^,],%100[^,],%u,%u",
-                        parsed_address_str,
-                        parsed_rule_str, &parsed_end_time, &parsed_factor);
+                        parsed_address_str, parsed_rule_str, &parsed_end_time,
+                        &parsed_factor);
 
         if (n < 2)
         {
@@ -542,7 +541,7 @@ create_save_message(void)
 char *
 create_log_level_message(const unsigned int new_log_level)
 {
-        assert(new_log_level >= 0); assert(new_log_level <= LOG_DEBUG+2);
+        assert(new_log_level <= LOG_DEBUG+2);
 
         char *buffer = xmalloc(TOTAL_MSG_LEN);
 

@@ -28,7 +28,8 @@
 #include "logactiond.h"
 
 void
-assert_pattern_ffl(const la_pattern_t *pattern, const char *func, char *file, unsigned int line)
+assert_pattern_ffl(const la_pattern_t *pattern, const char *func,
+                const char *file, unsigned int line)
 {
         if (!pattern)
                 die_hard("%s:%u: %s: Assertion 'pattern' failed. ", file, line, func);
@@ -54,15 +55,16 @@ count_open_braces(const char *string)
 
         for (const char *ptr = string; *ptr; ptr++)
         {
-                if (*ptr == '\\')
+                switch (*ptr)
                 {
+                case '\\':
                         ptr++;
                         if (!*ptr)
                                 die_hard("String ends with \\0");
-                }
-                else if (*ptr == '(')
-                {
+                        break;
+                case '(':
                         result++;
+                        break;
                 }
         }
 
@@ -99,12 +101,14 @@ convert_regex(const char *string, la_pattern_t *pattern)
         const char *src_ptr = string;
         unsigned int subexpression = 0;
         bool has_host_token = false;
+        la_property_t *new_prop;
 
         while (*src_ptr)
         {
-                if (*src_ptr == '%')
+                switch (*src_ptr)
                 {
-                        la_property_t *new_prop = scan_single_token(src_ptr,
+                case '%':
+                        new_prop = scan_single_token(src_ptr,
                                         src_ptr-string, pattern->rule);
                         if (new_prop)
                         {
@@ -176,9 +180,8 @@ convert_regex(const char *string, la_pattern_t *pattern)
                                 *dst_ptr++ = '%';
                                 src_ptr += 2;
                         }
-                }
-                else if (*src_ptr == '\\')
-                {
+                        break;
+                case '\\':
                         // In case of '\', copy next character without any
                         // interpretation unless next character is \0...
                         if (*(src_ptr+1) == '\0') 
@@ -187,26 +190,83 @@ convert_regex(const char *string, la_pattern_t *pattern)
                         realloc_buffer(&result, &dst_ptr, &dst_len, 2);
                         *dst_ptr++ = *src_ptr++;
                         *dst_ptr++ = *src_ptr++;
-                }
-                else if (*src_ptr == '(')
-                {
+                        break;
+                case '(':
                         // In case of '(', count sub expression
                         subexpression++;
-                        realloc_buffer(&result, &dst_ptr, &dst_len, 1);
-                        *dst_ptr++ = *src_ptr++;
-                }
-                else
-                {
+                        // intended fall through!
+                default:
                         // simply copy all other characters
                         realloc_buffer(&result, &dst_ptr, &dst_len, 1);
                         *dst_ptr++ = *src_ptr++;
+                        break;
                 }
         }
 
         *dst_ptr = 0;
-        la_vdebug("convert_regex()=%s, subexpression=%u", result, subexpression);
+        la_debug("convert_regex(%s)=%s, subexpression=%u", string, result, subexpression);
 
         pattern->string = result;
+}
+
+/*
+ * Return nice error message for regcomp()
+ */
+
+static void
+die_regcomp(const int return_value, const char *regex)
+{
+        const char *error_msg;
+        switch (return_value)
+        {
+        case REG_BADBR:
+                error_msg = "Invalid use of back reference operator.";
+                break;
+        case REG_BADPAT:
+                error_msg = "Invalid use of pattern operators such as group or list.";
+                break;
+        case REG_BADRPT:
+                error_msg = "Invalid use of repetition operators such as using '*' as the first character.";
+                break;
+        case REG_EBRACE:
+                error_msg = "Un-matched brace interval operators.";
+                break;
+        case REG_EBRACK:
+                error_msg = "Un-matched bracket list operators.";
+                break;
+        case REG_ECOLLATE:
+                error_msg = "Invalid collating element.";
+                break;
+        case REG_ECTYPE:
+                error_msg = "Unknown character class name.";
+                break;
+        case REG_EEND:
+                error_msg = "Nonspecific error.";
+                break;
+        case REG_EESCAPE:
+                error_msg = "Trailing backslash.";
+                break;
+        case REG_EPAREN:
+                error_msg = "Un-matched parenthesis group operators.";
+                break;
+        case REG_ERANGE:
+                error_msg = "Invalid use of the range operator; for example, the ending point of the range occurs prior to the starting point.";
+                break;
+        case REG_ESIZE:
+                error_msg = "Compiled regular expression requires a pattern buffer larger than 64Kb.  This is not defined by POSIX.2.";
+                break;
+        case REG_ESPACE:
+                error_msg = "The regex routines ran out of memory.";
+                break;
+        case REG_ESUBREG:
+                error_msg = "Invalid back reference to a subexpression.";
+                break;
+        default:
+                error_msg = "Unknown error.";
+                break;
+        }
+
+        die_err("Compiling regex: \"%s\" failed: %s", regex, error_msg);
 }
 
 /*
@@ -237,10 +297,7 @@ create_pattern(const char *string_from_configfile, const unsigned int num,
         const int r = regcomp(result->regex, result->string, REG_EXTENDED |
                         REG_NEWLINE);
         if (r)
-        {
-                // TODO: improve error handling
-                die_err("Error %d compiling regex: %s!", r, result->string);
-        }
+                die_regcomp(r, result->string);
 
         result->detection_count = result->invocation_count = 0;
 

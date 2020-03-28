@@ -55,7 +55,7 @@ main(int argc, char *argv[])
                 printf("Flags: %u\n", res->ai_flags);
                 printf("Family 1: %u\n", res->ai_family);
                 printf("Family 2: %u\n", res->ai_addr->sa_family);
-                char *socktype = "unknown";
+                const char *socktype = "unknown";
                 if (res->ai_socktype == SOCK_STREAM)
                         socktype = "SOCK_STREAM";
                 else if (res->ai_socktype == SOCK_DGRAM)

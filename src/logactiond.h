@@ -604,7 +604,7 @@ char *create_sync_message(const char *host);
 
 /* configfile.c */
 
-bool init_la_config(char *filename);
+bool init_la_config(const char *filename);
 
 void load_la_config(void);
 
@@ -612,8 +612,8 @@ void unload_la_config(void);
 
 /* addresses.c */
 
-void assert_address_ffl(const la_address_t *address, const char *func, char *file,
-                unsigned int line);
+void assert_address_ffl(const la_address_t *address, const char *func,
+                const char *file, unsigned int line);
 
 const char *get_ip_version(const la_address_t *address);
 
@@ -647,7 +647,7 @@ la_command_t *find_end_command(const la_address_t *address);
 
 int remove_and_trigger(la_address_t *address);
 
-void empty_end_queue();
+void empty_end_queue(void);
 
 void save_queue_state(const char *state_file_name);
 
@@ -667,7 +667,8 @@ unsigned int meta_list_length(void);
 
 void free_meta_list(void);
 
-void assert_command_ffl(const la_command_t *command, const char *func, char *file, unsigned int line);
+void assert_command_ffl(const la_command_t *command, const char *func,
+                const char *file, unsigned int line);
 
 void reset_counts(void);
 
@@ -697,8 +698,8 @@ void free_command_list(kw_list_t *list);
 
 /* properties.c */
 
-void assert_property_ffl(const la_property_t *property, const char *func, char *file,
-                unsigned int line);
+void assert_property_ffl(const la_property_t *property, const char *func,
+                const char *file, unsigned int line);
 
 size_t token_length(const char *string);
 
@@ -723,7 +724,8 @@ void free_property_list(kw_list_t *list);
 
 /* patterns.c */
 
-void assert_pattern_ffl(const la_pattern_t *pattern, const char *func, char *file, unsigned int line);
+void assert_pattern_ffl(const la_pattern_t *pattern, const char *func,
+                const char *file, unsigned int line);
 
 la_pattern_t *create_pattern(const char *string_from_configfile,
                 unsigned int num, la_rule_t *rule);
@@ -734,7 +736,8 @@ void free_pattern_list(kw_list_t *list);
 
 /* rules.c */
 
-void assert_rule_ffl(const la_rule_t *rule, const char *func, char *file, unsigned int line);
+void assert_rule_ffl(const la_rule_t *rule, const char *func, const char *file,
+                unsigned int line);
 
 void handle_log_line_for_rule(const la_rule_t *rule, const char *line);
 
@@ -755,7 +758,8 @@ la_rule_t *find_rule(const char *rule_name);
 
 /* sources.c */
 
-void assert_source_ffl(const la_source_t *source, const char *func, char *file, unsigned int line);
+void assert_source_ffl(const la_source_t *source, const char *func,
+                const char *file, unsigned int line);
 
 void handle_log_line(const la_source_t *source, const char *line, const char *systemd_unit);
 
@@ -835,6 +839,9 @@ void send_message_to_single_address(const char *message,
 /* dnsbl.c */
 
 bool host_on_dnsbl(const la_address_t *address, const char *dnsbl_domainname);
+
+const char *host_on_any_dnsbl(const kw_list_t *blacklists,
+                const la_address_t *address);
 
 #endif /* __logactiond_h */
 

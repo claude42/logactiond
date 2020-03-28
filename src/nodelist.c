@@ -22,7 +22,8 @@
 #include "logactiond.h"
 
 void
-assert_node_ffl(const kw_node_t *node, const char *func, char *file, unsigned int line)
+assert_node_ffl(const kw_node_t *node, const char *func, const char *file,
+                unsigned int line)
 {
         if (!(node->succ || node->pred))
                 die_hard("%s:%u: %s: Assertion 'node->succ || node->pred' failed.",
@@ -42,7 +43,8 @@ assert_node_ffl(const kw_node_t *node, const char *func, char *file, unsigned in
 }
 
 void
-assert_list_ffl(const kw_list_t *list, const char *func, char *file, unsigned int line)
+assert_list_ffl(const kw_list_t *list, const char *func, const char *file,
+                unsigned int line)
 {
         if (!list)
                 die_hard("%s:%u: %s: Assertion 'list' failed.", file, line, func);

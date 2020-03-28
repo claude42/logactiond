@@ -47,7 +47,7 @@ bool log_verbose = false;
 unsigned int id_counter = 0;
 char *run_uid_s = NULL;
 unsigned int status_monitoring = 0;
-char *saved_state = NULL;
+const char *saved_state = NULL;
 bool create_backup_file = false;
 bool shutdown_ongoing = false;
 int exit_status = EXIT_SUCCESS;
@@ -57,7 +57,7 @@ bool sync_on_startup = false;
 static void
 move_state_file_to_backup(void)
 {
-        const unsigned int length = strlen(saved_state) + strlen(".bak");
+        const int length = strlen(saved_state) + strlen(".bak");
         char *backup_file_name = xmalloc(length + 1);
 
         if (snprintf(backup_file_name, length + 1, "%s%s", saved_state, ".bak") !=
@@ -377,7 +377,7 @@ restore_state(const char *state_file_name)
         xpthread_mutex_lock(&config_mutex);
 
         int line_no = 1;
-        size_t num_read;
+        ssize_t num_read;
 
         while ((num_read = getline(&linebuffer, &linebuffer_size,stream)) != -1)
         {

@@ -32,7 +32,7 @@
 /* FIXME: trigger_list should definitely be a hash */
 
 void
-assert_rule_ffl(const la_rule_t *rule, const char *func, char *file, unsigned int line)
+assert_rule_ffl(const la_rule_t *rule, const char *func, const char *file, unsigned int line)
 {
         if (!rule)
                 die_hard("%s:%u: %s: Assertion 'rule' failed. ", file, line, func);
@@ -100,6 +100,8 @@ find_trigger(const la_command_t *template, const la_address_t *address)
                         /*la_log(LOG_INFO, "NOTE: Removed IP %s from \"%s\"",
                                         tmp->address->text, tmp->rule_name);*/
                         remove_node((kw_node_t *) tmp);
+                        // TODO: not quite sure if this won't beak anything?!
+                        free_command(tmp);
                 }
         }
 
@@ -173,8 +175,6 @@ trigger_single_command(la_pattern_t *pattern, const la_address_t *address,
         assert_command(template);
         la_debug("trigger_single_command(%s)", template->name);
 
-        la_command_t *command = NULL;
-
         /* First check whether a command for this host is still active on
          * end_queue. In this case, ignore new command */
         const la_command_t *tmp = find_end_command(address);
@@ -190,7 +190,7 @@ trigger_single_command(la_pattern_t *pattern, const la_address_t *address,
          * fired) by the same host before. Create new command if not found. If
          * host is not set, always create new command.
          */
-        command = find_trigger(template, address);
+        la_command_t *command = find_trigger(template, address);
 
         bool from_trigger_list;
         if (command)
@@ -226,19 +226,18 @@ trigger_single_command(la_pattern_t *pattern, const la_address_t *address,
 
         if  (pattern->rule->dnsbl_enabled && pattern->rule->threshold > 1)
         {
-                for (kw_node_t *bl = &pattern->rule->blacklists->head;
-                                (bl = bl->succ->succ ? bl->succ : NULL);) {
-                        if (host_on_dnsbl(address, bl->name))
-                        {
-                                la_log(LOG_INFO, "Host: %s blacklisted on %s.",
-                                                address->text, bl->name);
-                                if (from_trigger_list)
-                                        remove_node((kw_node_t *) command);
-                                trigger_command_from_blacklist(command);
-                                if (command->end_string && command->duration > 0)
-                                        enqueue_end_command(command, 0);
-                                return;
-                        }
+                const char *blname = host_on_any_dnsbl(
+                                pattern->rule->blacklists, address);
+                if (blname)
+                {
+                        la_log(LOG_INFO, "Host: %s blacklisted on %s.",
+                                        address->text, blname);
+                        if (from_trigger_list)
+                                remove_node((kw_node_t *) command);
+                        trigger_command_from_blacklist(command);
+                        if (command->end_string && command->duration > 0)
+                                enqueue_end_command(command, 0);
+                        return;
                 }
         }
 

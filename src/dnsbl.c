@@ -28,8 +28,38 @@
 
 #include "logactiond.h"
 
+static unsigned int
+convert_to_dnsbl_hostname_4_sa(const struct sockaddr_in *si,
+                const char *dnsbl_domainname, char *hostname)
+{
+        uint8_t *b = (uint8_t *) &si->sin_addr;
+        return snprintf(hostname, NI_MAXHOST, "%u.%u.%u.%u.%s", b[3], b[2],
+                        b[1], b[0], dnsbl_domainname);
+}
+
+static unsigned int
+convert_to_dnsbl_hostname_6_sa(const struct sockaddr_in6 *si6,
+                const char *dnsbl_domainname, char *hostname)
+{
+        uint8_t *b = (uint8_t *) &si6->sin6_addr;
+        return snprintf(hostname, NI_MAXHOST, "%x.%x.%x.%x.%x.%x.%x.%x.%x."
+                        "%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x."
+                        "%x.%x.%x.%x.%x.%x.%x.%x.%x.%s",
+                        b[15]&0x0f, b[15]>>4, b[14]&0x0f, b[14]>>4,
+                        b[13]&0x0f, b[13]>>4, b[12]&0x0f, b[12]>>4,
+                        b[11]&0x0f, b[11]>>4, b[10]&0x0f, b[10]>>4,
+                        b[9]&0x0f, b[9]>>4, b[8]&0x0f, b[8]>>4,
+                        b[7]&0x0f, b[7]>>4, b[6]&0x0f, b[6]>>4,
+                        b[5]&0x0f, b[5]>>4, b[4]&0x0f, b[4]>>4,
+                        b[3]&0x0f, b[3]>>4, b[2]&0x0f, b[2]>>4,
+                        b[1]&0x0f, b[1]>>4, b[0]&0x0f, b[0]>>4,
+                        dnsbl_domainname);
+}
+
 /*
  * hostname must be at least NI_MAXHOST characters long.
+ *
+ * Makes sure that there's a dot at the end of the hostname.
  */
 
 static bool
@@ -38,32 +68,14 @@ convert_to_dnsbl_hostname_sa(const struct sockaddr *sa, const char *dnsbl_domain
         la_debug("convert_to_dnsbl_hostname_sa()");
         assert(sa); assert(dnsbl_domainname); assert(hostname);
         assert(xstrlen(hostname) < NI_MAXHOST);
-        int r;
+        unsigned int r;
 
         if (sa->sa_family == AF_INET)
-        {
-                struct sockaddr_in *si = (struct sockaddr_in *) sa;
-                uint8_t *b = (uint8_t *) &si->sin_addr;
-                r = snprintf(hostname, NI_MAXHOST, "%u.%u.%u.%u.%s", b[3], b[2],
-                                b[1], b[0], dnsbl_domainname);
-        }
+                r = convert_to_dnsbl_hostname_4_sa((struct  sockaddr_in *) sa,
+                                dnsbl_domainname,  hostname);
         else
-        {
-                struct sockaddr_in6 *si6 = (struct sockaddr_in6 *) sa;
-                uint8_t *b = (uint8_t *) &si6->sin6_addr;
-                r = snprintf(hostname, NI_MAXHOST, "%x.%x.%x.%x.%x.%x.%x.%x.%x."
-                                "%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x."
-                                "%x.%x.%x.%x.%x.%x.%x.%x.%x.%s",
-                                b[15]&0x0f, b[15]>>4, b[14]&0x0f, b[14]>>4,
-                                b[13]&0x0f, b[13]>>4, b[12]&0x0f, b[12]>>4,
-                                b[11]&0x0f, b[11]>>4, b[10]&0x0f, b[10]>>4,
-                                b[9]&0x0f, b[9]>>4, b[8]&0x0f, b[8]>>4,
-                                b[7]&0x0f, b[7]>>4, b[6]&0x0f, b[6]>>4,
-                                b[5]&0x0f, b[5]>>4, b[4]&0x0f, b[4]>>4,
-                                b[3]&0x0f, b[3]>>4, b[2]&0x0f, b[2]>>4,
-                                b[1]&0x0f, b[1]>>4, b[0]&0x0f, b[0]>>4,
-                                dnsbl_domainname);
-        }
+                r = convert_to_dnsbl_hostname_6_sa((struct  sockaddr_in6 *) sa,
+                                dnsbl_domainname,  hostname);
 
         if (r>=NI_MAXHOST)
                 return false;
@@ -110,17 +122,30 @@ host_on_dnsbl(const la_address_t *address, const char *dnsbl_domainname)
 
         const int r = getaddrinfo(hostname , NULL, NULL, &ai);
 
-        if (r)
-        {
-                return false;
-        }
-        else
-        {
+        if (!r)
                 freeaddrinfo(ai);
-                return true;
-        }
+
+        return !r;
 }
 
+/* Checks whether host is on any of the given blacklists. Return NULL if not
+ * found, otherwise returns pointer to blacklists name.
+ *
+ * Do NOT free() the returned string!
+ */
+
+const char *
+host_on_any_dnsbl(const kw_list_t *blacklists, const la_address_t *address)
+{
+        for (const kw_node_t *bl = &blacklists->head;
+                        (bl = bl->succ->succ ? bl->succ : NULL);)
+        {
+                if (host_on_dnsbl(address, bl->name))
+                        return bl->name;
+        }
+        
+        return NULL;
+}
 
 
 /* vim: set autowrite expandtab: */

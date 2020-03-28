@@ -301,7 +301,7 @@ dump_queue_status(const kw_list_t *queue)
                 human_readable_time_delta(command->end_time-xtime(NULL),
                                 &timedelta, &unit);
 
-                char *type;
+                const char *type;
                 if (command->submission_type == LA_SUBMISSION_MANUAL)
                         type = "Ma";
                 else if (command->submission_type == LA_SUBMISSION_REMOTE)

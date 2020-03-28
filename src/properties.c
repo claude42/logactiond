@@ -27,8 +27,8 @@
 #include "logactiond.h"
 
 void
-assert_property_ffl(const la_property_t *property, const char *func, char *file,
-                unsigned int line)
+assert_property_ffl(const la_property_t *property, const char *func,
+                const char *file, unsigned int line)
 {
         if (!property)
                 die_hard("%s:%u: %s: Assertion 'property' failed. ", file,

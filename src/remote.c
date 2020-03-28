@@ -44,11 +44,13 @@ static int client_fd6;
 
 /* TODO: check if current implementation really is thread safe */
 /* TODO: maybe connect socket? */
+/* TODO: fd mutex? */
 
 void
 send_message_to_single_address(const char *message, const la_address_t *remote_address)
 {
         assert(la_config); assert_address(remote_address);
+        assert(la_config->remote_enabled);
         la_debug("send_message_to_single_address(%s)", remote_address->text);
 
         /* Test for shutdown first, just to make sure nobody has closed the fds

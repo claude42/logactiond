@@ -43,7 +43,7 @@ static void
 la_vdebug_inotify_event(const struct inotify_event *event, const uint32_t monitored)
 {
         assert(event);
-        char *str = "unkown";
+        const char *str = "unkown";
 
         if (event->mask & IN_ACCESS)
                 str = "IN_ACCESS";

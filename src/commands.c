@@ -50,7 +50,8 @@ typedef struct la_meta_command_s
 static kw_list_t *meta_list;
 
 void
-assert_command_ffl(const la_command_t *command, const char *func, char *file, unsigned int line)
+assert_command_ffl(const la_command_t *command, const char *func,
+                const char *file, unsigned int line)
 {
         if (!command)
                 die_hard("%s:%u: %s: Assertion 'command' failed. ", file, line, func);
@@ -120,10 +121,8 @@ get_value_for_action_property(const la_command_t *command,
         assert_command(command); assert_property(action_property);
         la_vdebug("get_value_for_action_property(%s)", action_property->name);
 
-        const char *result = NULL;
-
         /* try some standard names first */
-        result = check_for_special_names(command, action_property);
+        const char *result = check_for_special_names(command, action_property);
         if (result)
                 return result;
 
@@ -150,12 +149,10 @@ get_value_for_action_property(const la_command_t *command,
  * replace any %SOMETHING% with the corresponding property value.
  */
 
-static char *
-convert_command(const la_command_t *command, const la_commandtype_t type)
+static void
+convert_command(la_command_t *command, const la_commandtype_t type)
 {
-        /* Don't assert_command() here, as after a reload some commands might
-         * not have a rule attached to them anymore */
-        assert(command); assert(command->name);
+        assert_command(command);
         la_debug("convert_command(%s, %s)", command->name,
                         type == LA_COMMANDTYPE_BEGIN ? "begin" : "end");
 
@@ -163,7 +160,7 @@ convert_command(const la_command_t *command, const la_commandtype_t type)
                                 command->begin_string) ||
                         (type == LA_COMMANDTYPE_END && command->end_properties &&
                          command->end_string)))
-                return NULL;
+                return;
 
         const char *source_string = (type == LA_COMMANDTYPE_BEGIN) ?
                 command->begin_string : command->end_string;
@@ -171,6 +168,7 @@ convert_command(const la_command_t *command, const la_commandtype_t type)
         size_t dst_len = 2 * xstrlen(source_string);
         char *result = xmalloc(dst_len);
         char *dst_ptr = result;
+        size_t length;
 
         la_property_t *action_property = ITERATE_PROPERTIES(
                         type == LA_COMMANDTYPE_BEGIN ?
@@ -179,9 +177,10 @@ convert_command(const la_command_t *command, const la_commandtype_t type)
 
         while (*src_ptr)
         {
-                if (*src_ptr == '%')
+                switch (*src_ptr)
                 {
-                        size_t length = token_length(src_ptr);
+                case '%':
+                        length = token_length(src_ptr);
                         if (length > 2)
                         {
                                 /* We've detected a token - not just "%%"
@@ -196,7 +195,7 @@ convert_command(const la_command_t *command, const la_commandtype_t type)
                                 {
                                         /* Copy over value of action property
                                          * */
-                                        size_t repl_len = xstrlen(repl);
+                                        const size_t repl_len = xstrlen(repl);
                                         realloc_buffer(&result, &dst_ptr,
                                                         &dst_len, repl_len);
                                         dst_ptr = stpncpy(dst_ptr, repl, repl_len);
@@ -218,37 +217,36 @@ convert_command(const la_command_t *command, const la_commandtype_t type)
                                 *dst_ptr++ = '%';
                                 src_ptr += 2;
                         }
-                }
-                else if (*src_ptr == '\\')
-                {
+                        break;
+                case '\\':
                         /* In case of '\', copy next character without any
                          * interpretation. */
                         realloc_buffer(&result, &dst_ptr, &dst_len, 2);
                         *dst_ptr++ = *src_ptr++;
                         *dst_ptr++ = *src_ptr++;
-                }
-                else
-                {
+                        break;
+                default:
                         /* simply copy all other characters */
                         realloc_buffer(&result, &dst_ptr, &dst_len, 1);
                         *dst_ptr++ = *src_ptr++;
+                        break;
                 }
         }
 
         *dst_ptr = 0;
         la_debug("convert_command()=%s", result);
 
-        return result;
+        if (type == LA_COMMANDTYPE_BEGIN)
+                command->begin_string_converted = result;
+        else
+                command->end_string_converted = result;
 }
 
 void
 convert_both_commands(la_command_t *command)
 {
-        assert_command(command);
-        command->begin_string_converted = convert_command(command,
-                        LA_COMMANDTYPE_BEGIN);
-        command->end_string_converted = convert_command(command,
-                        LA_COMMANDTYPE_END);
+        convert_command(command, LA_COMMANDTYPE_BEGIN);
+        convert_command(command, LA_COMMANDTYPE_END);
 }
 
 
@@ -270,24 +268,24 @@ exec_command(const la_command_t *command, const la_commandtype_t type)
                         command->end_string_converted);
         switch (result)
         {
-                case 0:
-                        break;
-                case -1:
-                        la_log(LOG_ERR, "Could not create child process for "
-                                        "action \"%s\".", command->name);
-                        break;
-                case 127:
-                        la_log(LOG_ERR, "Could not execute shell for action "
-                                        "\"%s\".", command->name);
-                        break;
-                default:
-                        la_log(LOG_ERR, "Action \"%s\" returned with error "
-                                        "code %d.", command->name, result);
-                        la_log(LOG_ERR, "Tried to execute \"%s\"",
-                                        type == LA_COMMANDTYPE_BEGIN ?
-                                        command->begin_string_converted :
-                                        command->end_string_converted);
-                        break;
+        case 0:
+                break;
+        case -1:
+                la_log(LOG_ERR, "Could not create child process for "
+                                "action \"%s\".", command->name);
+                break;
+        case 127:
+                la_log(LOG_ERR, "Could not execute shell for action "
+                                "\"%s\".", command->name);
+                break;
+        default:
+                la_log(LOG_ERR, "Action \"%s\" returned with error "
+                                "code %d.", command->name, result);
+                la_log(LOG_ERR, "Tried to execute \"%s\"",
+                                type == LA_COMMANDTYPE_BEGIN ?
+                                command->begin_string_converted :
+                                command->end_string_converted);
+                break;
         }
 }
 
@@ -470,6 +468,27 @@ reset_counts(void)
         }
 }
 
+static void
+log_command_activated(const char *address, const char *command_name,
+                const char *from, const char *rule_name, const int factor)
+{
+        char *factor_string = NULL;
+        if (factor)
+        {
+                factor_string = alloca(14);
+                snprintf(factor_string, 13, " (factor %d)", factor);
+        }
+
+        la_log(LOG_INFO, "Host: %s, action \"%s\" activated"
+                        "%s%s, rule \"%s\"%s.",
+                        address, command_name,
+                        from ? " by host " : "",
+                        from ? from : "",
+                        rule_name,
+                        factor_string ? factor_string : "");
+}
+
+
 /*
  * Executes a command submitted manually or from a remote logactiond
  */
@@ -521,49 +540,16 @@ trigger_manual_command(const la_address_t *address,
                 return;
         }
 
-        if (!suppress_logging)
-        {
-                if (command->rule->meta_enabled)
-                {
-                        command->factor = check_meta_list(command, factor);
-                        la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
-                                        "%s%s, rule \"%s\" (factor %d).",
-                                        command->address->text, command->name,
-                                        from ? "by host " : "",
-                                        from ? from : "",
-                                        command->rule_name, command->factor);
-                }
-                else
-                {
-                        la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
-                                        "%s%s, rule \"%s\".",
-                                        command->address->text, command->name,
-                                        from ? "by host " : "",
-                                        from ? from : "",
-                                        command->rule_name);
-                }
-        }
+        if (command->rule->meta_enabled)
+                command->factor = check_meta_list(command, factor);
         else
+                command->factor = 0;
+
+        if (!suppress_logging || log_verbose)
         {
-                if (command->rule->meta_enabled)
-                {
-                        command->factor = check_meta_list(command, factor);
-                        la_log_verbose(LOG_INFO, "Host: %s, action \"%s\" activated "
-                                        "%s%s, rule \"%s\" (factor %d).",
-                                        command->address->text, command->name,
-                                        from ? "by host " : "",
-                                        from ? from : "",
-                                        command->rule_name, command->factor);
-                }
-                else
-                {
-                        la_log_verbose(LOG_INFO, "Host: %s, action \"%s\" activated "
-                                        "%s%s, rule \"%s\".",
-                                        command->address->text, command->name,
-                                        from ? "by host " : "",
-                                        from ? from : "",
-                                        command->rule_name);
-                }
+                log_command_activated(command->address->text,
+                                command->name, from,
+                                command->rule_name, command->factor);
         }
 
         command->rule->queue_count++;
@@ -688,7 +674,7 @@ trigger_end_command(const la_command_t *command, const bool suppress_logging)
         }
         else
         {
-                if (!suppress_logging)
+                if (!suppress_logging || log_verbose)
                 {
                         if (command->address)
                                 la_log(LOG_INFO, "Host: %s, action \"%s\" ended for "
@@ -696,17 +682,6 @@ trigger_end_command(const la_command_t *command, const bool suppress_logging)
                                                 command->name, command->rule_name);
                         else
                                 la_log(LOG_INFO, "Action \"%s\" ended for rule "
-                                                "\"%s\".", command->name,
-                                                command->rule_name);
-                }
-                else
-                {
-                        if (command->address)
-                                la_log_verbose(LOG_INFO, "Host: %s, action \"%s\" ended for "
-                                                "rule \"%s\".", command->address->text,
-                                                command->name, command->rule_name);
-                        else
-                                la_log_verbose(LOG_INFO, "Action \"%s\" ended for rule "
                                                 "\"%s\".", command->name,
                                                 command->rule_name);
                 }
@@ -800,6 +775,28 @@ dup_command(const la_command_t *command)
         return result;
 }
 
+/* Return false if action can't handle type of IP address */
+
+static bool
+has_correct_address(const la_command_t *template, const la_address_t *address)
+{
+        if (!address)
+        {
+                if (template->need_host != LA_NEED_HOST_NO)
+                        return false;
+        }
+        else
+        {
+                if ((address->sa.ss_family == AF_INET && template->need_host ==
+                                        LA_NEED_HOST_IP6) ||
+                                (address->sa.ss_family == AF_INET6 &&
+                                                template->need_host ==
+                                                LA_NEED_HOST_IP4))
+                        return false;
+        }
+
+        return true;
+}
 
 /*
  * Create command from template. Duplicate template and add add'l information
@@ -815,21 +812,8 @@ create_command_from_template(const la_command_t *template, la_pattern_t *pattern
         assert_list(pattern->properties);
         la_debug("create_command_from_template(%s)", template->name);
 
-        /* Return if action can't handle type of IP address */
-
-        if (!address)
-        {
-                if (template->need_host != LA_NEED_HOST_NO)
-                        return NULL;
-        }
-        else
-        {
-                if ((address->sa.ss_family == AF_INET && template->need_host ==
-                                        LA_NEED_HOST_IP6) ||
-                                (address->sa.ss_family == AF_INET6 &&
-                                 template->need_host == LA_NEED_HOST_IP4))
-                        return NULL;
-        }
+        if (!has_correct_address(template, address))
+                return NULL;
 
         la_command_t *result = dup_command(template);
 
@@ -860,22 +844,8 @@ create_manual_command_from_template(const la_command_t *template,
         assert_command(template);
         la_debug("create_manual_command_from_template(%s)", template->name);
 
-        /* Return if action can't handle type of IP address */
-
-        if (!address)
-        {
-                if (template->need_host != LA_NEED_HOST_NO)
-                        return NULL;
-        }
-        else
-        {
-                if ((address->sa.ss_family == AF_INET && template->need_host ==
-                                        LA_NEED_HOST_IP6) ||
-                                (address->sa.ss_family == AF_INET6 &&
-                                                template->need_host ==
-                                                LA_NEED_HOST_IP4))
-                        return NULL;
-        }
+        if (!has_correct_address(template, address))
+                return NULL;
 
         la_command_t *result = dup_command(template);
 

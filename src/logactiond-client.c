@@ -35,9 +35,6 @@
 
 #include "logactiond.h"
 
-static char *password = NULL;
-static char *host = NULL;
-static char *port = NULL;
 
 static int socket_fd;
 static struct addrinfo *ai;
@@ -75,7 +72,7 @@ cleanup_socket(void)
 }
 
 static void
-setup_socket(char *host)
+setup_socket(const char *host, const char *port)
 {
         static struct addrinfo hints;
         memset(&hints, 0, sizeof(hints));
@@ -96,10 +93,8 @@ setup_socket(char *host)
 }
 
 static void
-send_remote_message(char *host, char *message)
+send_remote_message(const char *host, const char *message)
 {
-        setup_socket(host);
-
         int message_sent = sendto(socket_fd, message, TOTAL_MSG_LEN, 0,
                         ai->ai_addr, ai->ai_addrlen);
 
@@ -154,6 +149,10 @@ send_local_message(char *message)
 int
 main(int argc, char *argv[])
 {
+        const char *host = NULL;
+        const char *password = NULL;
+        const char *port = NULL;
+
         for (;;)
         {
                 static struct option long_options[] =
@@ -196,7 +195,6 @@ main(int argc, char *argv[])
 
         if (host && !password)
         {
-                ssize_t passwd_size = 32;
                 password = xgetpass("Password: ");
                 if (!strlen(password))
                         die_hard("No password entered!");
@@ -286,6 +284,7 @@ main(int argc, char *argv[])
                 if (!encrypt_message(message))
                         die_err("Unable to encrypt message");
 #endif /* WITH_LIBSODIUM */
+                setup_socket(host, port);
                 send_remote_message(host, message);
         }
         else

@@ -203,19 +203,18 @@ remove_and_trigger(la_address_t *address)
                 }
         }
 
-        if (!command)
+        int result = -1;
+        if (command)
         {
-                xpthread_mutex_unlock(&end_queue_mutex);
-                return -1;
+                remove_node((kw_node_t *) command);
+                trigger_end_command(command, false);
+                free_command(command);
+                result = 0;
         }
-
-        remove_node((kw_node_t *) command);
-        trigger_end_command(command, false);
-        free_command(command);
 
         xpthread_mutex_unlock(&end_queue_mutex);
 
-        return 0;
+        return result;
 }
 
 #ifndef NOCOMMANDS

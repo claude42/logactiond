@@ -22,7 +22,6 @@
 #include <assert.h>
 #include <string.h>
 #include <syslog.h>
-#include <stdlib.h>
 
 #include "logactiond.h"
 
@@ -51,7 +50,7 @@ generate_key(unsigned char *key, unsigned int key_len, const char *password,
                                 crypto_pwhash_MEMLIMIT_INTERACTIVE,
                                 crypto_pwhash_ALG_DEFAULT) == -1)
         {
-                la_log(LOG_ERR, "Unable to encryption generate key!");
+                la_log(LOG_ERR, "Unable to generat encryption key!");
                 return false;
         }
 
@@ -69,6 +68,13 @@ generate_send_key_and_salt(const char *password)
         return generate_key(send_key, crypto_secretbox_KEYBYTES, password, send_salt);
 }
 
+static bool
+same_salt_as_before(const unsigned char *buffer, la_address_t *from_addr)
+{
+        return sodium_memcmp(&(from_addr->salt), &buffer[SALT_IDX],
+                                crypto_pwhash_SALTBYTES);
+}
+
 bool
 decrypt_message(char *buffer, const char *password, la_address_t *from_addr)
 {
@@ -82,9 +88,9 @@ decrypt_message(char *buffer, const char *password, la_address_t *from_addr)
         }
 
         /* check wether salt is the same as last time for host. If not,
-         * regenerate key */
-        if (sodium_memcmp(&(from_addr->salt), &ubuffer[SALT_IDX],
-                                crypto_pwhash_SALTBYTES))
+         * copy new salt and regenerate key */
+        /* TODO: Refactor */
+        if (same_salt_as_before(ubuffer, from_addr))
         {
                 memcpy(&(from_addr->salt), &ubuffer[SALT_IDX], crypto_pwhash_SALTBYTES);
                 if (!generate_key(from_addr->key, crypto_secretbox_KEYBYTES,

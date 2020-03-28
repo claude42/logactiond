@@ -78,9 +78,11 @@ void insert_node_before(kw_node_t *ex_node, kw_node_t *new_node);
 
 void remove_node(kw_node_t *node);
 
-void assert_node_ffl(const kw_node_t *node, const char *func, char *file, unsigned int line);
+void assert_node_ffl(const kw_node_t *node, const char *func, const char *file,
+                unsigned int line);
 
-void assert_list_ffl(const kw_list_t *list, const char *func, char *file, unsigned int line);
+void assert_list_ffl(const kw_list_t *list, const char *func, const char *file,
+                unsigned int line);
 
 
 #endif /* __nodelist_h */

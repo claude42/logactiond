@@ -131,7 +131,9 @@ die_hard(const char *fmt, ...)
 {
         va_list myargs;
 
+#ifndef CLIENTONLY
         int save_errno = errno;
+#endif /* CLIENTONLY */
 
         va_start(myargs, fmt);
         log_message(LOG_ERR, fmt, myargs, NULL);
@@ -152,7 +154,9 @@ die_err(const char *fmt, ...)
 {
         va_list myargs;
 
+#ifndef CLIENTONLY
         int save_errno = errno;
+#endif /* CLIENTONLY */
 
         va_start(myargs, fmt);
         log_message(LOG_ERR, fmt, myargs, strerror(errno));

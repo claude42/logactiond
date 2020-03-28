@@ -469,7 +469,7 @@ load_patterns(la_rule_t *rule, const config_setting_t *rule_def,
                 die_hard("No patterns specified for %s!",
                                 config_setting_name(rule_def));
 
-        for (unsigned int i=0; i<n; i++)
+        for (int i=0; i<n; i++)
         {
                 const char *item = config_setting_get_string_elem(patterns, i);
 
@@ -534,7 +534,7 @@ load_properties(kw_list_t *properties, const config_setting_t *section)
 
         la_debug("load_properties(%s)", config_setting_name(section));
 
-        config_setting_t *properties_section =
+        const config_setting_t *properties_section =
                 config_setting_get_member(section, LA_PROPERTIES_LABEL);
 
         if (!properties_section)
@@ -960,7 +960,7 @@ init_config_mutex(void)
 }*/
 
 bool
-init_la_config(char *filename)
+init_la_config(const char *filename)
 {
         if (!filename)
                 filename = CONFIG_FILE;
@@ -977,10 +977,10 @@ init_la_config(char *filename)
 
         if (!config_read_file(&la_config->config_file, filename))
         {
-                const char *config_error_file =
+                const char *error_file =
                         config_error_file(&la_config->config_file);
                 xpthread_mutex_unlock(&config_mutex);
-                if (config_error_file)
+                if (error_file)
                         la_log(LOG_ERR, "%s:%d - %s!",
                                         config_error_file(&la_config->config_file),
                                         config_error_line(&la_config->config_file),

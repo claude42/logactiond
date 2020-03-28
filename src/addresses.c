@@ -36,7 +36,8 @@
 #include "logactiond.h"
 
 void
-assert_address_ffl(const la_address_t *address, const char *func, char *file, unsigned int line)
+assert_address_ffl(const la_address_t *address, const char *func,
+                const char *file, unsigned int line)
 {
         if (!address)
                 die_hard("%s:%u: %s: Assertion 'address' failed. ", file, line,
@@ -160,8 +161,10 @@ cidr_match(const la_address_t *addr, const la_address_t *net)
                 struct sockaddr_in6 *n = (struct sockaddr_in6 *) &net->sa;
                 return cidr6_match(a->sin6_addr, n->sin6_addr, net->prefix);
         }
-
-        return false; // will never be reached, just make compiler happy
+        else
+        {
+                return false;
+        }
 }
 
 /*
@@ -174,7 +177,7 @@ adrcmp(const la_address_t *a1, const la_address_t *a2)
 {
         la_vdebug("adrcmp()");
 
-        /* if both are not NULL and of the address family, look further */
+        /* if both are not NULL and of the same address family, look further */
         if (a1 && a2 && a1->sa.ss_family == a2->sa.ss_family)
         {
                 if (a1->sa.ss_family == AF_INET)
@@ -188,16 +191,16 @@ adrcmp(const la_address_t *a1, const la_address_t *a2)
                 {
                         struct sockaddr_in6 sa1 = *((struct sockaddr_in6 *) &a1->sa);
                         struct sockaddr_in6 sa2 = *((struct sockaddr_in6 *) &a2->sa);
-                        if (!memcmp(&sa1.sin6_addr,
-                                                &sa2.sin6_addr,
+                        if (!memcmp(&sa1.sin6_addr, &sa2.sin6_addr,
                                                 sizeof(struct in6_addr)))
                                 return 0;
                 }
         }
-
         /* if both are NULL, they are the same (sort of) */
-        if (!a1 && !a2)
+        else if (!a1 && !a2)
+        {
                 return 0;
+        }
 
         /* Return 1 otherwise, either if
          * - one of the two addresses is NULL, or
