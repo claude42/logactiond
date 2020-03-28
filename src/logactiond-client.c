@@ -93,7 +93,7 @@ setup_socket(const char *host, const char *port)
 }
 
 static void
-send_remote_message(const char *host, const char *message)
+send_remote_message(const char *message)
 {
         int message_sent = sendto(socket_fd, message, TOTAL_MSG_LEN, 0,
                         ai->ai_addr, ai->ai_addrlen);
@@ -285,7 +285,7 @@ main(int argc, char *argv[])
                         die_err("Unable to encrypt message");
 #endif /* WITH_LIBSODIUM */
                 setup_socket(host, port);
-                send_remote_message(host, message);
+                send_remote_message(message);
         }
         else
         {

@@ -272,10 +272,7 @@ save_queue_state(const char *state_file_name)
 
         FILE *stream = fopen(state_file_name, "w");
         if (!stream)
-        {
-                la_log_errno(LOG_ERR, "Unable to open state file");
-                return;
-        }
+                LOG_RETURN(, LOG_ERR, "Unable to open state file");
 
         const time_t now = xtime(NULL);
         fprintf(stream, "# logactiond state %s\n", ctime(&now));

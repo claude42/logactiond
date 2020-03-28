@@ -136,27 +136,26 @@ handle_signal(const int signal)
 {
         la_debug("handle_signal(%u)", signal);
 
-        if (signal == SIGHUP)
+        switch (signal)
         {
+        case SIGHUP:
                 trigger_reload();
-        }
-        else if (signal == SIGUSR1)
-        {
+                break;
+        case SIGUSR1:
                 empty_end_queue();
-        }
-        else if (signal == SIGINT || signal == SIGTERM)
-        {
+                break;
+        case SIGINT:
+        case SIGTERM:
                 trigger_shutdown(EXIT_SUCCESS, 0);
-        }
-        else if (signal == SIGABRT)
-        {
+                break;
+        case SIGABRT:
                 la_log(LOG_ERR, "Process aborted");
                 trigger_shutdown(EXIT_FAILURE, 0);
-        }
-        else
-        {
+                break;
+        default:
                 la_log(LOG_ERR, "Received unknown signal %u", signal);
                 trigger_shutdown(EXIT_FAILURE, 0);
+                break;
         }
 
 }
@@ -363,11 +362,8 @@ restore_state(const char *state_file_name)
 
         FILE *stream = fopen(state_file_name, "r");
         if (!stream)
-        {
-                la_log_errno(LOG_ERR, "Unable to open state file \"%s\"",
+                LOG_RETURN_ERRNO(, LOG_ERR, "Unable to open state file \"%s\"",
                                 state_file_name);
-                return;
-        }
 
         la_log(LOG_INFO, "Restoring state from \"%s\"", state_file_name);
 

@@ -133,17 +133,11 @@ parse_add_entry_message(const char *message, la_address_t **address, la_rule_t *
                         &parsed_factor);
 
         if (n < 2)
-        {
-                la_log(LOG_ERR, "Ignoring illegal command \"%s\"!", message);
-                return -1;
-        }
+                LOG_RETURN(-1, LOG_ERR, "Ignoring illegal command \"%s\"!", message);
 
         *address = create_address(parsed_address_str);
         if (!*address)
-        {
-                la_log(LOG_ERR, "Cannot convert address in command %s!", message);
-                return -1;
-        }
+                LOG_RETURN(-1, LOG_ERR, "Cannot convert address in command %s!", message);
         la_debug("Found address %s", (*address)->text);
 
         *rule = find_rule(parsed_rule_str);
@@ -202,20 +196,14 @@ del_entry(const char *buffer)
 
         la_address_t *address = create_address(buffer+2);
         if (!address)
-        {
-                la_log(LOG_ERR, "Cannot convert address in command %s!", buffer);
-                return;
-        }
+                LOG_RETURN(, LOG_ERR, "Cannot convert address in command %s!", buffer);
 
         xpthread_mutex_lock(&config_mutex);
         const int r = remove_and_trigger(address);
         xpthread_mutex_unlock(&config_mutex);
 
         if (r == -1)
-        {
-                la_log(LOG_ERR, "Address %s not in end queue!", buffer);
-                return;
-        }
+                LOG_RETURN(, LOG_ERR, "Address %s not in end queue!", buffer);
 
         free_address(address);
 }
@@ -255,10 +243,7 @@ update_log_level(const char *buffer)
 
         const int new_log_level = strtol(buffer+2, &endptr, 10);
         if (errno || *endptr != '\0' || new_log_level < 0 || new_log_level > 9)
-        {
-                la_log(LOG_ERR, "Cannot change to log level %s!", buffer);
-                return;
-        }
+                LOG_RETURN(, LOG_ERR, "Cannot change to log level %s!", buffer);
 
         la_log (LOG_INFO, "Set log level to %u", new_log_level);
         log_level = new_log_level;
@@ -391,44 +376,41 @@ parse_message_trigger_command(const char *buf, const char *from)
         assert(buf);
 
         if (*buf != PROTOCOL_VERSION)
-        {
-                la_log(LOG_ERR, "Wrong protocol version '%c'!");
-                return;
-        }
+                LOG_RETURN(, LOG_ERR, "Wrong protocol version '%c'!");
 
         switch (*(buf+1))
         {
-                case '+':
-                        add_entry(buf, from);
-                        break;
-                case '-':
-                        del_entry(buf);
-                        break;
-                case 'F':
-                        perform_flush();
-                        break;
-                case 'R':
-                        perform_reload();
-                        break;
-                case 'S':
-                        perform_shutdown();
-                        break;
-                case '>':
-                        perform_save();
-                        break;
-                case 'L':
-                        update_log_level(buf);
-                        break;
-                case '0':
-                        reset_counts();
-                        break;
-                case 'X':
-                        sync_entries(buf, from);
-                        break;
-                default:
-                        la_log(LOG_ERR, "Unknown command: '%c'",
-                                        *(buf+1));
-                        break;
+        case '+':
+                add_entry(buf, from);
+                break;
+        case '-':
+                del_entry(buf);
+                break;
+        case 'F':
+                perform_flush();
+                break;
+        case 'R':
+                perform_reload();
+                break;
+        case 'S':
+                perform_shutdown();
+                break;
+        case '>':
+                perform_save();
+                break;
+        case 'L':
+                update_log_level(buf);
+                break;
+        case '0':
+                reset_counts();
+                break;
+        case 'X':
+                sync_entries(buf, from);
+                break;
+        default:
+                la_log(LOG_ERR, "Unknown command: '%c'",
+                                *(buf+1));
+                break;
         }
 }
 

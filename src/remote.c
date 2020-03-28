@@ -65,10 +65,7 @@ send_message_to_single_address(const char *message, const la_address_t *remote_a
         {
                 *fd_ptr = socket(remote_address->sa.ss_family, SOCK_DGRAM, 0);
                 if (*fd_ptr == -1)
-                {
-                        la_log_errno(LOG_ERR, "Unable to create server socket");
-                        return;
-                }
+                        LOG_RETURN_ERRNO(, LOG_ERR, "Unable to create server socket");
         }
 
         const int message_sent = sendto(*fd_ptr, message, TOTAL_MSG_LEN, 0,
@@ -98,21 +95,15 @@ send_add_entry_message(const la_command_t *command, const la_address_t *address)
          * maybe we should reflect this in the protocol and then implement
          * here... */
         if (!command->address)
-        {
-                la_log(LOG_ERR, "Can't create message for command without "
+                LOG_RETURN(, LOG_ERR, "Can't create message for command without "
                                 "address");
-                return;
-        }
 
         /* delibarately left out end_time and factor  here. Receiving end
          * should decide on duration. TODO: does that make sense? */
         char *message;
         if (!(message = create_add_message(command->address->text,
                                 command->rule_name, NULL, NULL)))
-        {
-                la_log(LOG_ERR, "Unable to create message");
-                return;
-        }
+                LOG_RETURN(, LOG_ERR, "Unable to create message");
 #ifdef WITH_LIBSODIUM
         if (la_config->remote_secret_changed)
         {
@@ -120,10 +111,7 @@ send_add_entry_message(const la_command_t *command, const la_address_t *address)
                 la_config->remote_secret_changed = false;
         }
         if (!encrypt_message(message))
-        {
-                la_log(LOG_ERR, "Unable to encrypt message");
-                return;
-        }
+                LOG_RETURN(, LOG_ERR, "Unable to encrypt message");
 #endif /* WITH_LIBSODIUM */
 
         if (address)

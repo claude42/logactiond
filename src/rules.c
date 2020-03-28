@@ -179,12 +179,9 @@ trigger_single_command(la_pattern_t *pattern, const la_address_t *address,
          * end_queue. In this case, ignore new command */
         const la_command_t *tmp = find_end_command(address);
         if (tmp)
-        {
-                la_log_verbose(LOG_INFO, "Host: %s, ignored, action \"%s\" "
+                LOG_RETURN_VERBOSE(, LOG_INFO, "Host: %s, ignored, action \"%s\" "
                                 "already active (triggered by rule \"%s\").",
                                 address->text, tmp->name, tmp->rule_name);
-                return;
-        }
 
         /* Check whether the same command has been triggered (but not yet
          * fired) by the same host before. Create new command if not found. If
@@ -203,20 +200,16 @@ trigger_single_command(la_pattern_t *pattern, const la_address_t *address,
                  * property exists */
                 if (template->need_host != LA_NEED_HOST_NO &&
                                 !address)
-                {
-                        la_log(LOG_ERR, "Missing required host token, action "
+                        LOG_RETURN(, LOG_ERR, "Missing required host token, action "
                                         "\"%s\" not fired for rule \"%s\"!",
                                         template->name,
                                         pattern->rule->name);
-                        return;
-                }
+
                 command = create_command_from_template(template, pattern,
                                 address);
                 if (!command)
-                {
-                        la_log(LOG_ERR, "IP address doesn't match what requirements of action!");
-                        return;
-                }
+                        LOG_RETURN(, LOG_ERR, "IP address doesn't match what requirements of action!");
+
                 from_trigger_list = false;
         }
 
@@ -284,11 +277,8 @@ trigger_all_commands(la_pattern_t *pattern)
                 /* in case IP address cannot be converted, ignore trigger
                  * altogether */
                 if (!address)
-                {
-                        la_log(LOG_ERR, "Invalid IP address \"%s\", trigger "
+                        LOG_RETURN(, LOG_ERR, "Invalid IP address \"%s\", trigger "
                                         "ignored!", host);
-                        return;
-                }
         }
 
         /* Do nothing if on ignore list */

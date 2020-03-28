@@ -49,10 +49,7 @@ generate_key(unsigned char *key, unsigned int key_len, const char *password,
                                 crypto_pwhash_OPSLIMIT_INTERACTIVE,
                                 crypto_pwhash_MEMLIMIT_INTERACTIVE,
                                 crypto_pwhash_ALG_DEFAULT) == -1)
-        {
-                la_log(LOG_ERR, "Unable to generat encryption key!");
-                return false;
-        }
+                LOG_RETURN(false, LOG_ERR, "Unable to generat encryption key!");
 
         return true;
 }
@@ -82,10 +79,7 @@ decrypt_message(char *buffer, const char *password, la_address_t *from_addr)
         unsigned char *ubuffer = (unsigned char *) buffer;
 
         if (sodium_init() < 0)
-        {
-                la_log(LOG_ERR, "Unable to  initialize libsodium!");
-                return false;
-        }
+                LOG_RETURN(false, LOG_ERR, "Unable to  initialize libsodium!");
 
         /* check wether salt is the same as last time for host. If not,
          * copy new salt and regenerate key */
@@ -95,22 +89,16 @@ decrypt_message(char *buffer, const char *password, la_address_t *from_addr)
                 memcpy(&(from_addr->salt), &ubuffer[SALT_IDX], crypto_pwhash_SALTBYTES);
                 if (!generate_key(from_addr->key, crypto_secretbox_KEYBYTES,
                                         password, &ubuffer[SALT_IDX]))
-                {
-                        la_log(LOG_ERR, "Unable to generate receive key for "
+                        LOG_RETURN(false, LOG_ERR, "Unable to generate receive key for "
                                         "host %s!", from_addr->text);
-                        return false;
-                }
         }
 
 	/* Decrypt encrypted message with key and nonce */
         if (crypto_secretbox_open_easy(&ubuffer[MSG_IDX], &ubuffer[MSG_IDX],
                                 ENC_MSG_LEN, &ubuffer[NONCE_IDX],
                                 from_addr->key) == -1)
-        {
-                la_log(LOG_ERR, "Unable to decrypt message from host %s",
+                LOG_RETURN(false, LOG_ERR, "Unable to decrypt message from host %s",
                                 from_addr->text);
-                return false;
-        }
         return true;
 }
 
@@ -121,10 +109,7 @@ encrypt_message(char *buffer)
         unsigned char *ubuffer = (unsigned char *) buffer;
 
         if (sodium_init() < 0)
-        {
-                la_log(LOG_ERR, "Unable to  initialize libsodium!");
-                return false;
-        }
+                LOG_RETURN(false, LOG_ERR, "Unable to  initialize libsodium!");
 
         memcpy(&ubuffer[SALT_IDX], send_salt, crypto_pwhash_SALTBYTES);
 
@@ -134,10 +119,7 @@ encrypt_message(char *buffer)
 	/* And then encrypt the the message with key and nonce */
         if (crypto_secretbox_easy(&ubuffer[MSG_IDX], &ubuffer[MSG_IDX], MSG_LEN,
                                 &ubuffer[NONCE_IDX], send_key) == -1)
-        {
-                la_log(LOG_ERR, "Unable to encrypt message!");
-                return false;
-        }
+                LOG_RETURN(false, LOG_ERR, "Unable to encrypt message!");
 
         return true;
 }

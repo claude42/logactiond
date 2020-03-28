@@ -505,40 +505,28 @@ trigger_manual_command(const la_address_t *address,
 
         assert(la_config);
         if (address_on_list(address, la_config->ignore_addresses))
-        {
-                la_log_verbose(LOG_INFO, "Host: %s, manual trigger ignored.", address->text);
-                return;
-        }
+                LOG_RETURN(, LOG_INFO, "Host: %s, manual trigger ignored.", address->text);
 
         const la_command_t *tmp = find_end_command(address);
         if (tmp)
-        {
-                la_log_verbose(LOG_INFO, "Host: %s, ignored, action \"%s\" "
-                                "%s%salready "
+                LOG_RETURN_VERBOSE(, LOG_INFO, "Host: %s, ignored, action \"%s\" "
+                                "%s%s already "
                                 "active (triggered by rule \"%s\").",
                                 address->text, tmp->name, 
                                 from ? "by host " : "",
                                 from ? from : "",
                                 tmp->rule_name);
-                return;
-        }
 
         la_command_t *command = create_manual_command_from_template(template, 
                         address, from);
         if (!command)
-        {
-                la_log(LOG_ERR, "IP address doesn't match what requirements of action!");
-                return;
-        }
+                LOG_RETURN(, LOG_ERR, "IP address doesn't match what requirements of action!");
 
         /* If end_time was specified, check whether it's already in the past.
          * If so, do nothing */
         if (end_time && xtime(NULL) > end_time)
-        {
-                la_log_verbose(LOG_INFO, "Manual command ignored as end time "
+                LOG_RETURN_VERBOSE(, LOG_INFO, "Manual command ignored as end time "
                                 "is in the past.");
-                return;
-        }
 
         if (command->rule->meta_enabled)
                 command->factor = check_meta_list(command, factor);
@@ -587,13 +575,10 @@ trigger_command(la_command_t *command)
         {
                 const la_command_t *tmp = find_end_command(command->address);
                 if (tmp)
-                {
-                        la_log_verbose(LOG_INFO, "Host: %s, ignored, action "
+                        LOG_RETURN_VERBOSE(, LOG_INFO, "Host: %s, ignored, action "
                                         "\"%s\" already active (triggered by "
                                         "rule \"%s\").", tmp->address->text,
                                 tmp->name, tmp->rule_name);
-                        return;
-                }
         }
 
         if (command->is_template)

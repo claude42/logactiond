@@ -162,6 +162,10 @@
 // verbose debugging loglevel
 #define LOG_VDEBUG (LOG_DEBUG+1)
 
+#define LOG_RETURN(retval, ...) do { la_log(__VA_ARGS__); return retval; } while (0)
+#define LOG_RETURN_VERBOSE(retval, ...) do { la_log_verbose(__VA_ARGS__); return retval; } while (0)
+#define LOG_RETURN_ERRNO(retval, ...) do { la_log_errno(__VA_ARGS__); return retval; } while (0)
+
 /* List macros */
 
 #define ITERATE_ADDRESSES(ADDRESSES) (la_address_t *) &(ADDRESSES)->head

@@ -272,10 +272,7 @@ create_address_sa(const struct sockaddr *sa, const socklen_t salen)
         la_vdebug("create_address_sa()");
 
         if (sa->sa_family != AF_INET && sa->sa_family != AF_INET6)
-        {
-                la_log(LOG_ERR, "Unsupported address family!");
-                return NULL;
-        }
+                LOG_RETURN(NULL, LOG_ERR, "Unsupported address family!");
 
         la_address_t *result = xmalloc0(sizeof(la_address_t));
 
@@ -359,10 +356,9 @@ create_address_port(const char *host, const in_port_t port)
                                 (ai->ai_family == AF_INET && result->prefix > 32) ||
                                 (ai->ai_family == AF_INET6 && result->prefix > 128))
                 {
-                        la_log(LOG_ERR, "Cannot convert address prefix!");
                         freeaddrinfo(ai);
                         free_address(result);
-                        return NULL;
+                        LOG_RETURN(NULL, LOG_ERR, "Cannot convert address prefix!");
                 }
 
                 strncat(result->text, prefix_str, 4);
