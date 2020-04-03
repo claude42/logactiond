@@ -338,7 +338,7 @@ create_address_port(const char *host, const in_port_t port)
          * That makes sense for send_to (as we don't want to send the same
          * message to the same host multiple times).
          *
-         * But for ignore_addresses it might make more sense to go through all
+         * TODO: But for ignore_addresses it might make more sense to go through all
          * results from getaddrinfo(). */
 
         la_address_t *result = create_address_sa(ai->ai_addr, ai->ai_addrlen);

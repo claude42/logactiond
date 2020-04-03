@@ -149,6 +149,32 @@ die_hard(const char *fmt, ...)
 #endif  /* CLIENTONLY */
 }
 
+/*
+ * Die reporting val as error code.
+ */
+
+void
+die_val(const int val, const char *fmt, ...)
+{
+        va_list myargs;
+
+#ifndef CLIENTONLY
+        int save_errno = errno;
+#endif /* CLIENTONLY */
+
+        va_start(myargs, fmt);
+        log_message(LOG_ERR, fmt, myargs, strerror(val));
+        va_end(myargs);
+
+#ifdef CLIENTONLY
+        exit(1);
+#else  /* CLIENTONLY */
+        if (!shutdown_ongoing)
+                trigger_shutdown(EXIT_FAILURE, save_errno);
+
+        pthread_exit(NULL);
+#endif  /* CLIENTONLY */
+}
 void
 die_err(const char *fmt, ...)
 {

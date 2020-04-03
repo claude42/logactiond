@@ -258,7 +258,6 @@ increase_detection_count(la_pattern_t *pattern)
  * Trigger all commands assigned to a rule
  *
  * Inputs
- * rule - 
  * pattern - pattern that matched
  */
 

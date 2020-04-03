@@ -272,6 +272,8 @@ free_list(kw_list_t *list)
         {
                 kw_node_t *tmp = node;
                 node = node->succ;
+                if (tmp->name)
+                        free(tmp->name);
                 free(tmp);
         }
 

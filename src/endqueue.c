@@ -203,13 +203,17 @@ remove_and_trigger(la_address_t *address)
                 }
         }
 
-        int result = -1;
+        int result;
         if (command)
         {
                 remove_node((kw_node_t *) command);
                 trigger_end_command(command, false);
                 free_command(command);
                 result = 0;
+        }
+        else
+        {
+                result = -1;
         }
 
         xpthread_mutex_unlock(&end_queue_mutex);
@@ -240,8 +244,7 @@ empty_end_queue(void)
         if (!shutdown_ongoing && end_queue_thread)
                 xpthread_mutex_lock(&end_queue_mutex);
 
-        for (la_command_t *tmp;
-                        (tmp = REM_COMMANDS_HEAD(end_queue));)
+        for (la_command_t *tmp; (tmp = REM_COMMANDS_HEAD(end_queue));)
         {
                 trigger_end_command(tmp, true);
                 free_command(tmp);
@@ -320,7 +323,7 @@ wait_for_next_end_command(const la_command_t *command)
         if (command->end_time == INT_MAX)
         {
                 /* next command is a shutdown command, wait indefinitely */
-                xpthread_cond_wait(&end_queue_condition, &end_queue_mutex);
+                (void) xpthread_cond_wait(&end_queue_condition, &end_queue_mutex);
         }
         else
         {

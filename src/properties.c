@@ -292,8 +292,7 @@ empty_property_list(kw_list_t *list)
                 return;
 
         assert_list(list);
-        for (la_property_t *tmp;
-                        (tmp = REM_PROPERTIES_HEAD(list));)
+        for (la_property_t *tmp; (tmp = REM_PROPERTIES_HEAD(list));)
                 free_property(tmp);
 
 }

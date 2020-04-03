@@ -69,12 +69,7 @@ create_pidfile(void)
 
         fd = open(PIDFILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
         if (fd == -1)
-        {
-                if (errno == EEXIST)
-                        die_err("Pidfile already exists.");
-                else
-                        die_err("Unable to open pidfile.");
-        }
+                die_err("Unable to open pidfile.");
 
         created_pidfile = true;
 
@@ -97,11 +92,17 @@ void
 xpthread_create(pthread_t *thread, const pthread_attr_t *attr,
                 void *(*start_routine)(void *), void *arg, const char *name)
 {
-        if (pthread_create(thread, attr, start_routine, arg))
-                die_err("Failed to create thread!");
+        int ret = pthread_create(thread, attr, start_routine, arg);
+        if (ret)
+                die_val(ret, "Failed to create thread!");
 #if HAVE_PTHREAD_SETNAME_NP
-        if (name && pthread_setname_np(*thread, name))
-                die_err("Failed to set thread name!");
+        if (name)
+        {
+                ret = pthread_setname_np(*thread, name);
+                if (ret)
+                        die_val(ret, "Failed to set thread name!");
+
+        }
 #elif HAVE_PTHREAD_SET_NAME_NP
         if (name)
                 pthread_set_name_np(*thread, name);
@@ -123,7 +124,7 @@ xpthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
  * Wait for condition, die if pthread_cond_timedwait() fails
  */
 
-void
+int
 xpthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
                 const struct timespec *abstime)
 {
@@ -144,6 +145,8 @@ xpthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
                         die_err("Failed to timed wait for condition");
                         break;
         }
+
+        return ret;
 }
 
 /*
@@ -164,8 +167,9 @@ xpthread_cond_signal(pthread_cond_t *cond)
 void
 xpthread_mutex_lock(pthread_mutex_t *mutex)
 {
-        if (pthread_mutex_lock(mutex))
-                die_err("Failed to lock mutex!");
+        const int ret = pthread_mutex_lock(mutex);
+        if (ret)
+                die_val(ret, "Failed to lock mutex!");
 }
 
 /*
@@ -175,8 +179,9 @@ xpthread_mutex_lock(pthread_mutex_t *mutex)
 void
 xpthread_mutex_unlock(pthread_mutex_t *mutex)
 {
-        if (pthread_mutex_unlock(mutex))
-                die_err("Failed to unlock mutex!");
+        const int ret = pthread_mutex_unlock(mutex);
+        if (ret)
+                die_val(ret, "Failed to unlock mutex!");
 }
 
 /* join thread, die if pthread_join() fails
@@ -185,8 +190,9 @@ xpthread_mutex_unlock(pthread_mutex_t *mutex)
 void
 xpthread_join(pthread_t thread, void **retval)
 {
-        if (pthread_join(thread, retval) && errno)
-                die_err("Failed to join thread!");
+        const int ret = pthread_join(thread, retval);
+        if (ret)
+                die_val(ret, "Faoiled to join thread!");
 }
 
 #endif /* CLIENTONLY */
@@ -196,7 +202,7 @@ xtime(time_t *tloc)
 {
         const time_t result = time(tloc);
         if (result == -1)
-                die_hard("Can't get time!");
+                die_err("Can't get time!");
 
         return result;
 }
@@ -213,7 +219,7 @@ xrealloc(void *ptr, size_t n)
 {
         void *result = realloc(ptr, n);
         if (!result && n!=0)
-                die_hard("Memory exhausted");
+                die_err("Memory exhausted");
 
         return result;
 }
@@ -223,7 +229,7 @@ xmalloc0(size_t n)
 {
         void *result = calloc(n, 1);
         if (!result && n!=0)
-                die_hard("Memory exhausted");
+                die_err("Memory exhausted");
 
         return result;
 }
@@ -233,10 +239,12 @@ xmalloc(size_t n)
 {
         void *result =  malloc(n);
         if (!result && n!=0)
-                die_hard("Memory exhausted\n");
+                die_err("Memory exhausted\n");
 
         return result;
 }
+
+/* strdup() clone; return NULL if s==NULL, calls die_err() in case off error */
 
 char *
 xstrdup(const char *s)
@@ -246,17 +254,22 @@ xstrdup(const char *s)
 
         void *result = strdup(s);
         if (!result)
-                die_hard("Memory exhausted\n");
+                die_err("Memory exhausted\n");
 
         return result;
 }
 
+/* strndup() clone; return NULL if s==NULL, calls die_err() in case off error */
+
 char *
 xstrndup(const char *s, size_t n)
 {
+        if (!s)
+                return NULL;
+
         void *result = strndup(s, n);
         if (!result)
-                die_hard("Memory exhausted\n");
+                die_err("Memory exhausted\n");
 
         return result;
 }

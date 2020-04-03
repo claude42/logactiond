@@ -74,9 +74,7 @@ cleanup_watching_systemd(void *arg)
 static void *
 watch_forever_systemd(void *ptr)
 {
-        static char *message_buffer;
         static char *unit_buffer;
-        static unsigned int message_buffer_length;
         static unsigned int unit_buffer_length;
 
         la_debug("watch_forever_systemd()");
@@ -126,24 +124,11 @@ watch_forever_systemd(void *ptr)
                 /* When we reach this, no error occured, shutdown has not been
                  * initiated and there's something to read in the journal */
 
-                r = sd_journal_get_data(journal, MESSAGE, &data, &size);
-                if (r < 0)
-                        die_systemd(r, "sd_journal_get_data() failed");
-
-                /* TODO: put next two blocks in separate function */
-                /* sd_journal_get_data() interface is, well, not ideal. Let's
-                 * create some nice, 0-terminated strings for further usage. */
-                if (size+1 > message_buffer_length)
-                {
-                        message_buffer = xrealloc(message_buffer, size+1);
-                        message_buffer_length = size+1;
-                }
-                strncpy(message_buffer, (char *)data+MESSAGE_LEN, size-MESSAGE_LEN);
-                message_buffer[size-MESSAGE_LEN] = '\0';
-
+                /* First get the name of the systemd unit */
                 r = sd_journal_get_data(journal, UNIT, &data, &size);
                 if (r < 0)
                         die_systemd(r, "sd_journal_get_data() failed");
+
                 if (size+1 > unit_buffer_length)
                 {
                         unit_buffer = xrealloc(unit_buffer, size+1);
@@ -152,8 +137,15 @@ watch_forever_systemd(void *ptr)
                 strncpy(unit_buffer, (char *)data+UNIT_LEN, size-UNIT_LEN);
                 unit_buffer[size-UNIT_LEN] = '\0';
 
+                /* Second get rest of the log line */
+                r = sd_journal_get_data(journal, MESSAGE, &data, &size);
+                if (r < 0)
+                        die_systemd(r, "sd_journal_get_data() failed");
+
+                la_vdebug("Unit: %s, line: %s", unit_buffer, data+MESSAGE_LEN);
+
                 xpthread_mutex_lock(&config_mutex);
-                handle_log_line(la_config->systemd_source, message_buffer,
+                handle_log_line(la_config->systemd_source, data+MESSAGE_LEN,
                                 unit_buffer);
                 xpthread_mutex_unlock(&config_mutex);
         }

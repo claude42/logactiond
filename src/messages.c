@@ -79,12 +79,7 @@
 
 #ifndef CLIENTONLY
 
-static bool is_empty_line(const char *message)
-{
-        assert(message);
-
-        return (*message == '\0' || *message == '#' || *message == '\n');
-}
+#define IS_EMPTY_LINE(message) (*message == '\0' || *message == '#' || *message == '\n')
 
 /*
  * Parses message and will populate address, rule, end time and factor. You
@@ -115,7 +110,7 @@ parse_add_entry_message(const char *message, la_address_t **address, la_rule_t *
         la_debug("parse_add_entry_message(%s)", message);
 
         /* Ignore empty lines or comments */
-        if (is_empty_line(message))
+        if (IS_EMPTY_LINE(message))
         {
                 *address = NULL; *rule = NULL;
                 if (end_time)
@@ -138,17 +133,14 @@ parse_add_entry_message(const char *message, la_address_t **address, la_rule_t *
         *address = create_address(parsed_address_str);
         if (!*address)
                 LOG_RETURN(-1, LOG_ERR, "Cannot convert address in command %s!", message);
-        la_debug("Found address %s", (*address)->text);
 
         *rule = find_rule(parsed_rule_str);
         if (!*rule)
         {
-                la_log_verbose(LOG_ERR, "Ignoring remote message \'%s\' "
-                                "- rule not active on local system", message);
                 free_address(*address);
-                return -1;
+                LOG_RETURN_VERBOSE(-1, LOG_ERR, "Ignoring remote message \'%s\' "
+                                "- rule not active on local system", message);
         }
-        la_debug("Found rule %s", (*rule)->name);
 
         if (end_time)
                 *end_time = n >= 3 ? parsed_end_time : 0;

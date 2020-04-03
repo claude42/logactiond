@@ -508,7 +508,7 @@ void xpthread_create(pthread_t *thread, const pthread_attr_t *attr,
 
 void xpthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
 
-void xpthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
+int xpthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
                 const struct timespec *abstime);
 
 void xpthread_cond_signal(pthread_cond_t *cond);
@@ -536,6 +536,8 @@ void la_log_verbose(unsigned int priority, const char *fmt, ...);
 void la_log(unsigned int priority, const char *fmt, ...);
 
 void die_hard(const char *fmt, ...);
+
+void die_val(int val, const char *fmt, ...);
 
 void die_err(const char *fmt, ...);
 
