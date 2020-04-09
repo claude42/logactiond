@@ -45,13 +45,10 @@ generate_key(unsigned char *key, unsigned int key_len, const char *password,
                 const unsigned char *salt)
 {
 	assert(key); assert(key_len > 0); assert(password); assert(salt);
-        if (crypto_pwhash(key, key_len, password, strlen(password), salt,
-                                crypto_pwhash_OPSLIMIT_INTERACTIVE,
-                                crypto_pwhash_MEMLIMIT_INTERACTIVE,
-                                crypto_pwhash_ALG_DEFAULT) == -1)
-                LOG_RETURN(false, LOG_ERR, "Unable to generat encryption key!");
-
-        return true;
+        return (crypto_pwhash(key, key_len, password, strlen(password), salt,
+                                crypto_pwhash_argon2i_OPSLIMIT_INTERACTIVE,
+                                crypto_pwhash_argon2i_MEMLIMIT_INTERACTIVE,
+                                crypto_pwhash_ALG_ARGON2I13) == 0);
 }
 
 
@@ -62,13 +59,20 @@ generate_send_key_and_salt(const char *password)
         randombytes_buf(send_salt, crypto_pwhash_SALTBYTES);
 
 	/* Then generate secret key from password and salt */
-        return generate_key(send_key, crypto_secretbox_KEYBYTES, password, send_salt);
+        if (!generate_key(send_key, crypto_secretbox_KEYBYTES, password, send_salt))
+                LOG_RETURN_ERRNO(false, LOG_ERR, "Unable to generate encryption key!");
+
+        return true;
 }
+
+/*
+ * Returns true if salt has not changed.
+ */
 
 static bool
 same_salt_as_before(const unsigned char *buffer, la_address_t *from_addr)
 {
-        return sodium_memcmp(&(from_addr->salt), &buffer[SALT_IDX],
+        return !sodium_memcmp(&(from_addr->salt), &buffer[SALT_IDX],
                                 crypto_pwhash_SALTBYTES);
 }
 
@@ -79,17 +83,18 @@ decrypt_message(char *buffer, const char *password, la_address_t *from_addr)
         unsigned char *ubuffer = (unsigned char *) buffer;
 
         if (sodium_init() < 0)
-                LOG_RETURN(false, LOG_ERR, "Unable to  initialize libsodium!");
+                LOG_RETURN_ERRNO(false, LOG_ERR, "Unable to  initialize libsodium!");
 
         /* check wether salt is the same as last time for host. If not,
          * copy new salt and regenerate key */
         /* TODO: Refactor */
-        if (same_salt_as_before(ubuffer, from_addr))
+        if (!same_salt_as_before(ubuffer, from_addr))
         {
                 memcpy(&(from_addr->salt), &ubuffer[SALT_IDX], crypto_pwhash_SALTBYTES);
                 if (!generate_key(from_addr->key, crypto_secretbox_KEYBYTES,
                                         password, &ubuffer[SALT_IDX]))
-                        LOG_RETURN(false, LOG_ERR, "Unable to generate receive key for "
+                        LOG_RETURN_ERRNO(false, LOG_ERR,
+                                        "Unable to generate receive key for "
                                         "host %s!", from_addr->text);
         }
 
@@ -97,7 +102,7 @@ decrypt_message(char *buffer, const char *password, la_address_t *from_addr)
         if (crypto_secretbox_open_easy(&ubuffer[MSG_IDX], &ubuffer[MSG_IDX],
                                 ENC_MSG_LEN, &ubuffer[NONCE_IDX],
                                 from_addr->key) == -1)
-                LOG_RETURN(false, LOG_ERR, "Unable to decrypt message from host %s",
+                LOG_RETURN_ERRNO(false, LOG_ERR, "Unable to decrypt message from host %s",
                                 from_addr->text);
         return true;
 }
@@ -119,7 +124,7 @@ encrypt_message(char *buffer)
 	/* And then encrypt the the message with key and nonce */
         if (crypto_secretbox_easy(&ubuffer[MSG_IDX], &ubuffer[MSG_IDX], MSG_LEN,
                                 &ubuffer[NONCE_IDX], send_key) == -1)
-                LOG_RETURN(false, LOG_ERR, "Unable to encrypt message!");
+                LOG_RETURN_ERRNO(false, LOG_ERR, "Unable to encrypt message!");
 
         return true;
 }
