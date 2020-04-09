@@ -29,6 +29,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <time.h>
 
 
 #include "logactiond.h"
@@ -40,16 +41,6 @@ cleanup_watching_polling(void *arg)
 
         shutdown_watching();
 }
-
-static bool
-file_exists_and_is_different(la_source_t *source, struct stat sb)
-{
-        return (!stat(source->location, &sb) && (
-                                sb.st_ino != source->stats.st_ino ||
-                                sb.st_dev != source->stats.st_dev ||
-                                sb.st_nlink == 0));
-}
-
 
 /*
  * Event loop for poll mechanism
@@ -99,12 +90,16 @@ watch_forever_polling(void *ptr)
                                         la_vdebug("still inactive");
                                 }
                         }
+
                         /* 2nd case: file has been accessible and still is, but
                          * suddenly it's a different file
                          * 
                          * Great, try to open new file
                          */
-                        else if (file_exists_and_is_different(source, sb))
+                        else if (!stat(source->location, &sb) && (
+                                                sb.st_ino != source->stats.st_ino ||
+                                                sb.st_dev != source->stats.st_dev ||
+                                                sb.st_nlink == 0))
                         {
                                 source->file = freopen(source->location, "r",
                                                 source->file);
@@ -122,6 +117,7 @@ watch_forever_polling(void *ptr)
                                         source->active = false;
                                 }
                         }
+
                         /* 3rd case: file accessible, same as before
                          *
                          * Go and read new content, stop watching if that
