@@ -84,7 +84,7 @@ fifo_loop(void *ptr)
                 }
 
                 num_read = getline(&buf, &buf_size, fifo);
-                if (num_read == -1)
+                if ((int) num_read == -1)
                 {
                         if (feof(fifo))
                                 continue;
