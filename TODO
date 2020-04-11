@@ -35,15 +35,6 @@ Speicherzugriffsfehler
 * ist die Reihenfolge rule/uc_rule richtig bei remote bzw. meta_enabled - oder
   müsste es genau andersrum sein?
 
-* include_func hat mehrere Probleme
-  - wird kein match gefunden, crasht sie. Liegt daran, daß in diesem Fall
-    niemals der Teil aufgerufen wird in dem Speicher gerealloct wird, dann aber
-    am Schluß (mit "*result_next = NULL") versucht reingeschrieben zu werden
-  - verwendet man @include "filename" (also ohne einen Verzeichnisnamen), dann
-    findet sie die Datei nicht. @include "./filename" funktioniert aber. Lösung
-    könnte sein, den Teil "if(include_path_len) == 0)..." rauszunehmen. Bin mir
-    aber nicht sicher, ob das nebenwirkungsfrei geht
-
 * Send startup errors to standard out instead of syslog - really??
 
 "dontroute" rule configuration directive so it doesn't get send to other

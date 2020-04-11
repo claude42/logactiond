@@ -33,6 +33,7 @@
 #include <fnmatch.h>
 #include <limits.h>
 #include <sys/stat.h>
+#include <errno.h>
 
 #include <libconfig.h>
 
@@ -1049,92 +1050,98 @@ unload_la_config(void)
 }
 
 /*
- * Copied from example4.c from the libconfig distribution
+ * This include_func() implementation simply ignores include_dir / assumes that
+ * it's empty.
  */
 
 static const char **
 include_func(config_t *config, const char *include_dir, const char *path, const char **error)
 {
-        char *p;
-        DIR *dp;
-        struct dirent *dir_entry;
-        struct stat stat_buf;
-        char include_path[PATH_MAX + 1];
-        size_t include_path_len = 0;
-        char file_path[PATH_MAX + 1];
-        char **result = NULL;
-        char **result_next = result;
-        int result_count = 0;
-        int result_capacity = 0;
-
-        *include_path = 0;
-
         assert(path);
         la_debug("include_func(%s)", path);
 
-        if(*path != '/')
+        char dir_path[PATH_MAX + 1] = "";
+        const char *last_slash_in_path = strrchr(path, '/');
+        const char *fmt_str;
+
+        /* 
+         * If there's a slash somewhere in path, copy everything preceeding the
+         * last slash to dir_path.
+         *
+         * If not, use "." as dir_path. Set fmt_str so that string
+         * comparisson for matched names still works.
+         */
+        if (last_slash_in_path != NULL && last_slash_in_path > path)
         {
-                if(include_dir)
-                {
-                        strncat(include_path, include_dir, PATH_MAX);
-                        include_path_len += xstrlen(include_dir);
-                }
+                strncat(dir_path, path, last_slash_in_path - path);
+                fmt_str = "%s%s%s";
+        }
+        else
+        {
+                strcpy(dir_path, ".");
+                fmt_str = "%.0s%.0s%s";
         }
 
-        p = strrchr(path, '/');
-        if(p > path)
+        DIR *dp = opendir(dir_path);
+        if (!dp)
         {
-                int len = p - path;
-
-
-                if((include_path_len > 0) && (*(include_path +
-                                                include_path_len - 1) != '/'))
-                {
-                        strcat(include_path, "/");
-                        ++include_path_len;
-                }
-
-                strncat(include_path, path, len);
-                include_path_len += len;
+                *error = strerror(errno);
+                return NULL;
         }
 
-        if(include_path_len == 0)
+        struct dirent *dir_entry;
+        char **result = NULL;
+        char **result_next = NULL;
+        unsigned int result_count = 0;
+        unsigned int result_capacity = 0;
+
+        while ((dir_entry = readdir(dp)) != NULL)
         {
-                strcpy(include_path, ".");
-                include_path_len = 1;
+                char file_path[PATH_MAX + 1];
+                /* file_path will be either "path/file" or just "file" */
+                snprintf(file_path, PATH_MAX, fmt_str, dir_path, "/",
+                                dir_entry->d_name);
+
+                /* Continue if file not statable, not a regular file or doesn't
+                 * match pattern. */
+                struct stat stat_buf;
+                if (lstat(file_path, &stat_buf) != 0)
+                        continue;
+                if (!S_ISREG(stat_buf.st_mode))
+                        continue;
+                if (fnmatch(path, file_path, FNM_PATHNAME !=0))
+                        continue;
+
+                /* Allocate more memory if necessary */
+                if (result_count == result_capacity)
+                {
+                        result_capacity += 16;
+                        result = (char **) xrealloc(result,
+                                        (result_capacity + 1) *
+                                        sizeof (char *));
+                        result_next = result + result_count;
+                }
+
+                *result_next = xstrdup(file_path);
+                result_next++;
+                result_count++;
         }
 
-        dp = opendir(include_path);
-        if(dp)
+        if (closedir(dp) == -1)
         {
-                while((dir_entry = readdir(dp)) != NULL)
-                {
-                        snprintf(file_path, PATH_MAX, "%s/%s", include_path,
-                                        dir_entry->d_name);
-                        if(lstat(file_path, &stat_buf) != 0)
-                                continue;
-                        if(!S_ISREG(stat_buf.st_mode))
-                                continue;
-                        if(fnmatch(path, file_path, FNM_PATHNAME) != 0)
-                                continue;
+                *error = strerror(errno);
+                return NULL;
+        }
 
-                        if(result_count == result_capacity)
-                        {
-                                result_capacity += 16;
-                                result = (char **)realloc(result, (result_capacity + 1) * sizeof(char *));
-                                result_next = result + result_count;
-                        }
-
-                        *result_next = xstrdup(file_path);
-                        ++result_next;
-                        ++result_count;
-                }
-                closedir(dp);
+        if (!result_count)
+        {
+                *error = strerror(ENOENT);
+                return NULL;
         }
 
         *result_next = NULL;
 
-        return ((const char **)result);
+        return ((const char **) result);
 }
 
 /* vim: set autowrite expandtab: */
