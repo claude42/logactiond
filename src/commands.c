@@ -472,12 +472,9 @@ static void
 log_command_activated(const char *address, const char *command_name,
                 const char *from, const char *rule_name, const int factor)
 {
-        char *factor_string = NULL;
+        char factor_string[14];
         if (factor)
-        {
-                factor_string = alloca(14);
                 snprintf(factor_string, 13, " (factor %d)", factor);
-        }
 
         la_log(LOG_INFO, "Host: %s, action \"%s\" activated"
                         "%s%s, rule \"%s\"%s.",
@@ -485,7 +482,7 @@ log_command_activated(const char *address, const char *command_name,
                         from ? " by host " : "",
                         from ? from : "",
                         rule_name,
-                        factor_string ? factor_string : "");
+                        factor ? factor_string : "");
 }
 
 
@@ -707,9 +704,11 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
                         {
                                 add_tail(property_list, (kw_node_t *) new_prop);
                                 n_tokens++;
+                                /* TODO: clumsy to compute strlen here again */
+                                ptr += xstrlen(new_prop->name);
                         }
 
-                        ptr += xstrlen(new_prop->name) + 1;
+                        ptr++; /* account for first '%' of token */
                 }
 
                 ptr++; /* also skips over second '%' of a token */
