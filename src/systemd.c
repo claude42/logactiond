@@ -142,10 +142,10 @@ watch_forever_systemd(void *ptr)
                 if (r < 0)
                         die_systemd(r, "sd_journal_get_data() failed");
 
-                la_vdebug("Unit: %s, line: %s", unit_buffer, data+MESSAGE_LEN);
+                la_vdebug("Unit: %s, line: %s", unit_buffer, (char *)data+MESSAGE_LEN);
 
                 xpthread_mutex_lock(&config_mutex);
-                handle_log_line(la_config->systemd_source, data+MESSAGE_LEN,
+                handle_log_line(la_config->systemd_source, (char *)data+MESSAGE_LEN,
                                 unit_buffer);
                 xpthread_mutex_unlock(&config_mutex);
         }
