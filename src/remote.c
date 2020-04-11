@@ -279,7 +279,7 @@ start_remote_thread(void)
         else
                 node = la_config->remote_bind;
         char port[6];
-        snprintf(port, 6, "%u", la_config->remote_port);
+        snprintf(port, 6, "%d", la_config->remote_port);
         struct addrinfo *ai;
         int r = getaddrinfo(node, port, &hints, &ai); 
         if (r)
