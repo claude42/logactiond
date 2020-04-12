@@ -34,6 +34,7 @@
 #include <limits.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <glob.h>
 
 #include <libconfig.h>
 
@@ -1060,56 +1061,28 @@ include_func(config_t *config, const char *include_dir, const char *path, const 
         assert(path);
         la_debug("include_func(%s)", path);
 
-        char dir_path[PATH_MAX + 1] = "";
-        const char *last_slash_in_path = strrchr(path, '/');
-        const char *fmt_str;
+        glob_t pglob;
 
-        /* 
-         * If there's a slash somewhere in path, copy everything preceeding the
-         * last slash to dir_path.
-         *
-         * If not, use "." as dir_path. Set fmt_str so that string
-         * comparisson for matched names still works.
-         */
-        if (last_slash_in_path != NULL && last_slash_in_path > path)
-        {
-                strncat(dir_path, path, last_slash_in_path - path);
-                fmt_str = "%s%s%s";
-        }
-        else
-        {
-                strcpy(dir_path, ".");
-                fmt_str = "%.0s%.0s%s";
-        }
-
-        DIR *dp = opendir(dir_path);
-        if (!dp)
+        if (glob(path, 0, NULL, &pglob))
         {
                 *error = strerror(errno);
                 return NULL;
         }
 
-        struct dirent *dir_entry;
         char **result = NULL;
         char **result_next = NULL;
         unsigned int result_count = 0;
         unsigned int result_capacity = 0;
 
-        while ((dir_entry = readdir(dp)) != NULL)
+        for (unsigned int i = 0; i < pglob.gl_pathc; i++)
         {
-                char file_path[PATH_MAX + 1];
-                /* file_path will be either "path/file" or just "file" */
-                snprintf(file_path, PATH_MAX, fmt_str, dir_path, "/",
-                                dir_entry->d_name);
+                const char *file_path = pglob.gl_pathv[i];
+                la_vdebug("%u. file_path=%s", i, file_path);
 
-                /* Continue if file not statable, not a regular file or doesn't
-                 * match pattern. */
                 struct stat stat_buf;
                 if (lstat(file_path, &stat_buf) != 0)
                         continue;
                 if (!S_ISREG(stat_buf.st_mode))
-                        continue;
-                if (fnmatch(path, file_path, FNM_PATHNAME !=0))
                         continue;
 
                 /* Allocate more memory if necessary */
@@ -1127,11 +1100,7 @@ include_func(config_t *config, const char *include_dir, const char *path, const 
                 result_count++;
         }
 
-        if (closedir(dp) == -1)
-        {
-                *error = strerror(errno);
-                return NULL;
-        }
+        globfree(&pglob);
 
         if (!result_count)
         {
@@ -1143,5 +1112,6 @@ include_func(config_t *config, const char *include_dir, const char *path, const 
 
         return ((const char **) result);
 }
+
 
 /* vim: set autowrite expandtab: */
