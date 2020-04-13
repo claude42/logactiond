@@ -733,9 +733,9 @@ load_single_rule(const config_setting_t *uc_rule_def)
 
         /* meta_enabled could either be 1 (enabled for rule), 0 (disabled for
          * rule) or -1 (not specified in rule, use default) */
-        int meta_enabled;
-        if (!config_setting_lookup_bool(rule_def, LA_META_ENABLED_LABEL,
-                                &meta_enabled))
+        int meta_enabled = -1;
+        if (rule_def && !config_setting_lookup_bool(rule_def,
+                                LA_META_ENABLED_LABEL, &meta_enabled))
         {
                 if (!config_setting_lookup_bool(uc_rule_def,
                                         LA_META_ENABLED_LABEL, &meta_enabled))
