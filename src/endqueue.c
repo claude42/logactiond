@@ -39,12 +39,13 @@ pthread_cond_t end_queue_condition = PTHREAD_COND_INITIALIZER;
  */
 
 static la_rule_t *
-find_source_rule_by_name(const la_source_t *source, const char *name)
+find_source_rule_by_name(const la_source_group_t *source_group, const char *name)
 {
-        assert_source(source), assert(name);
-        la_debug("find_source_rule_by_name(%s, %s)", source->name, name);
+        assert(source_group), assert(name);
+        la_debug("find_source_rule_by_name(%s, %s)", source_group->name,
+                        name);
 
-        for (la_rule_t *rule = ITERATE_RULES(source->rules);
+        for (la_rule_t *rule = ITERATE_RULES(source_group->rules);
                         (rule = NEXT_RULE(rule));)
         {
                 if (!strcmp(rule->name, name))
@@ -69,19 +70,19 @@ find_rule_by_name(const char *name)
 
         la_rule_t *result;
 #if HAVE_LIBSYSTEMD
-        if (la_config->systemd_source)
+        if (la_config->systemd_source_group)
         {
-                result = find_source_rule_by_name(la_config->systemd_source, name);
+                result = find_source_rule_by_name(la_config->systemd_source_group, name);
                 if (result)
                         return result;
         }
 #endif /* HAVE_LIBSYSTEMD */
 
-        assert(la_config->sources);
-        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
-                        (source = NEXT_SOURCE(source));)
+        assert(la_config->source_groups);
+        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
+                        (source_group = NEXT_SOURCE_GROUP(source_group));)
         {
-                result = find_source_rule_by_name(source, name);
+                result = find_source_rule_by_name(source_group, name);
                 if (result)
                         return result;
         }

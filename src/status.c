@@ -94,9 +94,9 @@ dump_single_rule(FILE *rules_file, const la_rule_t *rule)
         la_vdebug("dump_single_rule(%s)", rule->name);
         fprintf(rules_file, "%-13.13s %-13.13s %-13.13s %8lu %8lu %8lu\n",
                         rule->name, rule->systemd_unit ? rule->systemd_unit :
-                        rule->service ? rule->service : "-", rule->source->name,
-                        rule->detection_count, rule->invocation_count,
-                        rule->queue_count);
+                        rule->service ? rule->service : "-",
+                        rule->source_group->name, rule->detection_count,
+                        rule->invocation_count, rule->queue_count);
 }
 
 /*
@@ -127,11 +127,11 @@ dump_rules(void)
 
         /* First print rules of sources watched via inotify / polling */
 
-        assert(la_config); assert(la_config->sources);
-        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
-                        (source = NEXT_SOURCE(source));)
+        assert(la_config); assert(la_config->source_groups);
+        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
+                        (source_group = NEXT_SOURCE_GROUP(source_group));)
         {
-                for (la_rule_t *rule = ITERATE_RULES(source->rules);
+                for (la_rule_t *rule = ITERATE_RULES(source_group->rules);
                                 (rule = NEXT_RULE(rule));)
                 {
                         dump_single_rule(rules_file, rule);
@@ -142,9 +142,9 @@ dump_rules(void)
 
 #if HAVE_LIBSYSTEMD
         /* Then print systemd rules - if any */
-        if (la_config->systemd_source)
+        if (la_config->systemd_source_group)
         {
-                for (la_rule_t *rule = ITERATE_RULES(la_config->systemd_source->rules);
+                for (la_rule_t *rule = ITERATE_RULES(la_config->systemd_source_group->rules);
                                 (rule = NEXT_RULE(rule));)
                 {
                         dump_single_rule(rules_file, rule);

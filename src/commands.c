@@ -98,7 +98,7 @@ check_for_special_names(const la_command_t *command, const la_property_t *action
 
         /* SOURCE */
         if (!strcmp(action_property->name, LA_SOURCENAME_TOKEN))
-                return command->rule->source->name;
+                return command->rule->source_group->name;
 
         return NULL;
 }
@@ -458,11 +458,12 @@ incr_invocation_counts(la_command_t *command)
 void
 reset_counts(void)
 {
-        assert(la_config->sources);
-        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
-                        (source = NEXT_SOURCE(source));)
+        assert_list(la_config->source_groups);
+
+        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
+                        (source_group = NEXT_SOURCE_GROUP(source_group));)
         {
-                for (la_rule_t *rule = ITERATE_RULES(source->rules);
+                for (la_rule_t *rule = ITERATE_RULES(source_group->rules);
                                 (rule = NEXT_RULE(rule));)
                         rule->invocation_count = rule->detection_count = 0;
         }
@@ -583,7 +584,7 @@ trigger_command(la_command_t *command)
                 la_log_verbose(LOG_INFO, "Initializing action \"%s\" for "
                                 "rule \"%s\", source \"%s\".", command->name,
                                 command->rule_name,
-                                command->rule->source->name);
+                                command->rule->source_group->name);
         }
         else
         {

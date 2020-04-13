@@ -204,7 +204,7 @@ convert_regex(const char *string, la_pattern_t *pattern)
         }
 
         *dst_ptr = 0;
-        la_debug("convert_regex(%s)=%s, subexpression=%u", string, result, subexpression);
+        la_vdebug("convert_regex(%s)=%s, subexpression=%u", string, result, subexpression);
 
         pattern->string = result;
 }
@@ -280,7 +280,7 @@ create_pattern(const char *string_from_configfile, const unsigned int num,
         assert(string_from_configfile); assert_rule(rule);
         la_vdebug("create_pattern(%s)", string_from_configfile);
 
-        char *full_string = concat(rule->source->prefix,
+        char *full_string = concat(rule->source_group->prefix,
                         string_from_configfile);
         la_vdebug("full_string=%s", full_string);
 

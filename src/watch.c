@@ -42,16 +42,16 @@ watch_source(la_source_t *source, const int whence)
                 return;
 
         assert_source(source); assert(!source->file);
-        la_debug("watch_source(%s)", source->name);
+        la_debug("watch_source(%s)", source->location);
 
 #ifndef NOWATCH
         source->file = fopen(source->location, "r");
         if (!source->file)
-                die_err("Opening source \"%s\" failed", source->name);
+                die_err("Opening source \"%s\" failed", source->location);
         if (fstat(fileno(source->file), &(source->stats)) == -1)
-                die_err("Stating source \"%s\" failed", source->name);
+                die_err("Stating source \"%s\" failed", source->location);
         if (fseek(source->file, 0, whence))
-                die_err("Seeking in source \"%s\" failed", source->name);
+                die_err("Seeking in source \"%s\" failed", source->location);
 
         source->active = true;
 
@@ -70,7 +70,7 @@ void
 unwatch_source(la_source_t *source)
 {
         assert_source(source); assert(source->file); assert(source->active);
-        la_debug("unwatch_source(%s)", source->name);
+        la_debug("unwatch_source(%s)", source->location);
 
         if (run_type == LA_UTIL_FOREGROUND)
                 return;
@@ -82,7 +82,7 @@ unwatch_source(la_source_t *source)
 #endif /* HAVE_INOTIFY */
 
         if (fclose(source->file))
-                die_err("Closing source \"%s\" failed", source->name);
+                die_err("Closing source \"%s\" failed", source->location);
         source->file = NULL;
         source->active = false;
 
@@ -100,24 +100,30 @@ init_watching(void)
         la_debug("init_watching()");
 
 #ifndef NOWATCH
-        assert(la_config); assert_list(la_config->sources);
-        if (!is_list_empty(la_config->sources))
+        assert(la_config); assert_list(la_config->source_groups);
+        if (!is_list_empty(la_config->source_groups))
         {
 #if HAVE_INOTIFY
                 init_watching_inotify();
 #endif /* HAVE_INOTIFY */
 
                 xpthread_mutex_lock(&config_mutex);
-                for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
-                                (source = NEXT_SOURCE(source));)
+                for (la_source_group_t *source_group = 
+                                ITERATE_SOURCE_GROUPS(la_config->source_groups);
+                                (source_group = NEXT_SOURCE_GROUP(source_group));)
                 {
-                        watch_source(source, SEEK_END);
+                        for (la_source_t *source = ITERATE_SOURCES(
+                                                source_group->sources);
+                                        (source = NEXT_SOURCE(source));)
+                        {
+                                watch_source(source, SEEK_END);
+                        }
                 }
                 xpthread_mutex_unlock(&config_mutex);
         }
 
 #if HAVE_LIBSYSTEMD
-        if (la_config->systemd_source)
+        if (la_config->systemd_source_group)
                 init_watching_systemd();
 #endif /* HAVE_LIBSYSTEMD */
 
@@ -132,8 +138,8 @@ start_watching_threads(void)
         init_watching();
 
 #ifndef NOWATCH
-        assert(la_config); assert_list(la_config->sources);
-        if (!is_list_empty(la_config->sources))
+        assert(la_config); assert_list(la_config->source_groups);
+        if (!is_list_empty(la_config->source_groups))
         {
 #if HAVE_INOTIFY
                 start_watching_inotify_thread();
@@ -143,7 +149,7 @@ start_watching_threads(void)
         }
 
 #if HAVE_LIBSYSTEMD
-        if (la_config->systemd_source)
+        if (la_config->systemd_source_group)
                 start_watching_systemd_thread();
 #endif /* HAVE_LIBSYSTEMD */
 
@@ -164,16 +170,22 @@ shutdown_watching(void)
 
 	/* Bail out if configuration is currently not available (e.g.
 	 * during a reload*/
-	if (!la_config->sources)
+	if (!la_config->source_groups)
 		return;
 
-        if (!is_list_empty(la_config->sources))
+        if (!is_list_empty(la_config->source_groups))
         {
                 xpthread_mutex_lock(&config_mutex);
-                for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
-                                (source = NEXT_SOURCE(source));)
+                for (la_source_group_t *source_group = 
+                                ITERATE_SOURCE_GROUPS(la_config->source_groups);
+                                (source_group = NEXT_SOURCE_GROUP(source_group));)
                 {
-                        unwatch_source(source);
+                        for (la_source_t *source = ITERATE_SOURCES(
+                                                source_group->sources);
+                                        (source = NEXT_SOURCE(source));)
+                        {
+                                unwatch_source(source);
+                        }
                 }
                 xpthread_mutex_unlock(&config_mutex);
         }

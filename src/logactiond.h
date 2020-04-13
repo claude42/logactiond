@@ -198,6 +198,11 @@
 #define HAS_NEXT_SOURCE(SOURCE) SOURCE->node.succ
 #define REM_SOURCES_HEAD(SOURCES) (la_source_t *) rem_head(SOURCES)
 
+#define ITERATE_SOURCE_GROUPS(SOURCE_GROUPS) (la_source_group_t *) &(SOURCE_GROUPS)->head
+#define NEXT_SOURCE_GROUP(SOURCE_GROUP) (la_source_group_t *) (SOURCE_GROUP->node.succ->succ ? SOURCE_GROUP->node.succ : NULL)
+#define HAS_NEXT_SOURCE_GROUP(SOURCE_GROUP) SOURCE_GROUP->node.succ
+#define REM_SOURCE_GROUPS_HEAD(SOURCE_GROUPS) (la_source_group_t *) rem_head(SOURCE_GROUPS)
+
 /* assertions */
 
 #ifdef NDEBUG
@@ -344,7 +349,7 @@ typedef struct la_rule_s
         kw_node_t node;
         char *name;
         unsigned int id;
-        struct la_source_s *source;
+        struct la_source_group_s *source_group;
         char *service;
         kw_list_t *patterns;
         kw_list_t *begin_commands;
@@ -400,6 +405,24 @@ typedef struct la_command_s
 
 } la_command_t;
 
+typedef struct la_source_group_s
+{
+        kw_node_t node;
+        /* Name of source in config file - strdup()d */
+        char *name;
+        /* Specified path, potentially glob pattern */
+        char *glob_pattern;
+        /* All source files */
+        kw_list_t *sources;
+        /* Rules assigned to log file */
+        kw_list_t *rules;
+        /* Prefix to prepend before rule patterns */
+        char *prefix;
+        /* Next one is only used in systemd.c */
+        /* systemd_units we're interested in */
+        kw_list_t *systemd_units;
+} la_source_group_t;
+
 /*
  * Represents a source
  */
@@ -407,16 +430,12 @@ typedef struct la_command_s
 typedef struct la_source_s
 {
         kw_node_t node;
-        /* Name of source in config file - strdup()d */
-        char *name;
+        /* Source list this source is part of */
+        la_source_group_t *source_group;
         /* Filename (or equivalent) - strdup()d */
         char *location;
         /* Parent dir of log file - currently only used for inotify */
         char *parent_dir;
-        /* Rules assigned to log file */
-        kw_list_t *rules;
-        /* Prefix to prepend before rule patterns */
-        char *prefix;
         /* File handle for log file */
         FILE *file;
         /* stat() result for file */
@@ -430,18 +449,13 @@ typedef struct la_source_s
         int wd;
         /* Watch descriptor for parent directory */
         int parent_wd;
-
-        /* Next one is only used in systemd.c */
-
-        /* systemd_units we're interested in */
-        kw_list_t *systemd_units;
 } la_source_t;
 
 typedef struct la_config_s
 {
         config_t config_file;
-        kw_list_t *sources;
-        struct la_source_s *systemd_source;
+        kw_list_t *source_groups;
+        la_source_group_t *systemd_source_group;
         int default_threshold;
         int default_period;
         int default_duration;
@@ -751,10 +765,11 @@ void trigger_manual_commands_for_rule(const la_address_t *address, const
                 la_rule_t *rule, time_t end_time, int factor, const char *from,
                 bool suppress_logging);
 
-la_rule_t *create_rule(const char *name, la_source_t *source, int threshold,
-                int period, int duration, int meta_enabled, int meta_period,
-                int meta_factor, int meta_max, int dnsbl_enabled, const char
-                *service, const char *systemd_unit);
+la_rule_t *create_rule(const char *name, la_source_group_t *source_group,
+                int threshold, int period, int duration, int meta_enabled,
+                int meta_period, int meta_factor, int meta_max,
+                int dnsbl_enabled, const char *service,
+                const char *systemd_unit);
 
 void free_rule(la_rule_t *rule);
 
@@ -771,16 +786,20 @@ void handle_log_line(const la_source_t *source, const char *line, const char *sy
 
 bool handle_new_content(const la_source_t *source);
 
-la_source_t *create_source(const char *name, const char *location,
-                const char *prefix);
+la_source_group_t *create_source_group(const char *name,
+                const char *glob_pattern, const char *prefix);
+
+la_source_t *create_source(la_source_group_t *source_group, const char *location);
 
 void free_source(la_source_t *source);
 
-void empty_source_list(kw_list_t *list);
+void free_source_group(la_source_group_t *source_group);
 
-void free_source_list(kw_list_t *list);
+void free_source_group_list(kw_list_t *list);
 
-la_source_t *find_source_by_location(const char *location);
+la_source_group_t *find_source_group_by_location(const char *location);
+
+la_source_group_t *find_source_group_by_name(const char *name);
 
 
 #if HAVE_LIBSYSTEMD
@@ -791,6 +810,8 @@ void init_watching_systemd(void);
 void start_watching_systemd_thread(void);
 
 void add_systemd_unit(const char *systemd_unit);
+
+la_source_t *get_systemd_source(void);
 
 #endif /* HAVE_LIBSYSTEMD */
 

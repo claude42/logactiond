@@ -35,11 +35,8 @@ assert_source_ffl(const la_source_t *source, const char *func,
 {
         if (!source)
                 die_hard("%s:%u: %s: Assertion 'source' failed. ", file, line, func);
-        if (!source->name)
-                die_hard("%s:%u: %s: Assertion 'source->name' failed. ", file, line, func);
         if (!source->location)
                 die_hard("%s:%u: %s: Assertion 'source->location' failed. ", file, line, func);
-        assert_list_ffl(source->rules, func, file, line);
 }
 
 /*
@@ -55,7 +52,7 @@ handle_log_line(const la_source_t *source, const char *line,
          * logging to syslog */
         /* la_debug("handle_log_line(%s, %s)", systemd_unit, line); */
 
-        for (la_rule_t *rule = ITERATE_RULES(source->rules);
+        for (la_rule_t *rule = ITERATE_RULES(source->source_group->rules);
                         (rule = NEXT_RULE(rule));)
         {
                 /* In case we use systemd, check whether the systemd unit
@@ -81,7 +78,7 @@ bool
 handle_new_content(const la_source_t *source)
 {
         assert_source(source); assert(source->file);
-        la_vdebug("handle_new_content(%s)", source->name);
+        la_vdebug("handle_new_content(%s)", source->location);
 
         /* TODO: less random number? */
         /* TODO2: free() buffer on cleanup */
@@ -119,34 +116,48 @@ handle_new_content(const la_source_t *source)
         }
 }
 
+la_source_group_t *
+create_source_group(const char *name, const char *glob_pattern, const char *prefix)
+{
+        assert(name);
+        la_debug("create_source_group(%s, %s, %s)", name, glob_pattern, prefix);
+
+        la_source_group_t *result;
+
+        result = xmalloc(sizeof(la_source_group_t));
+        result->name = xstrdup(name);
+        result->glob_pattern = xstrdup(glob_pattern);
+        result->prefix = xstrdup(prefix);
+        result->sources = xcreate_list();
+        result->rules = xcreate_list();
+        result->systemd_units = NULL;
+
+        return result;
+}
+
 /*
  * Create a new la_source for the given filename, wd. But don't add to
  * la_config->sources.
  */
 
 la_source_t *
-create_source(const char *name, const char *location, const char *prefix)
+create_source(la_source_group_t *source_group, const char *location)
 {
-        assert(name);
-        la_debug("create_source(%s, %s, %s)", name, location, prefix);
+        assert(source_group); assert(location);
+        la_debug("create_source(%s, %s)", source_group->name, location);
 
         la_source_t *result;
 
         result = xmalloc(sizeof(la_source_t));
-        result->name = xstrdup(name);
+        result->source_group = source_group;
         result->location = xstrdup(location);
-        result->prefix = xstrdup(prefix);
         result->parent_dir = NULL;
-        result->rules = xcreate_list();
         result->file = NULL;
         result->active = false;
 
         /* Only used by inotify.c */
         result->wd = 0;
         result->parent_wd = 0;
-
-        /* Only used by systemd.c */
-        result->systemd_units = NULL;
 
         assert_source(result);
         return result;
@@ -160,77 +171,108 @@ create_source(const char *name, const char *location, const char *prefix)
 void
 free_source(la_source_t *source)
 {
+        la_vdebug("free_source()");
         if (!source)
                 return;
 
         assert(!source->file);
 
-        la_vdebug("free_source(%s)", source->name);
-
-        free_rule_list(source->rules);
-
-        free(source->name);
         free(source->location);
-        free(source->prefix);
         free(source->parent_dir);
-
-#if HAVE_LIBSYSTEMD
-        if (source->systemd_units)
-        {
-                for (kw_node_t *tmp; (tmp = rem_head(source->systemd_units));)
-                {
-                        free(tmp->name);
-                        free(tmp);
-                }
-                free(source->systemd_units);
-        }
-#endif /* HAVE_LISTSYSTEMD */
 
         free(source);
 }
 
-/*
- * Free all sources in list
- */
-
 void
-empty_source_list(kw_list_t *list)
+free_source_group(la_source_group_t *source_group)
 {
-        la_vdebug("free_source_list()");
-
-        if (!list)
+        if (!source_group)
                 return;
-        assert_list(list);
+
+        la_vdebug("free_source_group(%s)", source_group->name);
+
+        free(source_group->name);
+        free(source_group->glob_pattern);
 
         for (la_source_t *tmp;
-                        (tmp = REM_SOURCES_HEAD(list));)
+                        (tmp = REM_SOURCES_HEAD(source_group->sources));)
                 free_source(tmp);
+        free(source_group->sources);
+
+        free_rule_list(source_group->rules);
+
+        free(source_group->prefix);
+
+#if HAVE_LIBSYSTEMD
+        if (source_group->systemd_units)
+        {
+                for (kw_node_t *tmp; (tmp = rem_head(source_group->systemd_units));)
+                {
+                        free(tmp->name);
+                        free(tmp);
+                }
+                free(source_group->systemd_units);
+        }
+#endif /* HAVE_LISTSYSTEMD */
+
+        free(source_group);
 }
 
 void
-free_source_list(kw_list_t *list)
+free_source_group_list(kw_list_t *list_list)
 {
-        empty_source_list(list);
+        la_vdebug("free_source_group_list()");
 
-        free(list);
+        if (!list_list)
+                return;
+        assert_list(list_list);
+
+        for (la_source_group_t *tmp;
+                        (tmp = REM_SOURCE_GROUPS_HEAD(list_list));)
+                free_source_group(tmp);
+
+        free(list_list);
 }
 
 /*
  * Find existing la_source for a given filename, return NULL if no la_source exists yet
  */
 
-la_source_t
-*find_source_by_location(const char *location)
+la_source_group_t
+*find_source_group_by_location(const char *location)
 {
         assert(location);
-        assert(la_config); assert_list(la_config->sources);
-        la_debug("find_source_by_location(%s)", location);
+        assert(la_config); assert_list(la_config->source_groups);
+        la_debug("find_source_group_by_location(%s)", location);
 
-        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
-                        (source = NEXT_SOURCE(source));)
+        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
+                        (source_group = NEXT_SOURCE_GROUP(source_group));)
         {
-                if (!strcmp(location, source->location))
-                        return source;
+                for (la_source_t *source = ITERATE_SOURCES(source_group->sources);
+                                (source = NEXT_SOURCE(source));)
+                        if (!strcmp(location, source->location))
+                                return source_group;
+        }
+
+        return NULL;
+}
+
+/*
+ * Find existing la_source for a given name, return NULL if no la_source exists yet
+ */
+
+la_source_group_t
+*find_source_group_by_name(const char *name)
+{
+        assert(name);
+        assert(la_config); assert_list(la_config->source_groups);
+        la_debug("find_source_group_by_name(%s)", name);
+
+        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
+                        (source_group = NEXT_SOURCE_GROUP(source_group));)
+        {
+                if (!strcmp(name, source_group->name))
+                        return source_group;
         }
 
         return NULL;

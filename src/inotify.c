@@ -84,12 +84,12 @@ void
 unwatch_source_inotify(la_source_t *source)
 {
         assert_source(source); assert(inotify_fd != 0);
-        la_debug("unwatch_source_inotify(%s)", source->name);
+        la_debug("unwatch_source_inotify(%s)", source->location);
 
         /* Remove watch for file itself */
         if (inotify_rm_watch(inotify_fd, source->wd))
                 la_log_errno(LOG_ERR, "Unable to unwatch source \"%s\".",
-                                source->name);
+                                source->location);
         source->wd = 0;
 
         /* Remove watch for parent directory */
@@ -119,21 +119,25 @@ find_source_by_parent_wd(const int parent_wd, const char *file_name)
 
 	/* Bail out if configuration is currently not available (e.g.
 	 * during a reload*/
-	if (!la_config->sources)
+	if (!la_config->source_groups)
 		return NULL;
 
-        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
-                        (source = NEXT_SOURCE(source));)
+        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
+                        (source_group = NEXT_SOURCE_GROUP(source_group));)
         {
-                if (source->parent_wd == parent_wd)
+                for (la_source_t *source = ITERATE_SOURCES(source_group->sources);
+                                (source = NEXT_SOURCE(source));)
                 {
-                        /* all praise basename/dirname which may or may not
-                         * modify the original string... */
-                        char *tmp = xstrdup(source->location);
-                        char *base_name = basename(tmp);
-                        free(tmp);
-                        if (!strcmp(file_name, base_name))
-                                return source;
+                        if (source->parent_wd == parent_wd)
+                        {
+                                /* all praise basename/dirname which may or may not
+                                 * modify the original string... */
+                                char *tmp = xstrdup(source->location);
+                                char *base_name = basename(tmp);
+                                free(tmp);
+                                if (!strcmp(file_name, base_name))
+                                        return source;
+                        }
                 }
         }
 
@@ -154,14 +158,18 @@ find_source_by_file_wd(const int file_wd)
 
 	/* Bail out if configuration is currently not available (e.g.
 	 * during a reload*/
-	if (!la_config->sources)
+	if (!la_config->source_groups)
 		return NULL;
 
-        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
-                        (source = NEXT_SOURCE(source));)
+        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
+                        (source_group = NEXT_SOURCE_GROUP(source_group));)
         {
-                if (source->wd == file_wd)
-                        return source;
+                for (la_source_t *source = ITERATE_SOURCES(source_group->sources);
+                                (source = NEXT_SOURCE(source));)
+                {
+                        if (source->wd == file_wd)
+                                return source;
+                }
         }
 
         return NULL;
@@ -178,7 +186,7 @@ watched_file_created(la_source_t *source)
         assert_source(source);
 
         la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been re-created.",
-                        source->name, source->location);
+                        source->source_group->name, source->location);
 
         /* unwatch not necessary in case of a previous IN_DELETE */
         if (source->file)
@@ -186,7 +194,8 @@ watched_file_created(la_source_t *source)
 
         watch_source(source, SEEK_SET);
         if (!handle_new_content(source))
-                la_log(LOG_ERR, "Reading from source \"%s\" failed.", source->name);
+                la_log(LOG_ERR, "Reading from source \"%s\", file \"%s\" failed.",
+                                source->source_group->name, source->location);
 }
 
 /*
@@ -200,7 +209,7 @@ watched_file_moved_from(la_source_t *source)
         assert_source(source);
 
         la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been moved away.",
-                        source->name, source->location);
+                        source->source_group->name, source->location);
 
         /* Keep watching original file in case daemons are still logging
          * there. Switch only when new file is created. */
@@ -216,7 +225,7 @@ watched_file_moved_to(la_source_t *source)
         assert_source(source);
 
         la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been moved to watched "
-                        "location.", source->name, source->location);
+                        "location.", source->source_group->name, source->location);
 
         /* unwatch not necessary in case of a previous IN_DELETE */
         if (source->file)
@@ -236,7 +245,7 @@ watched_file_deleted(la_source_t *source)
         assert_source(source);
 
         la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been deleted.",
-                        source->name, source->location);
+                        source->source_group->name, source->location);
 
         unwatch_source(source);
 }
@@ -255,22 +264,26 @@ handle_inotify_directory_event(const struct inotify_event *event)
 
         if (event->mask & IN_CREATE)
         {
-                la_debug("handle_inotify_directory_event(%s)", source->name);
+                la_debug("handle_inotify_directory_event(%s)",
+                                source->location);
                 watched_file_created(source);
         }
         else if (event->mask & IN_MOVED_FROM)
         {
-                la_debug("handle_inotify_directory_event(%s)", source->name);
+                la_debug("handle_inotify_directory_event(%s)",
+                                source->location);
                 watched_file_moved_from(source);
         }
         else if (event->mask & IN_MOVED_TO)
         {
-                la_debug("handle_inotify_directory_event(%s)", source->name);
+                la_debug("handle_inotify_directory_event(%s)",
+                                source->location);
                 watched_file_moved_to(source);
         }
         else if (event->mask & IN_DELETE)
         {
-                la_debug("handle_inotify_directory_event(%s)", source->name);
+                la_debug("handle_inotify_directory_event(%s)",
+                                source->location);
                 watched_file_deleted(source);
         }
 
@@ -291,10 +304,11 @@ handle_inotify_file_event(const struct inotify_event *event)
                  * case" */
                 return;
 
-        la_vdebug("handle_inotify_file_event(%s)", source->name);
+        la_vdebug("handle_inotify_file_event(%s)", source->location);
 
         if (!handle_new_content(source))
-                die_err("Reading from source \"%s\" failed", source->name);
+                die_err("Reading from source \"%s\", file \"%s\" failed",
+                                source->source_group->name, source->location);
 }
 
 static void
@@ -384,7 +398,7 @@ watch_source_inotify(la_source_t *source)
 {
         assert_source(source); assert(inotify_fd != 0);
 
-        la_debug("watch_source_inotify(%s)", source->name);
+        la_debug("watch_source_inotify(%s)", source->location);
 
         source->wd  = inotify_add_watch(inotify_fd, source->location, IN_MODIFY);
         if (source->wd  == -1)

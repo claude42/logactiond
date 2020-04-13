@@ -151,18 +151,19 @@ static void
 iterate_through_all_rules(char *line)
 {
         la_debug("iterate_through_all_rules()");
-        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
-                        (source = NEXT_SOURCE(source));)
+
+        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
+                        (source_group = NEXT_SOURCE_GROUP(source_group));)
         {
-                for (la_rule_t *rule = ITERATE_RULES(source->rules);
+                for (la_rule_t *rule = ITERATE_RULES(source_group->rules);
                                 (rule = NEXT_RULE(rule));)
                         next_line(rule, line);
         }
 
 #if HAVE_LIBSYSTEMD
-        if (la_config->systemd_source)
+        if (la_config->systemd_source_group)
         {
-                for (la_rule_t *rule = ITERATE_RULES(la_config->systemd_source->rules);
+                for (la_rule_t *rule = ITERATE_RULES(la_config->systemd_source_group->rules);
                                 (rule = NEXT_RULE(rule));)
                         next_line(rule, line);
         }

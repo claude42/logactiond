@@ -38,7 +38,9 @@ assert_rule_ffl(const la_rule_t *rule, const char *func, const char *file, unsig
                 die_hard("%s:%u: %s: Assertion 'rule' failed. ", file, line, func);
         if (!rule->name)
                 die_hard("%s:%u: %s: Assertion 'rule->name' failed. ", file, line, func);
-        assert_source_ffl(rule->source, func, file, line);
+        // TODO: could do better
+        if (!rule->source_group)
+                die_hard("%s:%u: %s: Assertion 'rule->source_group' failed. ", file, line, func);
         assert_list_ffl(rule->patterns, func, file, line);
         assert_list_ffl(rule->begin_commands, func, file, line);
         assert_list_ffl(rule->trigger_list, func, file, line);
@@ -265,7 +267,7 @@ static void
 trigger_all_commands(la_pattern_t *pattern)
 {
         assert_pattern(pattern); assert_rule(pattern->rule);
-        la_debug("trigger_all_commands(%s)", pattern->rule->name);
+        la_debug("trigger_all_commands(%s, %s)", pattern->rule->name, pattern->string);
 
         const char *host = NULL;
         la_address_t *address = NULL;
@@ -369,7 +371,7 @@ void
 handle_log_line_for_rule(const la_rule_t *rule, const char *line)
 {
         assert_rule(rule); assert(line);
-        la_vdebug("handle_log_line_for_rule(%s)", rule->name);
+        la_vdebug("handle_log_line_for_rule(%s, %s)", rule->name, line);
 
         for (la_pattern_t *pattern = ITERATE_PATTERNS(rule->patterns);
                         (pattern = NEXT_PATTERN(pattern));)
@@ -403,20 +405,21 @@ handle_log_line_for_rule(const la_rule_t *rule, const char *line)
  */
 
 la_rule_t *
-create_rule(const char *name, la_source_t *source, const int threshold,
-                const int period, const int duration, const int meta_enabled,
-                const int meta_period, const int meta_factor,
-                const int meta_max, const int dnsbl_enabled,
-                const char *service, const char *systemd_unit)
+create_rule(const char *name, la_source_group_t *source_group,
+                const int threshold, const int period, const int duration,
+                const int meta_enabled, const int meta_period,
+                const int meta_factor, const int meta_max,
+                const int dnsbl_enabled, const char *service,
+                const char *systemd_unit)
 {
-        assert_source(source);
+        assert(source_group);
         la_debug("create_rule(%s)", name);
 
         la_rule_t *result = xmalloc(sizeof(la_rule_t));
 
         result->name = xstrdup(name);
         result->id = ++id_counter;
-        result->source = source;
+        result->source_group = source_group;
 
         if (threshold >= 0)
                 result->threshold = threshold;
@@ -511,12 +514,12 @@ free_rule_list(kw_list_t *list)
 
 
 static la_rule_t *
-find_rule_for_source(const la_source_t *source, const char *rule_name)
+find_rule_for_source_group(const la_source_group_t *source_group, const char *rule_name)
 {
-        assert_source(source); assert(rule_name);
+        assert(source_group); assert(rule_name);
         la_debug("find_rule_for_source(%s)", rule_name);
 
-        for (la_rule_t *result = ITERATE_RULES(source->rules);
+        for (la_rule_t *result = ITERATE_RULES(source_group->rules);
                         (result = NEXT_RULE(result));)
         {
                 if (!strcmp(rule_name, result->name))
@@ -534,20 +537,20 @@ find_rule(const char *rule_name)
 
         la_rule_t *result;
 #if HAVE_LIBSYSTEMD
-        if (la_config->systemd_source)
+        if (la_config->systemd_source_group)
         {
-                result = find_rule_for_source(la_config->systemd_source,
-                                rule_name);
+                result = find_rule_for_source_group(
+                                la_config->systemd_source_group, rule_name);
                 if (result)
                         return result;
         }
 #endif /* HAVE_LIBSYSTEMD */
 
-        assert_list(la_config->sources);
-        for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
-                        (source = NEXT_SOURCE(source));)
+        assert_list(la_config->source_groups);
+        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
+                        (source_group = NEXT_SOURCE_GROUP(source_group));)
         {
-                result = find_rule_for_source(source, rule_name);
+                result = find_rule_for_source_group(source_group, rule_name);
                 if (result)
                         return result;
         }

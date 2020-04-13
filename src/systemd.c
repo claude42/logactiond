@@ -78,7 +78,7 @@ watch_forever_systemd(void *ptr)
         static unsigned int unit_buffer_length;
 
         la_debug("watch_forever_systemd()");
-        assert(journal); assert(la_config->systemd_source);
+        assert(journal); assert(la_config->systemd_source_group);
 
         pthread_cleanup_push(cleanup_watching_systemd, NULL);
 
@@ -145,7 +145,7 @@ watch_forever_systemd(void *ptr)
                 la_vdebug("Unit: %s, line: %s", unit_buffer, (char *)data+MESSAGE_LEN);
 
                 xpthread_mutex_lock(&config_mutex);
-                handle_log_line(la_config->systemd_source, (char *)data+MESSAGE_LEN,
+                handle_log_line(get_systemd_source(), (char *)data+MESSAGE_LEN,
                                 unit_buffer);
                 xpthread_mutex_unlock(&config_mutex);
         }
@@ -161,14 +161,14 @@ add_matches(void)
 {
         la_debug("add_matches()");
         assert(la_config);
-        assert_source(la_config->systemd_source);
-        assert_list(la_config->systemd_source->systemd_units);
+        assert(la_config->systemd_source_group);
+        assert_list(la_config->systemd_source_group->systemd_units);
 
         char *match = NULL;
 
         sd_journal_flush_matches(journal);
 
-        for (kw_node_t *unit = &(la_config->systemd_source->systemd_units)->head;
+        for (kw_node_t *unit = &(la_config->systemd_source_group->systemd_units)->head;
                         (unit = unit->succ->succ ? unit->succ : NULL);)
         {
                 // space for "_SYSTEMD_UNIT=" + unit->name + '\0'
@@ -220,6 +220,13 @@ start_watching_systemd_thread(void)
 
         xpthread_create(&systemd_watch_thread, NULL,
                         watch_forever_systemd, NULL, "systemd");
+}
+
+la_source_t *
+get_systemd_source(void)
+{
+        assert(la_config); assert(la_config->systemd_source_group);
+        return (la_source_t *) get_head(la_config->systemd_source_group->sources);
 }
 
 #endif /* HAVE_LIBSYSTEMD */

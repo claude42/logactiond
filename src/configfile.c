@@ -236,7 +236,7 @@ get_source_prefix(const config_setting_t *rule, const config_setting_t *uc_rule)
         assert(uc_rule);
 
         const char *result;
-        config_setting_t *source_def = get_source_uc_rule_or_rule(rule, uc_rule);
+        const config_setting_t *source_def = get_source_uc_rule_or_rule(rule, uc_rule);
 
         if (!config_setting_lookup_string(source_def, LA_SOURCE_PREFIX, &result))
                 result = NULL;
@@ -255,7 +255,6 @@ get_source_location(const config_setting_t *rule, const config_setting_t *uc_rul
         assert(uc_rule);
 
         const char *result;
-
         const config_setting_t *source_def = get_source_uc_rule_or_rule(rule, uc_rule);
 
         if (!config_setting_lookup_string(source_def, LA_SOURCE_LOCATION, &result))
@@ -612,20 +611,35 @@ get_rule_unsigned_int(const config_setting_t *rule_def,
  * Create new source, add it to list of sources, begin watching.
  */
 
-static la_source_t *
-create_file_source(const config_setting_t *rule_def,
+static la_source_group_t *
+create_file_sources(const config_setting_t *rule_def,
                 const config_setting_t *uc_rule_def)
 {
         assert(uc_rule_def);
-        assert(la_config); assert_list(la_config->sources);
+        assert(la_config); assert_list(la_config->source_groups);
 
+        const char *name = get_source_name(rule_def, uc_rule_def);
         const char *location = get_source_location(rule_def, uc_rule_def);
         const char *prefix = get_source_prefix(rule_def, uc_rule_def);
 
-        la_source_t *result = create_source(get_source_name(rule_def, uc_rule_def),
-                        location, prefix);
-        assert_source(result);
-        add_tail(la_config->sources, (kw_node_t *) result);
+        /* First create single source_group */
+        la_source_group_t *result = create_source_group(name, location, prefix);
+
+        glob_t pglob;
+        if (glob(location, 0, NULL, &pglob))
+                la_log(LOG_ERR, "Source \%s\" - file \"%s\" not found.", name,
+                                location);
+
+        /* Second create source objects for all matching files */
+        for (unsigned int i = 0; i < pglob.gl_pathc; i++)
+        {
+                la_source_t *src = create_source(result, pglob.gl_pathv[i]);
+                add_tail(result->sources, (kw_node_t *) src);
+        }
+
+        globfree(&pglob);
+
+        add_tail(la_config->source_groups, (kw_node_t *) result);
 
         return result;
 }
@@ -641,10 +655,13 @@ static void
 add_systemd_unit_to_list(const char *systemd_unit)
 {
         assert(systemd_unit);
-        assert(la_config); assert_source(la_config->systemd_source);
-        assert_list(la_config->systemd_source->systemd_units);
 
-        for (kw_node_t *tmp = &(la_config->systemd_source->systemd_units)->head;
+        la_source_t *systemd_source = get_systemd_source();
+        assert_source(systemd_source);
+        kw_list_t *ex_systemd_units = la_config->systemd_source_group->systemd_units;
+        assert_list(ex_systemd_units);
+
+        for (kw_node_t *tmp = &(ex_systemd_units)->head;
                         (tmp = tmp->succ->succ ? tmp->succ : NULL);)
         {
                 if (!strcmp(systemd_unit, tmp->name))
@@ -653,7 +670,7 @@ add_systemd_unit_to_list(const char *systemd_unit)
 
         kw_node_t *node = xmalloc(sizeof(kw_node_t));
         node->name = xstrdup(systemd_unit);
-        add_tail(la_config->systemd_source->systemd_units, node);
+        add_tail(ex_systemd_units, node);
 }
 #endif /* NOWATCH */
 
@@ -663,23 +680,27 @@ add_systemd_unit_to_list(const char *systemd_unit)
  * Initializes la_config->systemd_source if it didn't exist so far.
  */
 
-static la_source_t *
+static la_source_group_t *
 create_systemd_unit(const char *systemd_unit)
 {
         assert(systemd_unit);
         assert(la_config);
-        if (!la_config->systemd_source)
+        if (!la_config->systemd_source_group)
         {
                 /* TODO: set location also to NULL */
-                la_config->systemd_source = create_source("systemd",
+                la_config->systemd_source_group = create_source_group("systemd",
                                 "systemd", NULL);
-                la_config->systemd_source->systemd_units = xcreate_list();
+                la_config->systemd_source_group->systemd_units = xcreate_list();
+                la_source_t *systemd_source = create_source(
+                                la_config->systemd_source_group, "systemd");
+                add_tail(la_config->systemd_source_group->sources,
+                                (kw_node_t *) systemd_source);
         }
 #ifndef NOWATCH
         add_systemd_unit_to_list(systemd_unit);
 #endif /* NOWATCH */
 
-        return la_config->systemd_source;
+        return la_config->systemd_source_group;
 }
 #endif /* HAVE_LIBSYSTEMD */
 
@@ -695,7 +716,7 @@ load_single_rule(const config_setting_t *uc_rule_def)
 {
         assert(uc_rule_def);
         la_rule_t *new_rule;
-        la_source_t *source;
+        la_source_group_t *source_group;
 
         const char *name = config_setting_name(uc_rule_def);
         la_debug("load_single_rule(%s)", name);
@@ -708,20 +729,18 @@ load_single_rule(const config_setting_t *uc_rule_def)
 
         if (systemd_unit)
         {
-                source = create_systemd_unit(systemd_unit);
+                source_group = create_systemd_unit(systemd_unit);
         }
         else
 #endif /* HAVE_LIBSYSTEMD */
         {
                 systemd_unit = NULL; /* necessary if HAVE_LIBSYSTEMD==0 */
-                source = find_source_by_location(get_source_location(rule_def,
+                source_group = find_source_group_by_name(get_source_name(rule_def,
                                         uc_rule_def));
 
-                if (!source)
-                        source = create_file_source(rule_def, uc_rule_def);
+                if (!source_group)
+                        source_group = create_file_sources(rule_def, uc_rule_def);
         }
-
-        assert_source(source);
 
         /* get parameters either from rule or uc_rule */
         const int threshold = get_rule_unsigned_int(rule_def, uc_rule_def,
@@ -758,7 +777,7 @@ load_single_rule(const config_setting_t *uc_rule_def)
                         LA_SERVICE_LABEL);
 
         la_log(LOG_INFO, "Enabling rule \"%s\".", name);
-        new_rule = create_rule(name, source, threshold, period, duration,
+        new_rule = create_rule(name, source_group, threshold, period, duration,
                         meta_enabled, meta_period, meta_factor, meta_max,
                         dnsbl_enabled, service, systemd_unit);
         assert_rule(new_rule);
@@ -778,7 +797,7 @@ load_single_rule(const config_setting_t *uc_rule_def)
         /* blacklists are only taken from uc_rule_def (or default settings) */
         load_blacklists(new_rule, uc_rule_def);
 
-        add_tail(source->rules, (kw_node_t *) new_rule);
+        add_tail(source_group->rules, (kw_node_t *) new_rule);
 }
 
 
@@ -797,7 +816,7 @@ load_rules(void)
         if (n < 0)
                 return 0;
 
-        la_config->sources = xcreate_list();
+        la_config->source_groups = xcreate_list();
 
         int num_rules_enabled = 0;
         for (int i=0; i<n; i++)
@@ -1029,11 +1048,11 @@ unload_la_config(void)
         if (!shutdown_ongoing)
                 xpthread_mutex_lock(&config_mutex);
 
-        free_source_list(la_config->sources);
-        la_config->sources = NULL;
+        free_source_group_list(la_config->source_groups);
+        la_config->source_groups = NULL;
 #if HAVE_LIBSYSTEMD
-        free_source(la_config->systemd_source);
-        la_config->systemd_source = NULL;
+        free_source_group(la_config->systemd_source_group);
+        la_config->systemd_source_group = NULL;
 #endif /* HAVE_LIBSYSTEMD */
         free_property_list(la_config->default_properties);
         la_config->default_properties = NULL;
