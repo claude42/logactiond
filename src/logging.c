@@ -52,7 +52,7 @@ log_message(unsigned int priority, const char *fmt, va_list gp, const char *add)
                         break;
                 case LA_DAEMON_FOREGROUND:
                         fprintf(stderr, "<%u>", priority);
-                        /* intended fall through! */
+                        /* intentional fall through! */
                 case LA_UTIL_FOREGROUND:
 #endif /* CLIENTONLY */
                         vfprintf(stderr, fmt, gp);

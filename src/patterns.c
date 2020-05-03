@@ -194,7 +194,7 @@ convert_regex(const char *string, la_pattern_t *pattern)
                 case '(':
                         // In case of '(', count sub expression
                         subexpression++;
-                        // intended fall through!
+                        // intentional fall through!
                 default:
                         // simply copy all other characters
                         realloc_buffer(&result, &dst_ptr, &dst_len, 1);
