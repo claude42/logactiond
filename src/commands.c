@@ -650,14 +650,16 @@ trigger_end_command(const la_command_t *command, const bool suppress_logging)
         la_vdebug("trigger_end_command(%s, %d)", command->name,
                         command->duration);
 
-        if (command->is_template)
+        /* condition used to be (!suppress_logging || log_verbose) but that was
+         * still too verbose... */
+        if (log_verbose)
         {
-                la_log(LOG_INFO, "Disabling rule \"%s\".",
-                                command->rule_name);
-        }
-        else
-        {
-                if (!suppress_logging || log_verbose)
+                if (command->is_template)
+                {
+                        la_log(LOG_INFO, "Disabling rule \"%s\".",
+                                        command->rule_name);
+                }
+                else
                 {
                         if (command->address)
                                 la_log(LOG_INFO, "Host: %s, action \"%s\" ended for "
@@ -668,12 +670,12 @@ trigger_end_command(const la_command_t *command, const bool suppress_logging)
                                                 "\"%s\".", command->name,
                                                 command->rule_name);
                 }
-
-                /* After a reload some commands might not have a rule attached
-                 * to them anymore */
-                if (command->rule)
-                        command->rule->queue_count--;
         }
+
+        /* After a reload some commands might not have a rule attached
+         * to them anymore */
+        if (!command->is_template && command->rule)
+                command->rule->queue_count--;
 
         exec_command(command, LA_COMMANDTYPE_END);
 }
