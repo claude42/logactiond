@@ -26,8 +26,6 @@
 
 #include "logactiond.h"
 
-static char *linebuffer = NULL;
-size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE;
 
 void
 assert_source_ffl(const la_source_t *source, const char *func,
@@ -81,9 +79,8 @@ handle_new_content(const la_source_t *source)
         la_vdebug("handle_new_content(%s)", source->location);
 
         /* TODO: less random number? */
-        /* TODO2: free() buffer on cleanup */
-        if (!linebuffer)
-                linebuffer = xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
+        size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE;
+        char *linebuffer = alloca(linebuffer_size);
 
         /* TODO: can't remember why this extra read before the loop could be
          * necessary?!? */

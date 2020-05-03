@@ -202,8 +202,8 @@ main(int argc, char *argv[])
                         die_hard("Can't find rule %s", rule_name);
         }
         
-        char *linebuffer = xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
         size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE*sizeof(char);
+        char *linebuffer = alloca(linebuffer_size);
 
         for (;;)
         {
