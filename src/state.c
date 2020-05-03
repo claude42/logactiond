@@ -69,7 +69,7 @@ restore_state(const char *state_file_name, const bool create_backup_file)
                 LOG_RETURN_ERRNO(false, LOG_ERR, "Unable to open state file \"%s\"",
                                 state_file_name);
 
-        la_log(LOG_INFO, "Restoring state from \"%s\"", state_file_name);
+        la_log_verbose(LOG_INFO, "Restoring state from \"%s\"", state_file_name);
 
         size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE*sizeof(char);
         char *linebuffer = alloca(linebuffer_size);

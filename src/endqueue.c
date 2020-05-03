@@ -272,7 +272,7 @@ save_queue_state(const char *state_file_name)
         if (!state_file_name)
                 state_file_name = STATE_DIR "/" STATE_FILE;
 
-        la_log(LOG_INFO, "Dumping current state to \"%s\"", state_file_name);
+        la_log_verbose(LOG_INFO, "Dumping current state to \"%s\"", state_file_name);
 
         FILE *stream = fopen(state_file_name, "w");
         if (!stream)
