@@ -71,6 +71,8 @@
 #define DEFAULT_PORT 16473
 #define DEFAULT_PORT_STR "16473"
 
+#define DEFAULT_STATE_SAVE_PERIOD 60
+
 #if HAVE_RUN
 #define RUNDIR "/run"
 #else
@@ -484,6 +486,7 @@ extern pthread_t end_queue_thread;
 extern pthread_t monitoring_thread;
 extern pthread_t fifo_thread;
 extern pthread_t remote_thread;
+extern pthread_t save_state_thread;
 
 extern pthread_mutex_t config_mutex;
 extern pthread_mutex_t end_queue_mutex;
@@ -869,6 +872,14 @@ bool host_on_dnsbl(const la_address_t *address, const char *dnsbl_domainname);
 
 const char *host_on_any_dnsbl(const kw_list_t *blacklists,
                 const la_address_t *address);
+
+/* state.c */
+
+void save_state(const char *state_file_name);
+
+bool restore_state(const char *state_file_name, const bool create_backup_file);
+
+void start_save_state_thread(char *state_file_name);
 
 #endif /* __logactiond_h */
 

@@ -47,30 +47,12 @@ bool log_verbose = false;
 unsigned int id_counter = 0;
 char *run_uid_s = NULL;
 unsigned int status_monitoring = 0;
-const char *saved_state = NULL;
+char *saved_state = NULL;
 bool create_backup_file = false;
 bool shutdown_ongoing = false;
 int exit_status = EXIT_SUCCESS;
 static int exit_errno = 0;
 bool sync_on_startup = false;
-
-static void
-move_state_file_to_backup(void)
-{
-        const int length = strlen(saved_state) + strlen(".bak");
-        char *backup_file_name = xmalloc(length + 1);
-
-        if (snprintf(backup_file_name, length + 1, "%s%s", saved_state, ".bak") !=
-                        length)
-        {
-                la_log(LOG_ERR, "Unable to create backup file name!");
-                free(backup_file_name);
-                return;
-        }
-        if (rename(saved_state, backup_file_name) == -1)
-                la_log_errno(LOG_ERR, "Unable to create backup file!");
-        free(backup_file_name);
-}
 
 void
 trigger_shutdown(int status, int saved_errno)
@@ -83,11 +65,7 @@ trigger_shutdown(int status, int saved_errno)
         shutdown_ongoing = true;
 
         if (saved_state)
-        {
-                if (create_backup_file)
-                        move_state_file_to_backup();
-                save_queue_state(saved_state);
-        }
+                save_state(saved_state);
 
         if (file_watch_thread)
                 pthread_cancel(file_watch_thread);
@@ -105,6 +83,8 @@ trigger_shutdown(int status, int saved_errno)
                 pthread_cancel(fifo_thread);
         if (remote_thread)
                 pthread_cancel(remote_thread);
+        if (save_state_thread)
+                pthread_cancel(save_state_thread);
 }
 
 void
@@ -356,71 +336,6 @@ read_options(int argc, char *argv[])
 }
 
 static void
-restore_state(const char *state_file_name)
-{
-        assert(state_file_name);
-
-        FILE *stream = fopen(state_file_name, "r");
-        if (!stream)
-                LOG_RETURN_ERRNO(, LOG_ERR, "Unable to open state file \"%s\"",
-                                state_file_name);
-
-        la_log(LOG_INFO, "Restoring state from \"%s\"", state_file_name);
-
-        char *linebuffer = xmalloc(DEFAULT_LINEBUFFER_SIZE*sizeof(char));
-        size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE*sizeof(char);
-
-        xpthread_mutex_lock(&config_mutex);
-
-        int line_no = 1;
-        ssize_t num_read;
-
-        while ((num_read = getline(&linebuffer, &linebuffer_size,stream)) != -1)
-        {
-                la_address_t *address; la_rule_t * rule; time_t end_time;
-                int factor;
-
-                const int r = parse_add_entry_message(linebuffer, &address,
-                                &rule, &end_time, &factor);
-                la_vdebug("adr: %s, rule: %s, end_time: %u, factor: %u",
-                                address ? address->text : "no address",
-                                rule ? rule->name : "no rule", end_time, factor);
-                if (r == -1)
-                {
-                        /* Don't override state file in case of error */
-                        saved_state = NULL;
-                        die_hard("Error parsing state file \"%s\" at line %u!",
-                                        state_file_name, line_no);
-                }
-                else if (r > 0)
-                        trigger_manual_commands_for_rule(address, rule,
-                                        end_time, factor, NULL, true);
-
-                free_address(address);
-                line_no++;
-        }
-
-        if (!feof(stream))
-        {
-                /* Don't override state file in case of error */
-                saved_state = NULL;
-                die_err("Reading from state file \"%s\" failed",
-                                state_file_name);
-        }
-
-        xpthread_mutex_unlock(&config_mutex);
-
-        free(linebuffer);
-
-        if (fclose(stream) == EOF)
-        {
-                /* Don't override state file in case of error */
-                saved_state = NULL;
-                die_err("Unable to close state file");
-        }
-}
-
-static void
 sync_with_other_instances(void)
 {
         /* make sure remote thread is already set up and running */
@@ -530,7 +445,14 @@ main(int argc, char *argv[])
         load_la_config();
 
         if (saved_state)
-                restore_state(saved_state);
+        {
+                if (!restore_state(saved_state, create_backup_file))
+                {
+                        saved_state = NULL;
+                        die_err("Error reading state file!");
+                }
+                start_save_state_thread(saved_state);
+        }
 
         start_watching_threads();
 #ifndef NOMONITORING

@@ -7,7 +7,7 @@ endif
 
 sbin_PROGRAMS = logactiond logactiond-cleanup
 bin_PROGRAMS = logactiond-checkrules testerli logactiond-client
-logactiond_SOURCES = logactiond.c logactiond.h configfile.c rules.c patterns.c sources.c misc.c inotify.c nodelist.c nodelist.h properties.c commands.c endqueue.c addresses.c polling.c status.c watch.c systemd.c fifo.c remote.c messages.c logging.c dnsbl.c crypto.c
+logactiond_SOURCES = logactiond.c logactiond.h configfile.c rules.c patterns.c sources.c misc.c inotify.c nodelist.c nodelist.h properties.c commands.c endqueue.c addresses.c polling.c status.c watch.c systemd.c fifo.c remote.c messages.c logging.c dnsbl.c crypto.c state.c
 logactiond_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\"" -DSTATE_DIR="\"$(libdir)/logactiond\""
 logactiond_CFLAGS = $(PTHREAD_CFLAGS) $(LIBSODIUM_CFLAGS) $(CFLAGS)
 logactiond_LDFLAGS = $(LIBSODIUM_LIBS) $(LIBS)
