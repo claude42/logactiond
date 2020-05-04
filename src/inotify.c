@@ -95,7 +95,8 @@ unwatch_source_inotify(la_source_t *source)
         /* Remove watch for parent directory */
         if (source->parent_wd)
         {
-                if (inotify_rm_watch(inotify_fd, source->parent_wd))
+                if (inotify_rm_watch(inotify_fd, source->parent_wd) &&
+                                errno != EINVAL)
                         la_log_errno(LOG_ERR, "Unable to unwatch source "
                                         "parent dir \"%s\".",
                                         source->parent_dir);
