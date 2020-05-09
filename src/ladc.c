@@ -43,25 +43,25 @@ static void
 print_usage(void)
 {
         fprintf(stderr,
-                        "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "Usage: ladc [-h host][-p password][-s port] "
                         "add address rule [end_time]\n"
-                        "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "Usage: ladc [-h host][-p password][-s port] "
                         "del address\n"
-                        "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "Usage: ladc [-h host][-p password][-s port] "
                         "flush\n"
-                        "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "Usage: ladc [-h host][-p password][-s port] "
                         "reload\n"
-                        "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "Usage: ladc [-h host][-p password][-s port] "
                         "shutdown\n"
-                        "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "Usage: ladc [-h host][-p password][-s port] "
                         "(no|v)?debug\n"
-                        "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "Usage: ladc [-h host][-p password][-s port] "
                         "reset-counts\n"
-                        "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "Usage: ladc [-h host][-p password][-s port] "
                         "save\n"
-                        "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "Usage: ladc [-h host][-p password][-s port] "
                         "sync [host]\n",
-                        "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "Usage: ladc [-h host][-p password][-s port] "
                         "dump\n");
 }
 

@@ -6,7 +6,7 @@ endif
 
 
 sbin_PROGRAMS = logactiond logactiond-cleanup
-bin_PROGRAMS = logactiond-checkrules testerli logactiond-client
+bin_PROGRAMS = logactiond-checkrules testerli ladc
 logactiond_SOURCES = logactiond.c logactiond.h configfile.c rules.c patterns.c sources.c misc.c inotify.c nodelist.c nodelist.h properties.c commands.c endqueue.c addresses.c polling.c status.c watch.c systemd.c fifo.c remote.c messages.c logging.c dnsbl.c crypto.c state.c
 logactiond_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\"" -DSTATE_DIR="\"$(libdir)/logactiond\""
 logactiond_CFLAGS = $(PTHREAD_CFLAGS) $(LIBSODIUM_CFLAGS) $(CFLAGS)
@@ -20,10 +20,10 @@ logactiond_cleanup_SOURCES = logactiond-cleanup.c logactiond.h addresses.c comma
 logactiond_cleanup_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\"" -DNOWATCH -DNOMONITORING -DONLYCLEANUPCOMMANDS -DNOCRYPTO
 logactiond_cleanup_CFLAGS = $(PTHREAD_CFLAGS)
 
-logactiond_client_SOURCES = logactiond-client.c logactiond.h messages.c logging.c misc.c nodelist.c nodelist.h crypto.c
-logactiond_client_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCLIENTONLY
-logactiond_client_CFLAGS = $(LIBSODIUM_CFLAGS) $(CFLAGS)
-logactiond_client_LDFLAGS = $(LIBSODIUM_LIBS) $(LIBS)
+ladc_SOURCES = ladc.c logactiond.h messages.c logging.c misc.c nodelist.c nodelist.h crypto.c
+ladc_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCLIENTONLY
+ladc_CFLAGS = $(LIBSODIUM_CFLAGS) $(CFLAGS)
+ladc_LDFLAGS = $(LIBSODIUM_LIBS) $(LIBS)
 
 testerli_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCLIENTONLY -DNOCRYPTO
 testerli_SOURCES = testerli.c logging.c addresses.c nodelist.c misc.c

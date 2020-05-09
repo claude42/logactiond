@@ -114,7 +114,7 @@ src/logactiond
 src/logactiond-checkrules
 src/logactiond-cleanup
 src/logactiond-queue
-src/logactiond-client
+src/ladc
 src/testerli
 
 libconfig/.gitignore
