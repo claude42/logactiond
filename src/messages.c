@@ -53,10 +53,12 @@
  *    adjust log level
  *  "00\0"
  *    reset counts
- *  "0X"
- *  "0X<host>"
+ *  "0X\0"
+ *  "0X<host>\0"
  *    send all banned addresses to other host (or sending host if <host> is
- *    empta) via + command
+ *    empty) via + command
+ *  "0D\0"
+ *    dump current queue state
  *
  * Example structure (with maximum lengths):
  *  "0+<ip-address>/<prefix>,<rule-name>,<end-time-in-secs>,<factor>\0"
@@ -362,6 +364,13 @@ sync_entries(const char *buffer, const char *from)
 
 }
 
+static void
+perform_dump(void)
+{
+        dump_queue_status(true);
+        dump_rules();
+}
+
 void
 parse_message_trigger_command(const char *buf, const char *from)
 {
@@ -398,6 +407,9 @@ parse_message_trigger_command(const char *buf, const char *from)
                 break;
         case 'X':
                 sync_entries(buf, from);
+                break;
+        case 'D':
+                perform_dump();
                 break;
         default:
                 la_log(LOG_ERR, "Unknown command: '%c'",
@@ -546,6 +558,12 @@ create_sync_message(const char *host)
         pad(buffer, msg_len+1);
 
         return buffer;
+}
+
+char *
+create_dump_message(void)
+{
+        return create_simple_message('D');
 }
 
 /* vim: set autowrite expandtab: */

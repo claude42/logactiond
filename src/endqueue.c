@@ -252,7 +252,7 @@ empty_end_queue(void)
         }
 
 #ifndef NOMONITORING
-        dump_queue_status(end_queue);
+        dump_queue_status(false);
 #endif /* NOMONITORING */
 
         if (!shutdown_ongoing && end_queue_thread)
@@ -391,7 +391,7 @@ consume_end_queue(void *ptr)
                         trigger_end_command(command, false);
                         free_command(command);
 #ifndef NOMONITORING
-                        dump_queue_status(end_queue);
+                        dump_queue_status(false);
 #endif /* NOMONITORING */
                 }
         }
@@ -493,7 +493,7 @@ enqueue_end_command(la_command_t *end_command, const time_t manual_end_time)
         insert_node_before((kw_node_t *) tmp, (kw_node_t *) end_command);
 
 #ifndef NOMONITORING
-        dump_queue_status(end_queue);
+        dump_queue_status(false);
 #endif /* NOMONITORING */
 
         xpthread_cond_signal(&end_queue_condition);

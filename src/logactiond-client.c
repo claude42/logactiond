@@ -60,7 +60,9 @@ print_usage(void)
                         "Usage: logactiond-client [-h host][-p password][-s port] "
                         "save\n"
                         "Usage: logactiond-client [-h host][-p password][-s port] "
-                        "sync [host]\n");
+                        "sync [host]\n",
+                        "Usage: logactiond-client [-h host][-p password][-s port] "
+                        "dump\n");
 }
 
 static void
@@ -268,6 +270,10 @@ main(int argc, char *argv[])
                         message = create_sync_message(argv[optind++]);
                 else
                         die_hard("Wrong num ber of arguments.");
+        }
+        else if (!strcmp(command, "dump"))
+        {
+                message = create_dump_message();
         }
         else
         {

@@ -33,7 +33,7 @@ move_state_file_to_backup(const char *state_file_name)
         assert(state_file_name);
         la_debug("move_state_file_to_backup(%s)", state_file_name);
 
-        const int length = strlen(state_file_name) + strlen(".bak");
+        const int length = strlen(state_file_name) + sizeof(BAK_SUFFIX) - 1;
         char *backup_file_name = alloca(length + 1);
 
         if (snprintf(backup_file_name, length + 1, "%s%s", state_file_name, ".bak") !=

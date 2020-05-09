@@ -26,6 +26,8 @@
 #include <sys/types.h>
 #include <regex.h>
 #include <string.h>
+#include <stdio.h>
+#include <pthread.h>
 
 #include "logactiond.h"
 

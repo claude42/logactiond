@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <syslog.h>
+#include <time.h>
 
 #include "logactiond.h"
 
@@ -103,7 +104,7 @@ dump_single_rule(FILE *rules_file, const la_rule_t *rule)
  * Write rule status file to disc
  */
 
-static void
+void
 dump_rules(void)
 {
         la_debug("dump_rules()");
@@ -205,7 +206,7 @@ dump_loop(void *ptr)
                 dump_rules();
 
                 xpthread_mutex_lock(&end_queue_mutex);
-                dump_queue_status(end_queue);
+                dump_queue_status(false);
                 xpthread_mutex_unlock(&end_queue_mutex);
 
                 sleep(5);
@@ -248,43 +249,28 @@ start_monitoring_thread(void)
  */
 
 void
-dump_queue_status(const kw_list_t *queue)
+dump_queue_status(const bool force)
 {
         la_vdebug("dump_queue_status()");
-        if (!status_monitoring || shutdown_ongoing)
+
+        if ((!status_monitoring && !force) || shutdown_ongoing)
                 return;
 
         FILE *hosts_file = fopen(HOSTSFILE, "w");
         if (!hosts_file)
                 die_err("Can't create \"" HOSTSFILE "\"!");
 
-        if (status_monitoring >= 2)
-        {
-                unsigned int num_elems = 0;
-                unsigned int num_elems_local = 0;
-                for (la_command_t *command = ITERATE_COMMANDS(queue);
-                                (command = NEXT_COMMAND(command));)
-                {
-                        if (!command->is_template)
-                        {
-                                num_elems++;
-                                if (command->submission_type == LA_SUBMISSION_LOCAL)
-                                        num_elems_local++;
-                        }
-                }
-
-                fprintf(hosts_file, "Queue length: %u (%u local), meta_command: %u\n\n",
-                                num_elems, num_elems_local,
-                                meta_list_length());
-        }
-
-        fprintf(hosts_file, "IP address                                  "
+        const time_t now = xtime(NULL);
+        fprintf(hosts_file, "%s\n\nIP address                                  "
                         "Ma Fa Time Rule          Action\n"
                         "======================================"
-                        "=========================================\n");
+                        "=========================================\n",
+                        ctime(&now));
 
-        assert_list(queue);
-        for (la_command_t *command = ITERATE_COMMANDS(queue);
+        unsigned int num_elems = 0;
+        unsigned int num_elems_local = 0;
+
+        for (la_command_t *command = ITERATE_COMMANDS(end_queue);
                         (command = NEXT_COMMAND(command));)
         {
                 /* Don't assert_command() here, as after a reload some commands might
@@ -294,6 +280,15 @@ dump_queue_status(const kw_list_t *queue)
                 if (command->end_time == INT_MAX)
                         break;
 
+                /* First  collect data for the queue length line */
+                if ((status_monitoring >= 2 || force) && !command->is_template)
+                {
+                        num_elems++;
+                        if (command->submission_type == LA_SUBMISSION_LOCAL)
+                                num_elems_local++;
+                }
+
+                /* Second build host table */
                 const char *adr = command->address ? command->address->text : "-";
 
                 time_t timedelta;
@@ -315,6 +310,11 @@ dump_queue_status(const kw_list_t *queue)
                                 adr, type, command->factor, timedelta, unit,
                                 command->rule_name, command->name);
         }
+
+        if (status_monitoring >= 2 || force)
+                fprintf(hosts_file, "\nQueue length: %u (%u local), meta_command: %u\n",
+                                num_elems, num_elems_local,
+                                meta_list_length());
 
         if (fclose(hosts_file))
                 die_hard("Can't close \" HOSTSFILE \"!");

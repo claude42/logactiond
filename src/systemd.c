@@ -38,6 +38,7 @@
 #define UNIT "_SYSTEMD_UNIT"
 #define UNIT_LEN 14
 
+
 pthread_t systemd_watch_thread = 0;
 static sd_journal *journal = NULL;
 
@@ -74,8 +75,9 @@ cleanup_watching_systemd(void *arg)
 static void *
 watch_forever_systemd(void *ptr)
 {
+        static unsigned int unit_buffer_length = DEFAULT_LINEBUFFER_SIZE;
         static char *unit_buffer;
-        static unsigned int unit_buffer_length;
+        unit_buffer = xmalloc(unit_buffer_length);
 
         la_debug("watch_forever_systemd()");
         assert(journal); assert(la_config->systemd_source_group);
@@ -145,7 +147,7 @@ watch_forever_systemd(void *ptr)
                 la_vdebug("Unit: %s, line: %s", unit_buffer, (char *)data+MESSAGE_LEN);
 
                 xpthread_mutex_lock(&config_mutex);
-                handle_log_line(get_systemd_source(), (char *)data+MESSAGE_LEN,
+                handle_log_line(SYSTEMD_SOURCE, (char *)data+MESSAGE_LEN,
                                 unit_buffer);
                 xpthread_mutex_unlock(&config_mutex);
         }
@@ -220,13 +222,6 @@ start_watching_systemd_thread(void)
 
         xpthread_create(&systemd_watch_thread, NULL,
                         watch_forever_systemd, NULL, "systemd");
-}
-
-la_source_t *
-get_systemd_source(void)
-{
-        assert(la_config); assert(la_config->systemd_source_group);
-        return (la_source_t *) get_head(la_config->systemd_source_group->sources);
 }
 
 #endif /* HAVE_LIBSYSTEMD */

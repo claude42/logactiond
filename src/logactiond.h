@@ -71,7 +71,7 @@
 #define DEFAULT_PORT 16473
 #define DEFAULT_PORT_STR "16473"
 
-#define DEFAULT_STATE_SAVE_PERIOD 60
+#define DEFAULT_STATE_SAVE_PERIOD 300
 
 #if HAVE_RUN
 #define RUNDIR "/run"
@@ -140,11 +140,9 @@
 #define LA_REMOTE_PORT_LABEL "port"
 
 #define LA_TOKEN_REPL "(.+)"
-#define LA_TOKEN_REPL_LEN 4
 
 #define LA_HOST_TOKEN "host"
 #define LA_HOST_TOKEN_REPL "([.:[:xdigit:]]+)"
-#define LA_HOST_TOKEN_REPL_LEN 17
 #define LA_SERVICE_TOKEN "service"
 
 #define LA_RULENAME_TOKEN "rulename"
@@ -159,7 +157,12 @@
 #define MAX_NMATCH 20
 
 // buffer size for reading log lines
-#define DEFAULT_LINEBUFFER_SIZE 8192
+#define DEFAULT_LINEBUFFER_SIZE 1024
+
+// systemd_source
+#if HAVE_LIBSYSTEMD
+#define SYSTEMD_SOURCE (la_source_t *) la_config->systemd_source_group->sources->head.succ
+#endif /* HAVE_LIBSYSTEMD */
 
 // verbose debugging loglevel
 #define LOG_VDEBUG (LOG_DEBUG+1)
@@ -253,6 +256,8 @@
 #define MSG_IDX 0
 #define SALT_IDX ENC_MSG_LEN
 #define NONCE_IDX ENC_MSG_LEN+crypto_pwhash_SALTBYTES
+
+#define BAK_SUFFIX ".bak"
 
 typedef enum la_commandtype_s { LA_COMMANDTYPE_BEGIN, LA_COMMANDTYPE_END } la_commandtype_t;
 
@@ -625,6 +630,8 @@ char *create_reset_counts_message(void);
 
 char *create_sync_message(const char *host);
 
+char *create_dump_message(void);
+
 /* configfile.c */
 
 bool init_la_config(const char *filename);
@@ -814,8 +821,6 @@ void start_watching_systemd_thread(void);
 
 void add_systemd_unit(const char *systemd_unit);
 
-la_source_t *get_systemd_source(void);
-
 #endif /* HAVE_LIBSYSTEMD */
 
 #if HAVE_INOTIFY
@@ -839,7 +844,9 @@ void start_watching_polling_thread(void);
 
 void start_monitoring_thread(void);
 
-void dump_queue_status(const kw_list_t *queue);
+void dump_rules(void);
+
+void dump_queue_status(bool force);
 
 /* watch.c */
 
