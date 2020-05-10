@@ -59,6 +59,10 @@
  *    empty) via + command
  *  "0D\0"
  *    dump current queue state
+ *  "0Y<rule>\0"
+ *    enable rule
+ *  "0N<rule\0"
+ *    disable rule
  *
  * Example structure (with maximum lengths):
  *  "0+<ip-address>/<prefix>,<rule-name>,<end-time-in-secs>,<factor>\0"
@@ -169,7 +173,7 @@ add_entry(const char *buffer, const char *from)
         int factor;
 
         if (parse_add_entry_message(buffer, &address, &rule, &end_time,
-                                &factor) == 1)
+                                &factor) == 1 && rule->enabled)
         {
                 xpthread_mutex_lock(&config_mutex);
 
@@ -371,9 +375,46 @@ perform_dump(void)
         dump_rules();
 }
 
+static void
+enable_rule(const char *buffer)
+{
+        assert(buffer);
+        la_debug("enable_rule(%s)", buffer);
+
+        xpthread_mutex_lock(&config_mutex);
+
+        la_rule_t *rule = find_rule(buffer+2);
+        if (rule && !rule->enabled)
+        {
+                la_log(LOG_INFO, "Enabling rule \"%s\".", buffer+2);
+                rule->enabled = true;
+        }
+
+        xpthread_mutex_unlock(&config_mutex);
+}
+
+static void
+disable_rule(const char *buffer)
+{
+        assert(buffer);
+        la_debug("disable_rule(%s)", buffer);
+
+        xpthread_mutex_lock(&config_mutex);
+
+        la_rule_t *rule = find_rule(buffer+2);
+        if (rule && rule->enabled)
+        {
+                la_log(LOG_INFO, "Disabling rule \"%s\".", buffer+2);
+                rule->enabled = false;
+        }
+
+        xpthread_mutex_unlock(&config_mutex);
+}
+
 void
 parse_message_trigger_command(const char *buf, const char *from)
 {
+        la_debug("parse_message_trigger_command()");
         assert(buf);
 
         if (*buf != PROTOCOL_VERSION)
@@ -410,6 +451,12 @@ parse_message_trigger_command(const char *buf, const char *from)
                 break;
         case 'D':
                 perform_dump();
+                break;
+        case 'Y':
+                enable_rule(buf);
+                break;
+        case 'N':
+                disable_rule(buf);
                 break;
         default:
                 la_log(LOG_ERR, "Unknown command: '%c'",
@@ -565,5 +612,34 @@ create_dump_message(void)
 {
         return create_simple_message('D');
 }
+
+char *
+create_enable_message(const char *rule)
+{
+        char *buffer = xmalloc(TOTAL_MSG_LEN);
+
+        const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cY%s",
+                        PROTOCOL_VERSION, rule);
+
+        /* pad right here, cannot hurt even if we don't encrypt... */
+        pad(buffer, msg_len+1);
+
+        return buffer;
+}
+
+char *
+create_disable_message(const char *rule)
+{
+        char *buffer = xmalloc(TOTAL_MSG_LEN);
+
+        const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cN%s",
+                        PROTOCOL_VERSION, rule);
+
+        /* pad right here, cannot hurt even if we don't encrypt... */
+        pad(buffer, msg_len+1);
+
+        return buffer;
+}
+
 
 /* vim: set autowrite expandtab: */

@@ -62,7 +62,9 @@ print_usage(void)
                         "Usage: ladc [-h host][-p password][-s port] "
                         "sync [host]\n",
                         "Usage: ladc [-h host][-p password][-s port] "
-                        "dump\n");
+                        "dump\n",
+                        "Usage: ladc [-h host][-p password][-s port] "
+                        "(en|dis)able \n");
 }
 
 static void
@@ -134,7 +136,7 @@ send_local_message(char *message)
         if (!S_ISFIFO(stats.st_mode))
         {
                 fclose(fifo);
-                die_hard("Fifo is not a fifo");
+                die_hard(FIFOFILE " is not a fifo");
         }
 
 
@@ -274,6 +276,20 @@ main(int argc, char *argv[])
         else if (!strcmp(command, "dump"))
         {
                 message = create_dump_message();
+        }
+        else if (!strcmp(command, "enable"))
+        {
+                if (optind != argc-1)
+                        die_hard("Wrong number of arguments.");
+
+                message = create_enable_message(argv[optind]);
+        }
+        else if (!strcmp(command, "disable"))
+        {
+                if (optind != argc-1)
+                        die_hard("Wrong number of arguments.");
+
+                message = create_disable_message(argv[optind]);
         }
         else
         {

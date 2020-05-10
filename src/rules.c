@@ -407,17 +407,19 @@ handle_log_line_for_rule(const la_rule_t *rule, const char *line)
  */
 
 la_rule_t *
-create_rule(const char *name, la_source_group_t *source_group,
-                const int threshold, const int period, const int duration,
-                const int meta_enabled, const int meta_period,
-                const int meta_factor, const int meta_max,
-                const int dnsbl_enabled, const char *service,
-                const char *systemd_unit)
+create_rule(const bool enabled, const char *name,
+                la_source_group_t *source_group, const int threshold,
+                const int period, const int duration, const int meta_enabled,
+                const int meta_period, const int meta_factor,
+                const int meta_max, const int dnsbl_enabled,
+                const char *service, const char *systemd_unit)
 {
         assert(source_group);
         la_debug("create_rule(%s)", name);
 
         la_rule_t *result = xmalloc(sizeof(la_rule_t));
+
+        result->enabled = enabled;
 
         result->name = xstrdup(name);
         result->id = ++id_counter;

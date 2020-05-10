@@ -711,12 +711,15 @@ create_systemd_unit(const char *systemd_unit)
  * the config file
  */
 
-static void
+static bool
 load_single_rule(const config_setting_t *uc_rule_def)
 {
         assert(uc_rule_def);
-        la_rule_t *new_rule;
-        la_source_group_t *source_group;
+
+        int enabled;
+        if (config_setting_lookup_bool(uc_rule_def, LA_ENABLED_LABEL,
+                                &enabled) == CONFIG_FALSE)
+                enabled == false;
 
         const char *name = config_setting_name(uc_rule_def);
         la_debug("load_single_rule(%s)", name);
@@ -727,6 +730,7 @@ load_single_rule(const config_setting_t *uc_rule_def)
         systemd_unit = get_rule_string(rule_def, uc_rule_def,
                         LA_RULE_SYSTEMD_UNIT_LABEL);
 
+        la_source_group_t *source_group;
         if (systemd_unit)
         {
                 source_group = create_systemd_unit(systemd_unit);
@@ -776,11 +780,14 @@ load_single_rule(const config_setting_t *uc_rule_def)
         const char *service = get_rule_string(rule_def, uc_rule_def,
                         LA_SERVICE_LABEL);
 
-        la_log(LOG_INFO, "Enabling rule \"%s\".", name);
-        new_rule = create_rule(name, source_group, threshold, period, duration,
+        la_rule_t *new_rule;
+        new_rule = create_rule(enabled, name, source_group, threshold, period, duration,
                         meta_enabled, meta_period, meta_factor, meta_max,
                         dnsbl_enabled, service, systemd_unit);
         assert_rule(new_rule);
+
+        if (new_rule->enabled)
+                la_log(LOG_INFO, "Enabling rule \"%s\".", name);
 
         /* Properties from uc_rule_def have priority over those from
          * rule_def */
@@ -798,6 +805,8 @@ load_single_rule(const config_setting_t *uc_rule_def)
         load_blacklists(new_rule, uc_rule_def);
 
         add_tail(source_group->rules, (kw_node_t *) new_rule);
+
+        return enabled;
 }
 
 
@@ -824,13 +833,8 @@ load_rules(void)
                 config_setting_t *uc_rule = 
                         config_setting_get_elem(local_section, i);
 
-                int enabled;
-                if (config_setting_lookup_bool(uc_rule, LA_ENABLED_LABEL,
-                                        &enabled) == CONFIG_TRUE && enabled)
-                {
+                if (load_single_rule(uc_rule))
                         num_rules_enabled++;
-                        load_single_rule(uc_rule);
-                }
         }
 
         return num_rules_enabled;

@@ -53,15 +53,18 @@ handle_log_line(const la_source_t *source, const char *line,
         for (la_rule_t *rule = ITERATE_RULES(source->source_group->rules);
                         (rule = NEXT_RULE(rule));)
         {
-                /* In case we use systemd, check whether the systemd unit
-                 * matches, otherwise we can save us going through all the
-                 * pattern matching stuff */
+                if (rule->enabled)
+                {
+                        /* In case we use systemd, check whether the systemd unit
+                         * matches, otherwise we can save us going through all the
+                         * pattern matching stuff */
 #if HAVE_LIBSYSTEMD
-                if (!systemd_unit ||
-                                (rule->systemd_unit &&
-                                 !strcmp(systemd_unit, rule->systemd_unit)))
+                        if (!systemd_unit ||
+                                        (rule->systemd_unit &&
+                                         !strcmp(systemd_unit, rule->systemd_unit)))
 #endif /* HAVE_LIBSYSTEMD */
-                        handle_log_line_for_rule(rule, line);
+                                handle_log_line_for_rule(rule, line);
+                }
         }
 }
 

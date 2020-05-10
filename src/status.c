@@ -93,9 +93,9 @@ dump_single_rule(FILE *rules_file, const la_rule_t *rule)
 {
         assert(rules_file), assert_rule(rule);
         la_vdebug("dump_single_rule(%s)", rule->name);
-        fprintf(rules_file, "%-13.13s %-13.13s %-13.13s %8lu %8lu %8lu\n",
-                        rule->name, rule->systemd_unit ? rule->systemd_unit :
-                        rule->service ? rule->service : "-",
+        fprintf(rules_file, "%c  %-13.13s %-13.13s %-13.13s %8lu %8lu %8lu\n",
+                        rule->enabled ? 'Y' : 'N', rule->name,
+                        rule->systemd_unit ? rule->systemd_unit : rule->service ? rule->service : "-",
                         rule->source_group->name, rule->detection_count,
                         rule->invocation_count, rule->queue_count);
 }
@@ -121,8 +121,8 @@ dump_rules(void)
                         die_err("Can't create \"" DIAGFILE "\"!");
         }
 
-        fprintf(rules_file, "Rule          Service       Source        Detected  Invoked  In queue\n");
-        fprintf(rules_file, "=====================================================================\n");
+        fprintf(rules_file, "En Rule          Service       Source        Detected  Invoked  In queue\n");
+        fprintf(rules_file, "========================================================================\n");
 
         xpthread_mutex_lock(&config_mutex);
 
