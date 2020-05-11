@@ -726,11 +726,11 @@ load_single_rule(const config_setting_t *uc_rule_def)
         const config_setting_t *rule_def = get_rule(name);
 
         const char *systemd_unit;
+        la_source_group_t *source_group;
 #if HAVE_LIBSYSTEMD
         systemd_unit = get_rule_string(rule_def, uc_rule_def,
                         LA_RULE_SYSTEMD_UNIT_LABEL);
 
-        la_source_group_t *source_group;
         if (systemd_unit)
         {
                 source_group = create_systemd_unit(systemd_unit);
