@@ -85,21 +85,7 @@ handle_new_content(const la_source_t *source)
         size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE;
         char *linebuffer = alloca(linebuffer_size);
 
-        /* TODO: can't remember why this extra read before the loop could be
-         * necessary?!? */
-        ssize_t num_read = getline(&linebuffer, &linebuffer_size, source->file);
-        if (num_read==-1)
-        {
-                if (feof(source->file))
-                {
-                        /* What was the reason for this? I can't remember :-O */
-                        fseek(source->file, 0, SEEK_END);
-                        return true;
-                }
-                else
-                        return false;
-        }
-        handle_log_line(source, linebuffer, NULL);
+        ssize_t num_read;
 
         for (;;)
         {
@@ -108,9 +94,14 @@ handle_new_content(const la_source_t *source)
                 if (num_read==-1)
                 {
                         if (feof(source->file))
+                        {
+                                fseek(source->file, 0, SEEK_END);
                                 return true;
+                        }
                         else
+                        {
                                 return false;
+                        }
                 }
                 handle_log_line(source, linebuffer, NULL);
         }
