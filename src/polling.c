@@ -50,7 +50,7 @@ static void *
 watch_forever_polling(void *ptr)
 {
         la_debug("watch_forever_polling()");
-        assert(la_config); assert_list(la_config->sources);
+        assert(la_config); assert_list(la_config->source_groups);
 
         struct stat sb;
 
@@ -66,69 +66,81 @@ watch_forever_polling(void *ptr)
 
                 xpthread_mutex_lock(&config_mutex);
 
-                for (la_source_t *source = ITERATE_SOURCES(la_config->sources);
-                                (source = NEXT_SOURCE(source));)
-                {
-                        /* 1st case: file previously unaccessible
-                         * 
-                         * Try to open/stat, if it succeeds, great, go ahead
-                         * otherwise
-                         */
-                        if (!source->active)
-                        {
-                                source->file = fopen(source->location, "r");
-                                if (source->file)
-                                {
-                                        source->active = true;
-                                        /* Nice, but if fstat() fails, we still can't
-                                         * move forward */
-                                        if (fstat(fileno(source->file), &(source->stats)) == -1)
-                                                unwatch_source(source);
-                                }
-                                else
-                                {
-                                        la_vdebug("still inactive");
-                                }
-                        }
+		for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
+				(source_group = NEXT_SOURCE_GROUP(source_group));)
+		{
 
-                        /* 2nd case: file has been accessible and still is, but
-                         * suddenly it's a different file
-                         * 
-                         * Great, try to open new file
-                         */
-                        else if (!stat(source->location, &sb) && (
-                                                sb.st_ino != source->stats.st_ino ||
-                                                sb.st_dev != source->stats.st_dev ||
-                                                sb.st_nlink == 0))
-                        {
-                                source->file = freopen(source->location, "r",
-                                                source->file);
-                                if (source->file)
-                                {
-                                        memcpy(&(source->stats), &sb,
-                                                        sizeof(struct stat));
-                                }
-                                else
-                                {
-                                        la_log_errno(LOG_ERR, "Can't reopen source "
-                                                        "\"%s\" - file \"%s\".",
-                                                        source->name,
-                                                        source->location);
-                                        source->active = false;
-                                }
-                        }
+			for (la_source_t *source = ITERATE_SOURCES(source_group->sources);
+					(source = NEXT_SOURCE(source));)
+			{
+				/* 1st case: file previously unaccessible
+				 * 
+				 * Try to open/stat, if it succeeds, great, go ahead
+				 * otherwise
+				 */
+				if (!source->active)
+				{
+					source->file = fopen(source->location, "r");
+					if (source->file)
+					{
+						la_log(LOG_INFO, "A1");
+						source->active = true;
+						/* Nice, but if fstat() fails, we still can't
+						 * move forward */
+						if (fstat(fileno(source->file), &(source->stats)) == -1)
+							unwatch_source(source);
+					}
+					else
+					{
+						la_log(LOG_INFO, "A2");
+						la_vdebug("still inactive");
+					}
+				}
 
-                        /* 3rd case: file accessible, same as before
-                         *
-                         * Go and read new content, stop watching if that
-                         * should fail.
-                         */
-                        else if (!handle_new_content(source))
-                        {
-                                unwatch_source(source);
-                        }
+				/* 2nd case: file has been accessible and still is, but
+				 * suddenly it's a different file
+				 * 
+				 * Great, try to open new file
+				 */
+				else if (!stat(source->location, &sb) && (
+							sb.st_ino != source->stats.st_ino ||
+							sb.st_dev != source->stats.st_dev ||
+							sb.st_nlink == 0))
+				{
+					source->file = freopen(source->location, "r",
+							source->file);
+					if (source->file)
+					{
+						la_log(LOG_INFO, "B1");
+						memcpy(&(source->stats), &sb,
+								sizeof(struct stat));
+					}
+					else
+					{
+						la_log(LOG_INFO, "B2");
+						la_log_errno(LOG_ERR, "Can't reopen source "
+								"\"%s\" - file \"%s\".",
+								source_group->name,
+								source->location);
+						source->active = false;
+					}
+				}
 
-                }
+				/* 3rd case: file accessible, same as before
+				 *
+				 * Go and read new content, stop watching if that
+				 * should fail.
+				 */
+				else if (!handle_new_content(source))
+				{
+					la_log(LOG_INFO, "C1");
+					unwatch_source(source);
+				}
+				else
+					la_log(LOG_INFO, "C2");
+
+			}
+		}
 
                 xpthread_mutex_unlock(&config_mutex);
 
