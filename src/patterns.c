@@ -240,9 +240,6 @@ die_regcomp(const int return_value, const char *regex)
         case REG_ECTYPE:
                 error_msg = "Unknown character class name.";
                 break;
-        case REG_EEND:
-                error_msg = "Nonspecific error.";
-                break;
         case REG_EESCAPE:
                 error_msg = "Trailing backslash.";
                 break;
@@ -251,9 +248,6 @@ die_regcomp(const int return_value, const char *regex)
                 break;
         case REG_ERANGE:
                 error_msg = "Invalid use of the range operator; for example, the ending point of the range occurs prior to the starting point.";
-                break;
-        case REG_ESIZE:
-                error_msg = "Compiled regular expression requires a pattern buffer larger than 64Kb.  This is not defined by POSIX.2.";
                 break;
         case REG_ESPACE:
                 error_msg = "The regex routines ran out of memory.";
