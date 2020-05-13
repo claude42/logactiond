@@ -42,8 +42,7 @@ static struct addrinfo *ai;
 static void
 print_usage(void)
 {
-        fprintf(stderr,
-                        "Usage: ladc [-h host][-p password][-s port] "
+        fputs("Usage: ladc [-h host][-p password][-s port] "
                         "add address rule [end_time]\n"
                         "Usage: ladc [-h host][-p password][-s port] "
                         "del address\n"
@@ -60,11 +59,11 @@ print_usage(void)
                         "Usage: ladc [-h host][-p password][-s port] "
                         "save\n"
                         "Usage: ladc [-h host][-p password][-s port] "
-                        "sync [host]\n",
+                        "sync [host]\n"
                         "Usage: ladc [-h host][-p password][-s port] "
-                        "dump\n",
+                        "dump\n"
                         "Usage: ladc [-h host][-p password][-s port] "
-                        "(en|dis)able \n");
+                        "(en|dis)able \n", stderr);
 }
 
 static void
