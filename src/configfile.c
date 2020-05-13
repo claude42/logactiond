@@ -719,7 +719,7 @@ load_single_rule(const config_setting_t *uc_rule_def)
         int enabled;
         if (config_setting_lookup_bool(uc_rule_def, LA_ENABLED_LABEL,
                                 &enabled) == CONFIG_FALSE)
-                enabled == false;
+                enabled = false;
 
         const char *name = config_setting_name(uc_rule_def);
         la_debug("load_single_rule(%s)", name);
