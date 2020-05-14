@@ -85,11 +85,9 @@ handle_new_content(const la_source_t *source)
         size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE;
         char *linebuffer = alloca(linebuffer_size);
 
-        ssize_t num_read;
-
         for (;;)
         {
-                num_read = getline(&linebuffer, &linebuffer_size,
+                size_t num_read = getline(&linebuffer, &linebuffer_size,
                                 source->file);
                 if (num_read==-1)
                 {

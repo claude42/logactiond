@@ -349,14 +349,13 @@ watch_forever_inotify(void *ptr)
         la_debug("watch_forever_inotify()");
 
         char buffer[BUF_LEN];
-        ssize_t num_read;
         struct inotify_event *event;
 
         pthread_cleanup_push(cleanup_watching_inotify, NULL);
 
         for (;;)
         {
-                num_read = read(inotify_fd, buffer, BUF_LEN);
+                size_t num_read = read(inotify_fd, buffer, BUF_LEN);
                 if (shutdown_ongoing)
                 {
                         la_debug("Shutting down inotify thread.");

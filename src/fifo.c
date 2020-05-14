@@ -68,8 +68,6 @@ fifo_loop(void *ptr)
 
         pthread_cleanup_push(cleanup_fifo, NULL);
 
-        size_t num_read;
-
         size_t buf_size = DEFAULT_LINEBUFFER_SIZE*sizeof(char);
         char *buf = alloca(buf_size);
 
@@ -81,7 +79,7 @@ fifo_loop(void *ptr)
                         pthread_exit(NULL);
                 }
 
-                num_read = getline(&buf, &buf_size, fifo);
+                size_t num_read;
                 if ((int) num_read == -1)
                 {
                         if (feof(fifo))

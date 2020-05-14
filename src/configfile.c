@@ -656,8 +656,6 @@ add_systemd_unit_to_list(const char *systemd_unit)
 {
         assert(systemd_unit);
 
-        la_source_t *systemd_source = SYSTEMD_SOURCE;
-        assert_source(systemd_source);
         kw_list_t *ex_systemd_units = la_config->systemd_source_group->systemd_units;
         assert_list(ex_systemd_units);
 

@@ -84,12 +84,11 @@ watch_forever_systemd(void *ptr)
 
         pthread_cleanup_push(cleanup_watching_systemd, NULL);
 
-        int r; /* result from any of the sd_*() calls */
-
         for (;;)
         {
                 const void *data;
                 size_t size;
+                int r; /* result from any of the sd_*() calls */
 
                 r = sd_journal_next(journal);
                 if (r == 0)
