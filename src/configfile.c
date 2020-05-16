@@ -1024,15 +1024,15 @@ load_la_config(void)
 
         xpthread_mutex_lock(&config_mutex);
 
-        load_defaults();
-        if (!load_rules())
-        {
-                xpthread_mutex_unlock(&config_mutex);
-                die_hard("No rules enabledd!");
-        }
-        load_remote_settings();
+                load_defaults();
+                if (!load_rules())
+                {
+                        xpthread_mutex_unlock(&config_mutex);
+                        die_hard("No rules enabledd!");
+                }
+                load_remote_settings();
 
-        config_destroy(&la_config->config_file);
+                config_destroy(&la_config->config_file);
 
         xpthread_mutex_unlock(&config_mutex);
 }
@@ -1050,22 +1050,22 @@ unload_la_config(void)
         if (!shutdown_ongoing)
                 xpthread_mutex_lock(&config_mutex);
 
-        free_source_group_list(la_config->source_groups);
-        la_config->source_groups = NULL;
+                free_source_group_list(la_config->source_groups);
+                la_config->source_groups = NULL;
 #if HAVE_LIBSYSTEMD
-        free_source_group(la_config->systemd_source_group);
-        la_config->systemd_source_group = NULL;
+                free_source_group(la_config->systemd_source_group);
+                la_config->systemd_source_group = NULL;
 #endif /* HAVE_LIBSYSTEMD */
-        free_property_list(la_config->default_properties);
-        la_config->default_properties = NULL;
-        free_address_list(la_config->ignore_addresses);
-        la_config->ignore_addresses = NULL;
-        free(la_config->remote_secret);
-        free_address_list(la_config->remote_receive_from);
-        la_config->remote_receive_from = NULL;
-        free_address_list(la_config->remote_send_to);
-        la_config->remote_send_to = NULL;
-        free(la_config->remote_bind);
+                free_property_list(la_config->default_properties);
+                la_config->default_properties = NULL;
+                free_address_list(la_config->ignore_addresses);
+                la_config->ignore_addresses = NULL;
+                free(la_config->remote_secret);
+                free_address_list(la_config->remote_receive_from);
+                la_config->remote_receive_from = NULL;
+                free_address_list(la_config->remote_send_to);
+                la_config->remote_send_to = NULL;
+                free(la_config->remote_bind);
 
         if (!shutdown_ongoing)
                 xpthread_mutex_unlock(&config_mutex);

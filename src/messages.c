@@ -177,8 +177,8 @@ add_entry(const char *buffer, const char *from)
         {
                 xpthread_mutex_lock(&config_mutex);
 
-                trigger_manual_commands_for_rule(address, rule, end_time,
-                                factor, from, false);
+                        trigger_manual_commands_for_rule(address, rule,
+                                        end_time, factor, from, false);
 
                 xpthread_mutex_unlock(&config_mutex);
                 free_address(address);
@@ -197,7 +197,9 @@ del_entry(const char *buffer)
                 LOG_RETURN(, LOG_ERR, "Cannot convert address in command %s!", buffer);
 
         xpthread_mutex_lock(&config_mutex);
-        const int r = remove_and_trigger(address);
+
+                const int r = remove_and_trigger(address);
+
         xpthread_mutex_unlock(&config_mutex);
 
         if (r == -1)
@@ -259,24 +261,24 @@ create_add_messages_for_end_queue(void)
 {
         xpthread_mutex_lock(&end_queue_mutex);
 
-        int queue_length = list_length(end_queue);
-        char **message_array = (char **) xmalloc((queue_length + 1) *
-                        sizeof (char *));
-        int message_array_length = 0;
+                int queue_length = list_length(end_queue);
+                char **message_array = (char **) xmalloc((queue_length + 1) *
+                                sizeof (char *));
+                int message_array_length = 0;
 
-        for (la_command_t *command = ITERATE_COMMANDS(end_queue);
-                        (command = NEXT_COMMAND(command));)
-        {
-                if (!command->is_template && command->address)
-
+                for (la_command_t *command = ITERATE_COMMANDS(end_queue);
+                                (command = NEXT_COMMAND(command));)
                 {
-                        assert(message_array_length < queue_length);
-                        message_array[message_array_length++] =
-                                create_add_message(command->address->text,
-                                                command->rule_name, NULL,
-                                                NULL);
+                        if (!command->is_template && command->address)
+
+                        {
+                                assert(message_array_length < queue_length);
+                                message_array[message_array_length++] =
+                                        create_add_message(command->address->text,
+                                                        command->rule_name, NULL,
+                                                        NULL);
+                        }
                 }
-        }
 
         xpthread_mutex_unlock(&end_queue_mutex);
 
@@ -306,24 +308,24 @@ sync_all_entries(void *ptr)
 
         xpthread_mutex_lock(&end_queue_mutex);
 
-        const int queue_length = list_length(end_queue);
-        char **message_array = (char **) xmalloc((queue_length + 1) *
-                        sizeof (char *));
-        int message_array_length = 0;
+                const int queue_length = list_length(end_queue);
+                char **message_array = (char **) xmalloc((queue_length + 1) *
+                                sizeof (char *));
+                int message_array_length = 0;
 
-        for (la_command_t *command = ITERATE_COMMANDS(end_queue);
-                        (command = NEXT_COMMAND(command));)
-        {
-                if (!command->is_template && command->address)
-
+                for (la_command_t *command = ITERATE_COMMANDS(end_queue);
+                                (command = NEXT_COMMAND(command));)
                 {
-                        assert(message_array_length < queue_length);
-                        message_array[message_array_length++] =
-                                create_add_message(command->address->text,
-                                                command->rule_name, NULL,
-                                                NULL);
+                        if (!command->is_template && command->address)
+
+                        {
+                                assert(message_array_length < queue_length);
+                                message_array[message_array_length++] =
+                                        create_add_message(command->address->text,
+                                                        command->rule_name, NULL,
+                                                        NULL);
+                        }
                 }
-        }
 
         xpthread_mutex_unlock(&end_queue_mutex);
 
@@ -383,12 +385,12 @@ enable_rule(const char *buffer)
 
         xpthread_mutex_lock(&config_mutex);
 
-        la_rule_t *rule = find_rule(buffer+2);
-        if (rule && !rule->enabled)
-        {
-                la_log(LOG_INFO, "Enabling rule \"%s\".", buffer+2);
-                rule->enabled = true;
-        }
+                la_rule_t *rule = find_rule(buffer+2);
+                if (rule && !rule->enabled)
+                {
+                        la_log(LOG_INFO, "Enabling rule \"%s\".", buffer+2);
+                        rule->enabled = true;
+                }
 
         xpthread_mutex_unlock(&config_mutex);
 }
@@ -401,12 +403,12 @@ disable_rule(const char *buffer)
 
         xpthread_mutex_lock(&config_mutex);
 
-        la_rule_t *rule = find_rule(buffer+2);
-        if (rule && rule->enabled)
-        {
-                la_log(LOG_INFO, "Disabling rule \"%s\".", buffer+2);
-                rule->enabled = false;
-        }
+                la_rule_t *rule = find_rule(buffer+2);
+                if (rule && rule->enabled)
+                {
+                        la_log(LOG_INFO, "Disabling rule \"%s\".", buffer+2);
+                        rule->enabled = false;
+                }
 
         xpthread_mutex_unlock(&config_mutex);
 }

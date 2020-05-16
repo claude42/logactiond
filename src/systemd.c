@@ -146,8 +146,8 @@ watch_forever_systemd(void *ptr)
                 la_vdebug("Unit: %s, line: %s", unit_buffer, (char *)data+MESSAGE_LEN);
 
                 xpthread_mutex_lock(&config_mutex);
-                handle_log_line(SYSTEMD_SOURCE, (char *)data+MESSAGE_LEN,
-                                unit_buffer);
+                        handle_log_line(SYSTEMD_SOURCE,
+                                        (char *) data+MESSAGE_LEN, unit_buffer);
                 xpthread_mutex_unlock(&config_mutex);
         }
 

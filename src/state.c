@@ -76,37 +76,39 @@ restore_state(const char *state_file_name, const bool create_backup_file)
 
         xpthread_mutex_lock(&config_mutex);
 
-        int line_no = 1;
-        ssize_t num_read;
+                int line_no = 1;
+                ssize_t num_read;
 
-        while ((num_read = getline(&linebuffer, &linebuffer_size,stream)) != -1)
-        {
-                la_address_t *address; la_rule_t *rule; time_t end_time;
-                int factor;
+                while ((num_read = getline(&linebuffer,
+                                                &linebuffer_size,stream)) != -1)
+                {
+                        la_address_t *address; la_rule_t *rule;
+                        time_t end_time; int factor;
 
-                const int r = parse_add_entry_message(linebuffer, &address,
-                                &rule, &end_time, &factor);
-                la_vdebug("adr: %s, rule: %s, end_time: %u, factor: %u",
-                                address ? address->text : "no address",
-                                rule ? rule->name : "no rule", end_time, factor);
-                if (r == -1)
+                        const int r = parse_add_entry_message(linebuffer,
+                                        &address, &rule, &end_time, &factor);
+                        la_vdebug("adr: %s, rule: %s, end_time: %u, factor: %u",
+                                        address ? address->text : "no address",
+                                        rule ? rule->name : "no rule", end_time, factor);
+                        if (r == -1)
+                                /* Don't override state file in case of error */
+                                LOG_RETURN_ERRNO(false, LOG_ERR,
+                                                "Error parsing state file "
+                                                "\"%s\" at line %u!",
+                                                state_file_name, line_no);
+                        else if (r > 0)
+                                trigger_manual_commands_for_rule(address, rule,
+                                                end_time, factor, NULL, true);
+
+                        free_address(address);
+                        line_no++;
+                }
+
+                if (!feof(stream))
                         /* Don't override state file in case of error */
                         LOG_RETURN_ERRNO(false, LOG_ERR,
-                                        "Error parsing state file \"%s\" at line %u!",
-                                        state_file_name, line_no);
-                else if (r > 0)
-                        trigger_manual_commands_for_rule(address, rule,
-                                        end_time, factor, NULL, true);
-
-                free_address(address);
-                line_no++;
-        }
-
-        if (!feof(stream))
-                /* Don't override state file in case of error */
-                LOG_RETURN_ERRNO(false, LOG_ERR,
-                                "Reading from state file \"%s\" failed",
-                                state_file_name);
+                                        "Reading from state file \"%s\" failed",
+                                        state_file_name);
 
         xpthread_mutex_unlock(&config_mutex);
 

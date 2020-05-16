@@ -320,10 +320,10 @@ handle_inotify_event(const struct inotify_event *event)
 
         xpthread_mutex_lock(&config_mutex);
 
-        if (event->len) /* only directory have a name (and thus a length) */
-                handle_inotify_directory_event(event);
-        else
-                handle_inotify_file_event(event);
+                if (event->len) /* only directories have a name (and thus a length) */
+                        handle_inotify_directory_event(event);
+                else
+                        handle_inotify_file_event(event);
 
         xpthread_mutex_unlock(&config_mutex);
 }

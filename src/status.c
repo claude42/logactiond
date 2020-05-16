@@ -126,33 +126,33 @@ dump_rules(void)
 
         xpthread_mutex_lock(&config_mutex);
 
-        /* First print rules of sources watched via inotify / polling */
+                /* First print rules of sources watched via inotify / polling */
 
-        assert(la_config); assert(la_config->source_groups);
-        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
-                        (source_group = NEXT_SOURCE_GROUP(source_group));)
-        {
-                for (la_rule_t *rule = ITERATE_RULES(source_group->rules);
-                                (rule = NEXT_RULE(rule));)
+                assert(la_config); assert(la_config->source_groups);
+                for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
+                                (source_group = NEXT_SOURCE_GROUP(source_group));)
                 {
-                        dump_single_rule(rules_file, rule);
-                        if (status_monitoring >= 2)
-                                dump_rule_diagnostics(diag_file, rule);
+                        for (la_rule_t *rule = ITERATE_RULES(source_group->rules);
+                                        (rule = NEXT_RULE(rule));)
+                        {
+                                dump_single_rule(rules_file, rule);
+                                if (status_monitoring >= 2)
+                                        dump_rule_diagnostics(diag_file, rule);
+                        }
                 }
-        }
 
 #if HAVE_LIBSYSTEMD
-        /* Then print systemd rules - if any */
-        if (la_config->systemd_source_group)
-        {
-                for (la_rule_t *rule = ITERATE_RULES(la_config->systemd_source_group->rules);
-                                (rule = NEXT_RULE(rule));)
+                /* Then print systemd rules - if any */
+                if (la_config->systemd_source_group)
                 {
-                        dump_single_rule(rules_file, rule);
-                        if (status_monitoring >= 2)
-                                dump_rule_diagnostics(diag_file, rule);
+                        for (la_rule_t *rule = ITERATE_RULES(la_config->systemd_source_group->rules);
+                                        (rule = NEXT_RULE(rule));)
+                        {
+                                dump_single_rule(rules_file, rule);
+                                if (status_monitoring >= 2)
+                                        dump_rule_diagnostics(diag_file, rule);
+                        }
                 }
-        }
 #endif /* HAVE_LIBSYSTEMD */
 
         xpthread_mutex_unlock(&config_mutex);

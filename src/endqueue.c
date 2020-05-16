@@ -108,24 +108,24 @@ update_queue_count_numbers(void)
         xpthread_mutex_lock(&config_mutex);
         xpthread_mutex_lock(&end_queue_mutex);
 
-        for (la_command_t *command = ITERATE_COMMANDS(end_queue);
-                        (command = NEXT_COMMAND(command));)
-        {
-                la_rule_t *rule = NULL;
-
-                if (!command->is_template)
+                for (la_command_t *command = ITERATE_COMMANDS(end_queue);
+                                (command = NEXT_COMMAND(command));)
                 {
-                        rule = find_rule_by_name(command->rule_name);
-                        if (rule)
-                                rule->queue_count++;
-                }
+                        la_rule_t *rule = NULL;
 
-                /* Clean up pointers to stuff that will soon cease to exist.
-                 * Just to make sure, nobdoy acidentally wants to use outdated
-                 * stuff it later on */
-                command->rule = rule;
-                command->pattern = NULL;
-        }
+                        if (!command->is_template)
+                        {
+                                rule = find_rule_by_name(command->rule_name);
+                                if (rule)
+                                        rule->queue_count++;
+                        }
+
+                        /* Clean up pointers to stuff that will soon cease to
+                         * exist.  Just to make sure, nobdoy acidentally wants
+                         * to use outdated stuff it later on */
+                        command->rule = rule;
+                        command->pattern = NULL;
+                }
 
         xpthread_mutex_unlock(&end_queue_mutex);
         xpthread_mutex_unlock(&config_mutex);
@@ -155,15 +155,15 @@ find_end_command(const la_address_t *address)
 
         xpthread_mutex_lock(&end_queue_mutex);
 
-        for (la_command_t *command = ITERATE_COMMANDS(end_queue);
-                        (command = NEXT_COMMAND(command));)
-        {
-                if (!adrcmp(command->address, address))
+                for (la_command_t *command = ITERATE_COMMANDS(end_queue);
+                                (command = NEXT_COMMAND(command));)
                 {
-                        result = command;
-                        break;
+                        if (!adrcmp(command->address, address))
+                        {
+                                result = command;
+                                break;
+                        }
                 }
-        }
 
         xpthread_mutex_unlock(&end_queue_mutex);
 
@@ -190,32 +190,24 @@ remove_and_trigger(la_address_t *address)
 
         xpthread_mutex_lock(&end_queue_mutex);
 
-        /* Don't use find_end_command() here but do it ourself so we can keep
-         * the mutex locked during the whole function to avoid creating a race
-         * condition. */
-        la_command_t *command = NULL;
-        for (la_command_t *tmp = ITERATE_COMMANDS(end_queue);
-                        (tmp = NEXT_COMMAND(tmp));)
-        {
-                if (!adrcmp(tmp->address, address))
+                /* Don't use find_end_command() here but do it ourself so we
+                 * can keep the mutex locked during the whole function to avoid
+                 * creating a race condition. */
+                la_command_t *command = NULL;
+                int result = -1;
+                for (la_command_t *tmp = ITERATE_COMMANDS(end_queue);
+                                (tmp = NEXT_COMMAND(tmp));)
                 {
-                        command = tmp;
-                        break;
+                        if (!adrcmp(tmp->address, address))
+                        {
+                                command = tmp;
+                                remove_node((kw_node_t *) command);
+                                trigger_end_command(command, false);
+                                free_command(command);
+                                result = 0;
+                                break;
+                        }
                 }
-        }
-
-        int result;
-        if (command)
-        {
-                remove_node((kw_node_t *) command);
-                trigger_end_command(command, false);
-                free_command(command);
-                result = 0;
-        }
-        else
-        {
-                result = -1;
-        }
 
         xpthread_mutex_unlock(&end_queue_mutex);
 
@@ -245,14 +237,14 @@ empty_end_queue(void)
         if (!shutdown_ongoing && end_queue_thread)
                 xpthread_mutex_lock(&end_queue_mutex);
 
-        for (la_command_t *tmp; (tmp = REM_COMMANDS_HEAD(end_queue));)
-        {
-                trigger_end_command(tmp, true);
-                free_command(tmp);
-        }
+                for (la_command_t *tmp; (tmp = REM_COMMANDS_HEAD(end_queue));)
+                {
+                        trigger_end_command(tmp, true);
+                        free_command(tmp);
+                }
 
 #ifndef NOMONITORING
-        dump_queue_status(false);
+                dump_queue_status(false);
 #endif /* NOMONITORING */
 
         if (!shutdown_ongoing && end_queue_thread)
@@ -283,16 +275,16 @@ save_queue_state(const char *state_file_name)
 
         xpthread_mutex_lock(&end_queue_mutex);
 
-        for (la_command_t *command = ITERATE_COMMANDS(end_queue);
-                        (command = NEXT_COMMAND(command));)
-        {
-                if (!command->is_template &&
-                                print_add_message(stream, command) < 0)
+                for (la_command_t *command = ITERATE_COMMANDS(end_queue);
+                                (command = NEXT_COMMAND(command));)
                 {
-                        la_log_errno(LOG_ERR, "Failure to dump queue.");
-                        break;
+                        if (!command->is_template &&
+                                        print_add_message(stream, command) < 0)
+                        {
+                                la_log_errno(LOG_ERR, "Failure to dump queue.");
+                                break;
+                        }
                 }
-        }
 
         xpthread_mutex_unlock(&end_queue_mutex);
 
@@ -362,38 +354,41 @@ consume_end_queue(void *ptr)
 
         xpthread_mutex_lock(&end_queue_mutex);
 
-        for (;;)
-        {
-                if (shutdown_ongoing)
+                for (;;)
                 {
-                        la_debug("Shutting down end queue thread.");
-                        pthread_exit(NULL);
-                }
+                        if (shutdown_ongoing)
+                        {
+                                la_debug("Shutting down end queue thread.");
+                                pthread_exit(NULL);
+                        }
 
-                la_command_t *command = (la_command_t *) end_queue->head.succ;
+                        la_command_t *command =
+                                (la_command_t *) end_queue->head.succ;
 
-                if (is_list_empty(end_queue))
-                {
-                        /* list is empty, wait indefinitely */
-                        xpthread_cond_wait(&end_queue_condition, &end_queue_mutex);
-                }
-                else if (xtime(NULL) < command->end_time)
-                {
-                        /* non-empty list, but end_time of first command not
-                         * reached yet */
-                        wait_for_next_end_command(command);
-                }
-                else
-                {
-                        /* end_time of next command reached, remove it
-                         * and don't sleep but immediately look for more */
-                        remove_node((kw_node_t *) command);
-                        trigger_end_command(command, false);
-                        free_command(command);
+                        if (is_list_empty(end_queue))
+                        {
+                                /* list is empty, wait indefinitely */
+                                xpthread_cond_wait(&end_queue_condition,
+                                                &end_queue_mutex);
+                        }
+                        else if (xtime(NULL) < command->end_time)
+                        {
+                                /* non-empty list, but end_time of first
+                                 * command not reached yet */
+                                wait_for_next_end_command(command);
+                        }
+                        else
+                        {
+                                /* end_time of next command reached, remove it
+                                 * and don't sleep but immediately look for
+                                 * more */
+                                remove_node((kw_node_t *) command);
+                                trigger_end_command(command, false);
+                                free_command(command);
 #ifndef NOMONITORING
-                        dump_queue_status(false);
+                                dump_queue_status(false);
 #endif /* NOMONITORING */
-                }
+                        }
         }
 
         assert(false);
@@ -479,24 +474,24 @@ enqueue_end_command(la_command_t *end_command, const time_t manual_end_time)
 
         xpthread_mutex_lock(&end_queue_mutex);
 
-        /* We don't use the ITERATE_COMMANDS, NEXT_COMMAND here for a
-         * reason... */
-        la_command_t *tmp;
-        for (tmp = (la_command_t *) end_queue->head.succ;
-                        tmp->node.succ;
-                        tmp = (la_command_t *) tmp->node.succ)
-        {
-                if (end_command->end_time <= tmp->end_time)
-                        break;
-        }
+                /* We don't use the ITERATE_COMMANDS, NEXT_COMMAND here for a
+                 * reason... */
+                la_command_t *tmp;
+                for (tmp = (la_command_t *) end_queue->head.succ;
+                                tmp->node.succ;
+                                tmp = (la_command_t *) tmp->node.succ)
+                {
+                        if (end_command->end_time <= tmp->end_time)
+                                break;
+                }
 
-        insert_node_before((kw_node_t *) tmp, (kw_node_t *) end_command);
+                insert_node_before((kw_node_t *) tmp, (kw_node_t *) end_command);
 
 #ifndef NOMONITORING
-        dump_queue_status(false);
+                dump_queue_status(false);
 #endif /* NOMONITORING */
 
-        xpthread_cond_signal(&end_queue_condition);
+                xpthread_cond_signal(&end_queue_condition);
 
         xpthread_mutex_unlock(&end_queue_mutex);
 }

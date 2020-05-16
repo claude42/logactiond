@@ -108,17 +108,17 @@ init_watching(void)
 #endif /* HAVE_INOTIFY */
 
                 xpthread_mutex_lock(&config_mutex);
-                for (la_source_group_t *source_group = 
-                                ITERATE_SOURCE_GROUPS(la_config->source_groups);
-                                (source_group = NEXT_SOURCE_GROUP(source_group));)
-                {
-                        for (la_source_t *source = ITERATE_SOURCES(
-                                                source_group->sources);
-                                        (source = NEXT_SOURCE(source));)
+                        for (la_source_group_t *source_group = 
+                                        ITERATE_SOURCE_GROUPS(la_config->source_groups);
+                                        (source_group = NEXT_SOURCE_GROUP(source_group));)
                         {
-                                watch_source(source, SEEK_END);
+                                for (la_source_t *source = ITERATE_SOURCES(
+                                                        source_group->sources);
+                                                (source = NEXT_SOURCE(source));)
+                                {
+                                        watch_source(source, SEEK_END);
+                                }
                         }
-                }
                 xpthread_mutex_unlock(&config_mutex);
         }
 
