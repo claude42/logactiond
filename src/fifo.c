@@ -79,7 +79,7 @@ fifo_loop(void *ptr)
                         pthread_exit(NULL);
                 }
 
-                size_t num_read;
+                size_t num_read = getline(&buf, &buf_size, fifo);
                 if ((int) num_read == -1)
                 {
                         if (feof(fifo))
