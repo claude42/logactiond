@@ -554,6 +554,37 @@ trigger_manual_command(const la_address_t *address,
         }
 }
 
+static void
+log_trigger(const la_command_t *command)
+{
+        if (command->is_template)
+        {
+                la_log_verbose(LOG_INFO, "Initializing action \"%s\" for "
+                                "rule \"%s\", source \"%s\".", command->name,
+                                command->rule_name,
+                                command->rule->source_group->name);
+        }
+        else if (!command->address)
+        {
+                la_log(LOG_INFO, "Action \"%s\" activated by rule \"%s\".",
+                                command->name, command->rule_name);
+        }
+        else if (command->rule->meta_enabled)
+        {
+                la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
+                                "by rule \"%s\" (factor %d).",
+                                command->address->text, command->name,
+                                command->rule_name, command->factor);
+        }
+        else
+        {
+                la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
+                                "by rule \"%s\".",
+                                command->address->text, command->name,
+                                command->rule_name);
+        }
+}
+
 /*
  * Executes a begin_command.
  */
@@ -579,39 +610,10 @@ trigger_command(la_command_t *command)
                                 tmp->name, tmp->rule_name);
         }
 
-        if (command->is_template)
+        if (!command->is_template)
         {
-                la_log_verbose(LOG_INFO, "Initializing action \"%s\" for "
-                                "rule \"%s\", source \"%s\".", command->name,
-                                command->rule_name,
-                                command->rule->source_group->name);
-        }
-        else
-        {
-                if (!command->address)
-                {
-                        la_log(LOG_INFO, "Action \"%s\" activated by rule \"%s\".",
-                                        command->name, command->rule_name);
-                }
-                else if (command->rule->meta_enabled)
-                {
-                        /* search through meta_list to get correct factor */
-                        /* TODO: command->rule always set at this point or
-                         * better test? */
+                if (command->rule->meta_enabled)
                         command->factor = check_meta_list(command, 0);
-                        la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
-                                        "by rule \"%s\" (factor %d).",
-                                        command->address->text, command->name,
-                                        command->rule_name, command->factor);
-                }
-                else
-                {
-                        la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
-                                        "by rule \"%s\".",
-                                        command->address->text, command->name,
-                                        command->rule_name);
-                }
-
 
                 /* update relevant counters for status monitoring */
                 incr_invocation_counts(command);
@@ -629,8 +631,21 @@ trigger_command_from_blacklist(la_command_t *command)
         command->blacklist = true;
 }
 
-
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
+
+static void
+log_end_trigger(const la_command_t *command)
+{
+        if (command->is_template)
+                la_log(LOG_INFO, "Disabling rule \"%s\".", command->rule_name);
+        else if (command->address)
+                la_log(LOG_INFO, "Host: %s, action \"%s\" ended for "
+                                "rule \"%s\".", command->address->text,
+                                command->name, command->rule_name);
+        else
+                la_log(LOG_INFO, "Action \"%s\" ended for rule " "\"%s\".",
+                                command->name, command->rule_name);
+}
 
 /*
  * Executes an end_command.
@@ -653,24 +668,7 @@ trigger_end_command(const la_command_t *command, const bool suppress_logging)
         /* condition used to be (!suppress_logging || log_verbose) but that was
          * still too verbose... */
         if (log_verbose)
-        {
-                if (command->is_template)
-                {
-                        la_log(LOG_INFO, "Disabling rule \"%s\".",
-                                        command->rule_name);
-                }
-                else
-                {
-                        if (command->address)
-                                la_log(LOG_INFO, "Host: %s, action \"%s\" ended for "
-                                                "rule \"%s\".", command->address->text,
-                                                command->name, command->rule_name);
-                        else
-                                la_log(LOG_INFO, "Action \"%s\" ended for rule "
-                                                "\"%s\".", command->name,
-                                                command->rule_name);
-                }
-        }
+                log_end_trigger(command);
 
         /* After a reload some commands might not have a rule attached
          * to them anymore */

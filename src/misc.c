@@ -30,12 +30,9 @@
 #include <string.h>
 #include <syslog.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
-#include <stdbool.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <termios.h>
 
 
@@ -43,19 +40,14 @@
 #include "logactiond.h"
 
 #ifndef CLIENTONLY
-bool created_pidfile = false;
 
 void
 remove_pidfile(void)
 {
         la_debug("remove_pidfile()");
 
-        if (created_pidfile)
-        {
-                if (unlink(PIDFILE) && errno != ENOENT)
-                        la_log_errno(LOG_ERR, "Unable to remove pidfile");
-                created_pidfile = false;
-        }
+        if (remove(PIDFILE) == -1 && errno != ENOENT)
+                la_log_errno(LOG_ERR, "Unable to remove pidfile");
 }
 
 void
@@ -64,23 +56,13 @@ create_pidfile(void)
 #define BUF_LEN 20 /* should be enough - I think */
         la_debug("create_pidfile(" PIDFILE ")");
 
-        int fd;
-        char buf[BUF_LEN];
-
-        fd = open(PIDFILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-        if (fd == -1)
+        FILE *stream = fopen(PIDFILE, "w");
+        if (!stream)
                 die_err("Unable to open pidfile.");
 
-        created_pidfile = true;
+        fprintf(stream, "%ld\n", (long) getpid());
 
-        if (ftruncate(fd, 0))
-                die_err("Unable to truncate pidfile");
-
-        snprintf(buf, BUF_LEN, "%ld\n", (long) getpid());
-        if (write(fd, buf, BUF_LEN) != BUF_LEN)
-                die_err("Unable to write pid to pidfile");
-
-        if (close(fd))
+        if (fclose(stream) == EOF)
                 die_err("Unable to close pidfile");
 }
 
