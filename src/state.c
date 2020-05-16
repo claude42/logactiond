@@ -61,9 +61,6 @@ restore_state(const char *state_file_name, const bool create_backup_file)
         assert(state_file_name);
         la_debug("restore_state(%s)", state_file_name);
 
-        if (create_backup_file && !move_state_file_to_backup(state_file_name))
-                LOG_RETURN_ERRNO(false, LOG_ERR, "Error creating backup file!");
-
         FILE *stream = fopen(state_file_name, "r");
         if (!stream)
                 LOG_RETURN_ERRNO(false, LOG_ERR, "Unable to open state file \"%s\"",
@@ -78,6 +75,7 @@ restore_state(const char *state_file_name, const bool create_backup_file)
 
                 int line_no = 1;
                 ssize_t num_read;
+                int parse_result;
 
                 while ((num_read = getline(&linebuffer,
                                                 &linebuffer_size,stream)) != -1)
@@ -85,18 +83,14 @@ restore_state(const char *state_file_name, const bool create_backup_file)
                         la_address_t *address; la_rule_t *rule;
                         time_t end_time; int factor;
 
-                        const int r = parse_add_entry_message(linebuffer,
+                        parse_result = parse_add_entry_message(linebuffer,
                                         &address, &rule, &end_time, &factor);
                         la_vdebug("adr: %s, rule: %s, end_time: %u, factor: %u",
                                         address ? address->text : "no address",
                                         rule ? rule->name : "no rule", end_time, factor);
-                        if (r == -1)
-                                /* Don't override state file in case of error */
-                                LOG_RETURN_ERRNO(false, LOG_ERR,
-                                                "Error parsing state file "
-                                                "\"%s\" at line %u!",
-                                                state_file_name, line_no);
-                        else if (r > 0)
+                        if (parse_result == -1)
+                                break;
+                        else if (parse_result > 0)
                                 trigger_manual_commands_for_rule(address, rule,
                                                 end_time, factor, NULL, true);
 
@@ -104,17 +98,25 @@ restore_state(const char *state_file_name, const bool create_backup_file)
                         line_no++;
                 }
 
-                if (!feof(stream))
-                        /* Don't override state file in case of error */
-                        LOG_RETURN_ERRNO(false, LOG_ERR,
-                                        "Reading from state file \"%s\" failed",
-                                        state_file_name);
-
         xpthread_mutex_unlock(&config_mutex);
 
+        /* Return false to make sure state file is not overwritten in case of
+         * an error */
+        if (parse_result == -1)
+                LOG_RETURN_ERRNO(false, LOG_ERR, "Error parsing state file "
+                                "\"%s\" at line %u!", state_file_name,
+                                line_no);
+
+        if (!feof(stream))
+                LOG_RETURN_ERRNO(false, LOG_ERR,
+                                "Reading from state file \"%s\" failed",
+                                state_file_name);
+
         if (fclose(stream) == EOF)
-                /* Don't override state file in case of error */
                 LOG_RETURN_ERRNO(false, LOG_ERR, "Unable to close state file");
+
+        if (create_backup_file && !move_state_file_to_backup(state_file_name))
+                LOG_RETURN_ERRNO(false, LOG_ERR, "Error creating backup file!");
 
         return true;
 }

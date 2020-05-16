@@ -44,3 +44,5 @@ servers
 
 * don't activate crypto (and messaging) stuff in case libsodium is not
   available
+
+* copy state file instead of renaming it
