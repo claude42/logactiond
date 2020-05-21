@@ -85,23 +85,20 @@ handle_new_content(const la_source_t *source)
         size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE;
         char *linebuffer = alloca(linebuffer_size);
 
-        for (;;)
-        {
-                size_t num_read = getline(&linebuffer, &linebuffer_size,
-                                source->file);
-                if (num_read==-1)
-                {
-                        if (feof(source->file))
-                        {
-                                fseek(source->file, 0, SEEK_END);
-                                return true;
-                        }
-                        else
-                        {
-                                return false;
-                        }
-                }
+
+        size_t num_read;
+
+        while ((num_read = getline(&linebuffer, &linebuffer_size, source->file)) != -1)
                 handle_log_line(source, linebuffer, NULL);
+
+        if (feof(source->file))
+        {
+                fseek(source->file, 0, SEEK_END);
+                return true;
+        }
+        else
+        {
+                return false;
         }
 }
 

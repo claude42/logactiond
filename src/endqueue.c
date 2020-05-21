@@ -260,7 +260,9 @@ empty_end_queue(void)
 void
 save_queue_state(const char *state_file_name)
 {
-        assert_list(end_queue);
+        if (!end_queue)
+                return;
+
         if (!state_file_name)
                 state_file_name = STATE_DIR "/" STATE_FILE;
 

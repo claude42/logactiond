@@ -140,9 +140,11 @@
 #define LA_REMOTE_PORT_LABEL "port"
 
 #define LA_TOKEN_REPL "(.+)"
+#define LA_TOKEN_NUMBRACES 1
 
 #define LA_HOST_TOKEN "host"
 #define LA_HOST_TOKEN_REPL "([.:[:xdigit:]]+)"
+#define LA_HOST_TOKEN_NUMBRACES 1
 #define LA_SERVICE_TOKEN "service"
 
 #define LA_RULENAME_TOKEN "rulename"
@@ -279,7 +281,7 @@ typedef struct la_address_s
         kw_node_t node;
         struct sockaddr_storage sa;
         int prefix;
-        char *text;
+        char text[INET6_ADDRSTRLEN + 4];
 
         /* only used for hosts that we receive messages from */
 #ifndef NOCRYPTO
@@ -318,6 +320,7 @@ typedef struct la_property_s
          * %token% should be replaced with.
          */
         char *replacement;
+        unsigned int replacement_braces;
 
         /* The following  members will only be used when properties are
          * obtained from log lines matching tokens or in action strings.
@@ -526,6 +529,8 @@ void remove_pidfile(void);
 
 void create_pidfile(void);
 
+bool check_pidfile(void);
+
 void xpthread_create(pthread_t *thread, const pthread_attr_t *attr,
                 void *(*start_routine)(void *), void *arg, const char *name);
 
@@ -577,6 +582,8 @@ char *xstrndup(const char *s, size_t n);
 size_t xstrlen(const char *s);
 
 char *concat(const char *s1, const char *s2);
+
+char * string_copy(char *dest, size_t dest_size, const char *src);
 
 void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, const size_t on_top);
 
@@ -649,6 +656,8 @@ void unload_la_config(void);
 
 void assert_address_ffl(const la_address_t *address, const char *func,
                 const char *file, unsigned int line);
+
+unsigned int get_port(const la_address_t *address);
 
 const char *get_ip_version(const la_address_t *address);
 
@@ -761,6 +770,8 @@ void free_property_list(kw_list_t *list);
 
 void assert_pattern_ffl(const la_pattern_t *pattern, const char *func,
                 const char *file, unsigned int line);
+
+unsigned int count_open_braces(const char *string);
 
 la_pattern_t *create_pattern(const char *string_from_configfile,
                 unsigned int num, la_rule_t *rule);

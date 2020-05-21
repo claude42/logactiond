@@ -22,6 +22,7 @@
 #include <syslog.h>
 #include <assert.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "logactiond.h"
 
@@ -36,7 +37,7 @@ move_state_file_to_backup(const char *state_file_name)
         const int length = strlen(state_file_name) + sizeof(BAK_SUFFIX) - 1;
         char *backup_file_name = alloca(length + 1);
 
-        if (snprintf(backup_file_name, length + 1, "%s%s", state_file_name, ".bak") !=
+        if (snprintf(backup_file_name, length + 1, "%s%s", state_file_name, BAK_SUFFIX) !=
                         length)
                 LOG_RETURN_ERRNO(false, LOG_ERR, "Unable to create backup file name!");
 
@@ -128,7 +129,7 @@ periodically_save_state(void *ptr)
 
         for (;;)
         {
-                xnanosleep(DEFAULT_STATE_SAVE_PERIOD, 0);
+                sleep(DEFAULT_STATE_SAVE_PERIOD);
 
                 if (shutdown_ongoing)
                 {

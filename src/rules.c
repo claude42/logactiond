@@ -129,34 +129,33 @@ handle_command_on_trigger_list(la_command_t *command)
         if (command->n_triggers == 0)
                 add_trigger(command);
 
-        /* Go through this also for newly added commands - in case threshold = 1 */
         if (xtime(NULL) - command->start_time < command->rule->period)
         {
                 /* still within current period - increase counter,
                  * trigger if necessary */
                 command->n_triggers++;
-                la_log(LOG_INFO, "Host: %s, trigger %u for rule \"%s\".",
-                                command->address->text,
-                                command->n_triggers,
-                                command->rule_name);
-                if (command->n_triggers >= command->rule->threshold)
-                {
-                        remove_node((kw_node_t *) command);
-                        trigger_command(command);
-                        if (command->end_string && command->duration > 0)
-                                enqueue_end_command(command, 0);
-                        else
-                                free_command(command);
-                }
         }
         else
         {
                 /* if not, reset counter and period */
                 command->start_time = xtime(NULL);
                 command->n_triggers = 1;
-                la_log(LOG_INFO, "Host: %s, trigger 1 for rule \"%s\".",
-                                command->address->text,
-                                command->rule_name);
+        }
+
+        la_log(LOG_INFO, "Host: %s, trigger %u for rule \"%s\".",
+                        command->address->text,
+                        command->n_triggers,
+                        command->rule_name);
+
+        /* Trigger if > threshold */
+        if (command->n_triggers >= command->rule->threshold)
+        {
+                remove_node((kw_node_t *) command);
+                trigger_command(command);
+                if (command->end_string && command->duration > 0)
+                        enqueue_end_command(command, 0);
+                else
+                        free_command(command);
         }
 }
 
@@ -193,12 +192,9 @@ trigger_single_command(la_pattern_t *pattern, const la_address_t *address,
          */
         la_command_t *command = find_trigger(template, address);
 
-        bool from_trigger_list;
-        if (command)
-        {
-                from_trigger_list = true;
-        }
-        else
+        bool from_trigger_list = command;
+
+        if (!from_trigger_list)
         {
                 /* Don't trigger command if need_host==true but no host
                  * property exists */
@@ -213,8 +209,6 @@ trigger_single_command(la_pattern_t *pattern, const la_address_t *address,
                                 address);
                 if (!command)
                         LOG_RETURN(, LOG_ERR, "IP address doesn't match what requirements of action!");
-
-                from_trigger_list = false;
         }
 
         /* Check whether address is on a dnsbl, if so trigger_command directly
@@ -287,19 +281,16 @@ trigger_all_commands(la_pattern_t *pattern)
         /* Do nothing if on ignore list */
         assert(la_config);
         if (address_on_list(address, la_config->ignore_addresses))
-        {
-                la_log_verbose(LOG_INFO, "Host: %s, always ignored.", host);
-        }
-        else
-        {
-                increase_detection_count(pattern);
+                LOG_RETURN_VERBOSE(, LOG_INFO, "Host: %s, always ignored.", host);
+
+        increase_detection_count(pattern);
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
-                for (la_command_t *template =
-                                ITERATE_COMMANDS(pattern->rule->begin_commands);
-                                (template = NEXT_COMMAND(template));)
-                        trigger_single_command(pattern, address, template);
+        /* trigger all of rule's commands */
+        for (la_command_t *template =
+                        ITERATE_COMMANDS(pattern->rule->begin_commands);
+                        (template = NEXT_COMMAND(template));)
+                trigger_single_command(pattern, address, template);
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
-        }
 
         free_address(address);
 }

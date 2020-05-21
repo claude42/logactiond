@@ -61,9 +61,25 @@ assert_address_ffl(const la_address_t *address, const char *func,
                 die_hard("%s:%u: %s: Assertion 'address->af' failed.", file,
                                 line, func);
         }
-        if (!address->text)
-                die_hard("%s:%u: %s: Assertion 'address->text' failed.", file,
-                                line, func);
+}
+
+unsigned int
+get_port(const la_address_t *address)
+{
+        if (address->sa.ss_family == AF_INET)
+        {
+                struct sockaddr_in *sa = (struct sockaddr_in *) &address->sa;
+                return ntohs(sa->sin_port);
+        }
+        else if (address->sa.ss_family == AF_INET6)
+        {
+                struct sockaddr_in6 *sa = (struct sockaddr_in6 *) &address->sa;
+                return ntohs(sa->sin6_port);
+        }
+        else
+        {
+                return 0;
+        }
 }
 
 /*
@@ -278,7 +294,6 @@ create_address_sa(const struct sockaddr *sa, const socklen_t salen)
 
         memcpy(&(result->sa), sa, salen);
 
-        result->text = xmalloc(INET6_ADDRSTRLEN + 4);
         if (getnameinfo(sa, salen, result->text,
                                 INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST))
         {
@@ -387,7 +402,7 @@ dup_address(const la_address_t *address)
 
         memcpy(&(result->sa), &(address->sa), sizeof(struct sockaddr_storage));
         result->prefix = address->prefix;
-        result->text = xstrdup(address->text);
+        string_copy(result->text, sizeof(result->text), address->text);
 
         assert_address(result);
         return result;
@@ -405,7 +420,6 @@ free_address(la_address_t *address)
 
         la_vdebug("free_address(%s)", address->text);
 
-        free(address->text);
         free(address);
 }
 

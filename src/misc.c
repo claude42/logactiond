@@ -34,6 +34,8 @@
 #include <time.h>
 #include <sys/types.h>
 #include <termios.h>
+#include <signal.h>
+#include <assert.h>
 
 
 
@@ -53,7 +55,6 @@ remove_pidfile(void)
 void
 create_pidfile(void)
 {
-#define BUF_LEN 20 /* should be enough - I think */
         la_debug("create_pidfile(" PIDFILE ")");
 
         FILE *stream = fopen(PIDFILE, "w");
@@ -64,6 +65,53 @@ create_pidfile(void)
 
         if (fclose(stream) == EOF)
                 die_err("Unable to close pidfile");
+}
+
+/* Returns true if logactiond process is already running */
+
+bool
+check_pidfile(void)
+{
+#define BUF_LEN 20 /* should be enough - I think */
+
+        la_debug("check_pidfile(" PIDFILE ")");
+
+        bool result = true;
+        char buf[BUF_LEN];
+
+        FILE *stream = fopen(PIDFILE, "r");
+
+        if (stream)
+        {
+                la_debug("opened pid");
+                unsigned int pid;
+                if (fscanf(stream, "%u", &pid) == 1)
+                {
+                        la_debug("read pid");
+                        result = !(kill(pid, 0) == -1 && errno == ESRCH);
+                }
+                else
+                {
+                        la_debug("did not read pid");
+                        result = false;
+                }
+
+                if (fclose(stream) == EOF)
+                        die_err("Unable to close pidfile");
+        }
+        else
+        {
+                la_debug("did not open pid");
+                if (errno == ENOENT)
+                {
+                        la_debug("enoent");
+                        result = false;
+                }
+                else
+                        die_err("Unable to open pidfile.");
+        }
+
+        return result;
 }
 
 /*
@@ -289,6 +337,18 @@ concat(const char *s1, const char *s2)
         return result;
 }
 
+char *
+string_copy(char *dest, size_t dest_size, const char *src)
+{
+        assert(dest);
+
+        size_t i;
+        for (i = 0; i < dest_size && src[i]; i++)
+                dest[i] = src[i];
+
+        dest[i] = '\0';
+        return dest;
+}
 
 
 

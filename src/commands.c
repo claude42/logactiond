@@ -180,8 +180,7 @@ convert_command(la_command_t *command, const la_commandtype_t type)
                 switch (*src_ptr)
                 {
                 case '%':
-                        length = token_length(src_ptr);
-                        if (length > 2)
+                        if (src_ptr[1] != '%')
                         {
                                 /* We've detected a token - not just "%%"
                                  */
@@ -207,7 +206,7 @@ convert_command(la_command_t *command, const la_commandtype_t type)
                                          * this is a good idea */
                                         ;
                                 }
-                                src_ptr += length;
+                                src_ptr += token_length(src_ptr);
                         }
                         else
                         {
@@ -470,20 +469,54 @@ reset_counts(void)
 }
 
 static void
-log_command_activated(const char *address, const char *command_name,
-                const char *from, const char *rule_name, const int factor)
+log_trigger(const la_command_t *command, const char *from)
 {
-        char factor_string[14];
-        if (factor)
-                snprintf(factor_string, 13, " (factor %d)", factor);
+        if (from)
+        {
+                /* manual command */
+                char factor_string[14];
+                if (command->factor)
+                        snprintf(factor_string, 13, " (factor %d)",
+                                        command->factor);
 
-        la_log(LOG_INFO, "Host: %s, action \"%s\" activated"
-                        "%s%s, rule \"%s\"%s.",
-                        address, command_name,
-                        from ? " by host " : "",
-                        from ? from : "",
-                        rule_name,
-                        factor ? factor_string : "");
+                la_log(LOG_INFO, "Host: %s, action \"%s\" activated"
+                                "%s%s, rule \"%s\"%s.",
+                                command->address->text, command->name,
+                                from ? " by host " : "",
+                                from ? from : "",
+                                command->rule_name,
+                                command->factor ? factor_string : "");
+        }
+        else if (command->is_template)
+        {
+                /* template */
+                la_log_verbose(LOG_INFO, "Initializing action \"%s\" for "
+                                "rule \"%s\", source \"%s\".", command->name,
+                                command->rule_name,
+                                command->rule->source_group->name);
+        }
+        else if (!command->address)
+        {
+                /* command without associated address */
+                la_log(LOG_INFO, "Action \"%s\" activated by rule \"%s\".",
+                                command->name, command->rule_name);
+        }
+        else if (command->rule->meta_enabled)
+        {
+                /* command with factor */
+                la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
+                                "by rule \"%s\" (factor %d).",
+                                command->address->text, command->name,
+                                command->rule_name, command->factor);
+        }
+        else
+        {
+                /* command w/o factor */
+                la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
+                                "by rule \"%s\".",
+                                command->address->text, command->name,
+                                command->rule_name);
+        }
 }
 
 
@@ -500,6 +533,11 @@ trigger_manual_command(const la_address_t *address,
         assert_address(address); assert_command(template);
         la_debug("trigger_manual_command()");
 
+        /* If end_time was specified, check whether it's already in the past.
+         * If so, do nothing */
+        if (end_time && xtime(NULL) > end_time)
+                LOG_RETURN_VERBOSE(, LOG_INFO, "Manual command ignored as end time "
+                                "is in the past.");
 
         assert(la_config);
         if (address_on_list(address, la_config->ignore_addresses))
@@ -520,23 +558,13 @@ trigger_manual_command(const la_address_t *address,
         if (!command)
                 LOG_RETURN(, LOG_ERR, "IP address doesn't match what requirements of action!");
 
-        /* If end_time was specified, check whether it's already in the past.
-         * If so, do nothing */
-        if (end_time && xtime(NULL) > end_time)
-                LOG_RETURN_VERBOSE(, LOG_INFO, "Manual command ignored as end time "
-                                "is in the past.");
-
         if (command->rule->meta_enabled)
                 command->factor = check_meta_list(command, factor);
         else
                 command->factor = 0;
 
         if (!suppress_logging || log_verbose)
-        {
-                log_command_activated(command->address->text,
-                                command->name, from,
-                                command->rule_name, command->factor);
-        }
+                log_trigger(command, from);
 
         command->rule->queue_count++;
 
@@ -551,37 +579,6 @@ trigger_manual_command(const la_address_t *address,
         else
         {
                 free_command(command);
-        }
-}
-
-static void
-log_trigger(const la_command_t *command)
-{
-        if (command->is_template)
-        {
-                la_log_verbose(LOG_INFO, "Initializing action \"%s\" for "
-                                "rule \"%s\", source \"%s\".", command->name,
-                                command->rule_name,
-                                command->rule->source_group->name);
-        }
-        else if (!command->address)
-        {
-                la_log(LOG_INFO, "Action \"%s\" activated by rule \"%s\".",
-                                command->name, command->rule_name);
-        }
-        else if (command->rule->meta_enabled)
-        {
-                la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
-                                "by rule \"%s\" (factor %d).",
-                                command->address->text, command->name,
-                                command->rule_name, command->factor);
-        }
-        else
-        {
-                la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
-                                "by rule \"%s\".",
-                                command->address->text, command->name,
-                                command->rule_name);
         }
 }
 
@@ -621,6 +618,8 @@ trigger_command(la_command_t *command)
                 send_add_entry_message(command, NULL);
         }
 
+        log_trigger(command, NULL);
+
         exec_command(command, LA_COMMANDTYPE_BEGIN);
 }
 
@@ -650,7 +649,7 @@ log_end_trigger(const la_command_t *command)
 /*
  * Executes an end_command.
  *
- * Will suppress any logging, if suppress_logging is true (main use case: avoi
+ * Will suppress any logging, if suppress_logging is true (main use case: avoid
  * 100s of log lines on shutdown. Will still log in case started with -v.
  *
  * Runs in end_queue_thread
@@ -705,8 +704,7 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
                         {
                                 add_tail(property_list, (kw_node_t *) new_prop);
                                 n_tokens++;
-                                /* TODO: clumsy to compute strlen here again */
-                                ptr += xstrlen(new_prop->name);
+                                ptr += new_prop->length-2; /* two %s reflected later */
                         }
 
                         ptr++; /* account for first '%' of token */

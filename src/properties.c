@@ -150,15 +150,17 @@ dup_str_and_tolower(const char *s, const size_t n)
  */
 
 static la_property_t *
-create_property_from_token(const char *name, const size_t length,
-                const unsigned int pos, la_rule_t *rule)
+create_property_from_token(const char *name, const unsigned int pos,
+                la_rule_t *rule)
 {
-        assert(name); assert(length>2);
+        assert(name);
         la_vdebug("create_property_from_token(%s)", name);
 
         la_property_t *result = xmalloc(sizeof(la_property_t));
+        result->length = token_length(name);
+        assert(result->length > 2);
 
-        result->name = dup_str_and_tolower(name+1, length-2);
+        result->name = dup_str_and_tolower(name+1, result->length-2);
         result->value = NULL;
 
         result->is_host_property = false;
@@ -166,17 +168,19 @@ create_property_from_token(const char *name, const size_t length,
         {
                 result->is_host_property = true;
                 result->replacement = xstrdup(LA_HOST_TOKEN_REPL);
+                result->replacement_braces = LA_HOST_TOKEN_NUMBRACES;
         }
         else if (rule && rule->service && !strcmp(result->name, LA_SERVICE_TOKEN))
         {
                 result->replacement = xstrdup(rule->service);
+                result->replacement_braces = count_open_braces(result->replacement);
         }
         else
         {
                 result->replacement = xstrdup(LA_TOKEN_REPL);
+                result->replacement_braces = LA_TOKEN_NUMBRACES;
         }
 
-        result->length = length;
         result->pos = pos;
         result->subexpression = 0;
 
@@ -194,13 +198,11 @@ create_property_from_token(const char *name, const size_t length,
 la_property_t *
 scan_single_token(const char *string, const unsigned int pos, la_rule_t *rule)
 {
-        assert(string);
+        assert(string && *string == '%');
         la_vdebug("scan_single_token(%s)", string);
-
-        const size_t length = token_length(string);
-
-        if (length > 2) /* so it's NOT just "%%" */
-                return create_property_from_token(string, length, pos, rule);
+        
+        if (string[1] != '%') /* so it's NOT just "%%" */
+                return create_property_from_token(string, pos, rule);
         else
                 return NULL;
 }

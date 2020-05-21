@@ -45,7 +45,7 @@ assert_pattern_ffl(const la_pattern_t *pattern, const char *func,
  * Returns number of '(' in a string. Will not count '\('.
  */
 
-static unsigned int
+unsigned int
 count_open_braces(const char *string)
 {
         assert(string);
@@ -95,16 +95,15 @@ convert_regex(const char *string, la_pattern_t *pattern)
         assert(pattern); assert_list(pattern->properties);
         la_vdebug("convert_regex(%s)", string);
 
-        size_t dst_len = 2 * xstrlen(string);
+        size_t dst_len = 1000;
         char *result = xmalloc(dst_len);
         char *dst_ptr = result;
         const char *src_ptr = string;
         unsigned int subexpression = 0;
-        bool has_host_token = false;
-        la_property_t *new_prop;
 
         while (*src_ptr)
         {
+                la_property_t *new_prop;
                 switch (*src_ptr)
                 {
                 case '%':
@@ -118,13 +117,10 @@ convert_regex(const char *string, la_pattern_t *pattern)
                                 // Make sure we only have one %HOST% token per
                                 // pattern. Die otherwise.
 
-                                if (new_prop->is_host_property)
-                                {
-                                        if (has_host_token)
-                                                die_hard("Only one %HOST% token "
-                                                                "allowed er pattern!");
-                                        has_host_token = true;
-                                }
+                                if (new_prop->is_host_property &&
+                                                pattern->host_property)
+                                        die_hard("Only one %HOST% token "
+                                                        "allowed er pattern!");
 
                                 // Count open braces a.) to determine whether
                                 // we need this property for scanning at all
@@ -141,10 +137,7 @@ convert_regex(const char *string, la_pattern_t *pattern)
                                 // used in pattern definitions, e.g. think
                                 // %HOSTNAME% being replaced by the local
                                 // hostname.
-                                unsigned int braces = count_open_braces(
-                                                new_prop->replacement);
-
-                                if (braces)
+                                if (new_prop->replacement_braces)
                                 {
                                         if (subexpression + 1 >= MAX_NMATCH)
                                                 die_hard("Too many subexpressions in regex "
@@ -152,7 +145,7 @@ convert_regex(const char *string, la_pattern_t *pattern)
 
                                         new_prop->subexpression = subexpression + 1;
                                         add_property(pattern, new_prop);
-                                        subexpression += braces;
+                                        subexpression += new_prop->replacement_braces;
                                 }
 
                                 // Finally replace the token by the
@@ -169,7 +162,7 @@ convert_regex(const char *string, la_pattern_t *pattern)
 
                                 // Get rid of property if won't be needed
                                 // anymore.
-                                if (!braces)
+                                if (!new_prop->replacement_braces)
                                         free(new_prop);
                         }
                         else

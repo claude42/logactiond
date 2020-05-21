@@ -58,7 +58,11 @@ void
 trigger_shutdown(int status, int saved_errno)
 {
         la_debug("trigger_shutdown()");
-        assert(!shutdown_ongoing);
+        if (shutdown_ongoing)
+        {
+                la_log(LOG_ERR, "triggered shutdown when shutdown already ongoing!");
+                return;
+        }
 
         exit_status = status;
         exit_errno = saved_errno;
@@ -241,9 +245,6 @@ skeleton_daemon(void)
         {
                 close (x);
         }
-
-        /* create pidfile */
-        create_pidfile();
 
         /* Open the log file */
         openlog(SYSLOG_IDENT, LOG_PID, LOG_DAEMON);
@@ -430,12 +431,17 @@ main(int argc, char *argv[])
 
         read_options(argc, argv);
 
+        if (check_pidfile())
+                die_hard("logactiond already running!");
+
         use_correct_uid();
 
         if (run_type == LA_DAEMON_BACKGROUND)
                 skeleton_daemon();
         else
                 register_signal_handler();
+
+        create_pidfile();
 
         la_log(LOG_INFO, "Starting up " PACKAGE_STRING ".");
 
@@ -462,7 +468,13 @@ main(int argc, char *argv[])
         start_remote_thread();
 
         if (sync_on_startup)
-                sync_with_other_instances();
+        {
+                if (la_config->remote_enabled)
+                        sync_with_other_instances();
+                else
+                        die_hard("Remote sync requested but remote "
+                                        "communication not enabled!");
+        }
 
 #if HAVE_LIBSYSTEMD
         sd_notify(0, "READY=1\n"

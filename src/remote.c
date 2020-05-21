@@ -50,8 +50,9 @@ void
 send_message_to_single_address(const char *message, const la_address_t *remote_address)
 {
         assert(la_config); assert_address(remote_address);
-        assert(la_config->remote_enabled);
         la_debug("send_message_to_single_address(%s)", remote_address->text);
+        if (!la_config->remote_enabled)
+                return;
 
         /* Test for shutdown first, just to make sure nobody has closed the fds
          * already */
@@ -100,9 +101,9 @@ send_add_entry_message(const la_command_t *command, const la_address_t *address)
 
         /* delibarately left out end_time and factor  here. Receiving end
          * should decide on duration. TODO: does that make sense? */
-        char *message;
-        if (!(message = create_add_message(command->address->text,
-                                command->rule_name, NULL, NULL)))
+        char *message = create_add_message(command->address->text,
+                        command->rule_name, NULL, NULL);
+        if (!message)
                 LOG_RETURN(, LOG_ERR, "Unable to create message");
 #ifdef WITH_LIBSODIUM
         if (la_config->remote_secret_changed)
@@ -198,7 +199,8 @@ remote_loop(void *ptr)
                 }
 
                 socklen_t remote_client_size = sizeof(remote_client);
-                const ssize_t num_read = recvfrom(server_fd, &buf, 1023, MSG_TRUNC,
+                const ssize_t num_read = recvfrom(server_fd, &buf,
+                                DEFAULT_LINEBUFFER_SIZE, MSG_TRUNC,
                                 (struct sockaddr *) &remote_client,
                                 &remote_client_size);
                 if (num_read == -1)

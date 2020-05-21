@@ -135,7 +135,7 @@ watch_forever_systemd(void *ptr)
                         unit_buffer = xrealloc(unit_buffer, size+1);
                         unit_buffer_length = size+1;
                 }
-                strncpy(unit_buffer, (char *)data+UNIT_LEN, size-UNIT_LEN);
+                memcpy(unit_buffer, (char *)data+UNIT_LEN, size-UNIT_LEN);
                 unit_buffer[size-UNIT_LEN] = '\0';
 
                 /* Second get rest of the log line */
