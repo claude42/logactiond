@@ -19,7 +19,7 @@
 #ifndef __nodelist_h
 #define __nodelist_h
 
-#include <stdbool.h>
+#include "ndebug.h"
 
 /* Assertions */
 

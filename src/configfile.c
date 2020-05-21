@@ -27,7 +27,6 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdbool.h>
-
 #include <sys/types.h>
 #include <dirent.h>
 #include <fnmatch.h>
@@ -38,7 +37,18 @@
 
 #include <libconfig.h>
 
+#include "ndebug.h"
+#include "addresses.h"
+#include "commands.h"
+#include "configfile.h"
+#include "endqueue.h"
 #include "logactiond.h"
+#include "logging.h"
+#include "misc.h"
+#include "patterns.h"
+#include "properties.h"
+#include "rules.h"
+#include "sources.h"
 
 la_config_t *la_config = NULL;
 

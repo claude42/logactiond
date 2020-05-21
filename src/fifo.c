@@ -27,7 +27,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "logactiond.h"
+#include "ndebug.h"
+#include "fifo.h"
+#include "logging.h"
+#include "messages.h"
+#include "misc.h"
 
 pthread_t fifo_thread = 0;
 

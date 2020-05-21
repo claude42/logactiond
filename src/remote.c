@@ -36,7 +36,14 @@
 #include <sodium.h>
 #endif /* WITH_LIBSODIUM */
 
-#include "logactiond.h"
+#include "ndebug.h"
+#include "addresses.h"
+#include "commands.h"
+#include "configfile.h"
+#include "crypto.h"
+#include "logging.h"
+#include "messages.h"
+#include "misc.h"
 
 pthread_t remote_thread = 0;
 static int client_fd4;

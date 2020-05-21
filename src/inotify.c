@@ -31,7 +31,11 @@
 #include <errno.h>
 #include <pthread.h>
 
-#include "logactiond.h"
+#include "ndebug.h"
+#include "inotify.h"
+#include "misc.h"
+#include "sources.h"
+#include "watch.h"
 
 /* Buffer for reading inotify events */
 #define EVENT_SIZE  ( sizeof (struct inotify_event) )

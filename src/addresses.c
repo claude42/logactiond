@@ -33,7 +33,10 @@
 #include <stdio.h>
 #include <errno.h>
 
-#include "logactiond.h"
+#include "ndebug.h"
+#include "addresses.h"
+#include "logging.h"
+#include "misc.h"
 
 void
 assert_address_ffl(const la_address_t *address, const char *func,

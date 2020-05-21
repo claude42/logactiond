@@ -16,50 +16,29 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef __logactiond_h
-#define __logactiond_h
-
-#include <stdbool.h>
+#ifndef __state_h
+#define __state_h
 
 #include <config.h>
 
-#if HAVE_RUN
-#define RUNDIR "/run"
-#else
-#define RUNDIR "/var/run"
-#endif
+#include "ndebug.h"
 
-#define DEFAULT_PORT_STR "16473"
+#if !defined(STATE_DIR)
+#define STATE_DIR "/var/lib/logactiond"
+#endif /* !defined(STATE_DIR) */
 
-// buffer size for reading log lines
-#define DEFAULT_LINEBUFFER_SIZE 1024
+#define STATE_FILE "logactiond.state"
 
-typedef enum la_runtype_s la_runtype_t;
-enum la_runtype_s { LA_DAEMON_BACKGROUND, LA_DAEMON_FOREGROUND,
-        LA_UTIL_FOREGROUND };
+#define BAK_SUFFIX ".bak"
 
-/* Global variables */
+extern pthread_t save_state_thread;
 
-extern unsigned int log_level;
+void save_state(const char *state_file_name);
 
-extern bool log_verbose;
+bool restore_state(const char *state_file_name, const bool create_backup_file);
 
-extern unsigned int id_counter;
+void start_save_state_thread(char *state_file_name);
 
-extern la_runtype_t run_type;
-
-extern unsigned int status_monitoring;
-
-extern bool shutdown_ongoing;
-
-extern int exit_status;
-
-/* logactiond.c */
-
-void trigger_shutdown(int status, int saved_errno);
-
-void trigger_reload(void);
-
-#endif /* __logactiond_h */
+#endif /* __state_h */
 
 /* vim: set autowrite expandtab: */

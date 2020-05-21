@@ -16,50 +16,29 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef __logactiond_h
-#define __logactiond_h
-
-#include <stdbool.h>
+#ifndef __systemd_h
+#define __systemd_h
 
 #include <config.h>
 
-#if HAVE_RUN
-#define RUNDIR "/run"
-#else
-#define RUNDIR "/var/run"
-#endif
+#include "ndebug.h"
 
-#define DEFAULT_PORT_STR "16473"
+// systemd_source
+#if HAVE_LIBSYSTEMD
+#define SYSTEMD_SOURCE (la_source_t *) la_config->systemd_source_group->sources->head.succ
 
-// buffer size for reading log lines
-#define DEFAULT_LINEBUFFER_SIZE 1024
+extern pthread_t systemd_watch_thread;
 
-typedef enum la_runtype_s la_runtype_t;
-enum la_runtype_s { LA_DAEMON_BACKGROUND, LA_DAEMON_FOREGROUND,
-        LA_UTIL_FOREGROUND };
+/* systemd.c */
 
-/* Global variables */
+void init_watching_systemd(void);
 
-extern unsigned int log_level;
+void start_watching_systemd_thread(void);
 
-extern bool log_verbose;
+void add_systemd_unit(const char *systemd_unit);
 
-extern unsigned int id_counter;
+#endif /* HAVE_LIBSYSTEMD */
 
-extern la_runtype_t run_type;
-
-extern unsigned int status_monitoring;
-
-extern bool shutdown_ongoing;
-
-extern int exit_status;
-
-/* logactiond.c */
-
-void trigger_shutdown(int status, int saved_errno);
-
-void trigger_reload(void);
-
-#endif /* __logactiond_h */
+#endif /* __systemd_h */
 
 /* vim: set autowrite expandtab: */

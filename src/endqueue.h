@@ -16,50 +16,37 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef __logactiond_h
-#define __logactiond_h
-
-#include <stdbool.h>
+#ifndef __endqueue_h
+#define __endqueue_h
 
 #include <config.h>
 
-#if HAVE_RUN
-#define RUNDIR "/run"
-#else
-#define RUNDIR "/var/run"
-#endif
+#include "ndebug.h"
+#include "addresses.h"
+#include "commands.h"
 
-#define DEFAULT_PORT_STR "16473"
+extern pthread_t end_queue_thread;
 
-// buffer size for reading log lines
-#define DEFAULT_LINEBUFFER_SIZE 1024
+extern pthread_mutex_t end_queue_mutex;
 
-typedef enum la_runtype_s la_runtype_t;
-enum la_runtype_s { LA_DAEMON_BACKGROUND, LA_DAEMON_FOREGROUND,
-        LA_UTIL_FOREGROUND };
+extern kw_list_t *end_queue;
 
-/* Global variables */
+void update_queue_count_numbers(void);
 
-extern unsigned int log_level;
+la_command_t *find_end_command(const la_address_t *address);
 
-extern bool log_verbose;
+int remove_and_trigger(la_address_t *address);
 
-extern unsigned int id_counter;
+void empty_end_queue(void);
 
-extern la_runtype_t run_type;
+void save_queue_state(const char *state_file_name);
 
-extern unsigned int status_monitoring;
+void enqueue_end_command(la_command_t *end_command, time_t manual_end_time);
 
-extern bool shutdown_ongoing;
+void init_end_queue(void);
 
-extern int exit_status;
+void start_end_queue_thread(void);
 
-/* logactiond.c */
-
-void trigger_shutdown(int status, int saved_errno);
-
-void trigger_reload(void);
-
-#endif /* __logactiond_h */
+#endif /* __endqueue_h */
 
 /* vim: set autowrite expandtab: */

@@ -37,9 +37,9 @@
 #include <signal.h>
 #include <assert.h>
 
-
-
-#include "logactiond.h"
+#include "ndebug.h"
+#include "logging.h"
+#include "misc.h"
 
 #ifndef CLIENTONLY
 

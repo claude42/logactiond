@@ -31,8 +31,12 @@
 #include <stdbool.h>
 #include <time.h>
 
-
-#include "logactiond.h"
+#include "ndebug.h"
+#include "configfile.h"
+#include "logging.h"
+#include "misc.h"
+#include "sources.h"
+#include "watch.h"
 
 static void
 cleanup_watching_polling(void *arg)

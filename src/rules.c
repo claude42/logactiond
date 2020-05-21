@@ -29,7 +29,18 @@
 #include <stdio.h>
 #include <pthread.h>
 
-#include "logactiond.h"
+#include "ndebug.h"
+#include "addresses.h"
+#include "commands.h"
+#include "configfile.h"
+#include "dnsbl.h"
+#include "endqueue.h"
+#include "logging.h"
+#include "misc.h"
+#include "patterns.h"
+#include "properties.h"
+#include "rules.h"
+#include "sources.h"
 
 /* FIXME: trigger_list should definitely be a hash */
 

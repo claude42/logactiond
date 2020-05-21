@@ -25,7 +25,20 @@
 #include <sys/stat.h>
 #include <stdbool.h>
 
-#include "logactiond.h"
+#include "ndebug.h"
+#include "configfile.h"
+#include "logging.h"
+#include "misc.h"
+#include "sources.h"
+#include "watch.h"
+#if HAVE_INOTIFY
+#include "inotify.h"
+#else /* HAVE_INOTIFY */
+#include "polling.h"
+#endif /* HAVE_INOTIFY */
+#if HAVE_LIBSYSTEMD
+#include "systemd.h"
+#endif /* HAVE_LIBSYSTEMD */
 
 pthread_t file_watch_thread = 0;
 

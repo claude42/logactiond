@@ -24,7 +24,12 @@
 #include <ctype.h>
 #include <stdbool.h>
 
-#include "logactiond.h"
+#include "ndebug.h"
+#include "logging.h"
+#include "misc.h"
+#include "patterns.h"
+#include "properties.h"
+#include "rules.h"
 
 void
 assert_property_ffl(const la_property_t *property, const char *func,

@@ -19,7 +19,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "logactiond.h"
+#include "ndebug.h"
+#include "logging.h"
+#include "misc.h"
 
 void
 assert_node_ffl(const kw_node_t *node, const char *func, const char *file,

@@ -33,7 +33,13 @@
 #include <sodium.h>
 #endif /* WITH_LIBSODIUM */
 
+#include "ndebug.h"
+#include "crypto.h"
+#include "fifo.h"
 #include "logactiond.h"
+#include "logging.h"
+#include "messages.h"
+#include "misc.h"
 
 
 static int socket_fd;

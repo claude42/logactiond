@@ -26,7 +26,14 @@
 #include <errno.h>
 #include <stdbool.h>
 
+#include "ndebug.h"
+#include "configfile.h"
+#include "endqueue.h"
+#include "fifo.h"
 #include "logactiond.h"
+#include "logging.h"
+#include "misc.h"
+#include "status.h"
 
 la_runtype_t run_type = LA_UTIL_FOREGROUND;
 unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */

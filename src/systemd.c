@@ -29,7 +29,12 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "logactiond.h"
+#include "ndebug.h"
+#include "configfile.h"
+#include "logging.h"
+#include "misc.h"
+#include "sources.h"
+#include "systemd.h"
 
 // _LEN includes terminal '\0'
 

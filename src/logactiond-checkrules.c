@@ -29,7 +29,15 @@
 #include <sys/types.h>
 #include <regex.h>
 
+#include "ndebug.h"
+#include "commands.h"
+#include "configfile.h"
 #include "logactiond.h"
+#include "logging.h"
+#include "misc.h"
+#include "patterns.h"
+#include "rules.h"
+#include "sources.h"
 
 la_runtype_t run_type = LA_UTIL_FOREGROUND;
 unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */

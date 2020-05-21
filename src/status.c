@@ -29,7 +29,16 @@
 #include <syslog.h>
 #include <time.h>
 
-#include "logactiond.h"
+#include "ndebug.h"
+#include "addresses.h"
+#include "commands.h"
+#include "configfile.h"
+#include "endqueue.h"
+#include "logging.h"
+#include "misc.h"
+#include "rules.h"
+#include "sources.h"
+#include "status.h"
 
 pthread_t monitoring_thread = 0;
 

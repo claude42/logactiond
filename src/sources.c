@@ -24,7 +24,12 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include "logactiond.h"
+#include "ndebug.h"
+#include "configfile.h"
+#include "logging.h"
+#include "misc.h"
+#include "rules.h"
+#include "sources.h"
 
 
 void
@@ -141,9 +146,11 @@ create_source(la_source_group_t *source_group, const char *location)
         result->file = NULL;
         result->active = false;
 
+#if HAVE_INOTIFY
         /* Only used by inotify.c */
         result->wd = 0;
         result->parent_wd = 0;
+#endif /* HAVE_INOTIFY */
 
         assert_source(result);
         return result;

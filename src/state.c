@@ -23,8 +23,17 @@
 #include <assert.h>
 #include <errno.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <pthread.h>
 
-#include "logactiond.h"
+#include "ndebug.h"
+#include "addresses.h"
+#include "configfile.h"
+#include "endqueue.h"
+#include "logging.h"
+#include "messages.h"
+#include "misc.h"
+#include "rules.h"
 
 pthread_t save_state_thread = 0;
 

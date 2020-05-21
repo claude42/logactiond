@@ -16,50 +16,24 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef __logactiond_h
-#define __logactiond_h
+#ifndef __watch_h
+#define __watch_h
 
-#include <stdbool.h>
+#include "ndebug.h"
+#include "sources.h"
 
-#include <config.h>
+extern pthread_t file_watch_thread;
 
-#if HAVE_RUN
-#define RUNDIR "/run"
-#else
-#define RUNDIR "/var/run"
-#endif
+void watch_source(la_source_t *source, int whence);
 
-#define DEFAULT_PORT_STR "16473"
+void unwatch_source(la_source_t *source);
 
-// buffer size for reading log lines
-#define DEFAULT_LINEBUFFER_SIZE 1024
+void init_watching(void);
 
-typedef enum la_runtype_s la_runtype_t;
-enum la_runtype_s { LA_DAEMON_BACKGROUND, LA_DAEMON_FOREGROUND,
-        LA_UTIL_FOREGROUND };
+void start_watching_threads(void);
 
-/* Global variables */
+void shutdown_watching(void);
 
-extern unsigned int log_level;
-
-extern bool log_verbose;
-
-extern unsigned int id_counter;
-
-extern la_runtype_t run_type;
-
-extern unsigned int status_monitoring;
-
-extern bool shutdown_ongoing;
-
-extern int exit_status;
-
-/* logactiond.c */
-
-void trigger_shutdown(int status, int saved_errno);
-
-void trigger_reload(void);
-
-#endif /* __logactiond_h */
+#endif /* __watch_h */
 
 /* vim: set autowrite expandtab: */

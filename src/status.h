@@ -16,50 +16,26 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef __logactiond_h
-#define __logactiond_h
-
-#include <stdbool.h>
+#ifndef __status_h
+#define __status_h
 
 #include <config.h>
 
-#if HAVE_RUN
-#define RUNDIR "/run"
-#else
-#define RUNDIR "/var/run"
-#endif
+#include "ndebug.h"
+#include "logactiond.h"
 
-#define DEFAULT_PORT_STR "16473"
+#define HOSTSFILE RUNDIR "/logactiond.hosts"
+#define RULESFILE RUNDIR "/logactiond.rules"
+#define DIAGFILE RUNDIR "/logactiond.diagnostics"
 
-// buffer size for reading log lines
-#define DEFAULT_LINEBUFFER_SIZE 1024
+extern pthread_t monitoring_thread;
 
-typedef enum la_runtype_s la_runtype_t;
-enum la_runtype_s { LA_DAEMON_BACKGROUND, LA_DAEMON_FOREGROUND,
-        LA_UTIL_FOREGROUND };
+void start_monitoring_thread(void);
 
-/* Global variables */
+void dump_rules(void);
 
-extern unsigned int log_level;
+void dump_queue_status(bool force);
 
-extern bool log_verbose;
-
-extern unsigned int id_counter;
-
-extern la_runtype_t run_type;
-
-extern unsigned int status_monitoring;
-
-extern bool shutdown_ongoing;
-
-extern int exit_status;
-
-/* logactiond.c */
-
-void trigger_shutdown(int status, int saved_errno);
-
-void trigger_reload(void);
-
-#endif /* __logactiond_h */
+#endif /* __status_h */
 
 /* vim: set autowrite expandtab: */

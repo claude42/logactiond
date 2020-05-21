@@ -28,7 +28,9 @@
 #include <assert.h>
 #include <pthread.h>
 
+#include "ndebug.h"
 #include "logactiond.h"
+#include "logging.h"
 
 void
 log_message(unsigned int priority, const char *fmt, va_list gp, const char *add)

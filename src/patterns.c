@@ -25,7 +25,13 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "logactiond.h"
+#include "ndebug.h"
+#include "logging.h"
+#include "misc.h"
+#include "patterns.h"
+#include "properties.h"
+#include "rules.h"
+#include "sources.h"
 
 void
 assert_pattern_ffl(const la_pattern_t *pattern, const char *func,

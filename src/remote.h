@@ -16,50 +16,20 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef __logactiond_h
-#define __logactiond_h
+#ifndef __remote_h
+#define __remote_h
 
-#include <stdbool.h>
+#include "ndebug.h"
 
-#include <config.h>
+extern pthread_t remote_thread;
 
-#if HAVE_RUN
-#define RUNDIR "/run"
-#else
-#define RUNDIR "/var/run"
-#endif
+void send_add_entry_message(const la_command_t *command, const la_address_t *address);
 
-#define DEFAULT_PORT_STR "16473"
+void start_remote_thread(void);
 
-// buffer size for reading log lines
-#define DEFAULT_LINEBUFFER_SIZE 1024
+void send_message_to_single_address(const char *message,
+                const la_address_t *remote_address);
 
-typedef enum la_runtype_s la_runtype_t;
-enum la_runtype_s { LA_DAEMON_BACKGROUND, LA_DAEMON_FOREGROUND,
-        LA_UTIL_FOREGROUND };
-
-/* Global variables */
-
-extern unsigned int log_level;
-
-extern bool log_verbose;
-
-extern unsigned int id_counter;
-
-extern la_runtype_t run_type;
-
-extern unsigned int status_monitoring;
-
-extern bool shutdown_ongoing;
-
-extern int exit_status;
-
-/* logactiond.c */
-
-void trigger_shutdown(int status, int saved_errno);
-
-void trigger_reload(void);
-
-#endif /* __logactiond_h */
+#endif /* __remote_h */
 
 /* vim: set autowrite expandtab: */

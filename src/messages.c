@@ -25,7 +25,18 @@
 #include <errno.h>
 #include <stdbool.h>
 
-#include "logactiond.h"
+#include "ndebug.h"
+#include "addresses.h"
+#include "commands.h"
+#include "configfile.h"
+#include "crypto.h"
+#include "endqueue.h"
+#include "logging.h"
+#include "messages.h"
+#include "misc.h"
+#include "remote.h"
+#include "rules.h"
+#include "status.h"
 
 /*
  * Message format:

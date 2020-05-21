@@ -16,8 +16,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <config.h>
-
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
@@ -30,8 +28,20 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#include "ndebug.h"
+#include "addresses.h"
+#include "commands.h"
+#include "configfile.h"
+#include "endqueue.h"
 #include "logactiond.h"
-
+#include "misc.h"
+#include "fifo.h"
+#include "logging.h"
+#include "patterns.h"
+#include "properties.h"
+#include "remote.h"
+#include "rules.h"
+#include "sources.h"
 
 #define ITERATE_META_COMMANDS(COMMANDS) (meta_command_t *) &(COMMANDS)->head
 #define NEXT_META_COMMAND(COMMAND) (meta_command_t *) (COMMAND->node.succ->succ ? COMMAND->node.succ : NULL)
