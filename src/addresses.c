@@ -23,7 +23,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
-/* keep these 3 in, even if deheader says to remote them. Necessary e.g. for
+/* keep these 3 in, even if deheader says to remove them. Necessary e.g. for
  * FreeBSD */
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -48,15 +48,15 @@ assert_address_ffl(const la_address_t *address, const char *func,
         if (address->sa.ss_family == AF_INET)
         {
                 if (address->prefix<0 || address->prefix>32)
-                        die_hard("%s:%u: %s: Assertion 'address->prefix<0 || "
-                                        "address->prefix>32' failed.", file,
+                        die_hard("%s:%u: %s: Assertion 'address->prefix>=0 && "
+                                        "address->prefix<=32' failed.", file,
                                         line, func);
         }
         else if (address->sa.ss_family == AF_INET6)
         {
                 if (address->prefix<0 || address->prefix>128)
-                        die_hard("%s:%u: %s: Assertion 'address->prefix<0 || "
-                                        "address->prefix>128' failed.", file,
+                        die_hard("%s:%u: %s: Assertion 'address->prefix>=0 && "
+                                        "address->prefix<=128' failed.", file,
                                         line, func);
         }
         else
