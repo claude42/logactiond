@@ -113,7 +113,7 @@ convert_regex(const char *string, la_pattern_t *pattern)
                 switch (*src_ptr)
                 {
                 case '%':
-                        new_prop = scan_single_token(src_ptr,
+                        new_prop = create_property_from_token(src_ptr,
                                         src_ptr-string, pattern->rule);
                         if (new_prop)
                         {

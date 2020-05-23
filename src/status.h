@@ -24,6 +24,22 @@
 #include "ndebug.h"
 #include "logactiond.h"
 
+#define RULES_HEADER \
+        "En Rule          Service       Source        Detected  Invoked  In queue\n" \
+        "========================================================================\n"
+
+/* Parameters: enabled, name, service, source, detection count, invocation
+ * count, queue count */
+#define RULES_LINE "%c  %-13.13s %-13.13s %-13.13s %8lu %8lu %8lu\n"
+
+#define HOSTS_HEADER \
+        "%s\n\nIP address                                  Ma Fa Time Rule          Action\n" \
+        "===============================================================================\n"
+
+/* Parameters: address, type, factor, timedelta, unit, rule name, command name
+ */
+#define HOSTS_LINE "%-43.43s %s %2d %2ld%c  %-13.13s %-13.13s\n"
+
 #define HOSTSFILE RUNDIR "/logactiond.hosts"
 #define RULESFILE RUNDIR "/logactiond.rules"
 #define DIAGFILE RUNDIR "/logactiond.diagnostics"

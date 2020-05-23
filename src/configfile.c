@@ -29,7 +29,6 @@
 #include <stdbool.h>
 #include <sys/types.h>
 #include <dirent.h>
-#include <fnmatch.h>
 #include <limits.h>
 #include <sys/stat.h>
 #include <errno.h>

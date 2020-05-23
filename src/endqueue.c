@@ -37,7 +37,6 @@
 #include "nodelist.h"
 #include "rules.h"
 #include "sources.h"
-#include "state.h"
 #include "status.h"
 
 kw_list_t *end_queue = NULL;
@@ -268,44 +267,6 @@ empty_end_queue(void)
 }
 #endif /* NOCOMMANDS */
 
-#if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
-void
-save_queue_state(const char *state_file_name)
-{
-        if (!end_queue)
-                return;
-
-        if (!state_file_name)
-                state_file_name = STATE_DIR "/" STATE_FILE;
-
-        la_log_verbose(LOG_INFO, "Dumping current state to \"%s\"", state_file_name);
-
-        FILE *stream = fopen(state_file_name, "w");
-        if (!stream)
-                LOG_RETURN(, LOG_ERR, "Unable to open state file");
-
-        const time_t now = xtime(NULL);
-        fprintf(stream, "# logactiond state %s\n", ctime(&now));
-
-        xpthread_mutex_lock(&end_queue_mutex);
-
-                for (la_command_t *command = ITERATE_COMMANDS(end_queue);
-                                (command = NEXT_COMMAND(command));)
-                {
-                        if (!command->is_template &&
-                                        print_add_message(stream, command) < 0)
-                        {
-                                la_log_errno(LOG_ERR, "Failure to dump queue.");
-                                break;
-                        }
-                }
-
-        xpthread_mutex_unlock(&end_queue_mutex);
-
-        if (fclose(stream) == EOF)
-                la_log_errno(LOG_ERR, "Unable to close state file");
-}
-#endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
 
 
 /*

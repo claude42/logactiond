@@ -77,6 +77,8 @@ char *concat(const char *s1, const char *s2);
 
 char * string_copy(char *dest, size_t dest_size, const char *src);
 
+int strendcmp(const char *string, const char *suffix);
+
 void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, const size_t on_top);
 
 kw_list_t *xcreate_list(void);

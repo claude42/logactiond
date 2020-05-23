@@ -34,6 +34,7 @@
 #include "messages.h"
 #include "misc.h"
 #include "rules.h"
+#include "state.h"
 
 pthread_t save_state_thread = 0;
 
@@ -59,10 +60,43 @@ move_state_file_to_backup(const char *state_file_name)
 void
 save_state(const char *state_file_name)
 {
+#if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
         assert(state_file_name);
         la_debug("save_state(%s)", state_file_name);
 
-        save_queue_state(state_file_name);
+        if (!end_queue)
+                return;
+
+        if (!state_file_name)
+                state_file_name = STATE_DIR "/" STATE_FILE;
+
+        la_log_verbose(LOG_INFO, "Dumping current state to \"%s\"", state_file_name);
+
+        FILE *stream = fopen(state_file_name, "w");
+        if (!stream)
+                LOG_RETURN(, LOG_ERR, "Unable to open state file");
+
+        const time_t now = xtime(NULL);
+        fprintf(stream, "# logactiond state %s\n", ctime(&now));
+
+        xpthread_mutex_lock(&end_queue_mutex);
+
+                for (la_command_t *command = ITERATE_COMMANDS(end_queue);
+                                (command = NEXT_COMMAND(command));)
+                {
+                        if (!command->is_template &&
+                                        print_add_message(stream, command) < 0)
+                        {
+                                la_log_errno(LOG_ERR, "Failure to dump queue.");
+                                break;
+                        }
+                }
+
+        xpthread_mutex_unlock(&end_queue_mutex);
+
+        if (fclose(stream) == EOF)
+                la_log_errno(LOG_ERR, "Unable to close state file");
+#endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
 }
 
 bool
@@ -158,6 +192,5 @@ start_save_state_thread(char *state_file_name)
         xpthread_create(&save_state_thread, NULL, periodically_save_state,
                         state_file_name, "save state");
 }
-
 
 /* vim: set autowrite expandtab: */

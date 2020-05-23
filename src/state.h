@@ -39,6 +39,8 @@ bool restore_state(const char *state_file_name, const bool create_backup_file);
 
 void start_save_state_thread(char *state_file_name);
 
+void save_queue_state(const char *state_file_name);
+
 #endif /* __state_h */
 
 /* vim: set autowrite expandtab: */

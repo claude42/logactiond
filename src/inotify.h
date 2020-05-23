@@ -22,6 +22,7 @@
 #include <config.h>
 
 #include "ndebug.h"
+#include "sources.h"
 
 #if HAVE_INOTIFY
 

@@ -32,7 +32,9 @@
 #include <pthread.h>
 
 #include "ndebug.h"
+#include "configfile.h"
 #include "inotify.h"
+#include "logging.h"
 #include "misc.h"
 #include "sources.h"
 #include "watch.h"
@@ -101,9 +103,8 @@ unwatch_source_inotify(la_source_t *source)
         {
                 if (inotify_rm_watch(inotify_fd, source->parent_wd) &&
                                 errno != EINVAL)
-                        la_log_errno(LOG_ERR, "Unable to unwatch source "
-                                        "parent dir \"%s\".",
-                                        source->parent_dir);
+                        la_log_errno(LOG_ERR, "Unable to unwatch parent dir "
+                                        "of source \"%s\"", source->location);
                 source->parent_wd = 0;
         }
 }
@@ -133,16 +134,9 @@ find_source_by_parent_wd(const int parent_wd, const char *file_name)
                 for (la_source_t *source = ITERATE_SOURCES(source_group->sources);
                                 (source = NEXT_SOURCE(source));)
                 {
-                        if (source->parent_wd == parent_wd)
-                        {
-                                /* all praise basename/dirname which may or may not
-                                 * modify the original string... */
-                                char *tmp = xstrdup(source->location);
-                                char *base_name = basename(tmp);
-                                free(tmp);
-                                if (!strcmp(file_name, base_name))
+                        if (source->parent_wd == parent_wd &&
+                                        !strendcmp(source->location, file_name))
                                         return source;
-                        }
                 }
         }
 
@@ -412,15 +406,15 @@ watch_source_inotify(la_source_t *source)
         {
                 /* all praise basename/dirname */
                 char *tmp = xstrdup(source->location);
-                source->parent_dir = xstrdup(dirname(tmp));
-                free (tmp);
+                char *parent_dir = dirname(tmp);
 
                 source->parent_wd = inotify_add_watch(inotify_fd,
-                                source->parent_dir, IN_CREATE | IN_DELETE |
+                                parent_dir, IN_CREATE | IN_DELETE |
                                 IN_MOVED_TO | IN_MOVED_FROM);
                 /* TODO: maybe this should not be a fatal error */
                 if (source->parent_wd == -1)
-                        die_err("Can't add inotify watch for %s!", source->parent_dir);
+                        die_err("Can't add inotify watch for %s!", parent_dir);
+                free (tmp);
         }
 }
 

@@ -154,12 +154,15 @@ dup_str_and_tolower(const char *s, const size_t n)
  * '%'
  */
 
-static la_property_t *
+la_property_t *
 create_property_from_token(const char *name, const unsigned int pos,
-                la_rule_t *rule)
+                const la_rule_t *rule)
 {
-        assert(name);
+        assert(name); assert(*name == '%');
         la_vdebug("create_property_from_token(%s)", name);
+
+        if (name[1] =='%') /* detected just "%%" */
+                return NULL;
 
         la_property_t *result = xmalloc(sizeof(la_property_t));
         result->length = token_length(name);
@@ -191,25 +194,6 @@ create_property_from_token(const char *name, const unsigned int pos,
 
         assert_property(result);
         return result;
-}
-
-/*
- * Creates a new property from token at *string with pos
- * Adds property to property list.
- *
- * String must point to first '%'
- */
-
-la_property_t *
-scan_single_token(const char *string, const unsigned int pos, la_rule_t *rule)
-{
-        assert(string && *string == '%');
-        la_vdebug("scan_single_token(%s)", string);
-        
-        if (string[1] != '%') /* so it's NOT just "%%" */
-                return create_property_from_token(string, pos, rule);
-        else
-                return NULL;
 }
 
 la_property_t *

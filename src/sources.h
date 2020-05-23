@@ -75,8 +75,6 @@ struct la_source_s
         struct la_source_group_s *source_group;
         /* Filename (or equivalent) - strdup()d */
         char *location;
-        /* Parent dir of log file - currently only used for inotify */
-        char *parent_dir;
         /* File handle for log file */
         FILE *file;
         /* stat() result for file */
@@ -115,6 +113,8 @@ void free_source_group_list(kw_list_t *list);
 la_source_group_t *find_source_group_by_location(const char *location);
 
 la_source_group_t *find_source_group_by_name(const char *name);
+
+void reset_counts(void);
 
 #endif /* __sources_h */
 

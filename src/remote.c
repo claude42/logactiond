@@ -41,6 +41,7 @@
 #include "commands.h"
 #include "configfile.h"
 #include "crypto.h"
+#include "endqueue.h"
 #include "logging.h"
 #include "messages.h"
 #include "misc.h"
@@ -296,6 +297,90 @@ start_remote_thread(void)
 
         for (; ai; ai = ai->ai_next)
                 xpthread_create(&remote_thread, NULL, remote_loop, ai, "remote");
+}
+
+/* 
+ * start_routine for pthread_create called from sync_entries(). ptr points to a
+ * string with the destination IP address.
+ */
+
+static void *
+sync_all_entries(void *ptr)
+{
+        la_address_t *address = create_address_port((char *) ptr,
+                        la_config->remote_port);
+
+        if (!address)
+        {
+                la_log(LOG_ERR, "Cannot convert address in command %s!", ptr);
+                free(ptr);
+                return NULL;
+        }
+
+        free(ptr);
+
+        xpthread_mutex_lock(&end_queue_mutex);
+
+                const int queue_length = list_length(end_queue);
+                char **message_array = (char **) xmalloc((queue_length + 1) *
+                                sizeof (char *));
+                int message_array_length = 0;
+
+                for (la_command_t *command = ITERATE_COMMANDS(end_queue);
+                                (command = NEXT_COMMAND(command));)
+                {
+                        if (!command->is_template && command->address)
+
+                        {
+                                assert(message_array_length < queue_length);
+                                message_array[message_array_length++] =
+                                        create_add_message(command->address->text,
+                                                        command->rule_name, NULL,
+                                                        NULL);
+                        }
+                }
+
+        xpthread_mutex_unlock(&end_queue_mutex);
+
+        for (int i = 0; i < message_array_length; i++)
+        {
+#ifdef WITH_LIBSODIUM
+                if (la_config->remote_secret_changed)
+                {
+                        generate_send_key_and_salt(la_config->remote_secret);
+                        la_config->remote_secret_changed = false;
+                }
+                if (!encrypt_message(message_array[i]))
+                {
+                        la_log(LOG_ERR, "Unable to encrypt message");
+                        free(address);
+                        return NULL;
+                }
+#endif /* WITH_LIBSODIUM */
+                send_message_to_single_address(message_array[i], address);
+                free(message_array[i]);
+                xnanosleep(0, 200000000);
+        }
+
+        free(message_array);
+        free_address(address);
+
+        return NULL;
+}
+
+void
+sync_entries(const char *buffer, const char *from)
+{
+        assert(buffer);
+        la_debug("sync_entries(%s)", buffer);
+
+        char *ptr = xstrdup(buffer[2] ? buffer+2 : from);
+        //char *ptr = buffer[2] ? buffer+2 : from;
+
+        pthread_t sync_entries_thread = 0;
+        xpthread_create(&sync_entries_thread, NULL, sync_all_entries, ptr,
+                        "sync");
+
 }
 
 

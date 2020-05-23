@@ -30,6 +30,8 @@ void start_remote_thread(void);
 void send_message_to_single_address(const char *message,
                 const la_address_t *remote_address);
 
+void sync_entries(const char *buffer, const char *from);
+
 #endif /* __remote_h */
 
 /* vim: set autowrite expandtab: */

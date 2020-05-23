@@ -97,8 +97,6 @@ void free_meta_list(void);
 void assert_command_ffl(const la_command_t *command, const char *func,
                 const char *file, unsigned int line);
 
-void reset_counts(void);
-
 void trigger_manual_command(const la_address_t *address,
                 const la_command_t *template, time_t end_time, int factor,
                 const char *from, bool suppress_logging);

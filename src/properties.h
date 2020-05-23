@@ -111,8 +111,8 @@ la_property_t *get_property_from_property_list(const kw_list_t *property_list,
 const char *get_value_from_property_list(const kw_list_t *property_list,
                 const char *name);
 
-la_property_t *scan_single_token(const char *string, unsigned int pos,
-                la_rule_t *rule);
+la_property_t *create_property_from_token(const char *name,
+                const unsigned int pos, const la_rule_t *rule);
 
 la_property_t *create_property_from_config(const char *name, const char *value);
 

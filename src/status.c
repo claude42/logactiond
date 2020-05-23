@@ -102,7 +102,7 @@ dump_single_rule(FILE *rules_file, const la_rule_t *rule)
 {
         assert(rules_file), assert_rule(rule);
         la_vdebug("dump_single_rule(%s)", rule->name);
-        fprintf(rules_file, "%c  %-13.13s %-13.13s %-13.13s %8lu %8lu %8lu\n",
+        fprintf(rules_file, RULES_LINE,
                         rule->enabled ? 'Y' : 'N', rule->name,
                         rule->systemd_unit ? rule->systemd_unit : rule->service ? rule->service : "-",
                         rule->source_group->name, rule->detection_count,
@@ -130,8 +130,7 @@ dump_rules(void)
                         die_err("Can't create \"" DIAGFILE "\"!");
         }
 
-        fprintf(rules_file, "En Rule          Service       Source        Detected  Invoked  In queue\n");
-        fprintf(rules_file, "========================================================================\n");
+        fputs(RULES_HEADER, rules_file);
 
         xpthread_mutex_lock(&config_mutex);
 
@@ -270,11 +269,7 @@ dump_queue_status(const bool force)
                 die_err("Can't create \"" HOSTSFILE "\"!");
 
         const time_t now = xtime(NULL);
-        fprintf(hosts_file, "%s\n\nIP address                                  "
-                        "Ma Fa Time Rule          Action\n"
-                        "======================================"
-                        "=========================================\n",
-                        ctime(&now));
+        fprintf(hosts_file, HOSTS_HEADER, ctime(&now));
 
         unsigned int num_elems = 0;
         unsigned int num_elems_local = 0;
@@ -315,7 +310,7 @@ dump_queue_status(const bool force)
                 else
                         type = "  ";
 
-                fprintf(hosts_file, "%-43.43s %s %2d %2ld%c  %-13.13s %-13.13s\n",
+                fprintf(hosts_file, HOSTS_LINE,
                                 adr, type, command->factor, timedelta, unit,
                                 command->rule_name, command->name);
         }

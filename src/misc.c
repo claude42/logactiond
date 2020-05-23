@@ -350,6 +350,20 @@ string_copy(char *dest, size_t dest_size, const char *src)
         return dest;
 }
 
+int
+strendcmp(const char *string, const char *suffix)
+{
+        if (!string || !suffix)
+                return 1;
+
+        const unsigned int string_len = strlen(string);
+        const unsigned int suffix_len = strlen(suffix);
+
+        if (suffix_len > string_len)
+                return 1;
+
+        return strcmp(string + string_len - suffix_len, suffix);
+}
 
 
 /*

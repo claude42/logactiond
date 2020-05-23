@@ -39,8 +39,6 @@ int remove_and_trigger(la_address_t *address);
 
 void empty_end_queue(void);
 
-void save_queue_state(const char *state_file_name);
-
 void enqueue_end_command(la_command_t *end_command, time_t manual_end_time);
 
 void init_end_queue(void);

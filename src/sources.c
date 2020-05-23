@@ -142,7 +142,6 @@ create_source(la_source_group_t *source_group, const char *location)
         result = xmalloc(sizeof(la_source_t));
         result->source_group = source_group;
         result->location = xstrdup(location);
-        result->parent_dir = NULL;
         result->file = NULL;
         result->active = false;
 
@@ -171,7 +170,6 @@ free_source(la_source_t *source)
         assert(!source->file);
 
         free(source->location);
-        free(source->parent_dir);
 
         free(source);
 }
@@ -269,6 +267,20 @@ la_source_group_t
         }
 
         return NULL;
+}
+
+void
+reset_counts(void)
+{
+        assert_list(la_config->source_groups);
+
+        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
+                        (source_group = NEXT_SOURCE_GROUP(source_group));)
+        {
+                for (la_rule_t *rule = ITERATE_RULES(source_group->rules);
+                                (rule = NEXT_RULE(rule));)
+                        rule->invocation_count = rule->detection_count = 0;
+        }
 }
 
 /* vim: set autowrite expandtab: */

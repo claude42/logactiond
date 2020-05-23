@@ -464,20 +464,6 @@ incr_invocation_counts(la_command_t *command)
         command->rule->queue_count++;
 }
 
-void
-reset_counts(void)
-{
-        assert_list(la_config->source_groups);
-
-        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
-                        (source_group = NEXT_SOURCE_GROUP(source_group));)
-        {
-                for (la_rule_t *rule = ITERATE_RULES(source_group->rules);
-                                (rule = NEXT_RULE(rule));)
-                        rule->invocation_count = rule->detection_count = 0;
-        }
-}
-
 static void
 log_trigger(const la_command_t *command, const char *from)
 {
@@ -707,8 +693,8 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
         {
                 if (*ptr == '%')
                 {
-                        la_property_t *new_prop = scan_single_token(ptr,
-                                        ptr-string, NULL);
+                        la_property_t *new_prop = create_property_from_token(
+                                        ptr, ptr-string, NULL);
 
                         if (new_prop)
                         {
@@ -769,6 +755,7 @@ dup_command(const la_command_t *command)
 }
 
 /* Return false if action can't handle type of IP address */
+/* FIXME: logic backwards, will fail if ss_family is not AF_INET or AF_INET6 */
 
 static bool
 has_correct_address(const la_command_t *template, const la_address_t *address)
