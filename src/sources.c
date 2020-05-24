@@ -91,7 +91,7 @@ handle_new_content(const la_source_t *source)
         char *linebuffer = alloca(linebuffer_size);
 
 
-        size_t num_read;
+        ssize_t num_read;
 
         while ((num_read = getline(&linebuffer, &linebuffer_size, source->file)) != -1)
                 handle_log_line(source, linebuffer, NULL);

@@ -77,7 +77,6 @@ check_pidfile(void)
         la_debug("check_pidfile(" PIDFILE ")");
 
         bool result = true;
-        char buf[BUF_LEN];
 
         FILE *stream = fopen(PIDFILE, "r");
 
@@ -125,7 +124,10 @@ xpthread_create(pthread_t *thread, const pthread_attr_t *attr,
         int ret = pthread_create(thread, attr, start_routine, arg);
         if (ret)
                 die_val(ret, "Failed to create thread!");
-#if HAVE_PTHREAD_SETNAME_NP
+#if HAVE_PTHREAD_SETNAME_NP1
+        if (name)
+                pthread_setname_np(name);
+#elif HAVE_PTHREAD_SETNAME_NP2
         if (name)
         {
                 ret = pthread_setname_np(*thread, name);
