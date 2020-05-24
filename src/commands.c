@@ -168,7 +168,6 @@ convert_command(la_command_t *command, const la_commandtype_t type)
         size_t dst_len = 2 * xstrlen(source_string);
         char *result = xmalloc(dst_len);
         char *dst_ptr = result;
-        size_t length;
 
         la_property_t *action_property = ITERATE_PROPERTIES(
                         type == LA_COMMANDTYPE_BEGIN ?
