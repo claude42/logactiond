@@ -132,7 +132,7 @@ next_line(la_rule_t *rule, char *line)
                 la_debug("pattern %u: %s\n", pattern->num, pattern->string);
                 /* TODO: make this dynamic based on detected tokens */
                 regmatch_t pmatch[MAX_NMATCH];
-                if (!regexec(pattern->regex, line, MAX_NMATCH, pmatch, 0))
+                if (!regexec(&(pattern->regex), line, MAX_NMATCH, pmatch, 0))
                 {
                         if (!show_undetected)
                         {

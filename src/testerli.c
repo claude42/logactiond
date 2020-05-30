@@ -28,10 +28,22 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#include "misc.h"
+
 int
 main(int argc, char *argv[])
 {
-        if (argc != 2)
+        printf("%s\n%s\n", argv[1], argv[2]);
+        char *str = argv[1];
+        int dest_len;
+        sscanf(argv[2], "%u", &dest_len);
+        char dest[100];
+        //int r = copy_str_and_tolower(dest, dest_len, str, '%');
+        //printf("dest=%s, r=%d\n", dest, r);
+
+        return 0;
+
+        /*if (argc != 2)
         {
                 fprintf(stderr, "Wrong number of arguments.\n");
                 exit(1);
@@ -87,7 +99,7 @@ main(int argc, char *argv[])
                 printf("\n");
         }
 
-        exit(0);
+        exit(0);*/
 }
 
 

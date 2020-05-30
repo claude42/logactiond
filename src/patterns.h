@@ -41,7 +41,7 @@ typedef struct la_pattern_s
         unsigned int num; // position of the pattern in the config file
         struct la_rule_s *rule;
         char *string; /* already converted regex, doesn't contain tokens anymore */
-        regex_t *regex; /* compiled regex */
+        regex_t regex; /* compiled regex */
         la_property_t *host_property;
         kw_list_t *properties; /* list of la_property_t */
         unsigned long int detection_count;

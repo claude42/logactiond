@@ -50,7 +50,9 @@
 #include "remote.h"
 #include "state.h"
 #include "status.h"
+#if HAVE_LIBSYSTEMD
 #include "systemd.h"
+#endif /* HAVE_LIBSYSTEMD */
 #include "watch.h"
 
 char *cfg_filename = NULL;

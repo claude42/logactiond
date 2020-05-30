@@ -332,7 +332,7 @@ trigger_manual_commands_for_rule(const la_address_t *address,const  la_rule_t *r
  * pmatch - result from regexec() call pointing to matches in line
  */
 
-static void
+static bool
 assign_value_to_properties(const kw_list_t *property_list, const char *line,
                 regmatch_t pmatch[])
 {
@@ -342,10 +342,14 @@ assign_value_to_properties(const kw_list_t *property_list, const char *line,
         for (la_property_t *property = ITERATE_PROPERTIES(property_list);
                         (property = NEXT_PROPERTY(property));)
         {
-                property->value = xstrndup(line + pmatch[property->subexpression].rm_so,
-                                pmatch[property->subexpression].rm_eo -
-                                pmatch[property->subexpression].rm_so);
+                if (!string_copy(property->value, MAX_PROP_SIZE,
+                                        line + pmatch[property->subexpression].rm_so,
+                                        pmatch[property->subexpression].rm_eo -
+                                        pmatch[property->subexpression].rm_so))
+                        return false;
         }
+
+        return true;
 }
 
 /*
@@ -360,10 +364,7 @@ clear_property_values(const kw_list_t *property_list)
 
         for (la_property_t *property = ITERATE_PROPERTIES(property_list);
                         (property = NEXT_PROPERTY(property));)
-        {
-                free(property->value);
-                property->value = NULL;
-        }
+                property->value[0] = '\0';
 }
 
 /*
@@ -382,11 +383,14 @@ handle_log_line_for_rule(const la_rule_t *rule, const char *line)
         {
                 /* TODO: make this dynamic based on detected tokens */
                 regmatch_t pmatch[MAX_NMATCH];
-                if (!regexec(pattern->regex, line, MAX_NMATCH, pmatch, 0))
+                if (!regexec(&(pattern->regex), line, MAX_NMATCH, pmatch, 0))
                 {
-                        assign_value_to_properties(pattern->properties, line,
-                                        pmatch);
-                        trigger_all_commands(pattern);
+                        if (assign_value_to_properties(pattern->properties,
+                                                line, pmatch))
+                                trigger_all_commands(pattern);
+                        else
+                                la_log(LOG_ERR, "Matched property too long, "
+                                                "log line ignored");
                         clear_property_values(pattern->properties);
                         return;
                 }

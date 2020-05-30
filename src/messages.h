@@ -40,6 +40,7 @@
 #define MSG_END_TIME_LENGTH 20
 #define MSG_FACTOR_LENGTH 4
 
+#ifdef WITH_LIBSODIUM
 /* Length of encrypted message (i.e. incl. MAC */
 #define ENC_MSG_LEN MSG_LEN + crypto_secretbox_MACBYTES
 /* Length of whole message that will be send, i.e.
@@ -47,7 +48,6 @@
  * - MAC
  * - the encrypted message
  */
-#ifdef WITH_LIBSODIUM
 #define TOTAL_MSG_LEN ENC_MSG_LEN + crypto_secretbox_NONCEBYTES + crypto_pwhash_SALTBYTES
 #else
 #define TOTAL_MSG_LEN MSG_LEN

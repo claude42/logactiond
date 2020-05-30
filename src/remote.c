@@ -222,9 +222,9 @@ remote_loop(void *ptr)
                 buf[num_read] = '\0';
 
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
-                char from[INET6_ADDRSTRLEN];
+                char from[INET6_ADDRSTRLEN + 1];
                 const int r = getnameinfo((struct sockaddr *) &remote_client,
-                                sizeof remote_client, from, INET6_ADDRSTRLEN,
+                                sizeof remote_client, from, INET6_ADDRSTRLEN + 1,
                                 NULL, 0, NI_NUMERICHOST);
                 if (r)
                 {

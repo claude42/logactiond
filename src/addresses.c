@@ -298,7 +298,7 @@ create_address_sa(const struct sockaddr *sa, const socklen_t salen)
         memcpy(&(result->sa), sa, salen);
 
         if (getnameinfo(sa, salen, result->text,
-                                INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST))
+                                MAX_ADDR_TEXT_SIZE + 1, NULL, 0, NI_NUMERICHOST))
         {
                 free_address(result);
                 return NULL;
@@ -313,13 +313,16 @@ create_address_sa(const struct sockaddr *sa, const socklen_t salen)
  * Creates new address. Sets correct port in address->sa
  *
  * Important: port must be supplied in host byte order NOT network byte order.
+ *
+ * May (briefly) modify host (but change it back  to its original state before
+ * it returns.
  */
 
 la_address_t *
 create_address_port(const char *host, const in_port_t port)
 {
         assert(host);
-        la_vdebug("create_address(%s)", host);
+        la_vdebug("create_address_port(%s)", host);
 
         char *prefix_str = strchr(host, '/');
         if (prefix_str)
@@ -405,7 +408,7 @@ dup_address(const la_address_t *address)
 
         memcpy(&(result->sa), &(address->sa), sizeof(struct sockaddr_storage));
         result->prefix = address->prefix;
-        string_copy(result->text, sizeof(result->text), address->text);
+        string_copy(result->text, MAX_ADDR_TEXT_SIZE + 1, address->text, 0);
 
         assert_address(result);
         return result;

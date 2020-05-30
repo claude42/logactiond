@@ -42,8 +42,6 @@ assert_pattern_ffl(const la_pattern_t *pattern, const char *func,
         assert_rule_ffl(pattern->rule, func, file, line);
         if (!pattern->string)
                 die_hard("%s:%u: %s: Assertion 'pattern->string' failed. ", file, line, func);
-        if (!pattern->regex)
-                die_hard("%s:%u: %s: Assertion 'pattern->regex' failed. ", file, line, func);
         assert_list_ffl(pattern->properties, func, file, line);
 }
 
@@ -286,8 +284,7 @@ create_pattern(const char *string_from_configfile, const unsigned int num,
         convert_regex(full_string, result);
         free(full_string);
 
-        result->regex = xmalloc(sizeof(regex_t));
-        const int r = regcomp(result->regex, result->string, REG_EXTENDED |
+        const int r = regcomp(&(result->regex), result->string, REG_EXTENDED |
                         REG_NEWLINE);
         if (r)
                 die_regcomp(r, result->string);
@@ -313,7 +310,6 @@ free_pattern(la_pattern_t *pattern)
         free_property_list(pattern->properties);
 
         free(pattern->string);
-        free(pattern->regex);
 
         free(pattern);
 }

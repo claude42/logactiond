@@ -36,6 +36,7 @@
 #include <termios.h>
 #include <signal.h>
 #include <assert.h>
+#include <ctype.h>
 
 #include "ndebug.h"
 #include "logging.h"
@@ -124,10 +125,10 @@ xpthread_create(pthread_t *thread, const pthread_attr_t *attr,
         int ret = pthread_create(thread, attr, start_routine, arg);
         if (ret)
                 die_val(ret, "Failed to create thread!");
-#if HAVE_PTHREAD_SETNAME_NP1
-        if (name)
-                pthread_setname_np(name);
-#elif HAVE_PTHREAD_SETNAME_NP2
+        /* Check for HAVE_PTHREAD_SETNAME_NP2 first, as e.g. on Linux both
+         * M4 macros will match - but only the code for NP2 is the correct one.
+         */
+#if HAVE_PTHREAD_SETNAME_NP2
         if (name)
         {
                 ret = pthread_setname_np(*thread, name);
@@ -135,6 +136,9 @@ xpthread_create(pthread_t *thread, const pthread_attr_t *attr,
                         die_val(ret, "Failed to set thread name!");
 
         }
+#elif HAVE_PTHREAD_SETNAME_NP1
+        if (name)
+                pthread_setname_np(name);
 #elif HAVE_PTHREAD_SET_NAME_NP
         if (name)
                 pthread_set_name_np(*thread, name);
@@ -339,17 +343,34 @@ concat(const char *s1, const char *s2)
         return result;
 }
 
-char *
-string_copy(char *dest, size_t dest_size, const char *src)
+/* Will copy string from src to dest. Either
+ * - until '\0' is reached or
+ * - until n bytes are copied (if n>0) or
+ * - until dest_size - 1 bytes are copied
+ *
+ * whichever occurs first. Will make sure dest will end with '\0' in either case.
+ *
+ * Will return number of characters copied - unless available space in dest
+ * would not have been enough - then will return -1.
+ */
+
+int
+string_copy(char *dest, size_t dest_size, const char *src, size_t n)
 {
         assert(dest);
 
+        size_t copy_bytes = (!n || dest_size-1 < n) ? dest_size-1 : n;
         size_t i;
-        for (i = 0; i < dest_size && src[i]; i++)
+
+        for (i = 0; i < copy_bytes && src[i]; i++)
                 dest[i] = src[i];
 
         dest[i] = '\0';
-        return dest;
+
+        if (src[i] == '\0' || n < dest_size)
+                return i;
+        else
+                return -1;
 }
 
 int

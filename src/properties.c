@@ -30,6 +30,7 @@
 #include "patterns.h"
 #include "properties.h"
 #include "rules.h"
+#include "syslog.h"
 
 void
 assert_property_ffl(const la_property_t *property, const char *func,
@@ -37,9 +38,6 @@ assert_property_ffl(const la_property_t *property, const char *func,
 {
         if (!property)
                 die_hard("%s:%u: %s: Assertion 'property' failed. ", file,
-                                line, func);
-        if (!property->name)
-                die_hard("%s:%u: %s: Assertion 'property->name' failed.", file,
                                 line, func);
 }
 
@@ -115,29 +113,38 @@ get_value_from_property_list(const kw_list_t *property_list, const char *name)
         return property ? property->value : NULL;
 }
 
-/*
- * Duplicate string and onvert to lower case. Also die if non alpha-numeric
- * character is found.
+/* Will copy at most dest_size - 1 bytes; less if src is shorter. Will make
+ * sure dest ends with a '\0' byte in any case.
+ *
+ * Will return number of characters copied.
+ *
+ * Will return -1 if strlen(src) >= dest_size (i.e. src + '\0' wouldn't have
+ * fitted into dest.
+ *
+ * Will return -2 if non-alphanumeric character is detected.
  */
-
-static char *
-dup_str_and_tolower(const char *s, const size_t n)
+static int
+copy_str_and_tolower(char *dest, const char *src,
+                const char delim)
 {
-        assert(s); assert(n>1);
-        la_vdebug("dup_str_and_tolower(%s, %u)", s, n);
-        const char *src = s;
-        char *result = xmalloc(n+1);
-        char *dst = result;
+        assert(dest); assert(src);
+        la_vdebug("copy_str_and_tolower(%s)", src);
 
-        while (src < s+n)
+        size_t i;
+        for (i = 0; i < MAX_PROP_SIZE - 1 && src[i] != delim; i++)
         {
-                if (!isalnum(*src))
-                        /* will print out partially converted name :-/ */
-                        die_hard("Invalid property name %s!", s);
-                *dst++ = tolower((unsigned char) *src++);
+                if (!isalnum(src[i]))
+                        die_hard("Invalid property name %s!", src);
+                dest[i] = tolower(src[i]);
         }
-        *dst = '\0';
-        return result;
+
+        dest[i] = '\0';
+
+        if (src[i] == delim)
+                return i;
+        else
+                die_hard("Property name longer than %u characters.",
+                                MAX_PROP_SIZE);
 }
 
 /*
@@ -165,11 +172,11 @@ create_property_from_token(const char *name, const unsigned int pos,
                 return NULL;
 
         la_property_t *result = xmalloc(sizeof(la_property_t));
-        result->length = token_length(name);
+
+        result->length = copy_str_and_tolower(result->name, name+1, '%') + 2;
         assert(result->length > 2);
 
-        result->name = dup_str_and_tolower(name+1, result->length-2);
-        result->value = NULL;
+        result->value[0] = '\0';
 
         result->is_host_property = false;
         if (!strcmp(result->name, LA_HOST_TOKEN))
@@ -204,9 +211,12 @@ create_property_from_config(const char *name, const char *value)
 
         la_property_t *result = xmalloc(sizeof(la_property_t));
 
-        result->name = dup_str_and_tolower(name, strlen(name));
+        copy_str_and_tolower(result->name, name, '\0');
+
         result->is_host_property = !strcmp(result->name, LA_HOST_TOKEN);
-        result->value = xstrdup(value);
+        if (string_copy(result->value,  MAX_PROP_SIZE, value, 0) == -1)
+                die_hard("Property value longer than %u charcters.",
+                                MAX_PROP_SIZE);
         result->replacement = NULL;
         
         assert_property(result);
@@ -224,9 +234,9 @@ duplicate_property(const la_property_t *property)
         la_vdebug("duplicate_property(%s)", property->name);
         la_property_t *result = xmalloc(sizeof(la_property_t));
 
-        result->name = xstrdup(property->name);
+        string_copy(result->name, MAX_PROP_SIZE, property->name, 0);
         result->is_host_property = property->is_host_property;
-        result->value = xstrdup(property->value);
+        string_copy(result->value, MAX_PROP_SIZE, property->value, 0);
         result->replacement = xstrdup(property->replacement);
         result->pos = property->pos;
         result->length = property->length;
@@ -265,8 +275,6 @@ free_property(la_property_t *property)
         la_vdebug("free_property(%s, %s, %s)", property->name, property->value,
                         property->replacement);
 
-        free(property->name);
-        free(property->value);
         free(property->replacement);
         free(property);
 }

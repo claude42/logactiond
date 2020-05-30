@@ -23,8 +23,6 @@
 
 #include "ndebug.h"
 
-bool host_on_dnsbl(const la_address_t *address, const char *dnsbl_domainname);
-
 const char *host_on_any_dnsbl(const kw_list_t *blacklists,
                 const la_address_t *address);
 

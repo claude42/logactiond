@@ -37,6 +37,8 @@
 #define LA_PATTERNNAME_TOKEN "patternname"
 #define LA_IPVERSION_TOKEN "ipversion"
 
+#define MAX_PROP_SIZE 128
+
 /* List macros */
 
 #define ITERATE_PROPERTIES(PROPERTIES) (la_property_t *) &(PROPERTIES)->head
@@ -61,7 +63,7 @@ struct la_property_s
 {
         struct kw_node_s node;
         /* name of the property (for matched tokens: without the '%'s) */
-        char *name;
+        char name[MAX_PROP_SIZE];
         /* Property created from HOST token */
         bool is_host_property;
         /* Different uses:
@@ -73,7 +75,7 @@ struct la_property_s
          *   original token
          *
          * BTW: strings will be strdup()ed - take care to free again */
-        char *value;
+        char value[MAX_PROP_SIZE];
 
         /* Only for tokens matching a log line. Specifies the regex that the
          * %token% should be replaced with.

@@ -60,7 +60,9 @@ struct la_source_group_s
         char *prefix;
         /* Next one is only used in systemd.c */
         /* systemd_units we're interested in */
+#if HAVE_LIBSYSTEMD
         struct kw_list_s *systemd_units;
+#endif /* HAVE_LIBSYSTEMD */
 };
 
 /*

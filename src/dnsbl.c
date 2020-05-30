@@ -114,7 +114,7 @@ convert_to_dnsbl_hostname(const la_address_t *address, const char *dnsbl_domainn
                         dnsbl_domainname, hostname);
 }
 
-bool
+static bool
 host_on_dnsbl(const la_address_t *address, const char *dnsbl_domainname)
 {
         la_debug("host_on_dnsbl()");

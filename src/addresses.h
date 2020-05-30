@@ -30,6 +30,9 @@
 #include "ndebug.h"
 #include "nodelist.h"
 
+/* Max length of an IPv6 address + 4 bytes for /prefix */
+#define MAX_ADDR_TEXT_SIZE INET6_ADDRSTRLEN + 4
+
 #define ITERATE_ADDRESSES(ADDRESSES) (la_address_t *) &(ADDRESSES)->head
 #define NEXT_ADDRESS(ADDRESS) (la_address_t *) (ADDRESS->node.succ->succ ? ADDRESS->node.succ : NULL)
 #define HAS_NEXT_ADDRESS(ADDRESS) ADDRESS->node.succ
@@ -46,7 +49,7 @@ typedef struct la_address_s
         kw_node_t node;
         struct sockaddr_storage sa;
         int prefix;
-        char text[INET6_ADDRSTRLEN + 4];
+        char text[MAX_ADDR_TEXT_SIZE + 1];
 
         /* only used for hosts that we receive messages from */
 #ifndef NOCRYPTO
