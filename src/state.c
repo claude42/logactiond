@@ -99,6 +99,8 @@ save_state(const char *state_file_name)
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
 }
 
+/* Return false on error. Non-existant state file is not considered an eror */
+
 bool
 restore_state(const char *state_file_name, const bool create_backup_file)
 {
@@ -107,8 +109,13 @@ restore_state(const char *state_file_name, const bool create_backup_file)
 
         FILE *stream = fopen(state_file_name, "r");
         if (!stream)
-                LOG_RETURN_ERRNO(false, LOG_ERR, "Unable to open state file \"%s\"",
-                                state_file_name);
+        {
+                if (errno == ENOENT)
+                        return true;
+                else
+                        LOG_RETURN_ERRNO(false, LOG_ERR, "Unable to open state "
+                                        "file \"%s\"", state_file_name);
+        }
 
         la_log_verbose(LOG_INFO, "Restoring state from \"%s\"", state_file_name);
 
