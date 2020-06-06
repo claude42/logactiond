@@ -101,7 +101,6 @@ handle_new_content(const la_source_t *source)
         assert_source(source); assert(source->file);
         la_vdebug("handle_new_content(%s)", source->location);
 
-        /* TODO: less random number? */
         size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE;
         char *linebuffer = alloca(linebuffer_size);
 
@@ -111,15 +110,11 @@ handle_new_content(const la_source_t *source)
         while ((num_read = getline(&linebuffer, &linebuffer_size, source->file)) != -1)
                 handle_log_line(source, linebuffer, NULL);
 
-        if (feof(source->file))
-        {
+        const int result = feof(source->file);
+        if (result)
                 fseek(source->file, 0, SEEK_END);
-                return true;
-        }
-        else
-        {
-                return false;
-        }
+
+        return result;
 }
 
 la_source_group_t *

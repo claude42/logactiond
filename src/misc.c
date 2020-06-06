@@ -439,7 +439,7 @@ static ssize_t
 _getpass (char **lineptr, size_t *n, FILE *stream)
 {
         struct termios old, new;
-        int nread;
+        ssize_t nread;
 
         /* Turn echoing off and fail if we can't. */
         if (tcgetattr (fileno (stream), &old) != 0)

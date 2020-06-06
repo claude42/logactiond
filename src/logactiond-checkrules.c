@@ -215,7 +215,7 @@ main(int argc, char *argv[])
 
         for (;;)
         {
-		ssize_t num_read = getline(&linebuffer, &linebuffer_size, file);
+		const ssize_t num_read = getline(&linebuffer, &linebuffer_size, file);
 		if (num_read==-1)
 		{
 			if (feof(file))

@@ -83,13 +83,18 @@ fifo_loop(void *ptr)
                         pthread_exit(NULL);
                 }
 
-                size_t num_read = getline(&buf, &buf_size, fifo);
-                if ((int) num_read == -1)
+                const ssize_t num_read = getline(&buf, &buf_size, fifo);
+                switch (num_read)
                 {
+                case -1:
                         if (feof(fifo))
                                 continue;
                         else
                                 die_err("Reading from fifo failed");
+                        break;
+                case 0:
+                        continue;
+                        break;
                 }
 
                 if (buf[num_read-1] == '\n')

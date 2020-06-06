@@ -353,7 +353,7 @@ watch_forever_inotify(void *ptr)
 
         for (;;)
         {
-                size_t num_read = read(inotify_fd, buffer, BUF_LEN);
+                const ssize_t num_read = read(inotify_fd, buffer, BUF_LEN);
                 if (shutdown_ongoing)
                 {
                         la_debug("Shutting down inotify thread.");
@@ -368,12 +368,10 @@ watch_forever_inotify(void *ptr)
                 }
                 else
                 {
-                        int i=0;
-                        while (i<num_read)
+                        for (int i = 0; i <  num_read; i += EVENT_SIZE + event->len)
                         {
                                 event = (struct inotify_event *) &buffer[i];
                                 handle_inotify_event(event);
-                                i += EVENT_SIZE + event->len;
                         }
                 }
         }
