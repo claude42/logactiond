@@ -45,63 +45,6 @@ pthread_mutex_t end_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t end_queue_condition = PTHREAD_COND_INITIALIZER;
 
 /*
- * Searches for a rule with the given name in the given source. Returns NULL if
- * no such rule exists.
- */
-
-static la_rule_t *
-find_source_rule_by_name(const la_source_group_t *source_group, const char *name)
-{
-        assert(source_group), assert(name);
-        la_debug("find_source_rule_by_name(%s, %s)", source_group->name,
-                        name);
-
-        for (la_rule_t *rule = ITERATE_RULES(source_group->rules);
-                        (rule = NEXT_RULE(rule));)
-        {
-                if (!strcmp(rule->name, name))
-                        return rule;
-        }
-
-        return NULL;
-}
-
-/*
- * Searches for a rule with the given name in any of the sources. Returns first
- * it finds (searching the systemd source first - if available), NULL
- * otherwise.
- */
-
-static la_rule_t *
-find_rule_by_name(const char *name)
-{
-        assert(name);
-        assert(la_config);
-        la_debug("find_rule_by_name(%s)", name);
-
-        la_rule_t *result;
-#if HAVE_LIBSYSTEMD
-        if (la_config->systemd_source_group)
-        {
-                result = find_source_rule_by_name(la_config->systemd_source_group, name);
-                if (result)
-                        return result;
-        }
-#endif /* HAVE_LIBSYSTEMD */
-
-        assert(la_config->source_groups);
-        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
-                        (source_group = NEXT_SOURCE_GROUP(source_group));)
-        {
-                result = find_source_rule_by_name(source_group, name);
-                if (result)
-                        return result;
-        }
-        
-        return NULL;
-}
-
-/*
  * Only invoked after a config reload. Goes through all commands in the
  * end_queue (skipping the shutdown commands) and tries to find matching new
  * rules. If found, adjusts the rule's queue counter accordingly.
@@ -126,7 +69,7 @@ update_queue_count_numbers(void)
 
                         if (!command->is_template)
                         {
-                                rule = find_rule_by_name(command->rule_name);
+                                rule = find_rule(command->rule_name);
                                 if (rule)
                                         rule->queue_count++;
                         }
