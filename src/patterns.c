@@ -311,6 +311,8 @@ free_pattern(la_pattern_t *pattern)
 
         free(pattern->string);
 
+        regfree(&(pattern->regex));
+
         free(pattern);
 }
 

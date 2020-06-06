@@ -291,7 +291,10 @@ trigger_all_commands(la_pattern_t *pattern)
         /* Do nothing if on ignore list */
         assert(la_config);
         if (address_on_list(address, la_config->ignore_addresses))
+        {
+                free_address(address);
                 LOG_RETURN_VERBOSE(, LOG_INFO, "Host: %s, always ignored.", host);
+        }
 
         increase_detection_count(pattern);
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
@@ -495,6 +498,8 @@ free_rule(la_rule_t *rule)
                 free(node->name);
                 free(node);
         }
+
+        free(rule->blacklists);
 
         free(rule->name);
 

@@ -330,7 +330,7 @@ create_address_port(const char *host, const in_port_t port)
         if (prefix_str)
                 *prefix_str = '\0';
 
-        struct addrinfo *ai;
+        struct addrinfo *ai = NULL;
 
         char port_str[6];
         snprintf(port_str, 6, "%u", port);
@@ -366,7 +366,10 @@ create_address_port(const char *host, const in_port_t port)
 
         la_address_t *result = create_address_sa(ai->ai_addr, ai->ai_addrlen);
         if (!result)
+        {
+                freeaddrinfo(ai);
                 return NULL;
+        }
 
         if (prefix_str)
         {
@@ -386,6 +389,8 @@ create_address_port(const char *host, const in_port_t port)
 
                 strncat(result->text, prefix_str, 4);
         }
+
+        freeaddrinfo(ai);
 
         return result;
 }
