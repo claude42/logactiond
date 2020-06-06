@@ -252,7 +252,11 @@ remote_loop(void *ptr)
 
                 la_debug("Received message '%s' from %s",  buf, from);
 
-                parse_message_trigger_command(buf, from);
+                xpthread_mutex_lock(&config_mutex);
+
+                        parse_message_trigger_command(buf, from);
+
+                xpthread_mutex_unlock(&config_mutex);
                 
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
         }
