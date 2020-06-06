@@ -197,10 +197,6 @@ empty_end_queue(void)
                         free_command(tmp);
                 }
 
-#ifndef NOMONITORING
-                dump_queue_status(false);
-#endif /* NOMONITORING */
-
         if (!shutdown_ongoing && end_queue_thread)
         {
                 /* signal probably not strictly necessary... */
@@ -301,11 +297,10 @@ consume_end_queue(void *ptr)
                                  * and don't sleep but immediately look for
                                  * more */
                                 remove_node((kw_node_t *) command);
+
                                 trigger_end_command(command, false);
+
                                 free_command(command);
-#ifndef NOMONITORING
-                                dump_queue_status(false);
-#endif /* NOMONITORING */
                         }
         }
 
@@ -404,10 +399,6 @@ enqueue_end_command(la_command_t *end_command, const time_t manual_end_time)
                 }
 
                 insert_node_before((kw_node_t *) tmp, (kw_node_t *) end_command);
-
-#ifndef NOMONITORING
-                dump_queue_status(false);
-#endif /* NOMONITORING */
 
                 xpthread_cond_signal(&end_queue_condition);
 
