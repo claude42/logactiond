@@ -147,6 +147,36 @@ copy_str_and_tolower(char *dest, const char *src,
                                 MAX_PROP_SIZE);
 }
 
+/* 
+ * Returns number of '(' in a string. Will not count '\('.
+ */
+
+static unsigned int
+count_open_braces(const char *string)
+{
+        assert(string);
+        la_vdebug("count_open_braces(%s)", string);
+
+        unsigned int result = 0;
+
+        for (const char *ptr = string; *ptr; ptr++)
+        {
+                switch (*ptr)
+                {
+                case '\\':
+                        ptr++;
+                        if (!*ptr)
+                                die_hard("String ends with \\\\0");
+                        break;
+                case '(':
+                        result++;
+                        break;
+                }
+        }
+
+        return result;
+}
+
 /*
  * Create and initialize new la_property_t.
  *
@@ -188,6 +218,9 @@ create_property_from_token(const char *name, const unsigned int pos,
         else if (rule && rule->service && !strcmp(result->name, LA_SERVICE_TOKEN))
         {
                 result->replacement = xstrdup(rule->service);
+                /* sadly, service can in fact contain braces, e.g.
+                 * "postfix/(submission/)?smtpd", therefore we have to count
+                 * them */
                 result->replacement_braces = count_open_braces(result->replacement);
         }
         else

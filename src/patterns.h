@@ -51,8 +51,6 @@ typedef struct la_pattern_s
 void assert_pattern_ffl(const la_pattern_t *pattern, const char *func,
                 const char *file, unsigned int line);
 
-unsigned int count_open_braces(const char *string);
-
 la_pattern_t *create_pattern(const char *string_from_configfile,
                 unsigned int num, la_rule_t *rule);
 

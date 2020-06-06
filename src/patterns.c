@@ -45,36 +45,6 @@ assert_pattern_ffl(const la_pattern_t *pattern, const char *func,
         assert_list_ffl(pattern->properties, func, file, line);
 }
 
-/* 
- * Returns number of '(' in a string. Will not count '\('.
- */
-
-unsigned int
-count_open_braces(const char *string)
-{
-        assert(string);
-        la_vdebug("count_open_braces(%s)", string);
-
-        unsigned int result = 0;
-
-        for (const char *ptr = string; *ptr; ptr++)
-        {
-                switch (*ptr)
-                {
-                case '\\':
-                        ptr++;
-                        if (!*ptr)
-                                die_hard("String ends with \\0");
-                        break;
-                case '(':
-                        result++;
-                        break;
-                }
-        }
-
-        return result;
-}
-
 static void add_property(la_pattern_t *pattern, la_property_t *property)
 {
         add_tail(pattern->properties, (kw_node_t *) property);
