@@ -38,8 +38,23 @@ assert_source_ffl(const la_source_t *source, const char *func,
 {
         if (!source)
                 die_hard("%s:%u: %s: Assertion 'source' failed. ", file, line, func);
+        assert_source_group_ffl(source->source_group, func, file, line);
         if (!source->location)
                 die_hard("%s:%u: %s: Assertion 'source->location' failed. ", file, line, func);
+}
+
+void
+assert_source_group_ffl(const la_source_group_t *source_group, const char *func,
+                const char *file, unsigned int line)
+{
+        if (!source_group)
+                die_hard("%s:%u: %s: Assertion 'source_group' failed. ", file, line, func);
+        if (!source_group->name)
+                die_hard("%s:%u: %s: Assertion 'source->name' failed. ", file, line, func);
+        if (!source_group->glob_pattern)
+                die_hard("%s:%u: %s: Assertion 'source->location' failed. ", file, line, func);
+        assert_list_ffl(source_group->sources, func, file, line);
+        assert_list_ffl(source_group->rules, func, file, line);
 }
 
 /*
@@ -123,6 +138,7 @@ create_source_group(const char *name, const char *glob_pattern, const char *pref
         result->rules = xcreate_list();
         result->systemd_units = NULL;
 
+        assert_source_group(result);
         return result;
 }
 
@@ -134,7 +150,7 @@ create_source_group(const char *name, const char *glob_pattern, const char *pref
 la_source_t *
 create_source(la_source_group_t *source_group, const char *location)
 {
-        assert(source_group); assert(location);
+        assert_source_group(source_group); assert(location);
         la_debug("create_source(%s, %s)", source_group->name, location);
 
         la_source_t *result;

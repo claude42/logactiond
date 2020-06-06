@@ -40,8 +40,10 @@
 
 #ifdef NDEBUG
 #define assert_source(SOURCE) (void)(0)
+#define assert_source_group(SOURCE_GROUP) (void)(0)
 #else /* NDEBUG */
 #define assert_source(SOURCE) assert_source_ffl(SOURCE, __func__, __FILE__, __LINE__)
+#define assert_source_group(SOURCE_GROUP) assert_source_group_ffl(SOURCE_GROUP, __func__, __FILE__, __LINE__)
 #endif /* NDEBUG */
 
 typedef struct la_source_group_s la_source_group_t;
@@ -95,6 +97,9 @@ struct la_source_s
 };
 
 void assert_source_ffl(const la_source_t *source, const char *func,
+                const char *file, unsigned int line);
+
+void assert_source_group_ffl(const la_source_group_t *source_group, const char *func,
                 const char *file, unsigned int line);
 
 void handle_log_line(const la_source_t *source, const char *line, const char *systemd_unit);

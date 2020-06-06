@@ -69,6 +69,8 @@ assert_address_ffl(const la_address_t *address, const char *func,
 unsigned int
 get_port(const la_address_t *address)
 {
+        assert_address(address);
+
         if (address->sa.ss_family == AF_INET)
         {
                 struct sockaddr_in *sa = (struct sockaddr_in *) &address->sa;

@@ -51,9 +51,8 @@ assert_rule_ffl(const la_rule_t *rule, const char *func, const char *file, unsig
                 die_hard("%s:%u: %s: Assertion 'rule' failed. ", file, line, func);
         if (!rule->name)
                 die_hard("%s:%u: %s: Assertion 'rule->name' failed. ", file, line, func);
-        // TODO: could do better
-        if (!rule->source_group)
-                die_hard("%s:%u: %s: Assertion 'rule->source_group' failed. ", file, line, func);
+
+        assert_source_group_ffl(rule->source_group, func, file, line);
         assert_list_ffl(rule->patterns, func, file, line);
         assert_list_ffl(rule->begin_commands, func, file, line);
         assert_list_ffl(rule->trigger_list, func, file, line);
@@ -115,7 +114,6 @@ find_trigger(const la_command_t *template, const la_address_t *address)
                         /*la_log(LOG_INFO, "NOTE: Removed IP %s from \"%s\"",
                                         tmp->address->text, tmp->rule_name);*/
                         remove_node((kw_node_t *) tmp);
-                        // TODO: not quite sure if this won't beak anything?!
                         free_command(tmp);
                 }
         }
@@ -185,8 +183,9 @@ trigger_single_command(la_pattern_t *pattern, const la_address_t *address,
         if  (run_type == LA_UTIL_FOREGROUND)
                 return;
 
-        assert_pattern(pattern); assert_rule(pattern->rule);
-        assert_command(template);
+        assert_pattern(pattern); assert_command(template);
+        if (address)
+                assert_address(address);
         la_debug("trigger_single_command(%s)", template->name);
 
         /* First check whether a command for this host is still active on
@@ -273,7 +272,7 @@ increase_detection_count(la_pattern_t *pattern)
 static void
 trigger_all_commands(la_pattern_t *pattern)
 {
-        assert_pattern(pattern); assert_rule(pattern->rule);
+        assert_pattern(pattern);
         la_debug("trigger_all_commands(%s, %s)", pattern->rule->name, pattern->string);
 
         const char *host = NULL;
