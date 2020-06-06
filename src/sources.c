@@ -185,6 +185,22 @@ free_source(la_source_t *source)
         free(source);
 }
 
+static void
+free_source_list(kw_list_t *list)
+{
+        la_vdebug("free_source_list()");
+
+        if (!list)
+                return;
+        assert_list(list);
+
+        for (la_source_t *tmp;
+                        (tmp = REM_SOURCES_HEAD(list));)
+                free_source(tmp);
+
+        free(list);
+}
+
 void
 free_source_group(la_source_group_t *source_group)
 {
@@ -196,11 +212,7 @@ free_source_group(la_source_group_t *source_group)
         free(source_group->name);
         free(source_group->glob_pattern);
 
-        for (la_source_t *tmp;
-                        (tmp = REM_SOURCES_HEAD(source_group->sources));)
-                free_source(tmp);
-        free(source_group->sources);
-
+        free_source_list(source_group->sources);
         free_rule_list(source_group->rules);
 
         free(source_group->prefix);
@@ -221,19 +233,19 @@ free_source_group(la_source_group_t *source_group)
 }
 
 void
-free_source_group_list(kw_list_t *list_list)
+free_source_group_list(kw_list_t *list)
 {
         la_vdebug("free_source_group_list()");
 
-        if (!list_list)
+        if (!list)
                 return;
-        assert_list(list_list);
+        assert_list(list);
 
         for (la_source_group_t *tmp;
-                        (tmp = REM_SOURCE_GROUPS_HEAD(list_list));)
+                        (tmp = REM_SOURCE_GROUPS_HEAD(list));)
                 free_source_group(tmp);
 
-        free(list_list);
+        free(list);
 }
 
 /*

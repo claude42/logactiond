@@ -225,7 +225,7 @@ trigger_single_command(la_pattern_t *pattern, const la_address_t *address,
          * on first sight. Only do dnsbl lookup if dnsbl_enabled==true and
          * threshold>1 */
 
-        if  (pattern->rule->dnsbl_enabled && pattern->rule->threshold > 1)
+        if  (address && pattern->rule->dnsbl_enabled && pattern->rule->threshold > 1)
         {
                 const char *blname = host_on_any_dnsbl(
                                 pattern->rule->blacklists, address);
