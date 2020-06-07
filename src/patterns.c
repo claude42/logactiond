@@ -275,7 +275,7 @@ create_pattern(const char *string_from_configfile, const unsigned int num,
                         string_from_configfile);
         la_vdebug("full_string=%s", full_string);
 
-        la_pattern_t *result = xmalloc(sizeof(la_pattern_t));
+        la_pattern_t *result = xmalloc(sizeof *result);
 
         result->num = num;
         result->rule = rule;

@@ -389,7 +389,7 @@ load_blacklists(la_rule_t *rule, const config_setting_t *uc_rule_def)
 
         if (type == CONFIG_TYPE_STRING)
         {
-                kw_node_t *new = xmalloc(sizeof(kw_node_t));
+                kw_node_t *new = xmalloc(sizeof *new);
                 new->name = xstrdup(config_setting_get_string(
                                         blacklist_reference));
                 add_tail(rule->blacklists, new);
@@ -402,7 +402,7 @@ load_blacklists(la_rule_t *rule, const config_setting_t *uc_rule_def)
                 {
                         config_setting_t *list_item = 
                                 config_setting_get_elem(blacklist_reference, i);
-                        kw_node_t *new = xmalloc(sizeof(kw_node_t));
+                        kw_node_t *new = xmalloc(sizeof *new);
                         new->name = xstrdup(config_setting_get_string(
                                                 list_item));
                         add_tail(rule->blacklists, new);
@@ -675,7 +675,7 @@ add_systemd_unit_to_list(const char *systemd_unit)
                         return;
         }
 
-        kw_node_t *node = xmalloc(sizeof(kw_node_t));
+        kw_node_t *node = xmalloc(sizeof *node);
         node->name = xstrdup(systemd_unit);
         add_tail(ex_systemd_units, node);
 }
@@ -1001,7 +1001,7 @@ init_la_config(const char *filename)
                         filename);
 
         if (!la_config)
-                la_config = xmalloc0(sizeof(la_config_t));
+                la_config = xmalloc0(sizeof *la_config);
 
         config_init(&la_config->config_file);
 

@@ -337,7 +337,7 @@ create_meta_command(const la_command_t *command)
 {
         assert_command(command); assert(command->address);
         la_debug("create_meta_command()");
-        meta_command_t *result = xmalloc(sizeof(meta_command_t));
+        meta_command_t *result = xmalloc(sizeof *result);
 
         result->rule = command->rule;
         result->address = dup_address(command->address);
@@ -727,7 +727,7 @@ dup_command(const la_command_t *command)
         assert_command(command);
         la_vdebug("dup_command(%s)", command->name);
 
-        la_command_t *result = xmalloc(sizeof(la_command_t));
+        la_command_t *result = xmalloc(sizeof *result);
 
         result->id = command->id;
 
@@ -863,7 +863,7 @@ create_template(const char *name, la_rule_t *rule, const char *begin_string,
         assert(name); assert_rule(rule); assert(begin_string);
         la_debug("create_template(%s, %d)", name, duration);
 
-        la_command_t *result = xmalloc(sizeof(la_command_t));
+        la_command_t *result = xmalloc(sizeof *result);
 
         result->name = xstrdup(name);
         result->id = ++id_counter;
