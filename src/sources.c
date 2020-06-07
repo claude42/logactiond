@@ -123,9 +123,7 @@ create_source_group(const char *name, const char *glob_pattern, const char *pref
         assert(name);
         la_debug("create_source_group(%s, %s, %s)", name, glob_pattern, prefix);
 
-        la_source_group_t *result;
-
-        result = xmalloc(sizeof(la_source_group_t));
+        la_source_group_t *result = xmalloc(sizeof *result);
         result->name = xstrdup(name);
         result->glob_pattern = xstrdup(glob_pattern);
         result->prefix = xstrdup(prefix);
@@ -148,9 +146,7 @@ create_source(la_source_group_t *source_group, const char *location)
         assert_source_group(source_group); assert(location);
         la_debug("create_source(%s, %s)", source_group->name, location);
 
-        la_source_t *result;
-
-        result = xmalloc(sizeof(la_source_t));
+        la_source_t *result = xmalloc(sizeof *result);
         result->source_group = source_group;
         result->location = xstrdup(location);
         result->file = NULL;

@@ -201,7 +201,7 @@ create_property_from_token(const char *name, const unsigned int pos,
         if (name[1] =='%') /* detected just "%%" */
                 return NULL;
 
-        la_property_t *result = xmalloc(sizeof(la_property_t));
+        la_property_t *result = xmalloc(sizeof *result);
 
         result->length = copy_str_and_tolower(result->name, name+1, '%') + 2;
         assert(result->length > 2);
@@ -242,7 +242,7 @@ create_property_from_config(const char *name, const char *value)
         assert(name); assert(value);
         la_vdebug("create_property_from_config(%s, %s)", name, value);
 
-        la_property_t *result = xmalloc(sizeof(la_property_t));
+        la_property_t *result = xmalloc(sizeof *result);
 
         copy_str_and_tolower(result->name, name, '\0');
 
@@ -265,7 +265,7 @@ duplicate_property(const la_property_t *property)
 {
         assert_property(property);
         la_vdebug("duplicate_property(%s)", property->name);
-        la_property_t *result = xmalloc(sizeof(la_property_t));
+        la_property_t *result = xmalloc(sizeof *result);
 
         string_copy(result->name, MAX_PROP_SIZE, property->name, 0);
         result->is_host_property = property->is_host_property;

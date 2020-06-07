@@ -295,7 +295,7 @@ create_address_sa(const struct sockaddr *sa, const socklen_t salen)
         if (sa->sa_family != AF_INET && sa->sa_family != AF_INET6)
                 LOG_RETURN(NULL, LOG_ERR, "Unsupported address family!");
 
-        la_address_t *result = xmalloc0(sizeof(la_address_t));
+        la_address_t *result = xmalloc0(sizeof *result);
 
         memcpy(&(result->sa), sa, salen);
 
@@ -411,7 +411,7 @@ dup_address(const la_address_t *address)
         assert_address(address);
         la_vdebug("dup_address(%s)", address->text);
 
-        la_address_t *result = xmalloc(sizeof(la_address_t));
+        la_address_t *result = xmalloc(sizeof *result);
 
         memcpy(&(result->sa), &(address->sa), sizeof(struct sockaddr_storage));
         result->prefix = address->prefix;

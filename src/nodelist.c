@@ -71,7 +71,7 @@ assert_list_ffl(const kw_list_t *list, const char *func, const char *file,
 kw_list_t *
 create_list(void)
 {
-        kw_list_t *result = malloc(sizeof (kw_list_t));
+        kw_list_t *result = malloc(sizeof *result);
         if (!result)
         {
                 fprintf(stderr, "Memory exhausted\n");

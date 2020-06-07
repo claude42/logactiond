@@ -425,7 +425,7 @@ create_rule(const bool enabled, const char *name,
         assert(source_group);
         la_debug("create_rule(%s)", name);
 
-        la_rule_t *result = xmalloc(sizeof(la_rule_t));
+        la_rule_t *result = xmalloc(sizeof *result);
 
         result->enabled = enabled;
 
