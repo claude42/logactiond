@@ -99,7 +99,6 @@ find_end_command(const la_address_t *address)
 
         if (!end_queue)
                 return NULL;
-        assert_list(end_queue);
 
         if (!address)
                 return NULL;
@@ -108,6 +107,8 @@ find_end_command(const la_address_t *address)
         la_command_t *result = NULL;
 
         xpthread_mutex_lock(&end_queue_mutex);
+
+                assert_list(end_queue);
 
                 for (la_command_t *command = ITERATE_COMMANDS(end_queue);
                                 (command = NEXT_COMMAND(command));)
