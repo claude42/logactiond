@@ -36,6 +36,10 @@
 #if HAVE_LIBSYSTEMD
 #include <systemd/sd-daemon.h>
 #endif /* HAVE_LIBSYSTEMD */
+#include <stdbool.h>
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
+#include <stdatomic.h>
+#endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
 
 #include "ndebug.h"
 #include "addresses.h"
@@ -65,7 +69,11 @@ char *run_uid_s = NULL;
 unsigned int status_monitoring = 0;
 char *saved_state = NULL;
 bool create_backup_file = false;
-bool shutdown_ongoing = false;
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
+        atomic_bool shutdown_ongoing = false;
+#else /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
+        bool shutdown_ongoing = false;
+#endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
 int exit_status = EXIT_SUCCESS;
 static int exit_errno = 0;
 bool sync_on_startup = false;

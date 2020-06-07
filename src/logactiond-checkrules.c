@@ -28,6 +28,9 @@
 #include <stdbool.h>
 #include <sys/types.h>
 #include <regex.h>
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
+#include <stdatomic.h>
+#endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
 
 #include "ndebug.h"
 #include "commands.h"
@@ -47,7 +50,11 @@ unsigned int id_counter = 0;
 static char *cfg_filename = NULL;
 static char *log_filename = NULL;
 static char *rule_name = NULL;
-bool shutdown_ongoing = false;
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
+        atomic_bool shutdown_ongoing = false;
+#else /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
+        bool shutdown_ongoing = false;
+#endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
 int exit_status = EXIT_SUCCESS;
 bool show_undetected = false;
 

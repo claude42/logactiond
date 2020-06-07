@@ -22,6 +22,9 @@
 #include "ndebug.h"
 #include "addresses.h"
 #include "sources.h"
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
+#include <stdatomic.h>
+#endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
 
 // maximum number of tokens that can be matched
 
@@ -59,9 +62,15 @@ struct la_rule_s
         char *systemd_unit;
         struct kw_list_s *trigger_list;
         struct kw_list_s *properties;
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
+        atomic_ulong detection_count;
+        atomic_ulong invocation_count;
+        atomic_ulong queue_count;
+#else /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
         unsigned long int detection_count;
         unsigned long int invocation_count;
         unsigned long int queue_count;
+#endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
         bool dnsbl_enabled;
         struct kw_list_s *blacklists;
 };

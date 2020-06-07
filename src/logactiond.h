@@ -20,6 +20,9 @@
 #define __logactiond_h
 
 #include <stdbool.h>
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
+#include <stdatomic.h>
+#endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
 
 #include <config.h>
 
@@ -50,7 +53,11 @@ extern la_runtype_t run_type;
 
 extern unsigned int status_monitoring;
 
-extern bool shutdown_ongoing;
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
+        extern atomic_bool shutdown_ongoing;
+#else /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
+        extern bool shutdown_ongoing;
+#endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
 
 extern int exit_status;
 
