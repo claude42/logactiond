@@ -22,9 +22,6 @@
 /* define _GNU_SOURCE to get pthread_setname_np() */
 #define _GNU_SOURCE
 #include <pthread.h>
-#if HAVE_PTHREAD_NP_H
-#include <pthread_np.h>
-#endif /* HAVE_PTHREAD_NP_H */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
