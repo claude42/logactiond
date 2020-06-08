@@ -196,7 +196,8 @@ cidr_match(const la_address_t *addr, const la_address_t *net)
 int
 adrcmp(const la_address_t *a1, const la_address_t *a2)
 {
-        la_vdebug("adrcmp()");
+        la_vdebug("adrcmp(%s, %s)", a1 ? a1->text : "NULL",
+                        a2 ? a2->text : "NULL");
 
         /* if both are not NULL and of the same address family, look further */
         if (a1 && a2 && a1->sa.ss_family == a2->sa.ss_family)
