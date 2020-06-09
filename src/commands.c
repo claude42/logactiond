@@ -397,7 +397,7 @@ find_on_meta_list(const la_command_t *command)
  * If nothings found on the list, create new meta_command with default factor.
  */
 
-static float
+static int
 check_meta_list(const la_command_t *command, const int set_factor)
 {
         assert_command(command); assert(command->address);
