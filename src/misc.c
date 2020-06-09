@@ -122,10 +122,7 @@ xpthread_create(pthread_t *thread, const pthread_attr_t *attr,
         int ret = pthread_create(thread, attr, start_routine, arg);
         if (ret)
                 die_val(ret, "Failed to create thread!");
-        /* Check for HAVE_PTHREAD_SETNAME_NP2 first, as e.g. on Linux both
-         * M4 macros will match - but only the code for NP2 is the correct one.
-         */
-#if HAVE_PTHREAD_SETNAME_NP2
+#if HAVE_PTHREAD_SETNAME_NP
         if (name)
         {
                 ret = pthread_setname_np(*thread, name);
@@ -133,9 +130,6 @@ xpthread_create(pthread_t *thread, const pthread_attr_t *attr,
                         die_val(ret, "Failed to set thread name!");
 
         }
-#elif HAVE_PTHREAD_SETNAME_NP1
-        if (name)
-                pthread_setname_np(name);
 #elif HAVE_PTHREAD_SET_NAME_NP
         if (name)
                 pthread_set_name_np(*thread, name);

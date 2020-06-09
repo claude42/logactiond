@@ -373,7 +373,6 @@ void
 enqueue_end_command(la_command_t *end_command, const time_t manual_end_time)
 {
         assert_command(end_command); assert(end_command->end_string);
-        assert_list(end_queue);
         la_debug("enqueue_end_command(%s, %u)", end_command->end_string,
                         end_command->duration);
         assert(end_command->end_time < xtime(NULL));
@@ -391,6 +390,7 @@ enqueue_end_command(la_command_t *end_command, const time_t manual_end_time)
                 /* We don't use the ITERATE_COMMANDS, NEXT_COMMAND here for a
                  * reason... */
                 la_command_t *tmp;
+                assert_list(end_queue);
                 for (tmp = (la_command_t *) end_queue->head.succ;
                                 tmp->node.succ;
                                 tmp = (la_command_t *) tmp->node.succ)

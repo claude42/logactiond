@@ -19,6 +19,11 @@
 
 #include <config.h>
 
+#define _GNU_SOURCE
+#include <pthread.h>
+#if HAVE_PTHREAD_NP_H
+#include <pthread_np.h>
+#endif /* HAVE_PTHREAD_NP_H */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,7 +31,6 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <assert.h>
-#include <pthread.h>
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -37,7 +41,15 @@ log_message(unsigned int priority, const char *fmt, va_list gp, const char *add)
 {
         assert(fmt);
 
+
 #ifndef CLIENTONLY
+#if HAVE_PTHREAD_GETNAME_NP
+        const size_t thread_name_len = 16;
+        char *thread_name = alloca(thread_name_len);
+        if (pthread_getname_np(pthread_self(), thread_name, thread_name_len))
+                thread_name = "unkown thread";
+#endif /* HAVE_PTHREAD_GENTAME_NP */
+
         if (priority >= log_level ||
                         (run_type == LA_UTIL_FOREGROUND && priority >= LOG_INFO))
                 return;
@@ -56,6 +68,10 @@ log_message(unsigned int priority, const char *fmt, va_list gp, const char *add)
                         fprintf(stderr, "<%u>", priority);
                         /* intentional fall through! */
                 case LA_UTIL_FOREGROUND:
+#if HAVE_PTHREAD_GETNAME_NP
+                        if (priority == LOG_DEBUG)
+                                fprintf(stderr, "%s: ", thread_name);
+#endif /* HAVE_PTHREAD_GENTAME_NP */
 #endif /* CLIENTONLY */
                         vfprintf(stderr, fmt, gp);
                         if (add)
@@ -177,6 +193,7 @@ die_val(const int val, const char *fmt, ...)
         pthread_exit(NULL);
 #endif  /* CLIENTONLY */
 }
+
 void
 die_err(const char *fmt, ...)
 {
@@ -199,6 +216,7 @@ die_err(const char *fmt, ...)
         pthread_exit(NULL);
 #endif  /* CLIENTONLY */
 }
+
 
 
 /* vim: set autowrite expandtab: */

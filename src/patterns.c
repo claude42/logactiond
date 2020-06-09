@@ -181,53 +181,14 @@ convert_regex(const char *string, la_pattern_t *pattern)
  */
 
 static void
-die_regcomp(const int return_value, const char *regex)
+die_re(const int errcode, const regex_t *preg)
 {
-        const char *error_msg;
-        switch (return_value)
-        {
-        case REG_BADBR:
-                error_msg = "Invalid use of back reference operator.";
-                break;
-        case REG_BADPAT:
-                error_msg = "Invalid use of pattern operators such as group or list.";
-                break;
-        case REG_BADRPT:
-                error_msg = "Invalid use of repetition operators such as using '*' as the first character.";
-                break;
-        case REG_EBRACE:
-                error_msg = "Un-matched brace interval operators.";
-                break;
-        case REG_EBRACK:
-                error_msg = "Un-matched bracket list operators.";
-                break;
-        case REG_ECOLLATE:
-                error_msg = "Invalid collating element.";
-                break;
-        case REG_ECTYPE:
-                error_msg = "Unknown character class name.";
-                break;
-        case REG_EESCAPE:
-                error_msg = "Trailing backslash.";
-                break;
-        case REG_EPAREN:
-                error_msg = "Un-matched parenthesis group operators.";
-                break;
-        case REG_ERANGE:
-                error_msg = "Invalid use of the range operator; for example, the ending point of the range occurs prior to the starting point.";
-                break;
-        case REG_ESPACE:
-                error_msg = "The regex routines ran out of memory.";
-                break;
-        case REG_ESUBREG:
-                error_msg = "Invalid back reference to a subexpression.";
-                break;
-        default:
-                error_msg = "Unknown error.";
-                break;
-        }
+        const size_t errbuf_size = 255;
+        char *error_msg = alloca(errbuf_size);
 
-        die_err("Compiling regex: \"%s\" failed: %s", regex, error_msg);
+        regerror(errcode, preg, error_msg, errbuf_size);
+
+        die_err("%s", error_msg);
 }
 
 /*
@@ -257,7 +218,7 @@ create_pattern(const char *string_from_configfile, const unsigned int num,
         const int r = regcomp(&(result->regex), result->string, REG_EXTENDED |
                         REG_NEWLINE);
         if (r)
-                die_regcomp(r, result->string);
+                die_re(r, &(result->regex));
 
         result->detection_count = result->invocation_count = 0;
 

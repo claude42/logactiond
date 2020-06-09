@@ -59,6 +59,21 @@ AC_CHECK_FUNCS([inotify_init],
 HOLD_LIBS="$LIBS"
 LIBS="-pthread"
 
+AC_MSG_CHECKING([for pthread_getname_np])
+AC_LINK_IFELSE(
+  [AC_LANG_SOURCE[
+    #define _GNU_SOURCE
+    #include <pthread.h>
+    int main(int argc, char** argv) {
+      char name[16];
+      int ret = pthread_getname_np(pthread_self(), name, 16);
+      return ret;
+    }
+  ]],
+  [AC_DEFINE([HAVE_PTHREAD_GETNAME_NP], [1], [Define if you have pthread_getname_np function.])
+  AC_MSG_RESULT([yes])],
+  [AC_MSG_RESULT([no])] )
+
 AC_MSG_CHECKING([for pthread_setname_np])
 AC_LINK_IFELSE(
   [AC_LANG_SOURCE[
@@ -69,20 +84,7 @@ AC_LINK_IFELSE(
       return ret;
     }
   ]],
-  [AC_DEFINE([HAVE_PTHREAD_SETNAME_NP2], [1], [Define if you have pthread_setname_np function with two parameters.])
-  AC_MSG_RESULT([yes])],
-  [AC_MSG_RESULT([no])] )
-
-AC_MSG_CHECKING([for pthread_setname_np])
-AC_LINK_IFELSE(
-  [AC_LANG_SOURCE[
-    #include <pthread.h>
-    int main(int argc, char** argv) {
-      pthread_setname_np("name");
-      return 0;
-    }
-  ]],
-  [AC_DEFINE([HAVE_PTHREAD_SETNAME_NP1], [1], [Define if you have pthread_setname_np function with one parameter.])
+  [AC_DEFINE([HAVE_PTHREAD_SETNAME_NP], [1], [Define if you have pthread_setname_np function with two parameters.])
   AC_MSG_RESULT([yes])],
   [AC_MSG_RESULT([no])] )
 
