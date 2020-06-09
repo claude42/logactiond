@@ -213,9 +213,7 @@ dump_loop(void *ptr)
 
                 dump_rules();
 
-                xpthread_mutex_lock(&end_queue_mutex);
                 dump_queue_status(false);
-                xpthread_mutex_unlock(&end_queue_mutex);
 
                 sleep(5);
         }
@@ -274,51 +272,66 @@ dump_queue_status(const bool force)
         unsigned int num_elems = 0;
         unsigned int num_elems_local = 0;
 
-        for (la_command_t *command = ITERATE_COMMANDS(end_queue);
-                        (command = NEXT_COMMAND(command));)
-        {
-                /* Don't assert_command() here, as after a reload some commands might
-                 * not have a rule attached to them anymore */
-                assert(command); assert(command->name);
-                // not interested in shutdown commands (or anything beyond...)
-                if (command->end_time == INT_MAX)
-                        break;
+        xpthread_mutex_lock(&end_queue_mutex);
 
-                /* First  collect data for the queue length line */
-                if ((status_monitoring >= 2 || force) && !command->is_template)
+                for (la_command_t *command = ITERATE_COMMANDS(end_queue);
+                                (command = NEXT_COMMAND(command));)
                 {
-                        num_elems++;
-                        if (command->submission_type == LA_SUBMISSION_LOCAL)
-                                num_elems_local++;
+                        /* Don't assert_command() here, as after a reload some
+                         * commands might not have a rule attached to them
+                         * anymore */
+                        assert(command); assert(command->name);
+                        /* not interested in shutdown commands (or anything
+                         * beyond...) */
+                        if (command->end_time == INT_MAX)
+                                break;
+
+                        /* First  collect data for the queue length line */
+                        if ((status_monitoring >= 2 || force) &&
+                                        !command->is_template)
+                        {
+                                num_elems++;
+                                if (command->submission_type ==
+                                                LA_SUBMISSION_LOCAL)
+                                        num_elems_local++;
+                        }
+
+                        /* Second build host table */
+                        const char *adr = command->address ?
+                                command->address->text : "-";
+
+                        time_t timedelta;
+                        char unit;
+                        human_readable_time_delta(command->end_time-xtime(NULL),
+                                        &timedelta, &unit);
+
+                        const char *type;
+                        if (command->submission_type == LA_SUBMISSION_MANUAL)
+                                type = "Ma";
+                        else if (command->submission_type == LA_SUBMISSION_REMOTE)
+                                type = "Re";
+                        else if (command->blacklist)
+                                type = "BL";
+                        else
+                                type = "  ";
+
+                        fprintf(hosts_file, HOSTS_LINE,
+                                        adr, type, command->factor, timedelta,
+                                        unit, command->rule_name,
+                                        command->name);
                 }
 
-                /* Second build host table */
-                const char *adr = command->address ? command->address->text : "-";
-
-                time_t timedelta;
-                char unit;
-                human_readable_time_delta(command->end_time-xtime(NULL),
-                                &timedelta, &unit);
-
-                const char *type;
-                if (command->submission_type == LA_SUBMISSION_MANUAL)
-                        type = "Ma";
-                else if (command->submission_type == LA_SUBMISSION_REMOTE)
-                        type = "Re";
-                else if (command->blacklist)
-                        type = "BL";
-                else
-                        type = "  ";
-
-                fprintf(hosts_file, HOSTS_LINE,
-                                adr, type, command->factor, timedelta, unit,
-                                command->rule_name, command->name);
-        }
+        xpthread_mutex_unlock(&end_queue_mutex);
 
         if (status_monitoring >= 2 || force)
-                fprintf(hosts_file, "\nQueue length: %u (%u local), meta_command: %u\n",
-                                num_elems, num_elems_local,
-                                meta_list_length());
+        {
+                xpthread_mutex_lock(&config_mutex);
+                        fprintf(hosts_file, "\nQueue length: %u (%u local), "
+                                        "meta_command: %u\n",
+                                        num_elems, num_elems_local,
+                                        meta_list_length());
+                xpthread_mutex_unlock(&config_mutex);
+        }
 
         if (fclose(hosts_file))
                 die_hard("Can't close \" HOSTSFILE \"!");
