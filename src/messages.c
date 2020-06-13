@@ -121,8 +121,9 @@
  */
 
 int
-parse_add_entry_message(const char *message, la_address_t **address, la_rule_t **rule,
-                time_t *end_time, int *factor)
+parse_add_entry_message(const char *const message, la_address_t **const address,
+                la_rule_t **const rule, time_t *const end_time,
+                int *const factor)
 {
         assert(message); assert(address); assert(rule);
         la_debug("parse_add_entry_message(%s)", message);
@@ -174,7 +175,7 @@ parse_add_entry_message(const char *message, la_address_t **address, la_rule_t *
  */
 
 static void
-add_entry(const char *buffer, const char *from)
+add_entry(const char *const buffer, const char *const from)
 {
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
         assert(buffer);
@@ -199,12 +200,12 @@ add_entry(const char *buffer, const char *from)
 }
 
 static void
-del_entry(const char *buffer)
+del_entry(const char *const buffer)
 {
         assert(buffer);
         la_debug("del_entry(%s)", buffer);
 
-        la_address_t *address = create_address(buffer+2);
+        la_address_t *const address = create_address(buffer+2);
         if (!address)
                 LOG_RETURN(, LOG_ERR, "Cannot convert address in command %s!", buffer);
 
@@ -245,7 +246,7 @@ perform_save(void)
 }
 
 static void
-update_log_level(const char *buffer)
+update_log_level(const char *const buffer)
 {
         assert(buffer);
         la_debug("update_log_level(%s)", buffer);
@@ -306,14 +307,14 @@ perform_dump(void)
 }
 
 static void
-enable_rule(const char *buffer)
+enable_rule(const char *const buffer)
 {
         assert(buffer);
         la_debug("enable_rule(%s)", buffer);
 
         xpthread_mutex_lock(&config_mutex);
 
-                la_rule_t *rule = find_rule(buffer+2);
+                la_rule_t *const rule = find_rule(buffer+2);
                 if (rule && !rule->enabled)
                 {
                         la_log(LOG_INFO, "Enabling rule \"%s\".", buffer+2);
@@ -324,14 +325,14 @@ enable_rule(const char *buffer)
 }
 
 static void
-disable_rule(const char *buffer)
+disable_rule(const char *const buffer)
 {
         assert(buffer);
         la_debug("disable_rule(%s)", buffer);
 
         xpthread_mutex_lock(&config_mutex);
 
-                la_rule_t *rule = find_rule(buffer+2);
+                la_rule_t *const rule = find_rule(buffer+2);
                 if (rule && rule->enabled)
                 {
                         la_log(LOG_INFO, "Disabling rule \"%s\".", buffer+2);
@@ -342,7 +343,7 @@ disable_rule(const char *buffer)
 }
 
 void
-parse_message_trigger_command(const char *buf, const char *from)
+parse_message_trigger_command(const char *const buf, const char *const from)
 {
         la_debug("parse_message_trigger_command()");
         assert(buf);
@@ -398,13 +399,14 @@ parse_message_trigger_command(const char *buf, const char *from)
 #endif /* CLIENTONLY */
 
 char *
-create_add_message(const char *ip, const char *rule, const char *end_time, const char *factor)
+create_add_message(const char *const ip, const char *const rule,
+                const char *const end_time, const char *const factor)
 {
 	assert(ip); assert(rule);
         /* if factor is specified, end_time must be specified as well */
         assert(!factor || (factor && end_time));
 
-        char *buffer = xmalloc(TOTAL_MSG_LEN);
+        char *const buffer = xmalloc(TOTAL_MSG_LEN);
 
         const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, PROTOCOL_VERSION_STR
                         "+%s,%s%s%s%s%s", ip, rule,
@@ -425,7 +427,7 @@ create_add_message(const char *ip, const char *rule, const char *end_time, const
 }
 
 int
-print_add_message(FILE *stream, const la_command_t *command)
+print_add_message(FILE *const stream, const la_command_t *const command)
 {
 	/* Don't assert_command() here to make sure this also works in case
 	 * no proper configuration (la_config...) is available at the
@@ -446,10 +448,10 @@ print_add_message(FILE *stream, const la_command_t *command)
 }
 
 char *
-create_del_message(const char *ip)
+create_del_message(const char *const ip)
 {
 	assert(ip);
-        char *buffer = xmalloc(TOTAL_MSG_LEN);
+        char *const buffer = xmalloc(TOTAL_MSG_LEN);
 
         const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN,
                         PROTOCOL_VERSION_STR "-%s", ip);
@@ -465,7 +467,7 @@ create_del_message(const char *ip)
 char *
 create_simple_message(const char c)
 {
-        char *buffer = xmalloc(TOTAL_MSG_LEN);
+        char *const buffer = xmalloc(TOTAL_MSG_LEN);
 
         buffer[MSG_IDX] = PROTOCOL_VERSION;
         buffer[MSG_IDX+1] = c;
@@ -502,11 +504,11 @@ create_save_message(void)
 }
 
 char *
-create_log_level_message(const unsigned int new_log_level)
+create_log_level_message(const int new_log_level)
 {
         assert(new_log_level <= LOG_DEBUG+2);
 
-        char *buffer = xmalloc(TOTAL_MSG_LEN);
+        char *const buffer = xmalloc(TOTAL_MSG_LEN);
 
         const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cL%u",
                         PROTOCOL_VERSION, new_log_level);
@@ -524,9 +526,9 @@ create_reset_counts_message(void)
 }
 
 char *
-create_sync_message(const char *host)
+create_sync_message(const char *const host)
 {
-        char *buffer = xmalloc(TOTAL_MSG_LEN);
+        char *const buffer = xmalloc(TOTAL_MSG_LEN);
 
         const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cX%s",
                         PROTOCOL_VERSION, host ? host : "");
@@ -544,9 +546,9 @@ create_dump_message(void)
 }
 
 char *
-create_enable_message(const char *rule)
+create_enable_message(const char *const rule)
 {
-        char *buffer = xmalloc(TOTAL_MSG_LEN);
+        char *const buffer = xmalloc(TOTAL_MSG_LEN);
 
         const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cY%s",
                         PROTOCOL_VERSION, rule);
@@ -558,9 +560,9 @@ create_enable_message(const char *rule)
 }
 
 char *
-create_disable_message(const char *rule)
+create_disable_message(const char *const rule)
 {
-        char *buffer = xmalloc(TOTAL_MSG_LEN);
+        char *const buffer = xmalloc(TOTAL_MSG_LEN);
 
         const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cN%s",
                         PROTOCOL_VERSION, rule);

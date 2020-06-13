@@ -39,13 +39,13 @@
 pthread_t save_state_thread = 0;
 
 static bool
-move_state_file_to_backup(const char *state_file_name)
+move_state_file_to_backup(const char *const state_file_name)
 {
         assert(state_file_name);
         la_debug("move_state_file_to_backup(%s)", state_file_name);
 
-        const int length = strlen(state_file_name) + sizeof(BAK_SUFFIX) - 1;
-        char *backup_file_name = alloca(length + 1);
+        const int length = strlen(state_file_name) + sizeof BAK_SUFFIX - 1;
+        char *const backup_file_name = alloca(length + 1);
 
         if (snprintf(backup_file_name, length + 1, "%s%s", state_file_name, BAK_SUFFIX) !=
                         length)
@@ -58,7 +58,7 @@ move_state_file_to_backup(const char *state_file_name)
 }
 
 void
-save_state(const char *state_file_name)
+save_state(const char *const state_file_name)
 {
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
         assert(state_file_name);
@@ -67,12 +67,13 @@ save_state(const char *state_file_name)
         if (!end_queue)
                 return;
 
-        if (!state_file_name)
-                state_file_name = STATE_DIR "/" STATE_FILE;
+        const char *const real_state_file_name = state_file_name ?
+                state_file_name : STATE_DIR "/" STATE_FILE;
 
-        la_log_verbose(LOG_INFO, "Dumping current state to \"%s\"", state_file_name);
+        la_log_verbose(LOG_INFO, "Dumping current state to \"%s\"",
+                        real_state_file_name);
 
-        FILE *stream = fopen(state_file_name, "w");
+        FILE *const stream = fopen(real_state_file_name, "w");
         if (!stream)
                 LOG_RETURN(, LOG_ERR, "Unable to open state file");
 
@@ -102,12 +103,12 @@ save_state(const char *state_file_name)
 /* Return false on error. Non-existant state file is not considered an eror */
 
 bool
-restore_state(const char *state_file_name, const bool create_backup_file)
+restore_state(const char *const state_file_name, const bool create_backup_file)
 {
         assert(state_file_name);
         la_debug("restore_state(%s)", state_file_name);
 
-        FILE *stream = fopen(state_file_name, "r");
+        FILE *const stream = fopen(state_file_name, "r");
         if (!stream)
         {
                 if (errno == ENOENT)
@@ -119,7 +120,7 @@ restore_state(const char *state_file_name, const bool create_backup_file)
 
         la_log_verbose(LOG_INFO, "Restoring state from \"%s\"", state_file_name);
 
-        size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE*sizeof(char);
+        size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE*sizeof(char) ;
         char *linebuffer = alloca(linebuffer_size);
 
         xpthread_mutex_lock(&config_mutex);
@@ -173,7 +174,7 @@ restore_state(const char *state_file_name, const bool create_backup_file)
 }
 
 static void *
-periodically_save_state(void *ptr)
+periodically_save_state(void *const ptr)
 {
         la_debug("periodically_save_state()");
 
@@ -192,12 +193,12 @@ periodically_save_state(void *ptr)
 }
 
 void
-start_save_state_thread(char *state_file_name)
+start_save_state_thread(const char *const state_file_name)
 {
         la_debug("start_save_state_thread()");
 
         xpthread_create(&save_state_thread, NULL, periodically_save_state,
-                        state_file_name, "save state");
+                        (void *) state_file_name, "save state");
 }
 
 /* vim: set autowrite expandtab: */

@@ -55,7 +55,8 @@ static int client_fd6;
 /* TODO: fd mutex? */
 
 void
-send_message_to_single_address(const char *message, const la_address_t *remote_address)
+send_message_to_single_address(const char *const message,
+                const la_address_t *const remote_address)
 {
         assert(la_config); assert_address(remote_address);
         la_debug("send_message_to_single_address(%s)", remote_address->text);
@@ -79,7 +80,7 @@ send_message_to_single_address(const char *message, const la_address_t *remote_a
 
         const int message_sent = sendto(*fd_ptr, message, TOTAL_MSG_LEN, 0,
                         (struct sockaddr *) &remote_address->sa,
-                        sizeof(remote_address->sa));
+                        sizeof remote_address->sa);
         if (message_sent == -1)
                 la_log_errno(LOG_ERR, "Unable to send message to %s",
                                 remote_address->text);
@@ -92,7 +93,7 @@ send_message_to_single_address(const char *message, const la_address_t *remote_a
  * Currently only called from trigger_command()
  */
 void
-send_add_entry_message(const la_command_t *command, const la_address_t *address)
+send_add_entry_message(const la_command_t *const command, const la_address_t *const address)
 {
         la_debug("send_add_entry_message()");
         assert(la_config); assert_command(command);
@@ -109,7 +110,7 @@ send_add_entry_message(const la_command_t *command, const la_address_t *address)
 
         /* delibarately left out end_time and factor  here. Receiving end
          * should decide on duration. TODO: does that make sense? */
-        char *message = create_add_message(command->address->text,
+        char *const message = create_add_message(command->address->text,
                         command->rule_name, NULL, NULL);
         if (!message)
                 LOG_RETURN(, LOG_ERR, "Unable to create message");
@@ -147,7 +148,7 @@ send_add_entry_message(const la_command_t *command, const la_address_t *address)
  */
 
 static void
-cleanup_remote(void *arg)
+cleanup_remote(void *const arg)
 {
         la_debug("cleanup_remote()");
         /* TODO: re-enable mt save */
@@ -166,20 +167,17 @@ cleanup_remote(void *arg)
  */
 
 static void *
-remote_loop(void *ptr)
+remote_loop(void *const ptr)
 {
         la_debug("remote_loop()");
 
-        int server_fd;
-        struct addrinfo *ai = (struct addrinfo *) ptr;
-        struct sockaddr_storage remote_client;
-        char buf[DEFAULT_LINEBUFFER_SIZE];
+        const struct addrinfo *const ai = (struct addrinfo *) ptr;
 
         /* TODO: handover server_fd and ai (but ai only once) so cleanup can
          * close it */
         pthread_cleanup_push(cleanup_remote, NULL);
 
-        server_fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+        const int server_fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
         if (server_fd == -1)
                 die_err("Unable to create server socket");
 
@@ -191,9 +189,7 @@ remote_loop(void *ptr)
          * for a discussion.
          */
 
-        int yes = 1;
-        setsockopt(server_fd, IPPROTO_IPV6, IPV6_V6ONLY, (void *) &yes,
-                        sizeof yes);
+        setsockopt(server_fd, IPPROTO_IPV6, IPV6_V6ONLY, &(int) { 1 }, sizeof (int));
 
         if (bind(server_fd, (struct sockaddr *) ai->ai_addr, ai->ai_addrlen) == -1)
                 die_err("Unable to bind to server socket");
@@ -206,7 +202,9 @@ remote_loop(void *ptr)
                         pthread_exit(NULL);
                 }
 
-                socklen_t remote_client_size = sizeof(remote_client);
+                char buf[DEFAULT_LINEBUFFER_SIZE];
+                struct sockaddr_storage remote_client;
+                socklen_t remote_client_size = sizeof remote_client;
                 const ssize_t num_read = recvfrom(server_fd, &buf,
                                 DEFAULT_LINEBUFFER_SIZE, MSG_TRUNC,
                                 (struct sockaddr *) &remote_client,
@@ -233,7 +231,7 @@ remote_loop(void *ptr)
                         continue;
                 }
 
-                la_address_t *from_addr = address_on_list_sa(
+                la_address_t *const from_addr = address_on_list_sa(
                                 (struct sockaddr *) &remote_client,
                                 sizeof remote_client,
                                 la_config->remote_receive_from);
@@ -283,7 +281,7 @@ start_remote_thread(void)
         hints.ai_protocol = IPPROTO_UDP;
 
         assert(la_config);
-        char *node;
+        const char *node;
         if (la_config->remote_bind && !strcmp("*", la_config->remote_bind))
                 node = NULL;
         else
@@ -307,7 +305,7 @@ start_remote_thread(void)
 static void *
 sync_all_entries(void *ptr)
 {
-        la_address_t *address = create_address_port((char *) ptr,
+        la_address_t *const address = create_address_port((char *) ptr,
                         la_config->remote_port);
 
         if (!address)
@@ -369,12 +367,12 @@ sync_all_entries(void *ptr)
 }
 
 void
-sync_entries(const char *buffer, const char *from)
+sync_entries(const char *const buffer, const char *const from)
 {
         assert(buffer);
         la_debug("sync_entries(%s)", buffer);
 
-        char *ptr = xstrdup(buffer[2] ? buffer+2 : from);
+        char *const ptr = xstrdup(buffer[2] ? buffer+2 : from);
         //char *ptr = buffer[2] ? buffer+2 : from;
 
         pthread_t sync_entries_thread = 0;

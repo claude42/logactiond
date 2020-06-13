@@ -46,8 +46,8 @@ static unsigned char send_salt[crypto_pwhash_SALTBYTES];
  */
 
 static bool
-generate_key(unsigned char *key, unsigned int key_len, const char *password,
-                const unsigned char *salt)
+generate_key(unsigned char *const key, const int key_len,
+                const char *const password, const unsigned char *const salt)
 {
 	assert(key); assert(key_len > 0); assert(password); assert(salt);
         return (crypto_pwhash(key, key_len, password, strlen(password), salt,
@@ -58,7 +58,7 @@ generate_key(unsigned char *key, unsigned int key_len, const char *password,
 
 
 bool
-generate_send_key_and_salt(const char *password)
+generate_send_key_and_salt(const char *const password)
 {
 	/* First initialize salt with randomness */
         randombytes_buf(send_salt, crypto_pwhash_SALTBYTES);
@@ -75,17 +75,21 @@ generate_send_key_and_salt(const char *password)
  */
 
 static bool
-same_salt_as_before(const unsigned char *buffer, la_address_t *from_addr)
+same_salt_as_before(const unsigned char *const buffer, la_address_t *const from_addr)
 {
         return !sodium_memcmp(&(from_addr->salt), &buffer[SALT_IDX],
                                 crypto_pwhash_SALTBYTES);
 }
 
+/*
+ * Will update from_addr->salt, from_addr->key if necessary.
+ */
 bool
-decrypt_message(char *buffer, const char *password, la_address_t *from_addr)
+decrypt_message(char *const buffer, const char *const password,
+                la_address_t *const from_addr)
 {
 	assert(buffer); assert(password);
-        unsigned char *ubuffer = (unsigned char *) buffer;
+        unsigned char *const ubuffer = (unsigned char *const) buffer;
 
         if (sodium_init() < 0)
                 LOG_RETURN_ERRNO(false, LOG_ERR, "Unable to  initialize libsodium!");

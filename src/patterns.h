@@ -38,21 +38,21 @@
 typedef struct la_pattern_s
 {
         kw_node_t node;
-        unsigned int num; // position of the pattern in the config file
+        int num; // position of the pattern in the config file
         struct la_rule_s *rule;
         char *string; /* already converted regex, doesn't contain tokens anymore */
         regex_t regex; /* compiled regex */
         la_property_t *host_property;
         kw_list_t *properties; /* list of la_property_t */
-        unsigned long int detection_count;
-        unsigned long int invocation_count;
+        long int detection_count;
+        long int invocation_count;
 } la_pattern_t;
 
 void assert_pattern_ffl(const la_pattern_t *pattern, const char *func,
-                const char *file, unsigned int line);
+                const char *file, int line);
 
-la_pattern_t *create_pattern(const char *string_from_configfile,
-                unsigned int num, la_rule_t *rule);
+la_pattern_t *create_pattern(const char *string_from_configfile, int num,
+                la_rule_t *rule);
 
 void free_pattern(la_pattern_t *pattern);
 

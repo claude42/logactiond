@@ -34,11 +34,23 @@
 
 void
 assert_property_ffl(const la_property_t *property, const char *func,
-                const char *file, unsigned int line)
+                const char *file, int line)
 {
         if (!property)
                 die_hard("%s:%u: %s: Assertion 'property' failed. ", file,
                                 line, func);
+        if (property->replacement_braces < 0)
+                die_hard("%s:%u: %s: Assertion 'property->replacement_braces >= 0' failed. ",
+                                file, line, func);
+        if (property->pos < 0)
+                die_hard("%s:%u: %s: Assertion 'property->pos >= 0' failed. ",
+                                file, line, func);
+        /*if (property->length < 2)
+                die_hard("%s:%u: %s: Assertion 'property->length >= 2' failed. ",
+                                file, line, func);*/
+        if (property->subexpression < 0)
+                die_hard("%s:%u: %s: Assertion 'property->subexpression >= 0' failed. ",
+                                file, line, func);
 }
 
 /*
@@ -49,7 +61,7 @@ assert_property_ffl(const la_property_t *property, const char *func,
  */
 
 size_t
-token_length(const char *string)
+token_length(const char *const string)
 {
         assert(string);
         la_vdebug("token_length(%s)", string);
@@ -76,7 +88,8 @@ token_length(const char *string)
  */
 
 la_property_t *
-get_property_from_property_list(const kw_list_t *property_list, const char *name)
+get_property_from_property_list(const kw_list_t *const property_list,
+                const char *const name)
 {
         assert(name);
         la_vdebug("get_property_from_property_list(%s)", name);
@@ -105,9 +118,10 @@ get_property_from_property_list(const kw_list_t *property_list, const char *name
  */
 
 const char *
-get_value_from_property_list(const kw_list_t *property_list, const char *name)
+get_value_from_property_list(const kw_list_t *const property_list,
+                const char *const name)
 {
-        const la_property_t *property = get_property_from_property_list(
+        const la_property_t *const property = get_property_from_property_list(
                                 property_list, name);
 
         return property ? property->value : NULL;
@@ -124,7 +138,7 @@ get_value_from_property_list(const kw_list_t *property_list, const char *name)
  * Will return -2 if non-alphanumeric character is detected.
  */
 static int
-copy_str_and_tolower(char *dest, const char *src,
+copy_str_and_tolower(char *const dest, const char *const src,
                 const char delim)
 {
         assert(dest); assert(src);
@@ -140,24 +154,24 @@ copy_str_and_tolower(char *dest, const char *src,
 
         dest[i] = '\0';
 
-        if (src[i] == delim)
-                return i;
-        else
+        if (src[i] != delim)
                 die_hard("Property name longer than %u characters.",
                                 MAX_PROP_SIZE);
+
+        return i;
 }
 
 /* 
  * Returns number of '(' in a string. Will not count '\('.
  */
 
-static unsigned int
-count_open_braces(const char *string)
+static int
+count_open_braces(const char *const string)
 {
         assert(string);
         la_vdebug("count_open_braces(%s)", string);
 
-        unsigned int result = 0;
+        int result = 0;
 
         for (const char *ptr = string; *ptr; ptr++)
         {
@@ -192,8 +206,8 @@ count_open_braces(const char *string)
  */
 
 la_property_t *
-create_property_from_token(const char *name, const unsigned int pos,
-                const la_rule_t *rule)
+create_property_from_token(const char *const name, const int pos,
+                const la_rule_t *const rule)
 {
         assert(name); assert(*name == '%');
         la_vdebug("create_property_from_token(%s)", name);
@@ -201,7 +215,7 @@ create_property_from_token(const char *name, const unsigned int pos,
         if (name[1] =='%') /* detected just "%%" */
                 return NULL;
 
-        la_property_t *result = xmalloc(sizeof *result);
+        la_property_t *const result = xmalloc(sizeof *result);
 
         result->length = copy_str_and_tolower(result->name, name+1, '%') + 2;
         assert(result->length > 2);
@@ -237,12 +251,12 @@ create_property_from_token(const char *name, const unsigned int pos,
 }
 
 la_property_t *
-create_property_from_config(const char *name, const char *value)
+create_property_from_config(const char *const name, const char *const value)
 {
         assert(name); assert(value);
         la_vdebug("create_property_from_config(%s, %s)", name, value);
 
-        la_property_t *result = xmalloc(sizeof *result);
+        la_property_t *const result = xmalloc(sizeof *result);
 
         copy_str_and_tolower(result->name, name, '\0');
 
@@ -251,7 +265,11 @@ create_property_from_config(const char *name, const char *value)
                 die_hard("Property value longer than %u charcters.",
                                 MAX_PROP_SIZE);
         result->replacement = NULL;
-        
+        result->replacement_braces = 0;
+        result->pos = 0;
+        result->length = 0;
+        result->subexpression = 0;
+
         assert_property(result);
         return result;
 }
@@ -261,16 +279,17 @@ create_property_from_config(const char *name, const char *value)
  */
 
 static la_property_t *
-duplicate_property(const la_property_t *property)
+duplicate_property(const la_property_t *const property)
 {
         assert_property(property);
         la_vdebug("duplicate_property(%s)", property->name);
-        la_property_t *result = xmalloc(sizeof *result);
+        la_property_t *const result = xmalloc(sizeof *result);
 
         string_copy(result->name, MAX_PROP_SIZE, property->name, 0);
         result->is_host_property = property->is_host_property;
         string_copy(result->value, MAX_PROP_SIZE, property->value, 0);
         result->replacement = xstrdup(property->replacement);
+        result->replacement_braces = property->replacement_braces;
         result->pos = property->pos;
         result->length = property->length;
         result->subexpression = property->subexpression;
@@ -280,12 +299,12 @@ duplicate_property(const la_property_t *property)
 }
 
 kw_list_t *
-dup_property_list(const kw_list_t *list)
+dup_property_list(const kw_list_t *const list)
 {
         assert_list(list);
         la_vdebug("dup_property_list()");
 
-        kw_list_t *result = xcreate_list();
+        kw_list_t *const result = xcreate_list();
 
         for (la_property_t *property = ITERATE_PROPERTIES(list);
                         (property = NEXT_PROPERTY(property));)
@@ -300,7 +319,7 @@ dup_property_list(const kw_list_t *list)
  */
 
 void
-free_property(la_property_t *property)
+free_property(la_property_t *const property)
 {
         if (!property)
                 return;
@@ -317,7 +336,7 @@ free_property(la_property_t *property)
  */
 
 void
-empty_property_list(kw_list_t *list)
+empty_property_list(kw_list_t *const list)
 {
         la_vdebug("free_property_list()");
         if (!list)
@@ -330,7 +349,7 @@ empty_property_list(kw_list_t *list)
 }
 
 void
-free_property_list(kw_list_t *list)
+free_property_list(kw_list_t *const list)
 {
         empty_property_list(list);
 

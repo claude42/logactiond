@@ -40,7 +40,7 @@
 
 void
 assert_address_ffl(const la_address_t *address, const char *func,
-                const char *file, unsigned int line)
+                const char *file, int line)
 {
         if (!address)
                 die_hard("%s:%u: %s: Assertion 'address' failed. ", file, line,
@@ -66,8 +66,8 @@ assert_address_ffl(const la_address_t *address, const char *func,
         }
 }
 
-unsigned int
-get_port(const la_address_t *address)
+int
+get_port(const la_address_t *const address)
 {
         assert_address(address);
 
@@ -95,7 +95,7 @@ get_port(const la_address_t *address)
  */
 
 const char *
-get_ip_version(const la_address_t *address)
+get_ip_version(const la_address_t *const address)
 {
 	if (address->sa.ss_family == AF_INET)
 		return "4";
@@ -144,10 +144,8 @@ cidr6_match(const struct in6_addr addr, const struct in6_addr net, const uint8_t
 	const uint32_t *a = addr.s6_addr32;
 	const uint32_t *n = net.s6_addr32;
 
-	int prefix_whole, prefix_incomplete;
-
-	prefix_whole = prefix >> 5;         // number of whole u32
-	prefix_incomplete = prefix & 0x1F;  // number of prefix in incomplete u32
+	int prefix_whole = prefix >> 5;         // number of whole u32
+	int prefix_incomplete = prefix & 0x1F;  // number of prefix in incomplete u32
 	if (prefix_whole)
 	{
 		if (memcmp(a, n, prefix_whole << 2))
@@ -165,7 +163,7 @@ cidr6_match(const struct in6_addr addr, const struct in6_addr net, const uint8_t
 }
 
 static bool
-cidr_match(const la_address_t *addr, const la_address_t *net)
+cidr_match(const la_address_t *const addr, const la_address_t *const net)
 {
         if (addr->sa.ss_family != net->sa.ss_family)
                 return false;
@@ -194,7 +192,7 @@ cidr_match(const la_address_t *addr, const la_address_t *net)
  */
 
 int
-adrcmp(const la_address_t *a1, const la_address_t *a2)
+adrcmp(const la_address_t *const a1, const la_address_t *const a2)
 {
         la_vdebug("adrcmp(%s, %s)", a1 ? a1->text : "NULL",
                         a2 ? a2->text : "NULL");
@@ -214,7 +212,7 @@ adrcmp(const la_address_t *a1, const la_address_t *a2)
                         struct sockaddr_in6 sa1 = *((struct sockaddr_in6 *) &a1->sa);
                         struct sockaddr_in6 sa2 = *((struct sockaddr_in6 *) &a2->sa);
                         if (!memcmp(&sa1.sin6_addr, &sa2.sin6_addr,
-                                                sizeof(struct in6_addr)))
+                                                sizeof (struct in6_addr)))
                                 return 0;
                 }
         }
@@ -238,7 +236,7 @@ adrcmp(const la_address_t *a1, const la_address_t *a2)
  */
 
 la_address_t *
-address_on_list(const la_address_t *address, const kw_list_t *list)
+address_on_list(const la_address_t *const address, const kw_list_t *const list)
 {
         if (!address)
                 return false;
@@ -262,10 +260,10 @@ address_on_list(const la_address_t *address, const kw_list_t *list)
  */
 
 la_address_t *
-address_on_list_sa(const struct sockaddr *sa, const socklen_t salen, const kw_list_t *list)
+address_on_list_sa(const struct sockaddr *const sa, const socklen_t salen, const kw_list_t *const list)
 {
-        la_address_t *address = create_address_sa(sa, salen);
-        la_address_t *result = address_on_list(address, list);
+        la_address_t *const address = create_address_sa(sa, salen);
+        la_address_t *const result = address_on_list(address, list);
         free(address);
         return result;
 }
@@ -275,10 +273,10 @@ address_on_list_sa(const struct sockaddr *sa, const socklen_t salen, const kw_li
  */
 
 la_address_t *
-address_on_list_str(const char *host, const kw_list_t *list)
+address_on_list_str(const char *const host, const kw_list_t *const list)
 {
-        la_address_t *address = create_address(host);
-        la_address_t *result = address_on_list(address, list);
+        la_address_t *const address = create_address(host);
+        la_address_t *const result = address_on_list(address, list);
         free(address);
         return result;
 }
@@ -288,7 +286,7 @@ address_on_list_str(const char *host, const kw_list_t *list)
  */
 
 la_address_t *
-create_address_sa(const struct sockaddr *sa, const socklen_t salen)
+create_address_sa(const struct sockaddr *const sa, const socklen_t salen)
 {
         assert(sa);
         la_vdebug("create_address_sa()");
@@ -296,7 +294,7 @@ create_address_sa(const struct sockaddr *sa, const socklen_t salen)
         if (sa->sa_family != AF_INET && sa->sa_family != AF_INET6)
                 LOG_RETURN(NULL, LOG_ERR, "Unsupported address family!");
 
-        la_address_t *result = xmalloc0(sizeof *result);
+        la_address_t *const result = xmalloc0(sizeof *result);
 
         memcpy(&(result->sa), sa, salen);
 
@@ -322,19 +320,20 @@ create_address_sa(const struct sockaddr *sa, const socklen_t salen)
  */
 
 la_address_t *
-create_address_port(const char *host, const in_port_t port)
+create_address_port(const char *const host, const in_port_t port)
 {
         assert(host);
         la_vdebug("create_address_port(%s)", host);
 
-        char *prefix_str = strchr(host, '/');
+        char *const prefix_str = strchr(host, '/');
         if (prefix_str)
                 *prefix_str = '\0';
 
         struct addrinfo *ai = NULL;
 
         char port_str[6];
-        snprintf(port_str, 6, "%u", port);
+        if (port)
+                snprintf(port_str, 6, "%u", port);
         const int r = getaddrinfo(host, port ? port_str : NULL, NULL, &ai);
 
         switch (r) {
@@ -397,7 +396,7 @@ create_address_port(const char *host, const in_port_t port)
 }
 
 la_address_t *
-create_address(const char *host)
+create_address(const char *const host)
 {
         return create_address_port(host, 0);
 }
@@ -407,14 +406,14 @@ create_address(const char *host)
  */
 
 la_address_t *
-dup_address(const la_address_t *address)
+dup_address(const la_address_t *const address)
 {
         assert_address(address);
         la_vdebug("dup_address(%s)", address->text);
 
-        la_address_t *result = xmalloc(sizeof *result);
+        la_address_t *const result = xmalloc(sizeof *result);
 
-        memcpy(&(result->sa), &(address->sa), sizeof(struct sockaddr_storage));
+        memcpy(&(result->sa), &(address->sa), sizeof (struct sockaddr_storage));
         result->prefix = address->prefix;
         string_copy(result->text, MAX_ADDR_TEXT_SIZE + 1, address->text, 0);
 
@@ -427,7 +426,7 @@ dup_address(const la_address_t *address)
  */
 
 void
-free_address(la_address_t *address)
+free_address(la_address_t *const address)
 {
         if (!address)
                 return;
@@ -442,7 +441,7 @@ free_address(la_address_t *address)
  */
 
 void
-empty_address_list(kw_list_t *list)
+empty_address_list(kw_list_t *const list)
 {
         la_vdebug("free_address_list()");
         if (!list)
@@ -454,7 +453,7 @@ empty_address_list(kw_list_t *list)
 }
 
 void
-free_address_list(kw_list_t *list)
+free_address_list(kw_list_t *const list)
 {
         empty_address_list(list);
 

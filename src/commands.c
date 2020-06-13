@@ -59,21 +59,70 @@ typedef struct la_meta_command_s
 
 static kw_list_t *meta_list;
 
+static la_command_t * create_manual_command_from_template(
+                const la_command_t *const template,
+                const la_address_t *const address, const char *const from);
+
 void
 assert_command_ffl(const la_command_t *command, const char *func,
-                const char *file, unsigned int line)
+                const char *file, int line)
 {
         if (!command)
                 die_hard("%s:%u: %s: Assertion 'command' failed. ", file, line, func);
         if (!command->name)
                 die_hard("%s:%u: %s: Assertion 'command->name' failed.", file,
                                 line, func);
+
+        assert_list_ffl(command->begin_properties, func, file, line);
+        if (command->n_begin_properties < 0)
+                die_hard("%s:%u: %s: Assertion 'command->n_begin_properties >= 0' failed. ",
+                                file, line, func);
+        if (command->n_begin_properties != list_length(command->begin_properties))
+                die_hard("%s:%u: %s: Assertion 'command->n_begin_properties == list_length(command->begin_properties failed.",
+                                file, line, func);
+
+        assert_list_ffl(command->end_properties, func, file, line );
+        if (command->n_end_properties < 0)
+                die_hard("%s:%u: %s: Assertion 'command->n_end_properties >= 0' failed. ",
+                                file, line, func);
+        if (command->n_end_properties != list_length(command->end_properties))
+                die_hard("%s:%u: %s: Assertion 'command->n_end_properties == list_length(command->end_properties failed.",
+                                file, line, func);
+
         assert_rule_ffl(command->rule, func, file, line);
+        if (command->pattern)
+                assert_pattern_ffl(command->pattern, func, file, line);
+        if (command->pattern_properties)
+                assert_list_ffl(command->pattern_properties, func, file, line);
+        if (command->address)
+                assert_address_ffl(command->address, func, file, line);
+
+        if (command->factor < 0)
+                die_hard("%s:%u: %s: Assertion 'command->factor >= 0' failed. ",
+                                file, line, func);
+
+        if (command->n_triggers < 0)
+                die_hard("%s:%u: %s: Assertion 'command->n_n_triggers >= 0' failed. ",
+                                file, line, func);
+
         if (!command->begin_string)
                 die_hard("%s:%u: %s: Assertion 'command->begin_string' "
                                 "failed.", file, line, func);
+
+
+
         assert_list_ffl(command->begin_properties, func, file, line);
         assert_list_ffl(command->end_properties, func, file, line);
+
+        if (command->duration < -1)
+                die_hard("%s:%u: %s: Assertion 'command->duration >= -1' failed. ",
+                                file, line, func);
+
+        if (strcmp(command->rule->name, command->rule_name))
+                die_hard("%s:%u: %s: Assertion 'strcmp(command->rule->name, command->rule_name)' failed. ",
+                                file, line, func);
+
+
 }
 
 /* Checks wether the specified property matches one of the special names and
@@ -86,7 +135,7 @@ assert_command_ffl(const la_command_t *command, const char *func,
  */
 
 static const char*
-check_for_special_names(const la_command_t *command, const la_property_t *action_property)
+check_for_special_names(const la_command_t *const command, const la_property_t *const action_property)
 {
         assert_command(command), assert_property(action_property);
         la_vdebug("check_for_special_names(%s)", action_property->name);
@@ -125,8 +174,8 @@ check_for_special_names(const la_command_t *command, const la_property_t *action
  */
 
 static const char *
-get_value_for_action_property(const la_command_t *command,
-                const la_property_t *action_property)
+get_value_for_action_property(const la_command_t *const command,
+                const la_property_t *const action_property)
 {
         assert_command(command); assert_property(action_property);
         la_vdebug("get_value_for_action_property(%s)", action_property->name);
@@ -160,7 +209,7 @@ get_value_for_action_property(const la_command_t *command,
  */
 
 static void
-convert_command(la_command_t *command, const la_commandtype_t type)
+convert_command(la_command_t *const command, const la_commandtype_t type)
 {
         assert_command(command);
         la_debug("convert_command(%s, %s)", command->name,
@@ -172,7 +221,7 @@ convert_command(la_command_t *command, const la_commandtype_t type)
                          command->end_string)))
                 return;
 
-        const char *source_string = (type == LA_COMMANDTYPE_BEGIN) ?
+        const char *const source_string = (type == LA_COMMANDTYPE_BEGIN) ?
                 command->begin_string : command->end_string;
         const char *src_ptr = source_string;
         size_t dst_len = 2 * xstrlen(source_string);
@@ -196,7 +245,7 @@ convert_command(la_command_t *command, const la_commandtype_t type)
                                 action_property = NEXT_PROPERTY(action_property);
                                 if (!action_property)
                                         die_hard("Ran out of properties?!?");
-                                const char *repl =
+                                const char *const repl =
                                         get_value_for_action_property(command,
                                                         action_property);
                                 if (repl)
@@ -251,7 +300,7 @@ convert_command(la_command_t *command, const la_commandtype_t type)
 }
 
 void
-convert_both_commands(la_command_t *command)
+convert_both_commands(la_command_t *const command)
 {
         convert_command(command, LA_COMMANDTYPE_BEGIN);
         convert_command(command, LA_COMMANDTYPE_END);
@@ -297,7 +346,7 @@ exec_command(const la_command_t *command, const la_commandtype_t type)
         }
 }
 
-unsigned int
+int
 meta_list_length(void)
 {
         if (!meta_list)
@@ -308,7 +357,7 @@ meta_list_length(void)
 
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
 static void
-free_meta_command(meta_command_t *meta_command)
+free_meta_command(meta_command_t *const meta_command)
 {
         la_debug("free_meta_command()");
         assert(meta_command);
@@ -333,7 +382,7 @@ free_meta_list(void)
 }
 
 static meta_command_t *
-create_meta_command(const la_command_t *command)
+create_meta_command(const la_command_t *const command)
 {
         assert_command(command); assert(command->address);
         la_debug("create_meta_command()");
@@ -356,7 +405,7 @@ create_meta_command(const la_command_t *command)
  */
 
 static meta_command_t *
-find_on_meta_list(const la_command_t *command)
+find_on_meta_list(const la_command_t *const command)
 {
         assert_command(command); assert(command->address);
         la_debug("find_on_meta_list(%s)", command->name);
@@ -379,7 +428,7 @@ find_on_meta_list(const la_command_t *command)
                 else
                 {
                         /* Remove expired commands from meta list */
-                        meta_command_t *tmp = list_command;
+                        meta_command_t *const tmp = list_command;
                         list_command = NEXT_META_COMMAND(list_command);
                         remove_node((kw_node_t *) tmp);
                         free_meta_command(tmp);
@@ -398,7 +447,7 @@ find_on_meta_list(const la_command_t *command)
  */
 
 static int
-check_meta_list(const la_command_t *command, const int set_factor)
+check_meta_list(const la_command_t *const command, const int set_factor)
 {
         assert_command(command); assert(command->address);
         la_debug("check_meta_list(%s, %u)", command->address->text,
@@ -429,7 +478,7 @@ check_meta_list(const la_command_t *command, const int set_factor)
                 }
                 else
                 {
-                        int new_factor = set_factor ? set_factor :
+                        const int new_factor = set_factor ? set_factor :
                                 meta_command->factor *
                                 command->rule->meta_factor;
                         if (command->duration * new_factor <
@@ -452,19 +501,19 @@ check_meta_list(const la_command_t *command, const int set_factor)
 }
 
 static void
-incr_invocation_counts(la_command_t *command)
+incr_invocation_counts(la_command_t *const command)
 {
         assert_command(command);
-        if (command->rule->invocation_count < ULONG_MAX)
+        if (command->rule->invocation_count < LONG_MAX)
                 command->rule->invocation_count++;
-        if (command->pattern->invocation_count < ULONG_MAX)
+        if (command->pattern->invocation_count < LONG_MAX)
                 command->pattern->invocation_count++;
 
         command->rule->queue_count++;
 }
 
 static void
-log_trigger(const la_command_t *command, const char *from)
+log_trigger(const la_command_t *const command, const char *const from)
 {
         if (from)
         {
@@ -520,9 +569,9 @@ log_trigger(const la_command_t *command, const char *from)
  */
 
 void
-trigger_manual_command(const la_address_t *address,
-                const la_command_t *template, const time_t end_time,
-                const int factor, const char *from,
+trigger_manual_command(const la_address_t *const address,
+                const la_command_t *const template, const time_t end_time,
+                const int factor, const char *const from,
                 const bool suppress_logging)
 {
         assert_address(address); assert_command(template);
@@ -538,7 +587,7 @@ trigger_manual_command(const la_address_t *address,
         if (address_on_list(address, la_config->ignore_addresses))
                 LOG_RETURN(, LOG_INFO, "Host: %s, manual trigger ignored.", address->text);
 
-        const la_command_t *tmp = find_end_command(address);
+        const la_command_t *const tmp = find_end_command(address);
         if (tmp)
                 LOG_RETURN_VERBOSE(, LOG_INFO, "Host: %s, ignored, action \"%s\" "
                                 "%s%s already "
@@ -548,7 +597,7 @@ trigger_manual_command(const la_address_t *address,
                                 from ? from : "",
                                 tmp->rule_name);
 
-        la_command_t *command = create_manual_command_from_template(template, 
+        la_command_t *const command = create_manual_command_from_template(template, 
                         address, from);
         if (!command)
                 LOG_RETURN(, LOG_ERR, "IP address doesn't match what requirements of action!");
@@ -582,7 +631,7 @@ trigger_manual_command(const la_address_t *address,
  */
 
 void
-trigger_command(la_command_t *command)
+trigger_command(la_command_t *const command)
 {
         assert_command(command);
         la_debug("trigger_command(%s, %d)", command->name, command->duration);
@@ -594,7 +643,7 @@ trigger_command(la_command_t *command)
          * template) is still active */
         if (command->address)
         {
-                const la_command_t *tmp = find_end_command(command->address);
+                const la_command_t *const tmp = find_end_command(command->address);
                 if (tmp)
                         LOG_RETURN_VERBOSE(, LOG_INFO, "Host: %s, ignored, action "
                                         "\"%s\" already active (triggered by "
@@ -619,7 +668,7 @@ trigger_command(la_command_t *command)
 }
 
 void
-trigger_command_from_blacklist(la_command_t *command)
+trigger_command_from_blacklist(la_command_t *const command)
 {
         trigger_command(command);
         command->blacklist = true;
@@ -628,7 +677,7 @@ trigger_command_from_blacklist(la_command_t *command)
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
 
 static void
-log_end_trigger(const la_command_t *command)
+log_end_trigger(const la_command_t *const command)
 {
         if (command->is_template)
                 la_log(LOG_INFO, "Disabling rule \"%s\".", command->rule_name);
@@ -651,7 +700,7 @@ log_end_trigger(const la_command_t *command)
  */
 
 void
-trigger_end_command(const la_command_t *command, const bool suppress_logging)
+trigger_end_command(const la_command_t *const command, const bool suppress_logging)
 {
         /* Don't assert_command() here, as after a reload some commands might
          * not have a rule attached to them anymore */
@@ -679,20 +728,20 @@ trigger_end_command(const la_command_t *command, const bool suppress_logging)
  */
 
 
-static unsigned int
-scan_action_tokens(kw_list_t *property_list, const char *string)
+static int
+scan_action_tokens(kw_list_t *const property_list, const char *const string)
 {
         assert_list(property_list); assert(string);
         la_debug("scan_action_tokens(%s)", string);
 
         const char *ptr = string;
-        unsigned int n_tokens = 0;
+        int n_tokens = 0;
 
         while (*ptr)
         {
                 if (*ptr == '%')
                 {
-                        la_property_t *new_prop = create_property_from_token(
+                        la_property_t *const new_prop = create_property_from_token(
                                         ptr, ptr-string, NULL);
 
                         if (new_prop)
@@ -722,12 +771,12 @@ scan_action_tokens(kw_list_t *property_list, const char *string)
  * content ever? */
 
 static la_command_t *
-dup_command(const la_command_t *command)
+dup_command(const la_command_t *const command)
 {
         assert_command(command);
         la_vdebug("dup_command(%s)", command->name);
 
-        la_command_t *result = xmalloc(sizeof *result);
+        la_command_t *const result = xmalloc(sizeof *result);
 
         result->id = command->id;
 
@@ -757,7 +806,7 @@ dup_command(const la_command_t *command)
 /* FIXME: logic backwards, will fail if ss_family is not AF_INET or AF_INET6 */
 
 static bool
-has_correct_address(const la_command_t *template, const la_address_t *address)
+has_correct_address(const la_command_t *const template, const la_address_t *const address)
 {
         if (!address)
         {
@@ -784,8 +833,9 @@ has_correct_address(const la_command_t *template, const la_address_t *address)
  */
 
 la_command_t *
-create_command_from_template(const la_command_t *template, la_pattern_t *pattern,
-                const la_address_t *address)
+create_command_from_template(const la_command_t *const template,
+                la_pattern_t *const pattern,
+                const la_address_t *const address)
 {
         assert_command(template); assert_pattern(pattern);
         assert_list(pattern->properties);
@@ -794,7 +844,7 @@ create_command_from_template(const la_command_t *template, la_pattern_t *pattern
         if (!has_correct_address(template, address))
                 return NULL;
 
-        la_command_t *result = dup_command(template);
+        la_command_t *const result = dup_command(template);
 
         result->pattern = pattern;
         result->pattern_properties = dup_property_list(pattern->properties);
@@ -810,15 +860,15 @@ create_command_from_template(const la_command_t *template, la_pattern_t *pattern
 }
 
 static
-bool is_local_address(const char *address)
+bool is_local_address(const char *const address)
 {
         return (!address || !strcmp("127.0.0.1", address) ||
                         !strcmp("::1", address) || !strcmp(LA_FIFO, address));
 }
 
-la_command_t *
-create_manual_command_from_template(const la_command_t *template,
-                const la_address_t *address, const char *from)
+static la_command_t *
+create_manual_command_from_template(const la_command_t *const template,
+                const la_address_t *const address, const char *const from)
 {
         assert_command(template);
         la_debug("create_manual_command_from_template(%s)", template->name);
@@ -826,7 +876,7 @@ create_manual_command_from_template(const la_command_t *template,
         if (!has_correct_address(template, address))
                 return NULL;
 
-        la_command_t *result = dup_command(template);
+        la_command_t *const result = dup_command(template);
 
         result->pattern = NULL;
         result->pattern_properties = NULL;
@@ -856,14 +906,14 @@ create_manual_command_from_template(const la_command_t *template,
  */
 
 la_command_t *
-create_template(const char *name, la_rule_t *rule, const char *begin_string,
-                const char *end_string, const unsigned int duration,
-                const la_need_host_t need_host)
+create_template(const char *const name, la_rule_t *const rule,
+                const char *const begin_string, const char *const end_string,
+                const int duration, const la_need_host_t need_host)
 {
         assert(name); assert_rule(rule); assert(begin_string);
         la_debug("create_template(%s, %d)", name, duration);
 
-        la_command_t *result = xmalloc(sizeof *result);
+        la_command_t *const result = xmalloc(sizeof *result);
 
         result->name = xstrdup(name);
         result->id = ++id_counter;
@@ -909,7 +959,7 @@ create_template(const char *name, la_rule_t *rule, const char *begin_string,
  */
 
 void
-free_command(la_command_t *command)
+free_command(la_command_t *const command)
 {
         if (!command)
                 return;
@@ -935,7 +985,7 @@ free_command(la_command_t *command)
  */
 
 void
-free_command_list(kw_list_t *list)
+free_command_list(kw_list_t *const list)
 {
         la_vdebug("free_command_list()");
         if (!list)

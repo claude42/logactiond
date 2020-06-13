@@ -34,7 +34,7 @@
 
 void
 assert_source_ffl(const la_source_t *source, const char *func,
-                const char *file, unsigned int line)
+                const char *file, int line)
 {
         if (!source)
                 die_hard("%s:%u: %s: Assertion 'source' failed. ", file, line, func);
@@ -45,7 +45,7 @@ assert_source_ffl(const la_source_t *source, const char *func,
 
 void
 assert_source_group_ffl(const la_source_group_t *source_group, const char *func,
-                const char *file, unsigned int line)
+                const char *file, int line)
 {
         if (!source_group)
                 die_hard("%s:%u: %s: Assertion 'source_group' failed. ", file, line, func);
@@ -62,8 +62,8 @@ assert_source_group_ffl(const la_source_group_t *source_group, const char *func,
  */
 
 void
-handle_log_line(const la_source_t *source, const char *line,
-                const char *systemd_unit)
+handle_log_line(const la_source_t *const source, const char *const line,
+                const char *const systemd_unit)
 {
         assert(line); assert_source(source);
         /* Don't do this otherwise this will end in an endless "log-loop" when
@@ -96,7 +96,7 @@ handle_log_line(const la_source_t *source, const char *line,
  */
 
 bool
-handle_new_content(const la_source_t *source)
+handle_new_content(const la_source_t *const source)
 {
         assert_source(source); assert(source->file);
         la_vdebug("handle_new_content(%s)", source->location);
@@ -118,12 +118,13 @@ handle_new_content(const la_source_t *source)
 }
 
 la_source_group_t *
-create_source_group(const char *name, const char *glob_pattern, const char *prefix)
+create_source_group(const char *const name, const char *const glob_pattern,
+                const char *const prefix)
 {
         assert(name);
         la_debug("create_source_group(%s, %s, %s)", name, glob_pattern, prefix);
 
-        la_source_group_t *result = xmalloc(sizeof *result);
+        la_source_group_t *const result = xmalloc(sizeof *result);
         result->name = xstrdup(name);
         result->glob_pattern = xstrdup(glob_pattern);
         result->prefix = xstrdup(prefix);
@@ -141,12 +142,12 @@ create_source_group(const char *name, const char *glob_pattern, const char *pref
  */
 
 la_source_t *
-create_source(la_source_group_t *source_group, const char *location)
+create_source(la_source_group_t *const source_group, const char *const location)
 {
         assert_source_group(source_group); assert(location);
         la_debug("create_source(%s, %s)", source_group->name, location);
 
-        la_source_t *result = xmalloc(sizeof *result);
+        la_source_t *const result = xmalloc(sizeof *result);
         result->source_group = source_group;
         result->location = xstrdup(location);
         result->file = NULL;
@@ -168,7 +169,7 @@ create_source(la_source_group_t *source_group, const char *location)
  */
 
 void
-free_source(la_source_t *source)
+free_source(la_source_t *const source)
 {
         la_vdebug("free_source()");
         if (!source)
@@ -182,7 +183,7 @@ free_source(la_source_t *source)
 }
 
 static void
-free_source_list(kw_list_t *list)
+free_source_list(kw_list_t *const list)
 {
         la_vdebug("free_source_list()");
 
@@ -198,7 +199,7 @@ free_source_list(kw_list_t *list)
 }
 
 void
-free_source_group(la_source_group_t *source_group)
+free_source_group(la_source_group_t *const source_group)
 {
         if (!source_group)
                 return;
@@ -229,7 +230,7 @@ free_source_group(la_source_group_t *source_group)
 }
 
 void
-free_source_group_list(kw_list_t *list)
+free_source_group_list(kw_list_t *const list)
 {
         la_vdebug("free_source_group_list()");
 
@@ -249,7 +250,7 @@ free_source_group_list(kw_list_t *list)
  */
 
 la_source_group_t
-*find_source_group_by_location(const char *location)
+*find_source_group_by_location(const char *const location)
 {
         assert(location);
         assert(la_config); assert_list(la_config->source_groups);
@@ -272,7 +273,7 @@ la_source_group_t
  */
 
 la_source_group_t
-*find_source_group_by_name(const char *name)
+*find_source_group_by_name(const char *const name)
 {
         assert(name);
         assert(la_config); assert_list(la_config->source_groups);

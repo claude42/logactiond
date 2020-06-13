@@ -46,7 +46,7 @@
 static int inotify_fd = 0;
 
 static void
-la_vdebug_inotify_event(const struct inotify_event *event, const uint32_t monitored)
+la_vdebug_inotify_event(const struct inotify_event *const event, const uint32_t monitored)
 {
         assert(event);
         const char *str = "unkown";
@@ -87,7 +87,7 @@ la_vdebug_inotify_event(const struct inotify_event *event, const uint32_t monito
  */
 
 void
-unwatch_source_inotify(la_source_t *source)
+unwatch_source_inotify(la_source_t *const source)
 {
         assert_source(source); assert(inotify_fd != 0);
         la_debug("unwatch_source_inotify(%s)", source->location);
@@ -117,7 +117,7 @@ unwatch_source_inotify(la_source_t *source)
  */
 
 static la_source_t *
-find_source_by_parent_wd(const int parent_wd, const char *file_name)
+find_source_by_parent_wd(const int parent_wd, const char *const file_name)
 {
         assert(parent_wd); assert(file_name);
         assert(la_config);
@@ -180,7 +180,7 @@ find_source_by_file_wd(const int file_wd)
  */
 
 static void
-watched_file_created(la_source_t *source)
+watched_file_created(la_source_t *const source)
 {
         assert_source(source);
 
@@ -203,7 +203,7 @@ watched_file_created(la_source_t *source)
  */
 
 static void
-watched_file_moved_from(la_source_t *source)
+watched_file_moved_from(la_source_t *const source)
 {
         assert_source(source);
 
@@ -219,7 +219,7 @@ watched_file_moved_from(la_source_t *source)
  */
 
 static void
-watched_file_moved_to(la_source_t *source)
+watched_file_moved_to(la_source_t *const source)
 {
         assert_source(source);
 
@@ -239,7 +239,7 @@ watched_file_moved_to(la_source_t *source)
  */
 
 static void
-watched_file_deleted(la_source_t *source)
+watched_file_deleted(la_source_t *const source)
 {
         assert_source(source);
 
@@ -251,7 +251,7 @@ watched_file_deleted(la_source_t *source)
 
 
 static void
-handle_inotify_directory_event(const struct inotify_event *event)
+handle_inotify_directory_event(const struct inotify_event *const event)
 {
         assert(event);
         la_vdebug("handle_inotify_directory_event()");
@@ -290,13 +290,13 @@ handle_inotify_directory_event(const struct inotify_event *event)
 
 
 static void
-handle_inotify_file_event(const struct inotify_event *event)
+handle_inotify_file_event(const struct inotify_event *const event)
 {
         assert(event);
         la_vdebug("handle_inotify_file_event()");
         la_vdebug_inotify_event(event, IN_MODIFY);
 
-        la_source_t *source = find_source_by_file_wd(event->wd);
+        la_source_t *const source = find_source_by_file_wd(event->wd);
         if (!source)
                 /* as we're monitoring  directory, lots of file events for
                  * non-watched files will be triggered. So this is the "normal
@@ -311,7 +311,7 @@ handle_inotify_file_event(const struct inotify_event *event)
 }
 
 static void
-handle_inotify_event(const struct inotify_event *event)
+handle_inotify_event(const struct inotify_event *const event)
 {
         assert(event);
         la_vdebug("handle_inotify_event()");
@@ -327,7 +327,7 @@ handle_inotify_event(const struct inotify_event *event)
 }
 
 static void
-cleanup_watching_inotify(void *arg)
+cleanup_watching_inotify(void *const arg)
 {
         la_debug("cleanup_watching_inotify()");
 
@@ -342,17 +342,15 @@ cleanup_watching_inotify(void *arg)
  */
 
 static void *
-watch_forever_inotify(void *ptr)
+watch_forever_inotify(void *const ptr)
 {
         la_debug("watch_forever_inotify()");
-
-        char buffer[BUF_LEN];
-        struct inotify_event *event;
 
         pthread_cleanup_push(cleanup_watching_inotify, NULL);
 
         for (;;)
         {
+                char buffer[BUF_LEN];
                 const ssize_t num_read = read(inotify_fd, buffer, BUF_LEN);
                 if (shutdown_ongoing)
                 {
@@ -368,6 +366,7 @@ watch_forever_inotify(void *ptr)
                 }
                 else
                 {
+                        struct inotify_event *event = NULL;
                         for (int i = 0; i <  num_read; i += EVENT_SIZE + event->len)
                         {
                                 event = (struct inotify_event *) &buffer[i];
@@ -390,7 +389,7 @@ watch_forever_inotify(void *ptr)
  */
 
 void
-watch_source_inotify(la_source_t *source)
+watch_source_inotify(la_source_t *const source)
 {
         assert_source(source); assert(inotify_fd != 0);
 
@@ -403,8 +402,8 @@ watch_source_inotify(la_source_t *source)
         if (!source->parent_wd)
         {
                 /* all praise basename/dirname */
-                char *tmp = xstrdup(source->location);
-                char *parent_dir = dirname(tmp);
+                char *const tmp = xstrdup(source->location);
+                const char *const parent_dir = dirname(tmp);
 
                 source->parent_wd = inotify_add_watch(inotify_fd,
                                 parent_dir, IN_CREATE | IN_DELETE |

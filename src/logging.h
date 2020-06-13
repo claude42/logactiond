@@ -30,17 +30,17 @@
 // verbose debugging loglevel
 #define LOG_VDEBUG (LOG_DEBUG+1)
 
-void log_message(unsigned int priority, const char *fmt, va_list gp, const char *add);
+void log_message(int priority, const char *fmt, va_list gp, const char *add);
 
 void la_debug(const char *fmt, ...);
 
 void la_vdebug(const char *fmt, ...);
 
-void la_log_errno(unsigned int priority, const char *fmt, ...);
+void la_log_errno(int priority, const char *fmt, ...);
 
-void la_log_verbose(unsigned int priority, const char *fmt, ...);
+void la_log_verbose(int priority, const char *fmt, ...);
 
-void la_log(unsigned int priority, const char *fmt, ...);
+void la_log(int priority, const char *fmt, ...);
 
 void die_hard(const char *fmt, ...);
 

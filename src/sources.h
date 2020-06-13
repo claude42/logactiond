@@ -97,10 +97,10 @@ struct la_source_s
 };
 
 void assert_source_ffl(const la_source_t *source, const char *func,
-                const char *file, unsigned int line);
+                const char *file, int line);
 
 void assert_source_group_ffl(const la_source_group_t *source_group, const char *func,
-                const char *file, unsigned int line);
+                const char *file, int line);
 
 void handle_log_line(const la_source_t *source, const char *line, const char *systemd_unit);
 

@@ -41,11 +41,12 @@
 #include "patterns.h"
 #include "rules.h"
 #include "sources.h"
+#include "logging.h"
 
 la_runtype_t run_type = LA_UTIL_FOREGROUND;
-unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
+int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
 bool log_verbose = false;
-unsigned int id_counter = 0;
+int id_counter = 0;
 
 static char *cfg_filename = NULL;
 static char *log_filename = NULL;

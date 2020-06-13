@@ -62,12 +62,12 @@
 char *cfg_filename = NULL;
 char *pid_file = NULL;
 la_runtype_t run_type = LA_DAEMON_BACKGROUND;
-unsigned int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
+int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
 bool log_verbose = false;
-unsigned int id_counter = 0;
+int id_counter = 0;
 char *run_uid_s = NULL;
-unsigned int status_monitoring = 0;
-char *saved_state = NULL;
+int status_monitoring = 0;
+const char *saved_state = NULL;
 bool create_backup_file = false;
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
         atomic_bool shutdown_ongoing = false;
@@ -559,7 +559,7 @@ main(int argc, char *argv[])
 
         unload_la_config();
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
-        free_meta_list();
+        free_meta_list();  // TODO: probably should go somewhere else
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
 
         remove_pidfile();

@@ -93,7 +93,7 @@ update_queue_count_numbers(void)
  */
 
 la_command_t *
-find_end_command(const la_address_t *address)
+find_end_command(const la_address_t *const address)
 {
         la_debug("find_end_command()");
 
@@ -134,7 +134,7 @@ find_end_command(const la_address_t *address)
  */
 
 int
-remove_and_trigger(la_address_t *address)
+remove_and_trigger(la_address_t *const address)
 {
         assert_address(address);
         la_debug("remove_and_trigger()");
@@ -192,11 +192,11 @@ empty_end_queue(void)
         if (!shutdown_ongoing && end_queue_thread)
                 xpthread_mutex_lock(&end_queue_mutex);
 
-                for (la_command_t *tmp; (tmp = REM_COMMANDS_HEAD(end_queue));)
-                {
-                        trigger_end_command(tmp, true);
-                        free_command(tmp);
-                }
+        for (la_command_t *tmp; (tmp = REM_COMMANDS_HEAD(end_queue));)
+        {
+                trigger_end_command(tmp, true);
+                free_command(tmp);
+        }
 
         if (!shutdown_ongoing && end_queue_thread)
         {
@@ -277,7 +277,7 @@ consume_end_queue(void *ptr)
                                 pthread_exit(NULL);
                         }
 
-                        la_command_t *command =
+                        la_command_t *const command =
                                 (la_command_t *) end_queue->head.succ;
 
                         if (is_list_empty(end_queue))
@@ -340,7 +340,7 @@ start_end_queue_thread(void)
  */
 
 static void
-set_end_time(la_command_t *command, const time_t manual_end_time)
+set_end_time(la_command_t *const command, const time_t manual_end_time)
 {
         assert_command(command);
         assert(command->end_string);
@@ -370,7 +370,7 @@ set_end_time(la_command_t *command, const time_t manual_end_time)
  */
 
 void
-enqueue_end_command(la_command_t *end_command, const time_t manual_end_time)
+enqueue_end_command(la_command_t *const end_command, const time_t manual_end_time)
 {
         assert_command(end_command); assert(end_command->end_string);
         la_debug("enqueue_end_command(%s, %u)", end_command->end_string,

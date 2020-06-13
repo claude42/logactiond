@@ -59,10 +59,11 @@ pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
  */
 
 static const char*
-config_get_string_or_null(const config_setting_t *setting, const char *name)
+config_get_string_or_null(const config_setting_t *const setting,
+                const char *const name)
 {
         assert(setting); assert(name);
-        const char* result;
+        const char *result;
         if (!config_setting_lookup_string(setting, name, &result))
                 result = NULL;
 
@@ -75,8 +76,8 @@ config_get_string_or_null(const config_setting_t *setting, const char *name)
  */
 
 static int
-config_get_unsigned_int_or_negative(const config_setting_t *setting,
-                const char *name)
+config_get_unsigned_int_or_negative(const config_setting_t *const setting,
+                const char *const name)
 {
         assert(setting); assert(name);
         int result;
@@ -91,10 +92,11 @@ config_get_unsigned_int_or_negative(const config_setting_t *setting,
  */
 
 static const char*
-config_get_string_or_die(const config_setting_t *setting, const char *name)
+config_get_string_or_die(const config_setting_t *const setting,
+                const char *const name)
 {
         assert(setting); assert(name);
-        const char* result = config_get_string_or_null(setting, name);
+        const char *const result = config_get_string_or_null(setting, name);
 
         if (!result)
                 die_hard("Config element %s missing!", name);
@@ -108,14 +110,14 @@ config_get_string_or_die(const config_setting_t *setting, const char *name)
  */
 
 static const config_setting_t *
-config_setting_lookup_or_die(const config_setting_t *setting,
-                const char *path)
+config_setting_lookup_or_die(const config_setting_t *const setting,
+                const char *const path)
 {
         assert(setting); assert(path);
-        const config_setting_t *result;
         /* TODO: not sure why config_setting_t * (without const) is required
          * here but nowhere else */
-        result = config_setting_lookup((config_setting_t *) setting, path);
+        const config_setting_t *const result = config_setting_lookup(
+                                (config_setting_t *) setting, path);
         if (!result)
                 die_hard("Config element %s missing!", path);
 
@@ -128,7 +130,7 @@ config_setting_lookup_or_die(const config_setting_t *setting,
  */
 
 static const config_setting_t *
-get_rule(const char *rule_name)
+get_rule(const char *const rule_name)
 {
         assert(rule_name);
         assert(la_config);
@@ -146,7 +148,7 @@ get_rule(const char *rule_name)
  */
 
 static const config_setting_t *
-get_action(const char *action_name)
+get_action(const char *const action_name)
 {
         assert(action_name);
         assert(la_config);
@@ -164,21 +166,20 @@ get_action(const char *action_name)
  */
 
 static config_setting_t *
-get_source(const char *source)
+get_source(const char *const source)
 {
-        assert(la_config);
-
-        config_setting_t *sources_section;
-        config_setting_t *result;
-
         if (!source)
                 return NULL;
 
-        sources_section = config_lookup(&la_config->config_file, LA_SOURCES_LABEL);
+        assert(la_config);
+
+        config_setting_t *const sources_section =
+                config_lookup(&la_config->config_file, LA_SOURCES_LABEL);
         if (!sources_section)
                 die_hard(LA_SOURCES_LABEL " section missing!");
 
-        result = config_setting_lookup(sources_section, source);
+        config_setting_t *result = config_setting_lookup(sources_section,
+                        source);
 
         return  result;
 }
@@ -189,15 +190,14 @@ get_source(const char *source)
  */
 
 static config_setting_t *
-get_source_uc_rule_or_rule(const config_setting_t *rule,
-                const config_setting_t *uc_rule)
+get_source_uc_rule_or_rule(const config_setting_t *const rule,
+                const config_setting_t *const uc_rule)
 {
         assert(uc_rule);
 
-        config_setting_t *result;
-
-        result = get_source(config_get_string_or_null(uc_rule,
-                                LA_RULE_SOURCE_LABEL));
+        config_setting_t *result = get_source(config_get_string_or_null(
+                                        uc_rule,
+                                        LA_RULE_SOURCE_LABEL));
 
         if (!result && rule)
                 result = get_source(config_get_string_or_null(rule,
@@ -216,13 +216,13 @@ get_source_uc_rule_or_rule(const config_setting_t *rule,
  */
 
 static const char *
-get_source_name(const config_setting_t *rule, const config_setting_t *uc_rule)
+get_source_name(const config_setting_t *const rule,
+                const config_setting_t *const uc_rule)
 {
         assert(uc_rule);
 
-        const char *result;
-
-        result = config_get_string_or_null(uc_rule, LA_RULE_SOURCE_LABEL);
+        const char *result = config_get_string_or_null(uc_rule,
+                        LA_RULE_SOURCE_LABEL);
 
         if (!result && rule)
                 result = config_get_string_or_null(rule, LA_RULE_SOURCE_LABEL);
@@ -240,13 +240,15 @@ get_source_name(const config_setting_t *rule, const config_setting_t *uc_rule)
  */
 
 static const char *
-get_source_prefix(const config_setting_t *rule, const config_setting_t *uc_rule)
+get_source_prefix(const config_setting_t *const rule,
+                const config_setting_t *const uc_rule)
 {
         assert(uc_rule);
 
-        const char *result;
-        const config_setting_t *source_def = get_source_uc_rule_or_rule(rule, uc_rule);
+        const config_setting_t *const source_def =
+                get_source_uc_rule_or_rule(rule, uc_rule);
 
+        const char *result;
         if (!config_setting_lookup_string(source_def, LA_SOURCE_PREFIX, &result))
                 result = NULL;
 
@@ -259,13 +261,15 @@ get_source_prefix(const config_setting_t *rule, const config_setting_t *uc_rule)
  */
 
 static const char *
-get_source_location(const config_setting_t *rule, const config_setting_t *uc_rule)
+get_source_location(const config_setting_t *const rule,
+                const config_setting_t *const uc_rule)
 {
         assert(uc_rule);
 
-        const char *result;
-        const config_setting_t *source_def = get_source_uc_rule_or_rule(rule, uc_rule);
+        const config_setting_t *const source_def =
+                get_source_uc_rule_or_rule(rule, uc_rule);
 
+        const char *result;
         if (!config_setting_lookup_string(source_def, LA_SOURCE_LOCATION, &result))
                 die_hard("Source location missing for rule %s!",
                                 config_setting_name(uc_rule));
@@ -279,25 +283,25 @@ get_source_location(const config_setting_t *rule, const config_setting_t *uc_rul
  */
 
 static void
-compile_actions(la_rule_t *rule, const config_setting_t *action_def)
+compile_actions(la_rule_t *const rule, const config_setting_t *const action_def)
 {
         assert_rule(rule); assert(action_def);
 
         la_debug("compile_actions(%s)", rule->name);
 
-        const char *name = config_setting_name(action_def);
+        const char *const name = config_setting_name(action_def);
 #ifndef NOCOMMANDS
-        const char *initialize = config_get_string_or_null(action_def,
+        const char *const initialize = config_get_string_or_null(action_def,
                         LA_ACTION_INITIALIZE_LABEL);
-        const char *shutdown = config_get_string_or_null(action_def,
+        const char *const shutdown = config_get_string_or_null(action_def,
                         LA_ACTION_SHUTDOWN_LABEL);
 #endif /* NOCOMMANDS */
-        const char *begin = config_get_string_or_die(action_def,
+        const char *const begin = config_get_string_or_die(action_def,
                         LA_ACTION_BEGIN_LABEL);
-        const char *end = config_get_string_or_null(action_def,
+        const char *const end = config_get_string_or_null(action_def,
                         LA_ACTION_END_LABEL);
 
-        const char *tmp = config_get_string_or_null(action_def,
+        const char *const tmp = config_get_string_or_null(action_def,
                         LA_ACTION_NEED_HOST_LABEL);
 
         la_need_host_t need_host = LA_NEED_HOST_NO;
@@ -318,7 +322,7 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
 #ifndef NOCOMMANDS
         if (initialize)
         {
-                la_command_t *template = create_template(name, rule,
+                la_command_t *const template = create_template(name, rule,
                                 initialize, shutdown, INT_MAX, false);
 #ifndef ONLYCLEANUPCOMMANDS
                 convert_both_commands(template);
@@ -340,18 +344,18 @@ compile_actions(la_rule_t *rule, const config_setting_t *action_def)
 }
 
 static void
-compile_list_of_actions(la_rule_t *rule,
-                const config_setting_t *action_def)
+compile_list_of_actions(la_rule_t *const rule,
+                const config_setting_t *const action_def)
 {
         assert_rule(rule); assert(action_def);
 
         la_debug("compile_list_of_actions(%s)", rule->name);
 
-        const unsigned int n_items = config_setting_length(action_def);
+        const int n_items = config_setting_length(action_def);
 
-        for (unsigned int i=0; i<n_items; i++)
+        for (int i=0; i<n_items; i++)
         {
-                config_setting_t *list_item =
+                const config_setting_t *list_item =
                         config_setting_get_elem(action_def, i);
                 compile_actions(rule, get_action(config_setting_get_string(
                                                 list_item)));
@@ -363,19 +367,18 @@ compile_list_of_actions(la_rule_t *rule,
  */
 
 static void
-load_blacklists(la_rule_t *rule, const config_setting_t *uc_rule_def)
+load_blacklists(la_rule_t *const rule, const config_setting_t *const uc_rule_def)
 {
         assert_rule(rule); assert(uc_rule_def);
 
         la_debug("load_blacklists(%s)", rule->name);
-        const config_setting_t *blacklist_reference;
-
         /* again unclear why this cast is necessary */
-        blacklist_reference = config_setting_lookup((config_setting_t *)
-                        uc_rule_def, LA_BLACKLISTS_LABEL);
+        const config_setting_t *blacklist_reference =
+                config_setting_lookup((config_setting_t *) uc_rule_def,
+                                LA_BLACKLISTS_LABEL);
         if (!blacklist_reference)
         {
-                config_setting_t *defaults_section =
+                config_setting_t *const defaults_section =
                         config_lookup(&la_config->config_file, LA_DEFAULTS_LABEL);
                 if (defaults_section)
                         blacklist_reference = config_setting_lookup(
@@ -385,24 +388,24 @@ load_blacklists(la_rule_t *rule, const config_setting_t *uc_rule_def)
         if (!blacklist_reference)
                 return;
 
-        int type = config_setting_type(blacklist_reference);
+        const int type = config_setting_type(blacklist_reference);
 
         if (type == CONFIG_TYPE_STRING)
         {
-                kw_node_t *new = xmalloc(sizeof *new);
+                kw_node_t *const new = xmalloc(sizeof *new);
                 new->name = xstrdup(config_setting_get_string(
                                         blacklist_reference));
                 add_tail(rule->blacklists, new);
         }
         else if (type == CONFIG_TYPE_LIST)
         {
-                const unsigned int n_items = config_setting_length(
+                const int n_items = config_setting_length(
                                 blacklist_reference);
-                for (unsigned int i=0; i<n_items; i++)
+                for (int i=0; i<n_items; i++)
                 {
-                        config_setting_t *list_item = 
+                        const config_setting_t *const list_item = 
                                 config_setting_get_elem(blacklist_reference, i);
-                        kw_node_t *new = xmalloc(sizeof *new);
+                        kw_node_t *const new = xmalloc(sizeof *new);
                         new->name = xstrdup(config_setting_get_string(
                                                 list_item));
                         add_tail(rule->blacklists, new);
@@ -417,19 +420,18 @@ load_blacklists(la_rule_t *rule, const config_setting_t *uc_rule_def)
  */
 
 static void
-load_actions(la_rule_t *rule, const config_setting_t *uc_rule_def)
+load_actions(la_rule_t *const rule, const config_setting_t *const uc_rule_def)
 {
         assert_rule(rule); assert(uc_rule_def);
 
         la_debug("load_actions(%s)", rule->name);
-        const config_setting_t *action_reference;
-
         /* again unclear why this cast is necessary */
-        action_reference = config_setting_lookup((config_setting_t *)
-                        uc_rule_def, LA_RULE_ACTION_LABEL);
+        const config_setting_t *action_reference =
+                config_setting_lookup((config_setting_t *) uc_rule_def,
+                                LA_RULE_ACTION_LABEL);
         if (!action_reference)
         {
-                config_setting_t *defaults_section =
+                config_setting_t *const defaults_section =
                         config_lookup(&la_config->config_file, LA_DEFAULTS_LABEL);
                 if (!defaults_section)
                         die_hard("No action specified for %s!",
@@ -454,8 +456,8 @@ load_actions(la_rule_t *rule, const config_setting_t *uc_rule_def)
 }
 
 static void
-load_patterns(la_rule_t *rule, const config_setting_t *rule_def, 
-                const config_setting_t *uc_rule_def)
+load_patterns(la_rule_t *const rule, const config_setting_t *const rule_def, 
+                const config_setting_t *const uc_rule_def)
 {
         assert_rule(rule); assert(uc_rule_def);
 
@@ -481,7 +483,7 @@ load_patterns(la_rule_t *rule, const config_setting_t *rule_def,
 
         for (int i=0; i<n; i++)
         {
-                const char *item = config_setting_get_string_elem(patterns, i);
+                const char *const item = config_setting_get_string_elem(patterns, i);
 
                 la_pattern_t *pattern = create_pattern(item, i, rule);
 
@@ -492,26 +494,26 @@ load_patterns(la_rule_t *rule, const config_setting_t *rule_def,
 
 
 static void
-compile_address_list_port(kw_list_t *list,
-                const config_setting_t *setting, const in_port_t port)
+compile_address_list_port(kw_list_t *const list,
+                const config_setting_t *const setting, const in_port_t port)
 {
-        assert_list(list); assert(setting);
-
-        la_debug("compile_address_list(%s)", config_setting_name(setting));
-
         if (!setting)
                 return;
 
-        const unsigned int n = config_setting_length(setting);
-        for (unsigned int i=0; i<n; i++)
+        la_debug("compile_address_list(%s)", config_setting_name(setting));
+
+        assert_list(list);
+
+        const int n = config_setting_length(setting);
+        for (int i=0; i<n; i++)
         {
-                const config_setting_t *elem =
+                const config_setting_t *const elem =
                         config_setting_get_elem(setting, i);
-                const char *ip = config_setting_get_string(elem);
+                const char *const ip = config_setting_get_string(elem);
                 if (!ip)
                         die_hard("Only strings allowed in address list!");
 
-                la_address_t *address = create_address_port(ip, port);
+                la_address_t *const address = create_address_port(ip, port);
                 if (!address)
                         die_err("Invalid IP address %s!", ip);
 
@@ -525,8 +527,8 @@ compile_address_list_port(kw_list_t *list,
 }
 
 static void
-compile_address_list(kw_list_t *list,
-                const config_setting_t *setting)
+compile_address_list(kw_list_t *const list,
+                const config_setting_t *const setting)
 {
         compile_address_list_port(list, setting, 0);
 }
@@ -538,27 +540,27 @@ compile_address_list(kw_list_t *list,
  */
 
 static void
-load_properties(kw_list_t *properties, const config_setting_t *section)
+load_properties(kw_list_t *const properties, const config_setting_t *const section)
 {
         assert_list(properties); assert(section);
 
         la_debug("load_properties(%s)", config_setting_name(section));
 
-        const config_setting_t *properties_section =
+        const config_setting_t *const properties_section =
                 config_setting_get_member(section, LA_PROPERTIES_LABEL);
 
         if (!properties_section)
                 return;
 
-        const unsigned int n = config_setting_length(properties_section);
-        for (unsigned int i=0; i<n; i++)
+        const int n = config_setting_length(properties_section);
+        for (int i=0; i<n; i++)
         {
-                const config_setting_t *elem =
+                const config_setting_t *const elem =
                         config_setting_get_elem(properties_section, i);
-                const char *name = config_setting_name(elem);
+                const char *const name = config_setting_name(elem);
                 if (!name)
                         die_hard("Property without a name?!");
-                const char *value = config_setting_get_string(elem);
+                const char *const value = config_setting_get_string(elem);
                 if (!value)
                         die_hard("Only strings allowed for properties!");
 
@@ -568,7 +570,7 @@ load_properties(kw_list_t *properties, const config_setting_t *section)
                 if (get_property_from_property_list(properties, name))
                         continue;
 
-                la_property_t *property = create_property_from_config(name, value);
+                la_property_t *const property = create_property_from_config(name, value);
 
                 la_vdebug("load_properties(%s)=%s", config_setting_name(section), name);
                 add_tail(properties, (kw_node_t *) property);
@@ -583,8 +585,8 @@ load_properties(kw_list_t *properties, const config_setting_t *section)
  */
 
 static const char *
-get_rule_string(const config_setting_t *rule_def,
-                const config_setting_t *uc_rule_def, const char *name)
+get_rule_string(const config_setting_t *const rule_def,
+                const config_setting_t *const uc_rule_def, const char *const name)
 {
         assert(uc_rule_def); assert(name);
 
@@ -603,8 +605,8 @@ get_rule_string(const config_setting_t *rule_def,
  */
 
 static int
-get_rule_unsigned_int(const config_setting_t *rule_def,
-                const config_setting_t *uc_rule_def, const char *name)
+get_rule_unsigned_int(const config_setting_t *const rule_def,
+                const config_setting_t *const uc_rule_def, const char *const name)
 {
         assert(uc_rule_def); assert(name);
 
@@ -621,26 +623,26 @@ get_rule_unsigned_int(const config_setting_t *rule_def,
  */
 
 static la_source_group_t *
-create_file_sources(const config_setting_t *rule_def,
-                const config_setting_t *uc_rule_def)
+create_file_sources(const config_setting_t *const rule_def,
+                const config_setting_t *const uc_rule_def)
 {
         assert(uc_rule_def);
         assert(la_config); assert_list(la_config->source_groups);
 
-        const char *name = get_source_name(rule_def, uc_rule_def);
-        const char *location = get_source_location(rule_def, uc_rule_def);
-        const char *prefix = get_source_prefix(rule_def, uc_rule_def);
+        const char *const name = get_source_name(rule_def, uc_rule_def);
+        const char *const location = get_source_location(rule_def, uc_rule_def);
+        const char *const prefix = get_source_prefix(rule_def, uc_rule_def);
 
         /* First create single source_group */
         la_source_group_t *result = create_source_group(name, location, prefix);
 
         glob_t pglob;
         if (glob(location, 0, NULL, &pglob))
-                la_log(LOG_ERR, "Source \%s\" - file \"%s\" not found.", name,
+                la_log(LOG_ERR, "Source \"%s\" - file \"%s\" not found.", name,
                                 location);
 
         /* Second create source objects for all matching files */
-        for (unsigned int i = 0; i < pglob.gl_pathc; i++)
+        for (size_t i = 0; i < pglob.gl_pathc; i++)
         {
                 la_source_t *src = create_source(result, pglob.gl_pathv[i]);
                 add_tail(result->sources, (kw_node_t *) src);
@@ -661,11 +663,11 @@ create_file_sources(const config_setting_t *rule_def,
 #if HAVE_LIBSYSTEMD
 #ifndef NOWATCH
 static void
-add_systemd_unit_to_list(const char *systemd_unit)
+add_systemd_unit_to_list(const char *const systemd_unit)
 {
         assert(systemd_unit);
 
-        kw_list_t *ex_systemd_units = la_config->systemd_source_group->systemd_units;
+        kw_list_t *const ex_systemd_units = la_config->systemd_source_group->systemd_units;
         assert_list(ex_systemd_units);
 
         for (kw_node_t *tmp = &(ex_systemd_units)->head;
@@ -675,7 +677,7 @@ add_systemd_unit_to_list(const char *systemd_unit)
                         return;
         }
 
-        kw_node_t *node = xmalloc(sizeof *node);
+        kw_node_t *const node = xmalloc(sizeof *node);
         node->name = xstrdup(systemd_unit);
         add_tail(ex_systemd_units, node);
 }
@@ -688,7 +690,7 @@ add_systemd_unit_to_list(const char *systemd_unit)
  */
 
 static la_source_group_t *
-create_systemd_unit(const char *systemd_unit)
+create_systemd_unit(const char *const systemd_unit)
 {
         assert(systemd_unit);
         assert(la_config);
@@ -719,7 +721,7 @@ create_systemd_unit(const char *systemd_unit)
  */
 
 static bool
-load_single_rule(const config_setting_t *uc_rule_def)
+load_single_rule(const config_setting_t *const uc_rule_def)
 {
         assert(uc_rule_def);
 
@@ -728,9 +730,9 @@ load_single_rule(const config_setting_t *uc_rule_def)
                                 &enabled) == CONFIG_FALSE)
                 enabled = false;
 
-        const char *name = config_setting_name(uc_rule_def);
+        const char *const name = config_setting_name(uc_rule_def);
         la_debug("load_single_rule(%s)", name);
-        const config_setting_t *rule_def = get_rule(name);
+        const config_setting_t *const rule_def = get_rule(name);
 
         const char *systemd_unit;
         la_source_group_t *source_group;
@@ -784,13 +786,13 @@ load_single_rule(const config_setting_t *uc_rule_def)
         int dnsbl_enabled = false;
         config_setting_lookup_bool(uc_rule_def, LA_DNSBL_ENABLED_LABEL, &dnsbl_enabled);
 
-        const char *service = get_rule_string(rule_def, uc_rule_def,
+        const char *const service = get_rule_string(rule_def, uc_rule_def,
                         LA_SERVICE_LABEL);
 
-        la_rule_t *new_rule;
-        new_rule = create_rule(enabled, name, source_group, threshold, period, duration,
-                        meta_enabled, meta_period, meta_factor, meta_max,
-                        dnsbl_enabled, service, systemd_unit);
+        la_rule_t *const new_rule = create_rule(enabled, name, source_group,
+                        threshold, period, duration, meta_enabled, meta_period,
+                        meta_factor, meta_max, dnsbl_enabled, service,
+                        systemd_unit);
         assert_rule(new_rule);
 
         if (new_rule->enabled)
@@ -817,13 +819,13 @@ load_single_rule(const config_setting_t *uc_rule_def)
 }
 
 
-static unsigned int
+static int
 load_rules(void)
 {
         la_debug("load_rules()");
         assert(la_config);
 
-        const config_setting_t *local_section = 
+        const config_setting_t *const local_section = 
                 config_lookup(&la_config->config_file, LA_LOCAL_LABEL);
         if (!local_section)
                 return 0;
@@ -855,7 +857,7 @@ load_remote_settings(void)
 
         la_config->remote_enabled = false;
 
-        config_setting_t *remote_section =
+        config_setting_t *const remote_section =
                 config_lookup(&la_config->config_file, LA_REMOTE_LABEL);
 
         if (!remote_section)
@@ -874,8 +876,8 @@ load_remote_settings(void)
         if (xstrlen(la_config->remote_secret) == 0)
                 die_hard("Remote handling enabled but no secret specified");
 
-        const config_setting_t *receive_from = config_setting_lookup(remote_section,
-                        LA_REMOTE_RECEIVE_FROM_LABEL);
+        const config_setting_t *const receive_from = config_setting_lookup(
+                        remote_section, LA_REMOTE_RECEIVE_FROM_LABEL);
         la_config->remote_receive_from = xcreate_list();
         compile_address_list(la_config->remote_receive_from, receive_from);
 
@@ -888,7 +890,7 @@ load_remote_settings(void)
                 la_config->remote_port = DEFAULT_PORT;
 
         /* Must obviously go after initialization of remote port... */
-        const config_setting_t *send_to = config_setting_lookup(remote_section,
+        const config_setting_t *const send_to = config_setting_lookup(remote_section,
                         LA_REMOTE_SEND_TO_LABEL);
         la_config->remote_send_to = xcreate_list();
         compile_address_list_port(la_config->remote_send_to, send_to,
@@ -902,7 +904,7 @@ load_defaults(void)
         la_debug("load_defaults()");
         assert(la_config);
 
-        const config_setting_t *defaults_section =
+        const config_setting_t *const defaults_section =
                 config_lookup(&la_config->config_file, LA_DEFAULTS_LABEL);
 
         if (defaults_section)
@@ -967,8 +969,8 @@ load_defaults(void)
         }
 }
 
-static const char ** include_func(config_t *config, const char *include_dir, const
-                char *path, const char **error);
+static const char ** include_func(config_t *config, const char *const include_dir,
+                const char *const path, const char **const error);
 
 /*
  * Initializes the config_mutex as recursive mutex (thus making it possible to
@@ -1009,7 +1011,7 @@ init_la_config(const char *filename)
 
         if (!config_read_file(&la_config->config_file, filename))
         {
-                const char *error_file =
+                const char *const error_file =
                         config_error_file(&la_config->config_file);
                 xpthread_mutex_unlock(&config_mutex);
                 if (error_file)
@@ -1059,22 +1061,22 @@ unload_la_config(void)
         if (!shutdown_ongoing)
                 xpthread_mutex_lock(&config_mutex);
 
-                free_source_group_list(la_config->source_groups);
-                la_config->source_groups = NULL;
+        free_source_group_list(la_config->source_groups);
+        la_config->source_groups = NULL;
 #if HAVE_LIBSYSTEMD
-                free_source_group(la_config->systemd_source_group);
-                la_config->systemd_source_group = NULL;
+        free_source_group(la_config->systemd_source_group);
+        la_config->systemd_source_group = NULL;
 #endif /* HAVE_LIBSYSTEMD */
-                free_property_list(la_config->default_properties);
-                la_config->default_properties = NULL;
-                free_address_list(la_config->ignore_addresses);
-                la_config->ignore_addresses = NULL;
-                free(la_config->remote_secret);
-                free_address_list(la_config->remote_receive_from);
-                la_config->remote_receive_from = NULL;
-                free_address_list(la_config->remote_send_to);
-                la_config->remote_send_to = NULL;
-                free(la_config->remote_bind);
+        free_property_list(la_config->default_properties);
+        la_config->default_properties = NULL;
+        free_address_list(la_config->ignore_addresses);
+        la_config->ignore_addresses = NULL;
+        free(la_config->remote_secret);
+        free_address_list(la_config->remote_receive_from);
+        la_config->remote_receive_from = NULL;
+        free_address_list(la_config->remote_send_to);
+        la_config->remote_send_to = NULL;
+        free(la_config->remote_bind);
 
         if (!shutdown_ongoing)
                 xpthread_mutex_unlock(&config_mutex);
@@ -1086,7 +1088,8 @@ unload_la_config(void)
  */
 
 static const char **
-include_func(config_t *config, const char *include_dir, const char *path, const char **error)
+include_func(config_t *config, const char *const include_dir,
+                const char *const path, const char **const error)
 {
         assert(path);
         la_debug("include_func(%s)", path);
@@ -1101,12 +1104,12 @@ include_func(config_t *config, const char *include_dir, const char *path, const 
 
         char **result = NULL;
         char **result_next = NULL;
-        unsigned int result_count = 0;
-        unsigned int result_capacity = 0;
+        int result_count = 0;
+        int result_capacity = 0;
 
-        for (unsigned int i = 0; i < pglob.gl_pathc; i++)
+        for (size_t i = 0; i < pglob.gl_pathc; i++)
         {
-                const char *file_path = pglob.gl_pathv[i];
+                const char *const file_path = pglob.gl_pathv[i];
                 la_vdebug("%u. file_path=%s", i, file_path);
 
                 struct stat stat_buf;

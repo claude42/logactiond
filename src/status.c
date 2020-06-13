@@ -48,7 +48,8 @@ pthread_t monitoring_thread = 0;
  */
 
 static void
-human_readable_time_delta(const time_t delta, time_t *value, char *unit)
+human_readable_time_delta(const time_t delta, time_t *const value,
+                char *const unit)
 {
         assert(value); assert(unit);
         
@@ -84,7 +85,7 @@ human_readable_time_delta(const time_t delta, time_t *value, char *unit)
 }
 
 static void
-dump_rule_diagnostics(FILE *diag_file, const la_rule_t *rule)
+dump_rule_diagnostics(FILE *const diag_file, const la_rule_t *const rule)
 {
         assert(diag_file), assert_rule(rule);
         la_vdebug("dump_rule_diagnostics(%s)", rule->name);
@@ -98,7 +99,7 @@ dump_rule_diagnostics(FILE *diag_file, const la_rule_t *rule)
  */
 
 static void
-dump_single_rule(FILE *rules_file, const la_rule_t *rule)
+dump_single_rule(FILE *const rules_file, const la_rule_t *const rule)
 {
         assert(rules_file), assert_rule(rule);
         la_vdebug("dump_single_rule(%s)", rule->name);
@@ -118,7 +119,7 @@ dump_rules(void)
 {
         la_debug("dump_rules()");
 
-        FILE *rules_file = fopen(RULESFILE, "w");
+        FILE *const rules_file = fopen(RULESFILE, "w");
         if (!rules_file)
                 die_err("Can't create \"" RULESFILE "\"!");
 
@@ -177,7 +178,7 @@ dump_rules(void)
  */
 
 void
-remove_status_files(void *arg)
+remove_status_files(void *const arg)
 {
         la_debug("remove_status_files()");
         if (!status_monitoring)
@@ -197,7 +198,7 @@ remove_status_files(void *arg)
  */
 
 static void *
-dump_loop(void *ptr)
+dump_loop(void *const ptr)
 {
         la_debug("dump_loop()");
 
@@ -262,15 +263,15 @@ dump_queue_status(const bool force)
         if ((!status_monitoring && !force) || shutdown_ongoing)
                 return;
 
-        FILE *hosts_file = fopen(HOSTSFILE, "w");
+        FILE *const hosts_file = fopen(HOSTSFILE, "w");
         if (!hosts_file)
                 die_err("Can't create \"" HOSTSFILE "\"!");
 
         const time_t now = xtime(NULL);
         fprintf(hosts_file, HOSTS_HEADER, ctime(&now));
 
-        unsigned int num_elems = 0;
-        unsigned int num_elems_local = 0;
+        int num_elems = 0;
+        int num_elems_local = 0;
 
         xpthread_mutex_lock(&end_queue_mutex);
 
@@ -297,7 +298,7 @@ dump_queue_status(const bool force)
                         }
 
                         /* Second build host table */
-                        const char *adr = command->address ?
+                        const char *const adr = command->address ?
                                 command->address->text : "-";
 
                         time_t timedelta;

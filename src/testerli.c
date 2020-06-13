@@ -34,10 +34,10 @@ int
 main(int argc, char *argv[])
 {
         printf("%s\n%s\n", argv[1], argv[2]);
-        char *str = argv[1];
+        //char *str = argv[1];
         int dest_len;
-        sscanf(argv[2], "%u", &dest_len);
-        char dest[100];
+        sscanf(argv[2], "%i", &dest_len);
+        //char dest[100];
         //int r = copy_str_and_tolower(dest, dest_len, str, '%');
         //printf("dest=%s, r=%d\n", dest, r);
 

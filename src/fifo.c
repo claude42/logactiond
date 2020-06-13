@@ -38,7 +38,7 @@ pthread_t fifo_thread = 0;
 static FILE *fifo;
 
 static void
-cleanup_fifo(void *arg)
+cleanup_fifo(void *const arg)
 {
         la_debug("cleanup_fifo()");
 
@@ -66,7 +66,7 @@ create_fifo(void)
 }
 
 static void *
-fifo_loop(void *ptr)
+fifo_loop(void *const ptr)
 {
         la_debug("fifo_loop()");
 
@@ -84,27 +84,21 @@ fifo_loop(void *ptr)
                 }
 
                 const ssize_t num_read = getline(&buf, &buf_size, fifo);
-                switch (num_read)
+                if  (num_read == -1  && !feof(fifo))
                 {
-                case -1:
-                        if (feof(fifo))
-                                continue;
-                        else
-                                die_err("Reading from fifo failed");
-                        break;
-                case 0:
-                        continue;
-                        break;
+                        die_err("Reading from fifo  failed");
                 }
+                else if (num_read > 0)
+                {
+                        if (buf[num_read-1] == '\n')
+                                buf[num_read-1] = '\0';
 
-                if (buf[num_read-1] == '\n')
-                        buf[num_read-1] = '\0';
-
-                la_debug("Received message '%s'", buf);
+                        la_debug("Received message '%s'", buf);
 
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
-                parse_message_trigger_command(buf, LA_FIFO);
+                        parse_message_trigger_command(buf, LA_FIFO);
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
+                }
         }
 
         assert(false);

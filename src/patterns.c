@@ -35,17 +35,29 @@
 
 void
 assert_pattern_ffl(const la_pattern_t *pattern, const char *func,
-                const char *file, unsigned int line)
+                const char *file, int line)
 {
         if (!pattern)
                 die_hard("%s:%u: %s: Assertion 'pattern' failed. ", file, line, func);
+        if (pattern->num < 0)
+                die_hard("%s:%u: %s: Assertion 'pattern->num >= 0' failed. ",
+                                file, line, func);
         assert_rule_ffl(pattern->rule, func, file, line);
         if (!pattern->string)
                 die_hard("%s:%u: %s: Assertion 'pattern->string' failed. ", file, line, func);
+        if (pattern->host_property)
+                assert_property_ffl(pattern->host_property, func, file, line);
         assert_list_ffl(pattern->properties, func, file, line);
+        if (pattern->detection_count < 0)
+                die_hard("%s:%u: %s: Assertion 'pattern->detection_count >= 0' failed. ",
+                                file, line, func);
+        if (pattern->invocation_count < 0)
+                die_hard("%s:%u: %s: Assertion 'pattern->invocation_count >= 0' failed. ",
+                                file, line, func);
+
 }
 
-static void add_property(la_pattern_t *pattern, la_property_t *property)
+static void add_property(la_pattern_t *const pattern, la_property_t *const property)
 {
         add_tail(pattern->properties, (kw_node_t *) property);
         if (property->is_host_property)
@@ -63,7 +75,7 @@ static void add_property(la_pattern_t *pattern, la_property_t *property)
  */
 
 static void
-convert_regex(const char *string, la_pattern_t *pattern)
+convert_regex(const char *const string, la_pattern_t *const pattern)
 {
         assert(string);
         assert(pattern); assert_list(pattern->properties);
@@ -73,7 +85,7 @@ convert_regex(const char *string, la_pattern_t *pattern)
         char *result = xmalloc(dst_len);
         char *dst_ptr = result;
         const char *src_ptr = string;
-        unsigned int subexpression = 0;
+        int subexpression = 0;
 
         while (*src_ptr)
         {
@@ -181,10 +193,10 @@ convert_regex(const char *string, la_pattern_t *pattern)
  */
 
 static void
-die_re(const int errcode, const regex_t *preg)
+die_re(const int errcode, const regex_t *const preg)
 {
         const size_t errbuf_size = 255;
-        char *error_msg = alloca(errbuf_size);
+        char *const error_msg = alloca(errbuf_size);
 
         regerror(errcode, preg, error_msg, errbuf_size);
 
@@ -196,17 +208,17 @@ die_re(const int errcode, const regex_t *preg)
  */
 
 la_pattern_t *
-create_pattern(const char *string_from_configfile, const unsigned int num,
-                la_rule_t *rule)
+create_pattern(const char *const string_from_configfile,
+                const int num, la_rule_t *const rule)
 {
         assert(string_from_configfile); assert_rule(rule);
         la_vdebug("create_pattern(%s)", string_from_configfile);
 
-        char *full_string = concat(rule->source_group->prefix,
+        char *const full_string = concat(rule->source_group->prefix,
                         string_from_configfile);
         la_vdebug("full_string=%s", full_string);
 
-        la_pattern_t *result = xmalloc(sizeof *result);
+        la_pattern_t *const result = xmalloc(sizeof *result);
 
         result->num = num;
         result->rule = rule;
@@ -231,7 +243,7 @@ create_pattern(const char *string_from_configfile, const unsigned int num,
  */
 
 void
-free_pattern(la_pattern_t *pattern)
+free_pattern(la_pattern_t *const pattern)
 {
         if (!pattern)
                 return;
@@ -252,7 +264,7 @@ free_pattern(la_pattern_t *pattern)
  */
 
 void
-free_pattern_list(kw_list_t *list)
+free_pattern_list(kw_list_t *const list)
 {
         la_vdebug("free_pattern_list()");
 

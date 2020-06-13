@@ -55,7 +55,7 @@ create_pidfile(void)
 {
         la_debug("create_pidfile(" PIDFILE ")");
 
-        FILE *stream = fopen(PIDFILE, "w");
+        FILE *const stream = fopen(PIDFILE, "w");
         if (!stream)
                 die_err("Unable to open pidfile.");
 
@@ -76,22 +76,16 @@ check_pidfile(void)
 
         bool result = true;
 
-        FILE *stream = fopen(PIDFILE, "r");
+        FILE *const stream = fopen(PIDFILE, "r");
 
         if (stream)
         {
                 la_debug("opened pid");
                 unsigned int pid;
                 if (fscanf(stream, "%u", &pid) == 1)
-                {
-                        la_debug("read pid");
                         result = !(kill(pid, 0) == -1 && errno == ESRCH);
-                }
                 else
-                {
-                        la_debug("did not read pid");
                         result = false;
-                }
 
                 if (fclose(stream) == EOF)
                         die_err("Unable to close pidfile");
@@ -100,10 +94,7 @@ check_pidfile(void)
         {
                 la_debug("did not open pid");
                 if (errno == ENOENT)
-                {
-                        la_debug("enoent");
                         result = false;
-                }
                 else
                         die_err("Unable to open pidfile.");
         }
@@ -116,8 +107,9 @@ check_pidfile(void)
  */
 
 void
-xpthread_create(pthread_t *thread, const pthread_attr_t *attr,
-                void *(*start_routine)(void *), void *arg, const char *name)
+xpthread_create(pthread_t *const thread, const pthread_attr_t *const attr,
+                void *(*start_routine)(void *), void *const arg,
+                const char *const name)
 {
         int ret = pthread_create(thread, attr, start_routine, arg);
         if (ret)
@@ -244,7 +236,7 @@ void xfree(void *ptr)
 void *
 xrealloc(void *ptr, size_t n)
 {
-        void *result = realloc(ptr, n);
+        void *const result = realloc(ptr, n);
         if (!result && n!=0)
                 die_err("Memory exhausted");
 
@@ -254,7 +246,7 @@ xrealloc(void *ptr, size_t n)
 void *
 xmalloc0(size_t n)
 {
-        void *result = calloc(n, 1);
+        void *const result = calloc(n, 1);
         if (!result && n!=0)
                 die_err("Memory exhausted");
 
@@ -264,7 +256,7 @@ xmalloc0(size_t n)
 void *
 xmalloc(size_t n)
 {
-        void *result =  malloc(n);
+        void *const result =  malloc(n);
         if (!result && n!=0)
                 die_err("Memory exhausted\n");
 
@@ -279,7 +271,7 @@ xstrdup(const char *s)
         if (!s)
                 return NULL;
 
-        void *result = strdup(s);
+        void *const result = strdup(s);
         if (!result)
                 die_err("Memory exhausted\n");
 
@@ -294,7 +286,7 @@ xstrndup(const char *s, size_t n)
         if (!s)
                 return NULL;
 
-        void *result = strndup(s, n);
+        void *const result = strndup(s, n);
         if (!result)
                 die_err("Memory exhausted\n");
 
@@ -326,7 +318,7 @@ concat(const char *s1, const char *s2)
 
         const size_t len1 = strlen(s1);
         const size_t len2 = strlen(s2);
-        char *result = xmalloc(len1 + len2 + 1);
+        char *const result = xmalloc(len1 + len2 + 1);
 
         memcpy(result, s1, len1);
         memcpy(result + len1, s2, len2 + 1); /* also copy terminating 0 byte */
@@ -346,11 +338,12 @@ concat(const char *s1, const char *s2)
  */
 
 int
-string_copy(char *dest, size_t dest_size, const char *src, size_t n)
+string_copy(char *const dest, const size_t dest_size, const char *const src,
+                const size_t n)
 {
         assert(dest);
 
-        size_t copy_bytes = (!n || dest_size-1 < n) ? dest_size-1 : n;
+        const size_t copy_bytes = (!n || dest_size-1 < n) ? dest_size-1 : n;
         size_t i;
 
         for (i = 0; i < copy_bytes && src[i]; i++)
@@ -365,13 +358,13 @@ string_copy(char *dest, size_t dest_size, const char *src, size_t n)
 }
 
 int
-strendcmp(const char *string, const char *suffix)
+strendcmp(const char *const string, const char *const suffix)
 {
         if (!string || !suffix)
                 return 1;
 
-        const unsigned int string_len = strlen(string);
-        const unsigned int suffix_len = strlen(suffix);
+        const int string_len = strlen(string);
+        const int suffix_len = strlen(suffix);
 
         if (suffix_len > string_len)
                 return 1;
@@ -400,8 +393,7 @@ void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, const size_t on
                 *dst_len = *dst_len * 2 + on_top;
                 la_debug("realloc_buffer()=%u", *dst_len);
 
-                char *tmp_ptr;
-                tmp_ptr = xrealloc(*dst, *dst_len);
+                char *const tmp_ptr = xrealloc(*dst, *dst_len);
                 *dst_ptr = *dst_ptr - *dst + tmp_ptr;
                 *dst = tmp_ptr;
         }
@@ -411,7 +403,7 @@ void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, const size_t on
 kw_list_t *
 xcreate_list(void)
 {
-        kw_list_t *result = xmalloc(sizeof (kw_list_t));
+        kw_list_t *const result = xmalloc(sizeof (kw_list_t));
 
         result->head.succ = (kw_node_t *) &result->tail;
         result->head.pred = NULL;
@@ -453,17 +445,16 @@ _getpass (char **lineptr, size_t *n, FILE *stream)
         return nread;
 }
 
-size_t password_size = 0;
-static char *password_buffer = NULL;
-
 char *
-xgetpass(const char *prompt)
+xgetpass(const char *const prompt)
 {
         printf("%s", prompt);
         FILE *tty = fopen("/dev/tty", "r");
         if (!tty)
                 die_err("Can't open /dev/tty");
 
+        size_t password_size = 0;
+        static char *password_buffer = NULL;
         (void) _getpass(&password_buffer, &password_size, tty);
 
         if (fclose(tty) == EOF)

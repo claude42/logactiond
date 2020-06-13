@@ -48,7 +48,7 @@ pthread_t systemd_watch_thread = 0;
 static sd_journal *journal = NULL;
 
 static void
-die_systemd(const int systemd_errno, const char *fmt, ...)
+die_systemd(const int systemd_errno, const char *const fmt, ...)
 {
         va_list myargs;
 
@@ -69,7 +69,7 @@ die_systemd(const int systemd_errno, const char *fmt, ...)
 }
 
 static void
-cleanup_watching_systemd(void *arg)
+cleanup_watching_systemd(void *const arg)
 {
         la_debug("cleanup_watching_systemd()");
 
@@ -78,9 +78,9 @@ cleanup_watching_systemd(void *arg)
 }
 
 static void *
-watch_forever_systemd(void *ptr)
+watch_forever_systemd(void *const ptr)
 {
-        static unsigned int unit_buffer_length = DEFAULT_LINEBUFFER_SIZE;
+        static int unit_buffer_length = DEFAULT_LINEBUFFER_SIZE;
         static char *unit_buffer;
         unit_buffer = xmalloc(unit_buffer_length);
 
@@ -135,7 +135,7 @@ watch_forever_systemd(void *ptr)
                 if (r < 0)
                         die_systemd(r, "sd_journal_get_data() failed");
 
-                if (size+1 > unit_buffer_length)
+                if ((int) size+1 > unit_buffer_length)
                 {
                         unit_buffer = xrealloc(unit_buffer, size+1);
                         unit_buffer_length = size+1;
@@ -178,7 +178,7 @@ add_matches(void)
                         (unit = unit->succ->succ ? unit->succ : NULL);)
         {
                 // space for "_SYSTEMD_UNIT=" + unit->name + '\0'
-                const unsigned int len = UNIT_LEN + 1 + xstrlen(unit->name);
+                const int len = UNIT_LEN + 1 + xstrlen(unit->name);
                 match = xrealloc(match, len);
                 snprintf(match, len, UNIT "=%s", unit->name);
                 int r = sd_journal_add_match(journal, match, 0);

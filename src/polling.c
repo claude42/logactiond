@@ -39,7 +39,7 @@
 #include "watch.h"
 
 static void
-cleanup_watching_polling(void *arg)
+cleanup_watching_polling(void *const arg)
 {
         la_debug("cleanup_watching_polling()");
 
@@ -47,7 +47,7 @@ cleanup_watching_polling(void *arg)
 }
 
 static void
-open_new_file(la_source_t *source, const struct stat *sb)
+open_new_file(la_source_t *const source, const struct stat *const sb)
 {
         source->file = freopen(source->location, "r",
                         source->file);

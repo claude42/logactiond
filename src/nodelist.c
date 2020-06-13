@@ -25,7 +25,7 @@
 
 void
 assert_node_ffl(const kw_node_t *node, const char *func, const char *file,
-                unsigned int line)
+                int line)
 {
         if (!(node->succ || node->pred))
                 die_hard("%s:%u: %s: Assertion 'node->succ || node->pred' failed.",
@@ -46,7 +46,7 @@ assert_node_ffl(const kw_node_t *node, const char *func, const char *file,
 
 void
 assert_list_ffl(const kw_list_t *list, const char *func, const char *file,
-                unsigned int line)
+                int line)
 {
         if (!list)
                 die_hard("%s:%u: %s: Assertion 'list' failed.", file, line, func);
@@ -71,7 +71,7 @@ assert_list_ffl(const kw_list_t *list, const char *func, const char *file,
 kw_list_t *
 create_list(void)
 {
-        kw_list_t *result = malloc(sizeof *result);
+        kw_list_t *const result = malloc(sizeof *result);
         if (!result)
         {
                 fprintf(stderr, "Memory exhausted\n");
@@ -94,17 +94,18 @@ create_list(void)
  */
 
 void
-insert_node_after(kw_node_t *ex_node, kw_node_t *new_node)
+insert_node_after(kw_node_t *ex_node, kw_node_t *const new_node)
 {
         if (!ex_node || !new_node)
                 return;
 
         assert_node(ex_node);
 
+        /* if ex_node is the list header, insert at end of list */
         if (!ex_node->succ)
                 ex_node = ex_node->pred;
 
-        kw_node_t *succ = ex_node->succ;
+        kw_node_t *const succ = ex_node->succ;
 
         new_node->pred = ex_node;
         new_node->succ = ex_node->succ;
@@ -116,17 +117,18 @@ insert_node_after(kw_node_t *ex_node, kw_node_t *new_node)
 
 
 void
-insert_node_before(kw_node_t *ex_node, kw_node_t *new_node)
+insert_node_before(kw_node_t *ex_node, kw_node_t *const new_node)
 {
         if (!ex_node || !new_node)
                 return;
 
         assert_node(ex_node);
 
+        /* if ex_node is the list header, insert at beginning of list */
         if (!ex_node->pred)
                 ex_node = ex_node->succ;
 
-        kw_node_t *pred = ex_node->pred;
+        kw_node_t *const pred = ex_node->pred;
 
         new_node->pred = ex_node->pred;
         new_node->succ = ex_node;
@@ -137,7 +139,7 @@ insert_node_before(kw_node_t *ex_node, kw_node_t *new_node)
 }
 
 void
-remove_node(kw_node_t *node)
+remove_node(kw_node_t *const node)
 {
         if (!node->pred || !node->succ)
                 return;
@@ -151,7 +153,7 @@ remove_node(kw_node_t *node)
 }
 
 void
-add_head(kw_list_t *list, kw_node_t *node)
+add_head(kw_list_t *const list, kw_node_t *const node)
 {
         if (!list || !node)
                 return;
@@ -167,7 +169,7 @@ add_head(kw_list_t *list, kw_node_t *node)
 }
 
 void
-add_tail(kw_list_t *list, kw_node_t *node)
+add_tail(kw_list_t *const list, kw_node_t *const node)
 {
         if (!list || !node)
                 return;
@@ -183,7 +185,7 @@ add_tail(kw_list_t *list, kw_node_t *node)
 }
 
 kw_node_t *
-get_head(const kw_list_t *list)
+get_head(const kw_list_t *const list)
 {
         /* TODO: something's wrong here */
         if (is_list_empty(list))
@@ -193,7 +195,7 @@ get_head(const kw_list_t *list)
 }
 
 kw_node_t *
-get_tail(const kw_list_t *list)
+get_tail(const kw_list_t *const list)
 {
         if (is_list_empty(list))
                 return NULL;
@@ -202,16 +204,14 @@ get_tail(const kw_list_t *list)
 }
 
 kw_node_t *
-rem_head(kw_list_t *list)
+rem_head(kw_list_t *const list)
 {
         assert_list(list);
-
-        kw_node_t *result;
 
         if (is_list_empty(list))
                 return NULL;
 
-        result = list->head.succ;
+        kw_node_t *const result = list->head.succ;
         list->head.succ = result->succ;
         result->succ->pred = (kw_node_t *) &list->head;
 
@@ -222,16 +222,14 @@ rem_head(kw_list_t *list)
 }
 
 kw_node_t *
-rem_tail(kw_list_t *list)
+rem_tail(kw_list_t *const list)
 {
         assert_list(list);
-
-        kw_node_t *result;
 
         if (is_list_empty(list))
                 return NULL;
 
-        result = list->tail.pred;
+        kw_node_t *const result = list->tail.pred;
         list->tail.pred = result->pred;
         result->pred->succ = (kw_node_t *) &list->tail;
 
@@ -241,7 +239,7 @@ rem_tail(kw_list_t *list)
 }
 
 kw_node_t *
-get_list_iterator(const kw_list_t *list)
+get_list_iterator(const kw_list_t *const list)
 {
         assert_list(list);
 
@@ -249,7 +247,7 @@ get_list_iterator(const kw_list_t *list)
 }
 
 kw_node_t *
-get_next_node(kw_node_t **iterator)
+get_next_node(kw_node_t **const iterator)
 {
         assert_node(*iterator);
         
@@ -264,7 +262,7 @@ get_next_node(kw_node_t **iterator)
 }
 
 void
-free_list(kw_list_t *list)
+free_list(kw_list_t *const list)
 {
         assert_list(list);
 
@@ -272,7 +270,7 @@ free_list(kw_list_t *list)
 
         while (node->succ)
         {
-                kw_node_t *tmp = node;
+                kw_node_t *const tmp = node;
                 node = node->succ;
                 if (tmp->name)
                         free(tmp->name);
@@ -282,13 +280,13 @@ free_list(kw_list_t *list)
         free(list);
 }
 
-unsigned int
-list_length(const kw_list_t *list)
+int
+list_length(const kw_list_t *const list)
 {
         assert_list(list);
 
-        kw_node_t *node = list->head.succ;
-        unsigned int result = 0;
+        const kw_node_t *node = list->head.succ;
+        int result = 0;
 
         while (node->succ)
         {

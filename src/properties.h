@@ -73,15 +73,14 @@ struct la_property_s
          *   value from the log line
          * - when used as an action token, this is the value taken from the
          *   original token
-         *
-         * BTW: strings will be strdup()ed - take care to free again */
+         */
         char value[MAX_PROP_SIZE];
 
         /* Only for tokens matching a log line. Specifies the regex that the
          * %token% should be replaced with.
          */
         char *replacement;
-        unsigned int replacement_braces;
+        int replacement_braces;
 
         /* The following  members will only be used when properties are
          * obtained from log lines matching tokens or in action strings.
@@ -89,7 +88,7 @@ struct la_property_s
 
         /* Position in original string. Points to innitial '%'!.
          * Only for use in convert_regex() */
-        unsigned int pos;
+        int pos;
         /* Length of token including the two '%'. Saves us a few strlen() calls in
          * convert_regex()... */
         size_t length;
@@ -99,11 +98,11 @@ struct la_property_s
         /* Number of the subexpression this token represents in the regular
          * expression.
          */
-        unsigned int subexpression;
+        int subexpression;
 };
 
 void assert_property_ffl(const la_property_t *property, const char *func,
-                const char *file, unsigned int line);
+                const char *file, int line);
 
 size_t token_length(const char *string);
 
@@ -114,7 +113,7 @@ const char *get_value_from_property_list(const kw_list_t *property_list,
                 const char *name);
 
 la_property_t *create_property_from_token(const char *name,
-                const unsigned int pos, const la_rule_t *rule);
+                const int pos, const la_rule_t *rule);
 
 la_property_t *create_property_from_config(const char *name, const char *value);
 

@@ -37,7 +37,7 @@ void save_state(const char *state_file_name);
 
 bool restore_state(const char *state_file_name, const bool create_backup_file);
 
-void start_save_state_thread(char *state_file_name);
+void start_save_state_thread(const char *state_file_name);
 
 void save_queue_state(const char *state_file_name);
 

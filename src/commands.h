@@ -38,31 +38,29 @@
 
 #define BAK_SUFFIX ".bak"
 
-typedef enum la_commandtype_s la_commandtype_t;
-enum la_commandtype_s { LA_COMMANDTYPE_BEGIN, LA_COMMANDTYPE_END };
+typedef enum la_commandtype_s { LA_COMMANDTYPE_BEGIN, LA_COMMANDTYPE_END } la_commandtype_t;
 
 typedef enum la_need_host_s { LA_NEED_HOST_NO, LA_NEED_HOST_ANY,
         LA_NEED_HOST_IP4, LA_NEED_HOST_IP6 } la_need_host_t;
 
-typedef enum la_submission_s la_submission_t;
-enum la_submission_s { LA_SUBMISSION_LOCAL, LA_SUBMISSION_MANUAL,
-        LA_SUBMISSION_REMOTE };
+typedef enum la_submission_s { LA_SUBMISSION_LOCAL, LA_SUBMISSION_MANUAL,
+        LA_SUBMISSION_REMOTE } la_submission_t;
 
 typedef struct la_command_s la_command_t;
 struct la_command_s
 {
         struct kw_node_s node;
         char *name;       /* name of action */
-        unsigned int id;        /* unique id */
+        int id;        /* unique id */
         bool is_template;       /* true for templates, false for derived commands */
         char *begin_string;        /* string with tokens */
         char *begin_string_converted;
         struct kw_list_s *begin_properties;        /* detected tokens */
-        unsigned int n_begin_properties;/* number of detected tokens */
+        int n_begin_properties;/* number of detected tokens */
         char *end_string;        /* string with tokens */
         char *end_string_converted;
         struct kw_list_s *end_properties;        /* detected tokens */
-        unsigned int n_end_properties;/* number of detected tokens */
+        int n_end_properties;/* number of detected tokens */
         struct la_rule_s *rule;        /* related rule */
         struct la_pattern_s *pattern;        /* related pattern*/
         struct kw_list_s *pattern_properties; /* properties from matched pattern */
@@ -79,7 +77,7 @@ struct la_command_s
         char *rule_name;
 
         /* only relevant in trigger_list */
-        unsigned int n_triggers;/* how man times triggered during period */
+        int n_triggers;/* how man times triggered during period */
         time_t start_time;        /* time of first trigger during period */
 
 };
@@ -88,14 +86,12 @@ struct la_command_s
 
 void convert_both_commands(la_command_t *command);
 
-void exec_command(const la_command_t *command, la_commandtype_t type);
-
-unsigned int meta_list_length(void);
+int meta_list_length(void);
 
 void free_meta_list(void);
 
 void assert_command_ffl(const la_command_t *command, const char *func,
-                const char *file, unsigned int line);
+                const char *file, int line);
 
 void trigger_manual_command(const la_address_t *address,
                 const la_command_t *template, time_t end_time, int factor,
@@ -110,12 +106,9 @@ void trigger_end_command(const la_command_t *command, bool suppress_logging);
 la_command_t * create_command_from_template(const la_command_t *template,
                 la_pattern_t *pattern, const la_address_t *address);
 
-la_command_t * create_manual_command_from_template(const la_command_t *template,
-                const la_address_t *address, const char *from);
-
 la_command_t *create_template(const char *name, la_rule_t *rule,
                 const char *begin_string, const char *end_string,
-                unsigned int duration, la_need_host_t need_host);
+                int duration, la_need_host_t need_host);
 
 void free_command(la_command_t *command);
 

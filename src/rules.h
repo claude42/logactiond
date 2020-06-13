@@ -47,36 +47,36 @@ struct la_rule_s
         struct kw_node_s node;
         bool enabled;
         char *name;
-        unsigned int id;
+        int id;
         struct la_source_group_s *source_group;
         char *service;
         struct kw_list_s *patterns;
         struct kw_list_s *begin_commands;
-        unsigned int threshold;
-        unsigned int period;
-        unsigned int duration;
+        int threshold;
+        int period;
+        int duration;
         bool meta_enabled;
-        unsigned int meta_period;
+        int meta_period;
         int meta_factor;
-        unsigned int meta_max;
+        int meta_max;
         char *systemd_unit;
         struct kw_list_s *trigger_list;
         struct kw_list_s *properties;
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
-        atomic_ulong detection_count;
-        atomic_ulong invocation_count;
-        atomic_ulong queue_count;
+        atomic_long detection_count;
+        atomic_long invocation_count;
+        atomic_long queue_count;
 #else /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
-        unsigned long int detection_count;
-        unsigned long int invocation_count;
-        unsigned long int queue_count;
+        long int detection_count;
+        long int invocation_count;
+        long int queue_count;
 #endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
         bool dnsbl_enabled;
         struct kw_list_s *blacklists;
 };
 
 void assert_rule_ffl(const la_rule_t *rule, const char *func, const char *file,
-                unsigned int line);
+                int line);
 
 void handle_log_line_for_rule(const la_rule_t *rule, const char *line);
 

@@ -61,9 +61,9 @@ typedef struct la_address_s
 } la_address_t;
 
 void assert_address_ffl(const la_address_t *address, const char *func,
-                const char *file, unsigned int line);
+                const char *file, int line);
 
-unsigned int get_port(const la_address_t *address);
+int get_port(const la_address_t *address);
 
 const char *get_ip_version(const la_address_t *address);
 

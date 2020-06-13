@@ -37,21 +37,20 @@
 // buffer size for reading log lines
 #define DEFAULT_LINEBUFFER_SIZE 1024
 
-typedef enum la_runtype_s la_runtype_t;
-enum la_runtype_s { LA_DAEMON_BACKGROUND, LA_DAEMON_FOREGROUND,
-        LA_UTIL_FOREGROUND };
+typedef enum la_runtype_s { LA_DAEMON_BACKGROUND, LA_DAEMON_FOREGROUND,
+        LA_UTIL_FOREGROUND } la_runtype_t;
 
 /* Global variables */
 
-extern unsigned int log_level;
+extern int log_level;
 
 extern bool log_verbose;
 
-extern unsigned int id_counter;
+extern int id_counter;
 
 extern la_runtype_t run_type;
 
-extern unsigned int status_monitoring;
+extern int status_monitoring;
 
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
         extern atomic_bool shutdown_ongoing;

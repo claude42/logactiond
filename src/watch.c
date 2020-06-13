@@ -49,7 +49,7 @@ pthread_t file_watch_thread = 0;
  */
 
 void
-watch_source(la_source_t *source, const int whence)
+watch_source(la_source_t *const source, const int whence)
 {
         if (run_type == LA_UTIL_FOREGROUND)
                 return;
@@ -80,7 +80,7 @@ watch_source(la_source_t *source, const int whence)
  */
 
 void
-unwatch_source(la_source_t *source)
+unwatch_source(la_source_t *const source)
 {
         assert_source(source); assert(source->file); assert(source->active);
         la_debug("unwatch_source(%s)", source->location);

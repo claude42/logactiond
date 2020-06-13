@@ -84,7 +84,7 @@ char *create_save_message(void);
 
 char *create_restore_message(void);
 
-char *create_log_level_message(unsigned int new_log_level);
+char *create_log_level_message(int new_log_level);
 
 char *create_reset_counts_message(void);
 

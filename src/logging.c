@@ -37,7 +37,8 @@
 #include "logging.h"
 
 void
-log_message(unsigned int priority, const char *fmt, va_list gp, const char *add)
+log_message(int priority, const char *const fmt, va_list gp,
+                const char *const add)
 {
         assert(fmt);
 
@@ -47,7 +48,7 @@ log_message(unsigned int priority, const char *fmt, va_list gp, const char *add)
         const size_t thread_name_len = 16;
         char *thread_name = alloca(thread_name_len);
         if (pthread_getname_np(pthread_self(), thread_name, thread_name_len))
-                thread_name = "unkown thread";
+                thread_name = NULL;
 #endif /* HAVE_PTHREAD_GENTAME_NP */
 
         if (priority >= log_level ||
@@ -70,7 +71,8 @@ log_message(unsigned int priority, const char *fmt, va_list gp, const char *add)
                 case LA_UTIL_FOREGROUND:
 #if HAVE_PTHREAD_GETNAME_NP
                         if (priority == LOG_DEBUG)
-                                fprintf(stderr, "%s: ", thread_name);
+                                fprintf(stderr, "%s: ", thread_name ?
+                                                thread_name : NULL);
 #endif /* HAVE_PTHREAD_GENTAME_NP */
 #endif /* CLIENTONLY */
                         vfprintf(stderr, fmt, gp);
@@ -84,7 +86,7 @@ log_message(unsigned int priority, const char *fmt, va_list gp, const char *add)
 }
 
 void
-la_debug(const char *fmt, ...)
+la_debug(const char *const fmt, ...)
 {
 #ifndef NDEBUG
         va_list myargs;
@@ -97,7 +99,7 @@ la_debug(const char *fmt, ...)
 }
 
 void
-la_vdebug(const char *fmt, ...)
+la_vdebug(const char *const fmt, ...)
 {
 #ifndef NDEBUG
         va_list myargs;
@@ -110,7 +112,7 @@ la_vdebug(const char *fmt, ...)
 }
 
 void
-la_log_errno(const unsigned int priority, const char *fmt, ...)
+la_log_errno(const int priority, const char *fmt, ...)
 {
         va_list myargs;
 
@@ -120,7 +122,7 @@ la_log_errno(const unsigned int priority, const char *fmt, ...)
 }
 
 void
-la_log_verbose(const unsigned int priority, const char *fmt, ...)
+la_log_verbose(const int priority, const char *const fmt, ...)
 {
         va_list myargs;
 
@@ -135,7 +137,7 @@ la_log_verbose(const unsigned int priority, const char *fmt, ...)
 }
 
 void
-la_log(const unsigned int priority, const char *fmt, ...)
+la_log(const int priority, const char *const fmt, ...)
 {
         va_list myargs;
 
@@ -145,7 +147,7 @@ la_log(const unsigned int priority, const char *fmt, ...)
 }
 
 void
-die_hard(const char *fmt, ...)
+die_hard(const char *const fmt, ...)
 {
         va_list myargs;
 
@@ -172,7 +174,7 @@ die_hard(const char *fmt, ...)
  */
 
 void
-die_val(const int val, const char *fmt, ...)
+die_val(const int val, const char *const fmt, ...)
 {
         va_list myargs;
 
@@ -195,7 +197,7 @@ die_val(const int val, const char *fmt, ...)
 }
 
 void
-die_err(const char *fmt, ...)
+die_err(const char *const fmt, ...)
 {
         va_list myargs;
 

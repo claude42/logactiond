@@ -45,18 +45,34 @@
 /* FIXME: trigger_list should definitely be a hash */
 
 void
-assert_rule_ffl(const la_rule_t *rule, const char *func, const char *file, unsigned int line)
+assert_rule_ffl(const la_rule_t *rule, const char *func, const char *file, int line)
 {
         if (!rule)
                 die_hard("%s:%u: %s: Assertion 'rule' failed. ", file, line, func);
         if (!rule->name)
                 die_hard("%s:%u: %s: Assertion 'rule->name' failed. ", file, line, func);
-
         assert_source_group_ffl(rule->source_group, func, file, line);
         assert_list_ffl(rule->patterns, func, file, line);
         assert_list_ffl(rule->begin_commands, func, file, line);
+        if (rule->threshold < 0)
+                die_hard("%s:%u: %s: Assertion 'rule->threshold >= 0' failed. ", file, line, func);
+        if (rule->period < 0)
+                die_hard("%s:%u: %s: Assertion 'rule->period >= 0' failed. ", file, line, func);
+        if (rule->duration < 0)
+                die_hard("%s:%u: %s: Assertion 'rule->duration >= 0' failed. ", file, line, func);
+        if (rule->meta_period < 0)
+                die_hard("%s:%u: %s: Assertion 'rule->meta_period >= 0' failed. ", file, line, func);
+        if (rule->meta_max < 0)
+                die_hard("%s:%u: %s: Assertion 'rule->meta_max >= 0' failed. ", file, line, func);
         assert_list_ffl(rule->trigger_list, func, file, line);
         assert_list_ffl(rule->properties, func, file, line);
+        if (rule->detection_count < 0)
+                die_hard("%s:%u: %s: Assertion 'rule->detection_count >= 0' failed. ", file, line, func);
+        if (rule->invocation_count < 0)
+                die_hard("%s:%u: %s: Assertion 'rule->invocation_count >= 0' failed. ", file, line, func);
+        if (rule->queue_count < 0)
+                die_hard("%s:%u: %s: Assertion 'rule->queue_count >= 0' failed. ", file, line, func);
+        assert_list_ffl(rule->blacklists, func, file, line);
 }
 
 /*
@@ -65,7 +81,7 @@ assert_rule_ffl(const la_rule_t *rule, const char *func, const char *file, unsig
 
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
 static void
-add_trigger(la_command_t *command)
+add_trigger(la_command_t *const command)
 {
         assert_command(command);
         la_debug("add_trigger(%s)", command->name);
@@ -85,7 +101,7 @@ add_trigger(la_command_t *command)
  */
 
 static la_command_t *
-find_trigger(const la_command_t *template, const la_address_t *address)
+find_trigger(const la_command_t *const template, const la_address_t *const address)
 {
         assert_command(template);
         la_debug("find_trigger(%s, %u)", template->rule_name, template->id);
@@ -106,7 +122,7 @@ find_trigger(const la_command_t *template, const la_address_t *address)
                                 !adrcmp(command->address, address))
                         return command;
 
-                la_command_t *tmp = command;
+                la_command_t *const tmp = command;
                 command = NEXT_COMMAND(command);
                 /* Remove expired commands from trigger list */
                 if (now - tmp->start_time > tmp->rule->period)
@@ -129,7 +145,7 @@ find_trigger(const la_command_t *template, const la_address_t *address)
  */
 
 static void
-handle_command_on_trigger_list(la_command_t *command)
+handle_command_on_trigger_list(la_command_t *const command)
 {
         assert_command(command);
         la_debug("handle_command_on_trigger_list(%s)", command->name);
@@ -177,8 +193,9 @@ handle_command_on_trigger_list(la_command_t *command)
  */
 
 static void
-trigger_single_command(la_pattern_t *pattern, const la_address_t *address,
-                const la_command_t *template)
+trigger_single_command(la_pattern_t *const pattern,
+                const la_address_t *const address,
+                const la_command_t *const template)
 {
         if  (run_type == LA_UTIL_FOREGROUND)
                 return;
@@ -190,7 +207,7 @@ trigger_single_command(la_pattern_t *pattern, const la_address_t *address,
 
         /* First check whether a command for this host is still active on
          * end_queue. In this case, ignore new command */
-        const la_command_t *tmp = find_end_command(address);
+        const la_command_t *const tmp = find_end_command(address);
         if (tmp)
                 LOG_RETURN_VERBOSE(, LOG_INFO, "Host: %s, ignored, action \"%s\" "
                                 "already active (triggered by rule \"%s\").",
@@ -251,14 +268,14 @@ trigger_single_command(la_pattern_t *pattern, const la_address_t *address,
  */
 
 static void
-increase_detection_count(la_pattern_t *pattern)
+increase_detection_count(la_pattern_t *const pattern)
 {
         assert_pattern(pattern);
         la_vdebug("increase_detection_count()");
 
-        if (pattern->detection_count < ULONG_MAX)
+        if (pattern->detection_count < LONG_MAX)
                 pattern->detection_count++;
-        if (pattern->rule->detection_count < ULONG_MAX)
+        if (pattern->rule->detection_count < LONG_MAX)
                 pattern->rule->detection_count++;
 }
 
@@ -270,7 +287,7 @@ increase_detection_count(la_pattern_t *pattern)
  */
 
 static void
-trigger_all_commands(la_pattern_t *pattern)
+trigger_all_commands(la_pattern_t *const pattern)
 {
         assert_pattern(pattern);
         la_debug("trigger_all_commands(%s, %s)", pattern->rule->name, pattern->string);
@@ -311,8 +328,9 @@ trigger_all_commands(la_pattern_t *pattern)
 
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
 void
-trigger_manual_commands_for_rule(const la_address_t *address,const  la_rule_t *rule,
-                const time_t end_time, const int factor, const char *from,
+trigger_manual_commands_for_rule(const la_address_t *const address,
+                const  la_rule_t *const rule, const time_t end_time,
+                const int factor, const char *const from,
                 const bool suppress_logging)
 {
         la_debug("trigger_manual_commands_for_rule()");
@@ -335,8 +353,8 @@ trigger_manual_commands_for_rule(const la_address_t *address,const  la_rule_t *r
  */
 
 static bool
-assign_value_to_properties(const kw_list_t *property_list, const char *line,
-                regmatch_t pmatch[])
+assign_value_to_properties(const kw_list_t *const property_list,
+                const char *const line, regmatch_t pmatch[])
 {
         assert_list(property_list); assert(line);
         la_debug("assign_value_to_properties()");
@@ -359,7 +377,7 @@ assign_value_to_properties(const kw_list_t *property_list, const char *line,
  */
 
 static void
-clear_property_values(const kw_list_t *property_list)
+clear_property_values(const kw_list_t *const property_list)
 {
         assert_list(property_list);
         la_debug("clear_property_values()");
@@ -375,7 +393,7 @@ clear_property_values(const kw_list_t *property_list)
  */
 
 void
-handle_log_line_for_rule(const la_rule_t *rule, const char *line)
+handle_log_line_for_rule(const la_rule_t *const rule, const char *const line)
 {
         assert_rule(rule); assert(line);
         la_vdebug("handle_log_line_for_rule(%s, %s)", rule->name, line);
@@ -415,8 +433,8 @@ handle_log_line_for_rule(const la_rule_t *rule, const char *line)
  */
 
 la_rule_t *
-create_rule(const bool enabled, const char *name,
-                la_source_group_t *source_group, const int threshold,
+create_rule(const bool enabled, const char *const name,
+                la_source_group_t *const source_group, const int threshold,
                 const int period, const int duration, const int meta_enabled,
                 const int meta_period, const int meta_factor,
                 const int meta_max, const int dnsbl_enabled,
@@ -425,7 +443,7 @@ create_rule(const bool enabled, const char *name,
         assert(source_group);
         la_debug("create_rule(%s)", name);
 
-        la_rule_t *result = xmalloc(sizeof *result);
+        la_rule_t *const result = xmalloc(sizeof *result);
 
         result->enabled = enabled;
 
@@ -477,7 +495,7 @@ create_rule(const bool enabled, const char *name,
  */
 
 void
-free_rule(la_rule_t *rule)
+free_rule(la_rule_t *const rule)
 {
         if (!rule)
                 return;
@@ -511,7 +529,7 @@ free_rule(la_rule_t *rule)
  */
 
 void
-free_rule_list(kw_list_t *list)
+free_rule_list(kw_list_t *const list)
 {
         la_vdebug("free_rule_list()");
 
@@ -528,7 +546,8 @@ free_rule_list(kw_list_t *list)
 
 
 static la_rule_t *
-find_rule_for_source_group(const la_source_group_t *source_group, const char *rule_name)
+find_rule_for_source_group(const la_source_group_t *const source_group,
+                const char *const rule_name)
 {
         assert(source_group); assert(rule_name);
         la_debug("find_rule_for_source(%s)", rule_name);
@@ -544,16 +563,15 @@ find_rule_for_source_group(const la_source_group_t *source_group, const char *ru
 }
 
 la_rule_t *
-find_rule(const char *rule_name)
+find_rule(const char *const rule_name)
 {
         assert(rule_name); assert(la_config);
         la_debug("find_rule(%s)", rule_name);
 
-        la_rule_t *result;
 #if HAVE_LIBSYSTEMD
         if (la_config->systemd_source_group)
         {
-                result = find_rule_for_source_group(
+                la_rule_t *const result = find_rule_for_source_group(
                                 la_config->systemd_source_group, rule_name);
                 if (result)
                         return result;
@@ -564,7 +582,7 @@ find_rule(const char *rule_name)
         for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
                         (source_group = NEXT_SOURCE_GROUP(source_group));)
         {
-                result = find_rule_for_source_group(source_group, rule_name);
+                la_rule_t *const result = find_rule_for_source_group(source_group, rule_name);
                 if (result)
                         return result;
         }
