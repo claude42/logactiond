@@ -97,7 +97,7 @@ assert_command_ffl(const la_command_t *command, const char *func,
         if (command->address)
                 assert_address_ffl(command->address, func, file, line);
 
-        if (command->factor < 0)
+        if (command->factor < -1)
                 die_hard("%s:%u: %s: Assertion 'command->factor >= 0' failed. ",
                                 file, line, func);
 
