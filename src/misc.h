@@ -75,7 +75,7 @@ size_t xstrlen(const char *s);
 
 char *concat(const char *s1, const char *s2);
 
-int string_copy(char *dest, size_t dest_size, const char *src, size_t n);
+int string_copy(char *dest, size_t dest_size, const char *src, size_t n, char delim);
 
 int strendcmp(const char *string, const char *suffix);
 

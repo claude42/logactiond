@@ -60,6 +60,8 @@ extern int status_monitoring;
 
 extern int exit_status;
 
+extern const char *const pidfile_name;
+
 /* logactiond.c */
 
 void trigger_shutdown(int status, int saved_errno);

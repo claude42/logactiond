@@ -365,7 +365,7 @@ assign_value_to_properties(const kw_list_t *const property_list,
                 if (!string_copy(property->value, MAX_PROP_SIZE,
                                         line + pmatch[property->subexpression].rm_so,
                                         pmatch[property->subexpression].rm_eo -
-                                        pmatch[property->subexpression].rm_so))
+                                        pmatch[property->subexpression].rm_so, '\0'))
                         return false;
         }
 

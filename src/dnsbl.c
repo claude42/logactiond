@@ -37,6 +37,7 @@ static int
 convert_to_dnsbl_hostname_4_sa(const struct sockaddr_in *const si,
                 const char *const dnsbl_domainname, char *hostname)
 {
+        assert(si->sin_family == AF_INET);
         uint8_t *b = (uint8_t *) &si->sin_addr;
         return snprintf(hostname, NI_MAXHOST, "%u.%u.%u.%u.%s", b[3], b[2],
                         b[1], b[0], dnsbl_domainname);
@@ -46,6 +47,7 @@ static int
 convert_to_dnsbl_hostname_6_sa(const struct sockaddr_in6 *const si6,
                 const char *const dnsbl_domainname, char *hostname)
 {
+        assert(si6->sin6_family == AF_INET6);
         uint8_t *b = (uint8_t *) &si6->sin6_addr;
         return snprintf(hostname, NI_MAXHOST, "%x.%x.%x.%x.%x.%x.%x.%x.%x."
                         "%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x."
@@ -72,7 +74,7 @@ convert_to_dnsbl_hostname_sa(const struct sockaddr *const sa, const char *const 
 {
         la_debug("convert_to_dnsbl_hostname_sa()");
         assert(sa); assert(dnsbl_domainname); assert(hostname);
-        int r;
+        int r = 0;
 
         if (sa->sa_family == AF_INET)
                 r = convert_to_dnsbl_hostname_4_sa((struct  sockaddr_in *) sa,

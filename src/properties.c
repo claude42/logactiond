@@ -63,7 +63,7 @@ assert_property_ffl(const la_property_t *property, const char *func,
 size_t
 token_length(const char *const string)
 {
-        assert(string);
+        assert(string); assert(*string == '%');
         la_vdebug("token_length(%s)", string);
 
         const char *ptr = string+1;
@@ -253,7 +253,7 @@ create_property_from_token(const char *const name, const int pos,
 la_property_t *
 create_property_from_config(const char *const name, const char *const value)
 {
-        assert(name); assert(value);
+        assert(name); assert(strlen(name) > 0); assert(value);
         la_vdebug("create_property_from_config(%s, %s)", name, value);
 
         la_property_t *const result = xmalloc(sizeof *result);
@@ -261,7 +261,7 @@ create_property_from_config(const char *const name, const char *const value)
         copy_str_and_tolower(result->name, name, '\0');
 
         result->is_host_property = !strcmp(result->name, LA_HOST_TOKEN);
-        if (string_copy(result->value,  MAX_PROP_SIZE, value, 0) == -1)
+        if (string_copy(result->value,  MAX_PROP_SIZE, value, 0, '\0') == -1)
                 die_hard("Property value longer than %u charcters.",
                                 MAX_PROP_SIZE);
         result->replacement = NULL;
@@ -285,9 +285,9 @@ duplicate_property(const la_property_t *const property)
         la_vdebug("duplicate_property(%s)", property->name);
         la_property_t *const result = xmalloc(sizeof *result);
 
-        string_copy(result->name, MAX_PROP_SIZE, property->name, 0);
+        string_copy(result->name, MAX_PROP_SIZE, property->name, 0, '\0');
         result->is_host_property = property->is_host_property;
-        string_copy(result->value, MAX_PROP_SIZE, property->value, 0);
+        string_copy(result->value, MAX_PROP_SIZE, property->value, 0, '\0');
         result->replacement = xstrdup(property->replacement);
         result->replacement_braces = property->replacement_braces;
         result->pos = property->pos;

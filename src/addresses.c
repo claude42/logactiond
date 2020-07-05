@@ -314,9 +314,6 @@ create_address_sa(const struct sockaddr *const sa, const socklen_t salen)
  * Creates new address. Sets correct port in address->sa
  *
  * Important: port must be supplied in host byte order NOT network byte order.
- *
- * May (briefly) modify host (but change it back  to its original state before
- * it returns.
  */
 
 la_address_t *
@@ -325,16 +322,20 @@ create_address_port(const char *const host, const in_port_t port)
         assert(host);
         la_vdebug("create_address_port(%s)", host);
 
-        char *const prefix_str = strchr(host, '/');
-        if (prefix_str)
-                *prefix_str = '\0';
+        char *const host_str = alloca(INET6_ADDRSTRLEN + 1);
+        const int n = string_copy(host_str, INET6_ADDRSTRLEN, host, 0, '/');
+        if (n == -1)
+                die_hard("Address string too long!");
 
-        struct addrinfo *ai = NULL;
+        // Prefix - if any. String will include '/'
+        const char *const prefix_str = host[n] == '/' ? &host[n] : NULL;
 
         char port_str[6];
         if (port)
                 snprintf(port_str, 6, "%u", port);
-        const int r = getaddrinfo(host, port ? port_str : NULL, NULL, &ai);
+
+        struct addrinfo *ai = NULL;
+        const int r = getaddrinfo(host_str, port ? port_str : NULL, NULL, &ai);
 
         switch (r) {
                 case 0:
@@ -343,20 +344,17 @@ create_address_port(const char *const host, const in_port_t port)
                 case EAI_FAIL:
                 case EAI_NONAME:
                         la_log(LOG_ERR, "Unable to get address for host '%s': %s",
-                                        host, gai_strerror(r));
+                                        host_str, gai_strerror(r));
                         freeaddrinfo(ai);
                         return NULL;
                         break;
                 default:
                         freeaddrinfo(ai);
                         die_hard("Error getting address for host '%s': %s",
-                                        host, gai_strerror(r));
+                                        host_str, gai_strerror(r));
                         break;
         }
 
-        if (prefix_str)
-                *prefix_str = '/';
-        
         /* We'll always only use the first address that getaddrinfo() returns.
          * That makes sense for send_to (as we don't want to send the same
          * message to the same host multiple times).
@@ -375,10 +373,10 @@ create_address_port(const char *const host, const in_port_t port)
         {
                 char *endptr;
                 errno = 0;
-                result->prefix = strtol(prefix_str+1, &endptr, 10);
+                result->prefix = strtol(prefix_str + 1, &endptr, 10);
                 /* Fail if there are spurious characters or prefix is out of
                  * bounds */
-                if (errno || *endptr != '\0' || result->prefix < 0 ||
+                if (errno || !endptr || *endptr != '\0' || result->prefix < 0 ||
                                 (ai->ai_family == AF_INET && result->prefix > 32) ||
                                 (ai->ai_family == AF_INET6 && result->prefix > 128))
                 {
@@ -415,7 +413,7 @@ dup_address(const la_address_t *const address)
 
         memcpy(&(result->sa), &(address->sa), sizeof (struct sockaddr_storage));
         result->prefix = address->prefix;
-        string_copy(result->text, MAX_ADDR_TEXT_SIZE + 1, address->text, 0);
+        string_copy(result->text, MAX_ADDR_TEXT_SIZE + 1, address->text, 0, '\0');
 
         assert_address(result);
         return result;

@@ -220,17 +220,6 @@ remote_loop(void *const ptr)
                 buf[num_read] = '\0';
 
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
-                char from[INET6_ADDRSTRLEN + 1];
-                const int r = getnameinfo((struct sockaddr *) &remote_client,
-                                sizeof remote_client, from, INET6_ADDRSTRLEN + 1,
-                                NULL, 0, NI_NUMERICHOST);
-                if (r)
-                {
-                        la_log(LOG_ERR, "Cannot determine remote host address: %s",
-                                        gai_strerror(r));
-                        continue;
-                }
-
                 la_address_t *const from_addr = address_on_list_sa(
                                 (struct sockaddr *) &remote_client,
                                 sizeof remote_client,
@@ -238,8 +227,16 @@ remote_loop(void *const ptr)
 
                 if (!from_addr)
                 {
-                        la_log(LOG_ERR, "Ignored message from %s - not on "
-                                        "receive_from list!", from);
+                        char from[INET6_ADDRSTRLEN + 1];
+                        const int r = getnameinfo((struct sockaddr *) &remote_client,
+                                        sizeof remote_client, from, INET6_ADDRSTRLEN + 1,
+                                        NULL, 0, NI_NUMERICHOST);
+                        if (!r)
+                                la_log(LOG_ERR, "Ignored message from %s - not on "
+                                                "receive_from list!", from);
+                        else
+                                la_log(LOG_ERR, "Cannot determine remote host address: %s",
+                                                gai_strerror(r));
                         continue;
                 }
 
@@ -248,9 +245,9 @@ remote_loop(void *const ptr)
                         continue;
 #endif /* WITH_LIBSODIUM */
 
-                la_debug("Received message '%s' from %s",  buf, from);
+                la_debug("Received message '%s' from %s",  buf, from_addr->text);
 
-                parse_message_trigger_command(buf, from);
+                parse_message_trigger_command(buf, from_addr->text);
                 
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
         }

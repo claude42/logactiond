@@ -77,6 +77,7 @@ bool create_backup_file = false;
 int exit_status = EXIT_SUCCESS;
 static int exit_errno = 0;
 bool sync_on_startup = false;
+const char *const pidfile_name = PIDFILE;
 
 void
 trigger_shutdown(int status, int saved_errno)

@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <syslog.h>
 
 #include "ndebug.h"
 #include "logging.h"
@@ -105,8 +106,8 @@ convert_regex(const char *const string, la_pattern_t *const pattern)
 
                                 if (new_prop->is_host_property &&
                                                 pattern->host_property)
-                                        die_hard("Only one %HOST% token "
-                                                        "allowed er pattern!");
+                                        die_hard("Only one %%HOST%% token "
+                                                        "allowed per pattern!");
 
                                 // Count open braces a.) to determine whether
                                 // we need this property for scanning at all
@@ -125,13 +126,12 @@ convert_regex(const char *const string, la_pattern_t *const pattern)
                                 // hostname.
                                 if (new_prop->replacement_braces)
                                 {
-                                        if (subexpression + 1 >= MAX_NMATCH)
-                                                die_hard("Too many subexpressions in regex "
-                                                                "\"%s\"!", string);
-
                                         new_prop->subexpression = subexpression + 1;
                                         add_property(pattern, new_prop);
                                         subexpression += new_prop->replacement_braces;
+                                        if (subexpression >= MAX_NMATCH)
+                                                die_hard("Too many subexpressions in regex "
+                                                                "\"%s\"!", string);
                                 }
 
                                 // Finally replace the token by the
@@ -172,7 +172,9 @@ convert_regex(const char *const string, la_pattern_t *const pattern)
                         break;
                 case '(':
                         // In case of '(', count sub expression
-                        subexpression++;
+                        if (subexpression++ >= MAX_NMATCH)
+                                die_hard("Too many subexpressions in regex "
+                                                "\"%s\"!", string);
                         // intentional fall through!
                 default:
                         // simply copy all other characters

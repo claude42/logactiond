@@ -1013,7 +1013,9 @@ init_la_config(const char *filename)
         {
                 const char *const error_file =
                         config_error_file(&la_config->config_file);
+#ifndef CLIENTONLY
                 xpthread_mutex_unlock(&config_mutex);
+#endif /* CLIENTONLY */
                 if (error_file)
                         la_log(LOG_ERR, "%s:%d - %s!",
                                         config_error_file(&la_config->config_file),
@@ -1033,19 +1035,25 @@ load_la_config(void)
 {
         //init_config_mutex();
 
+#ifndef CLIENTONLY
         xpthread_mutex_lock(&config_mutex);
+#endif /* CLIENTONLY */
 
                 load_defaults();
                 if (!load_rules())
                 {
+#ifndef CLIENTONLY
                         xpthread_mutex_unlock(&config_mutex);
+#endif /* CLIENTONLY */
                         die_hard("No rules enabledd!");
                 }
                 load_remote_settings();
 
                 config_destroy(&la_config->config_file);
 
+#ifndef CLIENTONLY
         xpthread_mutex_unlock(&config_mutex);
+#endif /* CLIENTONLY */
 }
 
 void
@@ -1058,8 +1066,10 @@ unload_la_config(void)
          * not have been correctly unlocked. OTOH, when reloading, it's
          * absolutely necessary to lock the mutex.
          */
+#ifndef CLIENTONLY
         if (!shutdown_ongoing)
                 xpthread_mutex_lock(&config_mutex);
+#endif /* CLIENTONLY */
 
         free_source_group_list(la_config->source_groups);
         la_config->source_groups = NULL;
@@ -1078,8 +1088,10 @@ unload_la_config(void)
         la_config->remote_send_to = NULL;
         free(la_config->remote_bind);
 
+#ifndef CLIENTONLY
         if (!shutdown_ongoing)
                 xpthread_mutex_unlock(&config_mutex);
+#endif /* CLIENTONLY */
 }
 
 /*

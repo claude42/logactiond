@@ -29,14 +29,16 @@
 #include <sys/socket.h>
 
 #include "misc.h"
+#include "addresses.h"
 
 int
 main(int argc, char *argv[])
 {
         printf("%s\n%s\n", argv[1], argv[2]);
+        la_address_t *a = create_address("1.2.3.4/100");
         //char *str = argv[1];
-        int dest_len;
-        sscanf(argv[2], "%i", &dest_len);
+        //int dest_len;
+        //sscanf(argv[2], "%i", &dest_len);
         //char dest[100];
         //int r = copy_str_and_tolower(dest, dest_len, str, '%');
         //printf("dest=%s, r=%d\n", dest, r);

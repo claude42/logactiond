@@ -46,16 +46,16 @@ remove_pidfile(void)
 {
         la_debug("remove_pidfile()");
 
-        if (remove(PIDFILE) == -1 && errno != ENOENT)
+        if (remove(pidfile_name) == -1 && errno != ENOENT)
                 la_log_errno(LOG_ERR, "Unable to remove pidfile");
 }
 
 void
 create_pidfile(void)
 {
-        la_debug("create_pidfile(" PIDFILE ")");
+        la_debug("create_pidfile(%s)", pidfile_name);
 
-        FILE *const stream = fopen(PIDFILE, "w");
+        FILE *const stream = fopen(pidfile_name, "w");
         if (!stream)
                 die_err("Unable to open pidfile.");
 
@@ -72,11 +72,11 @@ check_pidfile(void)
 {
 #define BUF_LEN 20 /* should be enough - I think */
 
-        la_debug("check_pidfile(" PIDFILE ")");
+        la_debug("check_pidfile(%s)", pidfile_name);
 
         bool result = true;
 
-        FILE *const stream = fopen(PIDFILE, "r");
+        FILE *const stream = fopen(pidfile_name, "r");
 
         if (stream)
         {
@@ -328,6 +328,7 @@ concat(const char *s1, const char *s2)
 
 /* Will copy string from src to dest. Either
  * - until '\0' is reached or
+ * - until delim is reached or
  * - until n bytes are copied (if n>0) or
  * - until dest_size - 1 bytes are copied
  *
@@ -335,23 +336,32 @@ concat(const char *s1, const char *s2)
  *
  * Will return number of characters copied - unless available space in dest
  * would not have been enough - then will return -1.
+ *
+ * n must be >= 1.
+ * delim should be '\0' if no special delimiter is required.
  */
 
 int
 string_copy(char *const dest, const size_t dest_size, const char *const src,
-                const size_t n)
+                const size_t n, char delim)
 {
-        assert(dest);
+        assert(dest); assert(src); assert(dest_size >= 1); assert(n >= 0);
 
         const size_t copy_bytes = (!n || dest_size-1 < n) ? dest_size-1 : n;
         size_t i;
 
-        for (i = 0; i < copy_bytes && src[i]; i++)
+        for (i = 0; i < copy_bytes && src[i] && src[i] != delim; i++)
                 dest[i] = src[i];
 
         dest[i] = '\0';
 
-        if (src[i] == '\0' || n < dest_size)
+        /* Return number of copied bytes if
+         * - copying ended when '\0' or delim was reached or
+         * - length (n) was specified and is smaller than dest_size.
+         *
+         * Return -1 otherwise - i.e when dest_size was reached
+         */
+        if (src[i] == '\0' || src[i] == delim || (n != 0 && n < dest_size))
                 return i;
         else
                 return -1;
@@ -360,7 +370,9 @@ string_copy(char *const dest, const size_t dest_size, const char *const src,
 int
 strendcmp(const char *const string, const char *const suffix)
 {
-        if (!string || !suffix)
+        if (!string && !suffix)
+                return 0;
+        else if (!string || !suffix)
                 return 1;
 
         const int string_len = strlen(string);
@@ -387,6 +399,7 @@ strendcmp(const char *const string, const char *const suffix)
 void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, const size_t on_top)
 {
         la_vdebug("realloc_buffer(%u, %u)", *dst_len, on_top);
+        assert (*dst); assert((*dst_ptr - *dst) < *dst_len); assert(on_top >= 0);
 
         if (*dst_ptr + on_top >= *dst + *dst_len)
         {

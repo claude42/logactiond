@@ -52,6 +52,7 @@ static char *log_filename = NULL;
 #endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
 int exit_status = EXIT_SUCCESS;
 bool show_undetected = false;
+const char *const pidfile_name = PIDFILE;
 
 void
 trigger_shutdown(int status, int saved_errno)
