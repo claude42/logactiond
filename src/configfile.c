@@ -319,11 +319,14 @@ compile_actions(la_rule_t *const rule, const config_setting_t *const action_def)
                 die_hard("Invalid value \"%s\" for need_host "
                                 "parameter!", tmp);
 
+        int quick_shutdown = false;
+        config_setting_lookup_bool(action_def, LA_ACTION_QUICK_SHUTDOWN_LABEL, &quick_shutdown);
+
 #ifndef NOCOMMANDS
         if (initialize)
         {
                 la_command_t *const template = create_template(name, rule,
-                                initialize, shutdown, INT_MAX, false);
+                                initialize, shutdown, INT_MAX, false, false);
 #ifndef ONLYCLEANUPCOMMANDS
                 convert_both_commands(template);
                 trigger_command(template);
@@ -336,7 +339,8 @@ compile_actions(la_rule_t *const rule, const config_setting_t *const action_def)
         if (begin)
                 add_tail(rule->begin_commands, (kw_node_t *)
                                 create_template(name, rule, begin, end,
-                                        rule->duration, need_host));
+                                        rule->duration, need_host,
+                                        quick_shutdown));
         else
                 die_hard("Begin action always required!");
 

@@ -796,6 +796,7 @@ dup_command(const la_command_t *const command)
         result->duration = command->duration;
         result->factor = command->factor;
         result->need_host = command->need_host;
+        result->quick_shutdown = command->quick_shutdown;
 
         result->rule_name = xstrdup(command->rule_name);
 
@@ -908,7 +909,8 @@ create_manual_command_from_template(const la_command_t *const template,
 la_command_t *
 create_template(const char *const name, la_rule_t *const rule,
                 const char *const begin_string, const char *const end_string,
-                const int duration, const la_need_host_t need_host)
+                const int duration, const la_need_host_t need_host,
+                const bool quick_shutdown)
 {
         assert(name); assert_rule(rule); assert(begin_string);
         la_debug("create_template(%s, %d)", name, duration);
@@ -936,6 +938,7 @@ create_template(const char *const name, la_rule_t *const rule,
         result->pattern_properties = NULL;
         result->address = NULL;
         result->need_host = need_host;
+        result->quick_shutdown = quick_shutdown;
 
         result->duration = duration;
         result->factor = 1;

@@ -194,7 +194,8 @@ empty_end_queue(void)
 
         for (la_command_t *tmp; (tmp = REM_COMMANDS_HEAD(end_queue));)
         {
-                trigger_end_command(tmp, true);
+                if (!tmp->quick_shutdown)
+                        trigger_end_command(tmp, true);
                 free_command(tmp);
         }
 

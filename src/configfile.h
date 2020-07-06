@@ -76,6 +76,7 @@
 #define LA_ACTION_NEED_HOST_ANY_LABEL "any"
 #define LA_ACTION_NEED_HOST_IP4_LABEL "4"
 #define LA_ACTION_NEED_HOST_IP6_LABEL "6"
+#define LA_ACTION_QUICK_SHUTDOWN_LABEL "quick_shutdown"
 
 #define LA_SOURCES_LABEL "sources"
 

@@ -71,6 +71,7 @@ struct la_command_s
         int factor;
         enum la_submission_s submission_type;
         bool blacklist;         /* True if command has been triggered via blacklist */
+        bool quick_shutdown;
 
         /* only relevant for end_commands */
         time_t end_time;        /* specific time for enqueued end_commands */
@@ -108,7 +109,7 @@ la_command_t * create_command_from_template(const la_command_t *template,
 
 la_command_t *create_template(const char *name, la_rule_t *rule,
                 const char *begin_string, const char *end_string,
-                int duration, la_need_host_t need_host);
+                int duration, la_need_host_t need_host, bool quick_shutdown);
 
 void free_command(la_command_t *command);
 
