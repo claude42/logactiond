@@ -310,6 +310,29 @@ create_address_sa(const struct sockaddr *const sa, const socklen_t salen)
         return result;
 }
 
+/* Return prefix if valid prefix, -1 otherwise */
+
+static int convert_prefix(unsigned short int family, const char *const prefix)
+{
+        assert(prefix);
+        assert(family == AF_INET || family == AF_INET6);
+
+        if (prefix[0] == '\0')
+                return -1;
+
+        char *endptr;
+        errno = 0;
+        const int result = strtol(prefix, &endptr, 10);
+        /* Fail if there are spurious characters or prefix is out of
+         * bounds */
+        if (errno || !endptr || *endptr != '\0' || result < 0 ||
+                        (family == AF_INET && result > 32) ||
+                        (family == AF_INET6 && result > 128))
+                return -1;
+
+        return result;
+}
+
 /*
  * Creates new address. Sets correct port in address->sa
  *
@@ -371,14 +394,8 @@ create_address_port(const char *const host, const in_port_t port)
 
         if (prefix_str)
         {
-                char *endptr;
-                errno = 0;
-                result->prefix = strtol(prefix_str + 1, &endptr, 10);
-                /* Fail if there are spurious characters or prefix is out of
-                 * bounds */
-                if (errno || !endptr || *endptr != '\0' || result->prefix < 0 ||
-                                (ai->ai_family == AF_INET && result->prefix > 32) ||
-                                (ai->ai_family == AF_INET6 && result->prefix > 128))
+                result->prefix = convert_prefix(ai->ai_family, prefix_str + 1);
+                if (result->prefix == -1)
                 {
                         freeaddrinfo(ai);
                         free_address(result);
