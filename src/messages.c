@@ -207,7 +207,7 @@ del_entry(const char *const buffer)
 
         la_address_t *const address = create_address(buffer+2);
         if (!address)
-                LOG_RETURN(, LOG_ERR, "Cannot convert address in command %s!", buffer);
+                LOG_RETURN(, LOG_ERR, "Cannot convert address in command %s!", buffer+2);
 
         xpthread_mutex_lock(&config_mutex);
 
@@ -215,10 +215,11 @@ del_entry(const char *const buffer)
 
         xpthread_mutex_unlock(&config_mutex);
 
-        if (r == -1)
-                LOG_RETURN(, LOG_ERR, "Address %s not in end queue!", buffer);
-
         free_address(address);
+
+        if (r == -1)
+                LOG_RETURN(, LOG_ERR, "Address %s not in end queue!", buffer+2);
+
 }
 
 static void
