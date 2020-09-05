@@ -191,6 +191,12 @@ watched_file_created(la_source_t *const source)
         if (source->file)
                 unwatch_source(source);
 
+        /* For reasons I don't understand, it sometimes (rather infrequently)
+         * happens that an IN_CREATE event is fired but a subequent fopen() of
+         * that very same file will fail. Maybe a simple (but kinda
+         * embarassing) sleep() will help... */
+        sleep(2);
+
         watch_source(source, SEEK_SET);
         if (!handle_new_content(source))
                 la_log(LOG_ERR, "Reading from source \"%s\", file \"%s\" failed.",
@@ -296,7 +302,7 @@ handle_inotify_file_event(const struct inotify_event *const event)
         la_vdebug("handle_inotify_file_event()");
         la_vdebug_inotify_event(event, IN_MODIFY);
 
-        la_source_t *const source = find_source_by_file_wd(event->wd);
+        const la_source_t *const source = find_source_by_file_wd(event->wd);
         if (!source)
                 /* as we're monitoring  directory, lots of file events for
                  * non-watched files will be triggered. So this is the "normal
