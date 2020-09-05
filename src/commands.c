@@ -518,9 +518,9 @@ log_trigger(const la_command_t *const command, const char *const from)
         if (from)
         {
                 /* manual command */
-                char factor_string[14];
+                char factor_string[15];
                 if (command->factor)
-                        snprintf(factor_string, 13, " (factor %d)",
+                        snprintf(factor_string, 14, " (factor %d)",
                                         command->factor);
 
                 la_log(LOG_INFO, "Host: %s, action \"%s\" activated"
