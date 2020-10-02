@@ -123,7 +123,7 @@ convert_regex(const char *string, la_pattern_t *pattern)
 
                                 if (new_prop->is_host_property &&
                                                 pattern->host_property)
-                                        die_hard("Only one %HOST% token "
+                                        die_hard("Only one \%HOST\% token "
                                                         "allowed er pattern!");
 
                                 // Count open braces a.) to determine whether
