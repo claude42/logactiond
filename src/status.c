@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <time.h>
+#include <alloca.h>
 
 #include "ndebug.h"
 #include "addresses.h"
