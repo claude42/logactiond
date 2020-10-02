@@ -285,7 +285,7 @@ wait_for_next_end_command(const la_command_t *command)
          * obviously that's a bit much "just for" an assert() */
         /* assert_command(command);*/
         assert(command->end_string);
-        la_vdebug("wait_for_next_end_command(%s, %u)", command->end_string,
+        la_vdebug("wait_for_next_end_command(%s, %lu)", command->end_string,
                         command->end_time);
 
         if (command->end_time == INT_MAX)
@@ -418,8 +418,8 @@ set_end_time(la_command_t *command, const time_t manual_end_time)
         else
         {
                 if (command->factor != -1)
-                        command->end_time = xtime(NULL) + command->duration *
-                                command->factor;
+                        command->end_time = xtime(NULL) +
+                                (long) command->duration * command->factor;
                 else
                         command->end_time = xtime(NULL) + command->rule->meta_max;
         }

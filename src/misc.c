@@ -245,7 +245,7 @@ xtime(time_t *tloc)
 
 void xfree(void *ptr)
 {
-        la_debug("free(%u)", ptr);
+        la_debug("free(%p)", ptr);
         free(ptr);
 }
 
@@ -402,12 +402,12 @@ strendcmp(const char *string, const char *suffix)
 
 void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, const size_t on_top)
 {
-        la_vdebug("realloc_buffer(%u, %u)", *dst_len, on_top);
+        la_vdebug("realloc_buffer(%lu, %lu)", *dst_len, on_top);
 
         if (*dst_ptr + on_top >= *dst + *dst_len)
         {
                 *dst_len = *dst_len * 2 + on_top;
-                la_debug("realloc_buffer()=%u", *dst_len);
+                la_debug("realloc_buffer()=%lu", *dst_len);
 
                 char *tmp_ptr;
                 tmp_ptr = xrealloc(*dst, *dst_len);

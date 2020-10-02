@@ -443,7 +443,8 @@ use_correct_uid(void)
 int
 main(int argc, char *argv[])
 {
-        chdir(CONF_DIR);
+        if (chdir(CONF_DIR) == -1)
+                die_err("Can't change to configuration directory!");
 
         read_options(argc, argv);
 

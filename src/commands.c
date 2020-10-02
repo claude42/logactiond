@@ -417,7 +417,7 @@ check_meta_list(const la_command_t *command, const int set_factor)
                 if (set_factor)
                         meta_command->factor = set_factor;
                 meta_command->meta_start_time = now +
-                        meta_command->factor * command->duration;
+                        (long) meta_command->factor * command->duration;
                 add_head(meta_list, (kw_node_t *) meta_command);
         }
         else if (now > meta_command->meta_start_time)
@@ -437,7 +437,7 @@ check_meta_list(const la_command_t *command, const int set_factor)
                         {
                                 meta_command->factor = new_factor;
                                 meta_command->meta_start_time = now +
-                                        command->duration * new_factor;
+                                        (long) command->duration * new_factor;
                         }
                         else
                         {

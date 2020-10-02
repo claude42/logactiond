@@ -269,7 +269,8 @@ dump_queue_status(const bool force)
                 die_err("Can't create \"" HOSTSFILE "\"!");
 
         const time_t now = xtime(NULL);
-        fprintf(hosts_file, HOSTS_HEADER, ctime(&now));
+        char *date_string = alloca(26);
+        fprintf(hosts_file, HOSTS_HEADER, ctime_r(&now, date_string));
 
         unsigned int num_elems = 0;
         unsigned int num_elems_local = 0;

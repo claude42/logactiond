@@ -348,7 +348,7 @@ parse_message_trigger_command(const char *buf, const char *from)
         assert(buf);
 
         if (*buf != PROTOCOL_VERSION)
-                LOG_RETURN(, LOG_ERR, "Wrong protocol version '%c'!");
+                LOG_RETURN(, LOG_ERR, "Wrong protocol version '%c'!", *buf);
 
         switch (*(buf+1))
         {

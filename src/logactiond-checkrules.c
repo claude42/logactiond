@@ -185,7 +185,8 @@ main(int argc, char *argv[])
 
         read_options(argc, argv);
 
-        chdir(CONF_DIR);
+        if (chdir(CONF_DIR) == -1)
+                die_err("Can't change to configuration directory!");
 
         if (!init_la_config(cfg_filename))
                 die_hard("Error loading configuration");
