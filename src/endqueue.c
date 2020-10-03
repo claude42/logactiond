@@ -79,11 +79,10 @@ find_rule_by_name(const char *name)
         assert(la_config);
         la_debug("find_rule_by_name(%s)", name);
 
-        la_rule_t *result;
 #if HAVE_LIBSYSTEMD
         if (la_config->systemd_source_group)
         {
-                result = find_source_rule_by_name(la_config->systemd_source_group, name);
+                la_rule_t *result = find_source_rule_by_name(la_config->systemd_source_group, name);
                 if (result)
                         return result;
         }
@@ -93,7 +92,7 @@ find_rule_by_name(const char *name)
         for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
                         (source_group = NEXT_SOURCE_GROUP(source_group));)
         {
-                result = find_source_rule_by_name(source_group, name);
+                la_rule_t *result = find_source_rule_by_name(source_group, name);
                 if (result)
                         return result;
         }

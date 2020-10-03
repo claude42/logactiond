@@ -66,12 +66,12 @@ assert_rule_ffl(const la_rule_t *rule, const char *func, const char *file, unsig
 
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
 static void
-add_trigger(la_command_t *command)
+add_trigger(la_command_t *command, time_t now)
 {
         assert_command(command);
         la_debug("add_trigger(%s)", command->name);
 
-        command->start_time = xtime(NULL);
+        command->start_time = now;
 
         add_head(command->rule->trigger_list, (kw_node_t *) command);
 
@@ -136,11 +136,13 @@ handle_command_on_trigger_list(la_command_t *command)
         assert_command(command);
         la_debug("handle_command_on_trigger_list(%s)", command->name);
 
+        const time_t now = xtime(NULL);
+
         /* new commands not on the trigger_list yet have n_triggers == 0 */
         if (command->n_triggers == 0)
-                add_trigger(command);
+                add_trigger(command, now);
 
-        if (xtime(NULL) - command->start_time < command->rule->period)
+        if (now - command->start_time < command->rule->period)
         {
                 /* still within current period - increase counter,
                  * trigger if necessary */
@@ -149,7 +151,7 @@ handle_command_on_trigger_list(la_command_t *command)
         else
         {
                 /* if not, reset counter and period */
-                command->start_time = xtime(NULL);
+                command->start_time = now;
                 command->n_triggers = 1;
         }
 
@@ -168,6 +170,36 @@ handle_command_on_trigger_list(la_command_t *command)
                 else
                         free_command(command);
         }
+}
+
+/*
+ * Check whether address is on a dnsbl, if so trigger_command directly on first
+ * sight. Only do dnsbl lookup if dnsbl_enabled==true and threshold>1
+ */
+
+static bool
+trigger_if_on_dnsbl(la_command_t *command, bool from_trigger_list)
+{
+        bool triggered = false;
+
+        if  (command->rule->dnsbl_enabled && command->rule->threshold > 1)
+        {
+                const char *blname = host_on_any_dnsbl(
+                                command->rule->blacklists, command->address);
+                if (blname)
+                {
+                        la_log(LOG_INFO, "Host: %s blacklisted on %s.",
+                                        command->address->text, blname);
+                        if (from_trigger_list)
+                                remove_node((kw_node_t *) command);
+                        trigger_command_from_blacklist(command);
+                        if (command->end_string && command->duration > 0)
+                                enqueue_end_command(command, 0);
+                        triggered = true;
+                }
+        }
+
+        return triggered;
 }
 
 /*
@@ -219,31 +251,14 @@ trigger_single_command(la_pattern_t *pattern, const la_address_t *address,
                 command = create_command_from_template(template, pattern,
                                 address);
                 if (!command)
-                        LOG_RETURN(, LOG_ERR, "IP address doesn't match what requirements of action!");
+                        LOG_RETURN(, LOG_ERR, "IP address doesn't what "
+                                        "requirements of action!");
         }
 
-        /* Check whether address is on a dnsbl, if so trigger_command directly
-         * on first sight. Only do dnsbl lookup if dnsbl_enabled==true and
-         * threshold>1 */
-
-        if  (pattern->rule->dnsbl_enabled && pattern->rule->threshold > 1)
-        {
-                const char *blname = host_on_any_dnsbl(
-                                pattern->rule->blacklists, address);
-                if (blname)
-                {
-                        la_log(LOG_INFO, "Host: %s blacklisted on %s.",
-                                        address->text, blname);
-                        if (from_trigger_list)
-                                remove_node((kw_node_t *) command);
-                        trigger_command_from_blacklist(command);
-                        if (command->end_string && command->duration > 0)
-                                enqueue_end_command(command, 0);
-                        return;
-                }
-        }
-
-        handle_command_on_trigger_list(command);
+        /* Trigger directly if found on DNSBL, otherwise handle via trigger
+         * list */
+        if (!trigger_if_on_dnsbl(command, from_trigger_list))
+                handle_command_on_trigger_list(command);
 }
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
 
@@ -545,11 +560,10 @@ find_rule(const char *rule_name)
         assert(rule_name); assert(la_config);
         la_debug("find_rule(%s)", rule_name);
 
-        la_rule_t *result;
 #if HAVE_LIBSYSTEMD
         if (la_config->systemd_source_group)
         {
-                result = find_rule_for_source_group(
+                la_rule_t *result = find_rule_for_source_group(
                                 la_config->systemd_source_group, rule_name);
                 if (result)
                         return result;
@@ -560,7 +574,7 @@ find_rule(const char *rule_name)
         for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
                         (source_group = NEXT_SOURCE_GROUP(source_group));)
         {
-                result = find_rule_for_source_group(source_group, rule_name);
+                la_rule_t *result = find_rule_for_source_group(source_group, rule_name);
                 if (result)
                         return result;
         }
