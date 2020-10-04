@@ -1126,7 +1126,7 @@ include_func(config_t *config, const char *const include_dir,
         for (size_t i = 0; i < pglob.gl_pathc; i++)
         {
                 const char *const file_path = pglob.gl_pathv[i];
-                la_vdebug("%u. file_path=%s", i, file_path);
+                la_vdebug("%lu. file_path=%s", i, file_path);
 
                 struct stat stat_buf;
                 if (lstat(file_path, &stat_buf) != 0)
