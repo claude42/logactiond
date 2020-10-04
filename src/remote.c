@@ -307,7 +307,7 @@ sync_all_entries(void *ptr)
 
         if (!address)
         {
-                la_log(LOG_ERR, "Cannot convert address in command %s!", ptr);
+                la_log(LOG_ERR, "Cannot convert address in command %s!", (char *) ptr);
                 free(ptr);
                 return NULL;
         }

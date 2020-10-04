@@ -130,7 +130,9 @@ create_source_group(const char *const name, const char *const glob_pattern,
         result->prefix = xstrdup(prefix);
         result->sources = xcreate_list();
         result->rules = xcreate_list();
+#if HAVE_LIBSYSTEMD
         result->systemd_units = NULL;
+#endif
 
         assert_source_group(result);
         return result;

@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <alloca.h>
 
 #include "ndebug.h"
 #include "addresses.h"
@@ -78,7 +79,8 @@ save_state(const char *const state_file_name)
                 LOG_RETURN(, LOG_ERR, "Unable to open state file");
 
         const time_t now = xtime(NULL);
-        fprintf(stream, "# logactiond state %s\n", ctime(&now));
+        char *date_string = alloca(26);
+        fprintf(stream, "# logactiond state %s\n", ctime_r(&now, date_string));
 
         xpthread_mutex_lock(&end_queue_mutex);
 
@@ -137,7 +139,7 @@ restore_state(const char *const state_file_name, const bool create_backup_file)
 
                         parse_result = parse_add_entry_message(linebuffer,
                                         &address, &rule, &end_time, &factor);
-                        la_vdebug("adr: %s, rule: %s, end_time: %u, factor: %u",
+                        la_vdebug("adr: %s, rule: %s, end_time: %lu, factor: %u",
                                         address ? address->text : "no address",
                                         rule ? rule->name : "no rule", end_time, factor);
                         if (parse_result == -1)
