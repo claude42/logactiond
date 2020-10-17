@@ -191,8 +191,13 @@ cidr_match_sa(const struct sockaddr *sa, const la_address_t *const net)
 }
 
 /*
- * Compare two addresses. Return 0 if addresses are the same, return 1
- * otherwise.
+ * Compare two addresses. Return 0 if addresses are the same, return value < 0
+ * if * first address is smaller a value > 0 if it's larger than second address.
+ *
+ * Return 127 in case 
+ * - one of the two addresses is NULL, or
+ * - address families differ, or
+ * - unknown address family
  */
 
 int
@@ -208,16 +213,20 @@ adrcmp(const la_address_t *const a1, const la_address_t *const a2)
                 {
                         struct sockaddr_in sa1 = *((struct sockaddr_in *) &a1->sa);
                         struct sockaddr_in sa2 = *((struct sockaddr_in *) &a2->sa);
-                        if (sa1.sin_addr.s_addr == sa2.sin_addr.s_addr)
-                                return 0;
+                        return ntohl(sa1.sin_addr.s_addr) - ntohl(sa2.sin_addr.s_addr);
                 }
                 else if (a1->sa.ss_family == AF_INET6)
                 {
                         struct sockaddr_in6 sa1 = *((struct sockaddr_in6 *) &a1->sa);
                         struct sockaddr_in6 sa2 = *((struct sockaddr_in6 *) &a2->sa);
-                        if (!memcmp(&sa1.sin6_addr, &sa2.sin6_addr,
-                                                sizeof (struct in6_addr)))
-                                return 0;
+
+                        for (int i=0; i<16; i++)
+                        {
+                                int result = sa1.sin6_addr.s6_addr[i] - sa2.sin6_addr.s6_addr[i];
+                                if (result)
+                                        return result;
+                        }
+                        return 0;
                 }
         }
         /* if both are NULL, they are the same (sort of) */
@@ -226,13 +235,14 @@ adrcmp(const la_address_t *const a1, const la_address_t *const a2)
                 return 0;
         }
 
-        /* Return 1 otherwise, either if
+        /* Return 127 otherwise, either if
          * - one of the two addresses is NULL, or
          * - address families differ, or
-         * - addresses differ, or
          * - unknown address family
+         *
+         * TODO: or should we rather die_err() in these cases?
          */
-        return 1;
+        return 127;
 }
 
 la_address_t *
