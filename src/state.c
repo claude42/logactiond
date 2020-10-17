@@ -108,7 +108,7 @@ bool
 restore_state(const char *const state_file_name, const bool create_backup_file)
 {
         assert(state_file_name);
-        la_debug("restore_state(%s)", state_file_name);
+        la_log(LOG_INFO, "Restoring state from \"%s\".", state_file_name);
 
         FILE *const stream = fopen(state_file_name, "r");
         if (!stream)
