@@ -45,24 +45,24 @@ assert_address_ffl(const la_address_t *address, const char *func,
         if (!address)
                 die_hard("%s:%u: %s: Assertion 'address' failed. ", file, line,
                                 func);
-        if (address->sa.ss_family == AF_INET)
+        switch (address->sa.ss_family)
         {
+        case AF_INET:
                 if (address->prefix<0 || address->prefix>32)
                         die_hard("%s:%u: %s: Assertion 'address->prefix>=0 && "
                                         "address->prefix<=32' failed.", file,
                                         line, func);
-        }
-        else if (address->sa.ss_family == AF_INET6)
-        {
+                break;
+        case AF_INET6:
                 if (address->prefix<0 || address->prefix>128)
                         die_hard("%s:%u: %s: Assertion 'address->prefix>=0 && "
                                         "address->prefix<=128' failed.", file,
                                         line, func);
-        }
-        else
-        {
+                break;
+        default:
                 die_hard("%s:%u: %s: Assertion 'address->af' failed.", file,
                                 line, func);
+                break;
         }
 }
 
@@ -71,19 +71,17 @@ get_port(const la_address_t *const address)
 {
         assert_address(address);
 
-        if (address->sa.ss_family == AF_INET)
+        switch (address->sa.ss_family)
         {
-                struct sockaddr_in *sa = (struct sockaddr_in *) &address->sa;
-                return ntohs(sa->sin_port);
-        }
-        else if (address->sa.ss_family == AF_INET6)
-        {
-                struct sockaddr_in6 *sa = (struct sockaddr_in6 *) &address->sa;
-                return ntohs(sa->sin6_port);
-        }
-        else
-        {
+        case AF_INET:
+                return ntohs(((struct sockaddr_in *) &address->sa)->sin_port);
+                break;
+        case AF_INET6:
+                return ntohs(((struct sockaddr_in6 *) &address->sa)->sin6_port);
+                break;
+        default:
                 return 0;
+                break;
         }
 }
 
@@ -97,12 +95,18 @@ get_port(const la_address_t *const address)
 const char *
 get_ip_version(const la_address_t *const address)
 {
-	if (address->sa.ss_family == AF_INET)
+        switch (address->sa.ss_family)
+        {
+        case AF_INET:
 		return "4";
-	else if (address->sa.ss_family == AF_INET6)
+                break;
+        case AF_INET6:
 		return "6";
-	else
+                break;
+        default:
 		return "unknown";
+                break;
+        }
 }
 
 /*
@@ -168,21 +172,21 @@ cidr_match(const la_address_t *const addr, const la_address_t *const net)
         if (addr->sa.ss_family != net->sa.ss_family)
                 return false;
 
-        if (addr->sa.ss_family == AF_INET)
+        switch (addr->sa.ss_family)
         {
-                struct sockaddr_in *a = (struct sockaddr_in *) &addr->sa;
-                struct sockaddr_in *n = (struct sockaddr_in *) &net->sa;
-                return cidr4_match(a->sin_addr, n->sin_addr, net->prefix);
-        }
-        else if (addr->sa.ss_family == AF_INET6)
-        {
-                struct sockaddr_in6 *a = (struct sockaddr_in6 *) &addr->sa;
-                struct sockaddr_in6 *n = (struct sockaddr_in6 *) &net->sa;
-                return cidr6_match(a->sin6_addr, n->sin6_addr, net->prefix);
-        }
-        else
-        {
+        case AF_INET:
+                return cidr4_match(((struct sockaddr_in *) &addr->sa)->sin_addr, 
+                                ((struct sockaddr_in *) &net->sa)->sin_addr,
+                                net->prefix);
+                break;
+        case AF_INET6:
+                return cidr6_match(((struct sockaddr_in6 *) &addr->sa)->sin6_addr,
+                                ((struct sockaddr_in6 *) &net->sa)->sin6_addr,
+                                net->prefix);
+                break;
+        default:
                 return false;
+                break;
         }
 }
 
