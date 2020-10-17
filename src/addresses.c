@@ -167,20 +167,20 @@ cidr6_match(const struct in6_addr addr, const struct in6_addr net, const uint8_t
 }
 
 static bool
-cidr_match(const la_address_t *const addr, const la_address_t *const net)
+cidr_match_sa(const struct sockaddr *sa, const la_address_t *const net)
 {
-        if (addr->sa.ss_family != net->sa.ss_family)
+        if (sa->sa_family != net->sa.ss_family)
                 return false;
 
-        switch (addr->sa.ss_family)
+        switch (sa->sa_family)
         {
         case AF_INET:
-                return cidr4_match(((struct sockaddr_in *) &addr->sa)->sin_addr, 
+                return cidr4_match(((struct sockaddr_in *) sa)->sin_addr,
                                 ((struct sockaddr_in *) &net->sa)->sin_addr,
                                 net->prefix);
                 break;
         case AF_INET6:
-                return cidr6_match(((struct sockaddr_in6 *) &addr->sa)->sin6_addr,
+                return cidr6_match(((struct sockaddr_in6 *) sa)->sin6_addr,
                                 ((struct sockaddr_in6 *) &net->sa)->sin6_addr,
                                 net->prefix);
                 break;
@@ -235,24 +235,15 @@ adrcmp(const la_address_t *const a1, const la_address_t *const a2)
         return 1;
 }
 
-/*
- * Check whether ip address is on a list. Returns false if address==NULL
- */
-
 la_address_t *
-address_on_list(const la_address_t *const address, const kw_list_t *const list)
+address_on_list_sa(const struct sockaddr *const sa, const kw_list_t *const list)
 {
-        if (!address)
-                return false;
-
-        assert_address(address); assert_list(list);
-
-        la_vdebug("address_on_list(%s)", address->text);
+        assert(sa); assert_list(list);
 
         for (la_address_t *list_address = ITERATE_ADDRESSES(list);
                         (list_address = NEXT_ADDRESS(list_address));)
         {
-                if (cidr_match(address, list_address))
+                if (cidr_match_sa(sa, list_address))
                         return list_address;
         }
 
@@ -260,17 +251,18 @@ address_on_list(const la_address_t *const address, const kw_list_t *const list)
 }
 
 /*
- * Check whether ip address (represented by sockaddr) is on a list
+ * Check whether ip address is on a list. Returns false if address==NULL
  */
 
 la_address_t *
-address_on_list_sa(const struct sockaddr *const sa, const socklen_t salen, const kw_list_t *const list)
+address_on_list(const la_address_t *const address, const kw_list_t *const list)
 {
-        la_address_t *const address = create_address_sa(sa, salen);
-        la_address_t *const result = address_on_list(address, list);
-        free(address);
-        return result;
+        return address_on_list_sa((struct sockaddr *) &(address->sa), list);
 }
+
+/*
+ * Check whether ip address (represented by sockaddr) is on a list
+ */
 
 /*
  * Check whether ip address (represented by string) is on a list

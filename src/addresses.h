@@ -71,7 +71,7 @@ int adrcmp(const la_address_t *a1, const la_address_t *a2);
 
 la_address_t *address_on_list(const la_address_t *address, const kw_list_t *list);
 
-la_address_t *address_on_list_sa(const struct sockaddr *sa, socklen_t salen, const kw_list_t *list);
+la_address_t *address_on_list_sa(const struct sockaddr *sa, const kw_list_t *list);
 
 la_address_t *address_on_list_str(const char *host, const kw_list_t *list);
 

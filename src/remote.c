@@ -222,7 +222,6 @@ remote_loop(void *const ptr)
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
                 la_address_t *const from_addr = address_on_list_sa(
                                 (struct sockaddr *) &remote_client,
-                                sizeof remote_client,
                                 la_config->remote_receive_from);
 
                 if (!from_addr)
