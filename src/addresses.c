@@ -23,6 +23,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
+#include <stdbool.h>
 /* keep these 3 in, even if deheader says to remove them. Necessary e.g. for
  * FreeBSD */
 #include <sys/stat.h>
@@ -222,7 +223,7 @@ adrcmp(const la_address_t *const a1, const la_address_t *const a2)
 
                         for (int i=0; i<16; i++)
                         {
-                                int result = sa1.sin6_addr.s6_addr[i] - sa2.sin6_addr.s6_addr[i];
+                                const int result = sa1.sin6_addr.s6_addr[i] - sa2.sin6_addr.s6_addr[i];
                                 if (result)
                                         return result;
                         }
@@ -281,9 +282,11 @@ address_on_list(const la_address_t *const address, const kw_list_t *const list)
 la_address_t *
 address_on_list_str(const char *const host, const kw_list_t *const list)
 {
-        la_address_t *const address = create_address(host);
-        la_address_t *const result = address_on_list(address, list);
-        free(address);
+        la_address_t address;
+        if (!init_address(&address, host))
+                return NULL;
+
+        la_address_t *const result = address_on_list(&address, list);
         return result;
 }
 
@@ -291,29 +294,42 @@ address_on_list_str(const char *const host, const kw_list_t *const list)
  * Create new address based on sockaddr structure.
  */
 
-la_address_t *
-create_address_sa(const struct sockaddr *const sa, const socklen_t salen)
+static bool
+create_address_sa_a(la_address_t *const addr, const struct sockaddr *const sa,
+                const socklen_t salen)
 {
         assert(sa);
         la_vdebug("create_address_sa()");
 
         if (sa->sa_family != AF_INET && sa->sa_family != AF_INET6)
-                LOG_RETURN(NULL, LOG_ERR, "Unsupported address family!");
+                LOG_RETURN(false, LOG_ERR, "Unsupported address family!");
 
+        memcpy(&(addr->sa), sa, salen);
+
+        /* TODO better error handling */
+        if (getnameinfo(sa, salen, addr->text,
+                                MAX_ADDR_TEXT_SIZE + 1, NULL, 0, NI_NUMERICHOST))
+                LOG_RETURN(false, LOG_ERR, "getnameinfo failed.");
+
+        addr->prefix = sa->sa_family == AF_INET ? 32 : 128;
+
+        return true;
+}
+
+static la_address_t *
+create_address_sa(const struct sockaddr *const sa, const socklen_t salen)
+{
         la_address_t *const result = xmalloc0(sizeof *result);
 
-        memcpy(&(result->sa), sa, salen);
-
-        if (getnameinfo(sa, salen, result->text,
-                                MAX_ADDR_TEXT_SIZE + 1, NULL, 0, NI_NUMERICHOST))
+        if (!create_address_sa_a(result, sa, salen))
         {
-                free_address(result);
+                free(result);
                 return NULL;
         }
-
-        result->prefix = sa->sa_family == AF_INET ? 32 : 128;
-
-        return result;
+        else
+        {
+                return result;
+        }
 }
 
 /* Return prefix if valid prefix, -1 otherwise */
@@ -345,13 +361,13 @@ static int convert_prefix(unsigned short int family, const char *const prefix)
  * Important: port must be supplied in host byte order NOT network byte order.
  */
 
-la_address_t *
-create_address_port(const char *const host, const in_port_t port)
+bool
+init_address_port(la_address_t *const addr, const char *const host, const in_port_t port)
 {
         assert(host);
         la_vdebug("create_address_port(%s)", host);
 
-        char *const host_str = alloca(INET6_ADDRSTRLEN + 1);
+        char host_str[INET6_ADDRSTRLEN +1];
         const int n = string_copy(host_str, INET6_ADDRSTRLEN, host, 0, '/');
         if (n == -1)
                 die_hard("Address string too long!");
@@ -375,7 +391,7 @@ create_address_port(const char *const host, const in_port_t port)
                         la_log(LOG_ERR, "Unable to get address for host '%s': %s",
                                         host_str, gai_strerror(r));
                         freeaddrinfo(ai);
-                        return NULL;
+                        return false;
                         break;
                 default:
                         freeaddrinfo(ai);
@@ -391,29 +407,49 @@ create_address_port(const char *const host, const in_port_t port)
          * TODO: But for ignore_addresses it might make more sense to go through all
          * results from getaddrinfo(). */
 
-        la_address_t *result = create_address_sa(ai->ai_addr, ai->ai_addrlen);
-        if (!result)
+        if (!create_address_sa_a(addr, ai->ai_addr, ai->ai_addrlen))
         {
                 freeaddrinfo(ai);
-                return NULL;
+                return false;
         }
 
         if (prefix_str)
         {
-                result->prefix = convert_prefix(ai->ai_family, prefix_str + 1);
-                if (result->prefix == -1)
+                addr->prefix = convert_prefix(ai->ai_family, prefix_str + 1);
+                if (addr->prefix == -1)
                 {
                         freeaddrinfo(ai);
-                        free_address(result);
-                        LOG_RETURN(NULL, LOG_ERR, "Cannot convert address prefix!");
+                        LOG_RETURN(false, LOG_ERR, "Cannot convert address prefix!");
                 }
 
-                strncat(result->text, prefix_str, 4);
+                strncat(addr->text, prefix_str, 4);
         }
 
         freeaddrinfo(ai);
 
-        return result;
+        return true;
+}
+
+la_address_t *
+create_address_port(const char *const host, const in_port_t port)
+{
+        la_address_t *const result = xmalloc0(sizeof *result);
+
+        if (!init_address_port(result, host, port))
+        {
+                free(result);
+                return NULL;
+        }
+        else
+        {
+                return result;
+        }
+}
+
+bool
+init_address(la_address_t *const addr, const char *const host)
+{
+        return init_address_port(addr, host, 0);
 }
 
 la_address_t *

@@ -301,10 +301,8 @@ start_remote_thread(void)
 static void *
 sync_all_entries(void *ptr)
 {
-        la_address_t *const address = create_address_port((char *) ptr,
-                        la_config->remote_port);
-
-        if (!address)
+        la_address_t address;
+        if (!init_address_port(&address, (char *) ptr, la_config->remote_port))
         {
                 la_log(LOG_ERR, "Cannot convert address in command %s!", (char *) ptr);
                 free(ptr);
@@ -345,19 +343,14 @@ sync_all_entries(void *ptr)
                         la_config->remote_secret_changed = false;
                 }
                 if (!encrypt_message(message_array[i]))
-                {
-                        la_log(LOG_ERR, "Unable to encrypt message");
-                        free(address);
-                        return NULL;
-                }
+                        LOG_RETURN(NULL, LOG_ERR, "Unable to encrypt message");
 #endif /* WITH_LIBSODIUM */
-                send_message_to_single_address(message_array[i], address);
+                send_message_to_single_address(message_array[i], &address);
                 free(message_array[i]);
                 xnanosleep(0, 200000000);
         }
 
         free(message_array);
-        free_address(address);
 
         return NULL;
 }

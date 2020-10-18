@@ -23,6 +23,7 @@
 
 #include <netinet/in.h>
 #include <regex.h>
+#include <stdbool.h>
 #ifdef WITH_LIBSODIUM
 #include <sodium.h>
 #endif /* WITH_LIBSODIUM */
@@ -75,9 +76,11 @@ la_address_t *address_on_list_sa(const struct sockaddr *sa, const kw_list_t *lis
 
 la_address_t *address_on_list_str(const char *host, const kw_list_t *list);
 
-la_address_t *create_address_sa(const struct sockaddr *sa, socklen_t salen);
+bool init_address_port(la_address_t *addr, const char *ip, in_port_t port);
 
 la_address_t *create_address_port(const char *ip, in_port_t port);
+
+bool init_address(la_address_t *addr, const char *ip);
 
 la_address_t *create_address(const char *ip);
 

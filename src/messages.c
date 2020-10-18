@@ -205,17 +205,17 @@ del_entry(const char *const buffer)
         assert(buffer);
         la_debug("del_entry(%s)", buffer);
 
-        la_address_t *const address = create_address(buffer+2);
-        if (!address)
+        la_address_t address;
+        if (!init_address(&address, buffer+2))
                 LOG_RETURN(, LOG_ERR, "Cannot convert address in command %s!", buffer+2);
+
+        // locking really necessary here?
 
         xpthread_mutex_lock(&config_mutex);
 
-                const int r = remove_and_trigger(address);
+                const int r = remove_and_trigger(&address);
 
         xpthread_mutex_unlock(&config_mutex);
-
-        free_address(address);
 
         if (r == -1)
                 LOG_RETURN(, LOG_ERR, "Address %s not in end queue!", buffer+2);

@@ -308,25 +308,21 @@ trigger_all_commands(la_pattern_t *const pattern)
         la_debug("trigger_all_commands(%s, %s)", pattern->rule->name, pattern->string);
 
         const char *host = NULL;
-        la_address_t *address = NULL;
+        la_address_t address;
         if (pattern->host_property)
         {
                 host = pattern->host_property->value;
-                address = create_address(host);
                 /* in case IP address cannot be converted, ignore trigger
                  * altogether */
-                if (!address)
+                if (!init_address(&address, host))
                         LOG_RETURN(, LOG_ERR, "Invalid IP address \"%s\", trigger "
                                         "ignored!", host);
         }
 
         /* Do nothing if on ignore list */
         assert(la_config);
-        if (address_on_list(address, la_config->ignore_addresses))
-        {
-                free_address(address);
+        if (address_on_list(&address, la_config->ignore_addresses))
                 LOG_RETURN_VERBOSE(, LOG_INFO, "Host: %s, always ignored.", host);
-        }
 
         increase_detection_count(pattern);
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
@@ -334,10 +330,8 @@ trigger_all_commands(la_pattern_t *const pattern)
         for (la_command_t *template =
                         ITERATE_COMMANDS(pattern->rule->begin_commands);
                         (template = NEXT_COMMAND(template));)
-                trigger_single_command(pattern, address, template);
+                trigger_single_command(pattern, &address, template);
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
-
-        free_address(address);
 }
 
 
