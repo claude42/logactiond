@@ -101,9 +101,8 @@ handle_new_content(const la_source_t *const source)
         assert_source(source); assert(source->file);
         la_vdebug("handle_new_content(%s)", source->location);
 
-        size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE;
-        char *linebuffer = alloca(linebuffer_size);
-
+        size_t linebuffer_size = 0;
+        char *linebuffer = NULL;
 
         ssize_t num_read;
 
@@ -113,6 +112,8 @@ handle_new_content(const la_source_t *const source)
         const int result = feof(source->file);
         if (result)
                 fseek(source->file, 0, SEEK_END);
+
+        free(linebuffer);
 
         return result;
 }

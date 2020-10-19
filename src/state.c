@@ -79,7 +79,7 @@ save_state(const char *const state_file_name)
                 LOG_RETURN(, LOG_ERR, "Unable to open state file");
 
         const time_t now = xtime(NULL);
-        char *date_string = alloca(26);
+        char date_string[26];
         fprintf(stream, "# logactiond state %s\n", ctime_r(&now, date_string));
 
         xpthread_mutex_lock(&end_queue_mutex);
@@ -122,8 +122,8 @@ restore_state(const char *const state_file_name, const bool create_backup_file)
 
         la_log_verbose(LOG_INFO, "Restoring state from \"%s\"", state_file_name);
 
-        size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE*sizeof(char) ;
-        char *linebuffer = alloca(linebuffer_size);
+        size_t linebuffer_size = 0;
+        char *linebuffer = NULL;
 
         xpthread_mutex_lock(&config_mutex);
 
@@ -153,6 +153,8 @@ restore_state(const char *const state_file_name, const bool create_backup_file)
                 }
 
         xpthread_mutex_unlock(&config_mutex);
+
+        free(linebuffer);
 
         /* Return false to make sure state file is not overwritten in case of
          * an error */

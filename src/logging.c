@@ -45,10 +45,10 @@ log_message(int priority, const char *const fmt, va_list gp,
 
 #ifndef CLIENTONLY
 #if HAVE_PTHREAD_GETNAME_NP
-        const size_t thread_name_len = 16;
-        char *thread_name = alloca(thread_name_len);
-        if (pthread_getname_np(pthread_self(), thread_name, thread_name_len))
-                thread_name = NULL;
+#define THREAD_NAME_LEN 16
+        char thread_name[THREAD_NAME_LEN];
+        if (pthread_getname_np(pthread_self(), thread_name, THREAD_NAME_LEN))
+                snprintf(thread_name, THREAD_NAME_LEN, "unnamed");
 #endif /* HAVE_PTHREAD_GENTAME_NP */
 
         if (priority >= log_level ||
@@ -71,8 +71,7 @@ log_message(int priority, const char *const fmt, va_list gp,
                 case LA_UTIL_FOREGROUND:
 #if HAVE_PTHREAD_GETNAME_NP
                         if (priority == LOG_DEBUG)
-                                fprintf(stderr, "%s: ", thread_name ?
-                                                thread_name : NULL);
+                                fprintf(stderr, "%s: ", thread_name);
 #endif /* HAVE_PTHREAD_GENTAME_NP */
 #endif /* CLIENTONLY */
                         vfprintf(stderr, fmt, gp);

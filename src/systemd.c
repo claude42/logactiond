@@ -46,6 +46,7 @@
 
 pthread_t systemd_watch_thread = 0;
 static sd_journal *journal = NULL;
+static char *unit_buffer = NULL;
 
 static void
 die_systemd(const int systemd_errno, const char *const fmt, ...)
@@ -73,6 +74,8 @@ cleanup_watching_systemd(void *const arg)
 {
         la_debug("cleanup_watching_systemd()");
 
+        free(unit_buffer);
+
         if (journal)
                 sd_journal_close(journal);
 }
@@ -81,7 +84,7 @@ static void *
 watch_forever_systemd(void *const ptr)
 {
         static int unit_buffer_length = DEFAULT_LINEBUFFER_SIZE;
-        static char *unit_buffer;
+        // TODO: won't get freed on cleanup_watching_systemd()
         unit_buffer = xmalloc(unit_buffer_length);
 
         la_debug("watch_forever_systemd()");

@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <alloca.h>
 
 #include "ndebug.h"
 #include "fifo.h"

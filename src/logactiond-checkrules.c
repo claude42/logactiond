@@ -220,8 +220,8 @@ main(int argc, char *argv[])
                         die_hard("Can't find rule %s", rule_name);
         }
         
-        size_t linebuffer_size = DEFAULT_LINEBUFFER_SIZE*sizeof(char);
-        char *linebuffer = alloca(linebuffer_size);
+        size_t linebuffer_size = 0;
+        char *linebuffer = NULL;
 
         for (;;)
         {
@@ -239,6 +239,8 @@ main(int argc, char *argv[])
                 else
                         iterate_through_all_rules(linebuffer);
         }
+
+        free(linebuffer);
 
         /* This whole exit procedure doesn't make much sense for a standalone
          * tool. We're just obeying to the infrastructure set in place by the

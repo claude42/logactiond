@@ -198,7 +198,7 @@ static void
 die_re(const int errcode, const regex_t *const preg)
 {
         const size_t errbuf_size = 255;
-        char *const error_msg = alloca(errbuf_size);
+        char error_msg[errbuf_size];
 
         regerror(errcode, preg, error_msg, errbuf_size);
 
