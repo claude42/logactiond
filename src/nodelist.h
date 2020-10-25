@@ -1,6 +1,6 @@
 /*
  *  logactiond - trigger actions based on logfile contents
- *  Copyright (C) 2019  Klaus Wissmann
+ *  Copyright (C) 2019-2021 Klaus Wissmann
 
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
