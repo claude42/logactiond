@@ -134,21 +134,20 @@ restore_state(const char *const state_file_name, const bool create_backup_file)
                 while ((num_read = getline(&linebuffer,
                                                 &linebuffer_size,stream)) != -1)
                 {
-                        la_address_t *address; la_rule_t *rule;
+                        la_address_t address; la_rule_t *rule;
                         time_t end_time; int factor;
 
                         parse_result = parse_add_entry_message(linebuffer,
                                         &address, &rule, &end_time, &factor);
                         la_vdebug("adr: %s, rule: %s, end_time: %lu, factor: %u",
-                                        address ? address->text : "no address",
+                                        address.text ? address.text : "no address",
                                         rule ? rule->name : "no rule", end_time, factor);
                         if (parse_result == -1)
                                 break;
                         else if (parse_result > 0)
-                                trigger_manual_commands_for_rule(address, rule,
+                                trigger_manual_commands_for_rule(&address, rule,
                                                 end_time, factor, NULL, true);
 
-                        free_address(address);
                         line_no++;
                 }
 

@@ -111,7 +111,7 @@
  *
  * Return values
  * -  1 command successfully parsed
- * -  0 empty line or comment
+ * -  0 empty line or comment, address might not be properly initialized
  * - -1 parse error
  *
  * NB: address will be newly created and must be freed() by the caller, rule
@@ -121,7 +121,7 @@
  */
 
 int
-parse_add_entry_message(const char *const message, la_address_t **const address,
+parse_add_entry_message(const char *const message, la_address_t *const address,
                 la_rule_t **const rule, time_t *const end_time,
                 int *const factor)
 {
@@ -130,14 +130,7 @@ parse_add_entry_message(const char *const message, la_address_t **const address,
 
         /* Ignore empty lines or comments */
         if (IS_EMPTY_LINE(message))
-        {
-                *address = NULL; *rule = NULL;
-                if (end_time)
-                        *end_time = 0;
-                if (factor)
-                        *factor = 0;
                 return 0;
-        }
 
         char parsed_address_str[MSG_ADDRESS_LENGTH + 1];
         char parsed_rule_str[MSG_RULE_LENGTH + 1];
@@ -149,17 +142,13 @@ parse_add_entry_message(const char *const message, la_address_t **const address,
         if (n < 2)
                 LOG_RETURN(-1, LOG_ERR, "Ignoring illegal command \"%s\"!", message);
 
-        *address = create_address(parsed_address_str);
-        if (!*address)
+        if (!init_address(address, parsed_address_str))
                 LOG_RETURN(-1, LOG_ERR, "Cannot convert address in command %s!", message);
 
         *rule = find_rule(parsed_rule_str);
         if (!*rule)
-        {
-                free_address(*address);
                 LOG_RETURN_VERBOSE(-1, LOG_ERR, "Ignoring remote message \'%s\' "
                                 "- rule not active on local system", message);
-        }
 
         if (end_time)
                 *end_time = n >= 3 ? parsed_end_time : 0;
@@ -180,7 +169,7 @@ add_entry(const char *const buffer, const char *const from)
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
         assert(buffer);
         la_debug("add_entry(%s)", buffer);
-        la_address_t *address;
+        la_address_t address;
         la_rule_t *rule;
         time_t end_time;
         int factor;
@@ -190,11 +179,10 @@ add_entry(const char *const buffer, const char *const from)
         {
                 xpthread_mutex_lock(&config_mutex);
 
-                        trigger_manual_commands_for_rule(address, rule,
+                        trigger_manual_commands_for_rule(&address, rule,
                                         end_time, factor, from, false);
 
                 xpthread_mutex_unlock(&config_mutex);
-                free_address(address);
         }
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
 }

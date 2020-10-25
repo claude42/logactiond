@@ -58,7 +58,7 @@
 #define NONCE_IDX ENC_MSG_LEN+crypto_pwhash_SALTBYTES
 
 #ifndef CLIENTONLY
-int parse_add_entry_message(const char *message, la_address_t **address,
+int parse_add_entry_message(const char *message, la_address_t *address,
                 la_rule_t **rule, time_t *end_time, int *factor);
 
 void parse_message_trigger_command(const char *buf, const char *from);
