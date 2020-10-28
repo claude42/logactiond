@@ -518,18 +518,17 @@ log_trigger(const la_command_t *const command, const char *const from)
         if (from)
         {
                 /* manual command */
-                char factor_string[15];
                 if (command->factor)
-                        snprintf(factor_string, 14, " (factor %d)",
+                        la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
+                                        "by host %s, rule \"%s\" (factor %d).",
+                                        command->address->text, command->name,
+                                        from, command->rule_name,
                                         command->factor);
-
-                la_log(LOG_INFO, "Host: %s, action \"%s\" activated"
-                                "%s%s, rule \"%s\"%s.",
-                                command->address->text, command->name,
-                                from ? " by host " : "",
-                                from ? from : "",
-                                command->rule_name,
-                                command->factor ? factor_string : "");
+                else
+                        la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
+                                        "by host %s, rule \"%s\".",
+                                        command->address->text, command->name,
+                                        from, command->rule_name);
         }
         else if (command->is_template)
         {
