@@ -481,10 +481,7 @@ xgetpass(const char *const prompt)
 int
 xnanosleep(const time_t secs, const long nanosecs)
 {
-        struct timespec blink;
-
-        blink.tv_sec = secs;
-        blink.tv_nsec = nanosecs;
+        const struct timespec blink = {.tv_sec = secs, .tv_nsec = nanosecs};
 
         return nanosleep(&blink, NULL);
 }
