@@ -209,6 +209,8 @@ trigger_if_on_dnsbl(la_command_t *command, bool from_trigger_list)
                         trigger_command_from_blacklist(command);
                         if (command->end_string && command->duration > 0)
                                 enqueue_end_command(command, 0);
+                        else
+                                free_command(command);
                         triggered = true;
                 }
         }
