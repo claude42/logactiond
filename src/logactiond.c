@@ -476,6 +476,13 @@ main(int argc, char *argv[])
                 die_hard("Error loading configuration");
         load_la_config();
 
+        start_watching_threads();
+#ifndef NOMONITORING
+        start_monitoring_thread();
+#endif /* NOMONITORING */
+        start_fifo_thread();
+        start_remote_thread();
+
         if (saved_state)
         {
                 if (!restore_state(saved_state, create_backup_file))
@@ -485,13 +492,6 @@ main(int argc, char *argv[])
                 }
                 start_save_state_thread(saved_state);
         }
-
-        start_watching_threads();
-#ifndef NOMONITORING
-        start_monitoring_thread();
-#endif /* NOMONITORING */
-        start_fifo_thread();
-        start_remote_thread();
 
         if (sync_on_startup)
         {

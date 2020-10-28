@@ -120,43 +120,40 @@ restore_state(const char *const state_file_name, const bool create_backup_file)
                                         "file \"%s\"", state_file_name);
         }
 
-        la_log_verbose(LOG_INFO, "Restoring state from \"%s\"", state_file_name);
 
         size_t linebuffer_size = 0;
         char *linebuffer = NULL;
 
-        xpthread_mutex_lock(&config_mutex);
+        int line_no = 1;
+        ssize_t num_read;
+        int parse_result;
 
-                int line_no = 1;
-                ssize_t num_read;
-                int parse_result;
+        while ((num_read = getline(&linebuffer,
+                                        &linebuffer_size,stream)) != -1)
+        {
+                la_address_t address; la_rule_t *rule;
+                time_t end_time; int factor;
 
-                while ((num_read = getline(&linebuffer,
-                                                &linebuffer_size,stream)) != -1)
-                {
-                        la_address_t address; la_rule_t *rule;
-                        time_t end_time; int factor;
+                parse_result = parse_add_entry_message(linebuffer,
+                                &address, &rule, &end_time, &factor);
+                if (parse_result)
+                        la_vdebug("adr: %s, rule: %s, end_time: %lu, factor: %u",
+                                        address.text ? address.text : "no address",
+                                        rule ? rule->name : "no rule",
+                                        end_time, factor);
+                else
+                        la_vdebug("parse_add_entry_message()==0");
 
-                        parse_result = parse_add_entry_message(linebuffer,
-                                        &address, &rule, &end_time, &factor);
-                        if (parse_result)
-                                la_vdebug("adr: %s, rule: %s, end_time: %lu, factor: %u",
-                                                address.text ? address.text : "no address",
-                                                rule ? rule->name : "no rule",
-                                                end_time, factor);
-                        else
-                                la_vdebug("parse_add_entry_message()==0");
+                if (parse_result == -1)
+                        break;
+                else if (parse_result > 0)
+                        trigger_manual_commands_for_rule(&address, rule,
+                                        end_time, factor, NULL, true);
 
-                        if (parse_result == -1)
-                                break;
-                        else if (parse_result > 0)
-                                trigger_manual_commands_for_rule(&address, rule,
-                                                end_time, factor, NULL, true);
+                line_no++;
+        }
 
-                        line_no++;
-                }
-
-        xpthread_mutex_unlock(&config_mutex);
+        la_log_verbose(LOG_INFO, "Done restoring state from \"%s\"", state_file_name);
 
         free(linebuffer);
 

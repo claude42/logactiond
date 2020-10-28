@@ -145,10 +145,14 @@ parse_add_entry_message(const char *const message, la_address_t *const address,
         if (!init_address(address, parsed_address_str))
                 LOG_RETURN(-1, LOG_ERR, "Cannot convert address in command %s!", message);
 
-        *rule = find_rule(parsed_rule_str);
-        if (!*rule)
-                LOG_RETURN_VERBOSE(-1, LOG_ERR, "Ignoring remote message \'%s\' "
-                                "- rule not active on local system", message);
+        xpthread_mutex_lock(&config_mutex);
+
+                *rule = find_rule(parsed_rule_str);
+                if (!*rule)
+                        LOG_RETURN_VERBOSE(-1, LOG_ERR, "Ignoring remote message \'%s\' "
+                                        "- rule not active on local system", message);
+
+        xpthread_mutex_unlock(&config_mutex);
 
         if (end_time)
                 *end_time = n >= 3 ? parsed_end_time : 0;
