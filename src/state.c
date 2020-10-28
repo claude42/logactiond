@@ -139,9 +139,14 @@ restore_state(const char *const state_file_name, const bool create_backup_file)
 
                         parse_result = parse_add_entry_message(linebuffer,
                                         &address, &rule, &end_time, &factor);
-                        la_vdebug("adr: %s, rule: %s, end_time: %lu, factor: %u",
-                                        address.text ? address.text : "no address",
-                                        rule ? rule->name : "no rule", end_time, factor);
+                        if (parse_result)
+                                la_vdebug("adr: %s, rule: %s, end_time: %lu, factor: %u",
+                                                address.text ? address.text : "no address",
+                                                rule ? rule->name : "no rule",
+                                                end_time, factor);
+                        else
+                                la_vdebug("parse_add_entry_message()==0");
+
                         if (parse_result == -1)
                                 break;
                         else if (parse_result > 0)
