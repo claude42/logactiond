@@ -30,7 +30,7 @@ PKG_CHECK_MODULES([LIBSODIUM], [libsodium], [
 #])
 
 # Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h limits.h stdlib.h string.h strings.h syslog.h unistd.h fcntl.h netinet/in.h sys/socket.h netdb.h pthread_np.h termios.h])
+AC_CHECK_HEADERS([arpa/inet.h limits.h stdlib.h string.h strings.h syslog.h unistd.h fcntl.h netinet/in.h sys/socket.h netdb.h pthread_np.h termios.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_CHECK_HEADER_STDBOOL
@@ -48,7 +48,7 @@ AC_FUNC_FORK
 AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([regcomp strdup strerror strndup ftruncate strcasecmp strtol strchr memset mkfifo socket])
+AC_CHECK_FUNCS([regcomp strdup strerror strndup strcasecmp strtol memset mkfifo socket])
 
 AX_PTHREAD
 
@@ -109,5 +109,4 @@ AC_CHECK_FILE([/run],
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile])
-#lib/Makefile
 AC_OUTPUT
