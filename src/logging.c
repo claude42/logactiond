@@ -31,6 +31,9 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <assert.h>
+#if HAVE_LIBSYSTEMD
+#include <systemd/sd-journal.h>
+#endif /* HAVE_LIBSYSTEMD */
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -61,9 +64,15 @@ log_message(int priority, const char *const fmt, va_list gp,
         switch (run_type)
         {
                 case LA_DAEMON_BACKGROUND:
+#if HAVE_LIBSYSTEMD
+                        sd_journal_printv(priority, fmt, gp);
+                        if (add)
+                                sd_journal_print(priority, "%s", add);
+#else /* HAVE_LIBSYSTEMD */
                         vsyslog(priority, fmt, gp);
                         if (add)
                                 syslog(priority, "%s", add);
+#endif /* HAVE_LIBSYSTEMD */
                         break;
                 case LA_DAEMON_FOREGROUND:
                         fprintf(stderr, "<%u>", priority);
