@@ -338,11 +338,12 @@ disable_rule(const char *const buffer)
 void
 parse_message_trigger_command(const char *const buf, const char *const from)
 {
-        la_debug("parse_message_trigger_command()");
+        la_debug("parse_message_trigger_command(%s, %s)", buf, from);
         assert(buf);
 
         if (*buf != PROTOCOL_VERSION)
-                LOG_RETURN(, LOG_ERR, "Wrong protocol version '%c'!", *buf);
+                LOG_RETURN(, LOG_ERR, "Wrong protocol version '%c' in message "
+                                "from %s!", *buf, from);
 
         switch (*(buf+1))
         {
