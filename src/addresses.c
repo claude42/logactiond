@@ -96,6 +96,8 @@ get_port(const la_address_t *const address)
 const char *
 get_ip_version(const la_address_t *const address)
 {
+        assert_address(address);
+
         switch (address->sa.ss_family)
         {
         case AF_INET:
@@ -137,7 +139,9 @@ static bool
 cidr6_match(const struct in6_addr addr, const struct in6_addr net, const uint8_t prefix)
 {
         la_vdebug("cidr6_match()");
-        assert(prefix<=128);
+
+        if (prefix > 128)
+                return false;
 
         /* Alas I'm not a IPv6 expert. But the following will make the source
          * compile at least on Linux and the BSDs (and thus MacOS). Not sure if
@@ -170,6 +174,7 @@ cidr6_match(const struct in6_addr addr, const struct in6_addr net, const uint8_t
 static bool
 cidr_match_sa(const struct sockaddr *sa, const la_address_t *const net)
 {
+        assert(sa); assert_address(net);
         if (sa->sa_family != net->sa.ss_family)
                 return false;
 
@@ -210,6 +215,7 @@ adrcmp(const la_address_t *const a1, const la_address_t *const a2)
         /* if both are not NULL and of the same address family, look further */
         if (a1 && a2 && a1->sa.ss_family == a2->sa.ss_family)
         {
+                assert_address(a1); assert_address(a2);
                 if (a1->sa.ss_family == AF_INET)
                 {
                         struct sockaddr_in sa1 = *((struct sockaddr_in *) &a1->sa);
@@ -249,7 +255,7 @@ adrcmp(const la_address_t *const a1, const la_address_t *const a2)
 la_address_t *
 address_on_list_sa(const struct sockaddr *const sa, const kw_list_t *const list)
 {
-        assert(sa); assert_list(list);
+        assert_list(list);
 
         for (la_address_t *list_address = ITERATE_ADDRESSES(list);
                         (list_address = NEXT_ADDRESS(list_address));)
@@ -268,6 +274,7 @@ address_on_list_sa(const struct sockaddr *const sa, const kw_list_t *const list)
 la_address_t *
 address_on_list(const la_address_t *const address, const kw_list_t *const list)
 {
+        assert_address(address);
         return address_on_list_sa((struct sockaddr *) &(address->sa), list);
 }
 
@@ -291,14 +298,15 @@ address_on_list_str(const char *const host, const kw_list_t *const list)
 }
 
 /*
- * Create new address based on sockaddr structure.
+ * Initializes new address based on sockaddr structure.
  */
 
 static bool
-create_address_sa_a(la_address_t *const addr, const struct sockaddr *const sa,
+init_address_sa(la_address_t *const addr, const struct sockaddr *const sa,
                 const socklen_t salen)
 {
-        assert(sa);
+        assert(addr); // NOT assert_address() - not initialized yet!
+        assert(sa); assert(salen > 0);
         la_vdebug("create_address_sa()");
 
         if (sa->sa_family != AF_INET && sa->sa_family != AF_INET6)
@@ -314,22 +322,6 @@ create_address_sa_a(la_address_t *const addr, const struct sockaddr *const sa,
         addr->prefix = sa->sa_family == AF_INET ? 32 : 128;
 
         return true;
-}
-
-static la_address_t *
-create_address_sa(const struct sockaddr *const sa, const socklen_t salen)
-{
-        la_address_t *const result = xmalloc0(sizeof *result);
-
-        if (!create_address_sa_a(result, sa, salen))
-        {
-                free(result);
-                return NULL;
-        }
-        else
-        {
-                return result;
-        }
 }
 
 /* Return prefix if valid prefix, -1 otherwise */
@@ -356,7 +348,7 @@ static int convert_prefix(unsigned short int family, const char *const prefix)
 }
 
 /*
- * Creates new address. Sets correct port in address->sa
+ * Initializes address. Sets correct port in address->sa
  *
  * Important: port must be supplied in host byte order NOT network byte order.
  */
@@ -407,7 +399,7 @@ init_address_port(la_address_t *const addr, const char *const host, const in_por
          * TODO: But for ignore_addresses it might make more sense to go through all
          * results from getaddrinfo(). */
 
-        if (!create_address_sa_a(addr, ai->ai_addr, ai->ai_addrlen))
+        if (!init_address_sa(addr, ai->ai_addr, ai->ai_addrlen))
         {
                 freeaddrinfo(ai);
                 return false;
