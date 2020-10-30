@@ -30,7 +30,9 @@
 #include <syslog.h>
 
 #ifdef WITH_LIBSODIUM
+#ifndef NOCRYPTO
 #include <sodium.h>
+#endif /* NOCRYPTO */
 #endif /* WITH_LIBSODIUM */
 
 #include "ndebug.h"

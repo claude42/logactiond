@@ -26,7 +26,9 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#if HAVE_ALLOCA_H
 #include <alloca.h>
+#endif /* HAVE_ALLOCA_H */
 
 #include "ndebug.h"
 #include "logactiond.h"

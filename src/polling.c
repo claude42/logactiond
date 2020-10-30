@@ -32,6 +32,7 @@
 #include <time.h>
 
 #include "ndebug.h"
+#include "logactiond.h"
 #include "configfile.h"
 #include "logging.h"
 #include "misc.h"

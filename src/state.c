@@ -25,7 +25,10 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <pthread.h>
+#if HAVE_ALLOCA_H
 #include <alloca.h>
+#endif /* HAVE_ALLOCA_H */
+#include <stdlib.h>
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -139,7 +142,7 @@ restore_state(const char *const state_file_name, const bool create_backup_file)
                                 &address, &rule, &end_time, &factor);
                 if (parse_result)
                         la_vdebug("adr: %s, rule: %s, end_time: %lu, factor: %u",
-                                        address.text ? address.text : "no address",
+                                        address.text[0] ? address.text : "no address",
                                         rule ? rule->name : "no rule",
                                         end_time, factor);
                 else

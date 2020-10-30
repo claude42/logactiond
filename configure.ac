@@ -30,7 +30,7 @@ PKG_CHECK_MODULES([LIBSODIUM], [libsodium], [
 #])
 
 # Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h limits.h stdlib.h string.h strings.h syslog.h unistd.h fcntl.h netinet/in.h sys/socket.h netdb.h pthread_np.h termios.h unistd.h])
+AC_CHECK_HEADERS([arpa/inet.h limits.h stdlib.h string.h strings.h syslog.h unistd.h fcntl.h netinet/in.h sys/socket.h netdb.h pthread_np.h termios.h unistd.h pthread_np.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_CHECK_HEADER_STDBOOL
