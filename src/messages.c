@@ -149,11 +149,12 @@ parse_add_entry_message(const char *const message, la_address_t *const address,
         xpthread_mutex_lock(&config_mutex);
 
                 *rule = find_rule(parsed_rule_str);
-                if (!*rule)
-                        LOG_RETURN_VERBOSE(-1, LOG_ERR, "Ignoring remote message \'%s\' "
-                                        "- rule not active on local system", message);
 
         xpthread_mutex_unlock(&config_mutex);
+
+	if (!*rule)
+		LOG_RETURN_VERBOSE(-1, LOG_ERR, "Ignoring remote message \'%s\' "
+				"- rule not active on local system", message);
 
         if (end_time)
                 *end_time = n >= 3 ? parsed_end_time : 0;

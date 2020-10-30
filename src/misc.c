@@ -190,9 +190,21 @@ xpthread_cond_signal(pthread_cond_t *cond)
 void
 xpthread_mutex_lock(pthread_mutex_t *mutex)
 {
+#if HAVE_PTHREAD_GETNAME_NP
+#define THREAD_NAME_LEN 16
+        char thread_name[THREAD_NAME_LEN];
+        if (pthread_getname_np(pthread_self(), thread_name, THREAD_NAME_LEN))
+                snprintf(thread_name, THREAD_NAME_LEN, "unnamed");
+	la_vdebug("Thread %s trying to LOCK mutex %u", thread_name, mutex);
+#endif /* HAVE_PTHREAD_GENTAME_NP */
+
         const int ret = pthread_mutex_lock(mutex);
         if (ret)
                 die_val(ret, "Failed to lock mutex!");
+
+#if HAVE_PTHREAD_GETNAME_NP
+	la_vdebug("Thread %s successfully LOCKED mutex %u", thread_name, mutex);
+#endif /* HAVE_PTHREAD_GENTAME_NP */
 }
 
 /*
@@ -202,9 +214,21 @@ xpthread_mutex_lock(pthread_mutex_t *mutex)
 void
 xpthread_mutex_unlock(pthread_mutex_t *mutex)
 {
+#if HAVE_PTHREAD_GETNAME_NP
+#define THREAD_NAME_LEN 16
+        char thread_name[THREAD_NAME_LEN];
+        if (pthread_getname_np(pthread_self(), thread_name, THREAD_NAME_LEN))
+                snprintf(thread_name, THREAD_NAME_LEN, "unnamed");
+	la_vdebug("Thread %s trying to UNLOCK mutex %u", thread_name, mutex);
+#endif /* HAVE_PTHREAD_GENTAME_NP */
+
         const int ret = pthread_mutex_unlock(mutex);
         if (ret)
                 die_val(ret, "Failed to unlock mutex!");
+
+#if HAVE_PTHREAD_GETNAME_NP
+	la_vdebug("Thread %s successfully UNLOCKED mutex %u", thread_name, mutex);
+#endif /* HAVE_PTHREAD_GENTAME_NP */
 }
 
 /* join thread, die if pthread_join() fails
