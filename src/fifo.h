@@ -20,9 +20,6 @@
 #define __fifo_h
 
 #include "ndebug.h"
-#include "logactiond.h"
-
-#define FIFOFILE RUNDIR "/logactiond.fifo"
 
 #define LA_FIFO "fifo"
 

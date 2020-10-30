@@ -18,7 +18,7 @@ testdir = $(confdir)/test
 dist_test_DATA = conf/test/*
 
 install-data-local:
-	    $(MKDIR_P) $(DESTDIR)$(libdir)/logactiond
+	    $(MKDIR_P) $(sharedstatedir)/logactiond
 
 EXTRA_DIST = contrib/* README.md 
 

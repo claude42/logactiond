@@ -36,6 +36,7 @@
 #include <ctype.h>
 
 #include "ndebug.h"
+#include "logactiond.h"
 #include "logging.h"
 #include "misc.h"
 

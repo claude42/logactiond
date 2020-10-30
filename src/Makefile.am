@@ -8,20 +8,20 @@ endif
 sbin_PROGRAMS = logactiond logactiond-cleanup
 bin_PROGRAMS = logactiond-checkrules testerli ladc
 logactiond_SOURCES = logactiond.c logactiond.h configfile.c configfile.h rules.c rules.h patterns.c patterns.h sources.c sources.h misc.c misc.h inotify.c inotify.h nodelist.c nodelist.h properties.c properties.h commands.c commands.h endqueue.c endqueue.h addresses.c addresses.h polling.c polling.h status.c status.h watch.c watch.h systemd.c systemd.h fifo.c fifo.h remote.c remote.h messages.c messages.h logging.c logging.h dnsbl.c dnsbl.h crypto.c crypto.h state.c state.h ndebug.h
-logactiond_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\"" -DSTATE_DIR="\"$(libdir)/logactiond\""
+logactiond_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\"" -DSTATE_DIR="\"$(sharedstatedir)/logactiond\"" -DRUN_DIR="\"$(runstatedir)\""
 logactiond_CFLAGS = $(PTHREAD_CFLAGS) $(LIBSODIUM_CFLAGS) $(CFLAGS)
 logactiond_LDFLAGS = $(LIBSODIUM_LIBS) $(LIBS)
 
 logactiond_checkrules_SOURCES = logactiond-checkrules.c logactiond.h addresses.c addresses.h commands.c commands.h configfile.c configfile.h misc.c misc.h nodelist.c nodelist.h patterns.c patterns.h properties.c properties.h rules.c rules.h sources.c sources.h logging.c logging.h ndebug.h
-logactiond_checkrules_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\"" -DNOCOMMANDS -DNOWATCH -DNOMONITORING -DNOCRYPTO
+logactiond_checkrules_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\"" -DRUN_DIR="\"$(runstatedir)\"" -DNOCOMMANDS -DNOWATCH -DNOMONITORING -DNOCRYPTO
 logactiond_checkrules_CFLAGS = $(PTHREAD_CFLAGS)
 
 logactiond_cleanup_SOURCES = logactiond-cleanup.c logactiond.h addresses.c addresses.h commands.c commands.h configfile.c configfile.h misc.c misc.h nodelist.c nodelist.h patterns.c patterns.h properties.c properties.h rules.c rules.h sources.c sources.h endqueue.c endqueue.h logging.c logging.h ndebug.h
-logactiond_cleanup_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\"" -DNOWATCH -DNOMONITORING -DONLYCLEANUPCOMMANDS -DNOCRYPTO
+logactiond_cleanup_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\"" -DRUN_DIR="\"$(runstatedir)\"" -DNOWATCH -DNOMONITORING -DONLYCLEANUPCOMMANDS -DNOCRYPTO
 logactiond_cleanup_CFLAGS = $(PTHREAD_CFLAGS)
 
 ladc_SOURCES = ladc.c logactiond.h messages.c messages.h logging.c logging.h misc.c misc.h nodelist.c nodelist.h crypto.c crypto.h ndebug.h
-ladc_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCLIENTONLY
+ladc_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCLIENTONLY -DRUN_DIR="\"$(runstatedir)\"" 
 ladc_CFLAGS = $(LIBSODIUM_CFLAGS) $(CFLAGS)
 ladc_LDFLAGS = $(LIBSODIUM_LIBS) $(LIBS)
 

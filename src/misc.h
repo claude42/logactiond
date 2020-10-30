@@ -25,11 +25,7 @@
 #include <config.h>
 
 #include "ndebug.h"
-#include "logactiond.h"
-//#include "logging.h"
 #include "nodelist.h"
-
-#define PIDFILE RUNDIR "/logactiond.pid"
 
 #define LOG_RETURN(retval, ...) do { la_log(__VA_ARGS__); return retval; } while (0)
 #define LOG_RETURN_VERBOSE(retval, ...) do { la_log_verbose(__VA_ARGS__); return retval; } while (0)

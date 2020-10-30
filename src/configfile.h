@@ -26,12 +26,6 @@
 #include "ndebug.h"
 #include "sources.h"
 
-#if !defined(CONF_DIR)
-#define CONF_DIR "/etc/logactiond"
-#endif /* !defined(CONF_DIR) */
-
-#define CONFIG_FILE "logactiond.cfg"
-
 #define DEFAULT_THRESHOLD 3
 #define DEFAULT_PERIOD 600
 #define DEFAULT_DURATION 600

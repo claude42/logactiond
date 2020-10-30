@@ -26,11 +26,34 @@
 
 #include <config.h>
 
-#if HAVE_RUN
-#define RUNDIR "/run"
-#else
-#define RUNDIR "/var/run"
+/* Configuration directory and main config file */
+
+#if !defined(CONF_DIR)
+#define CONF_DIR "/etc/logactiond"
+#endif /* !defined(CONF_DIR) */
+
+#define CONFIG_FILE "logactiond.cfg"
+
+/* State directory and file */
+
+#if !defined(STATE_DIR)
+#define STATE_DIR "/var/lib/logactiond"
+#endif /* !defined(STATE_DIR) */
+
+#define STATE_FILE "logactiond.state"
+#define BAK_SUFFIX ".bak"
+#define HOSTSFILE STATE_DIR "/logactiond.hosts"
+#define RULESFILE STATE_DIR "/logactiond.rules"
+#define DIAGFILE STATE_DIR "/logactiond.diagnostics"
+
+/* Run directory */
+
+#if !defined(RUN_DIR)
+#define RUN_DIR "/var/run"
 #endif
+
+#define FIFOFILE RUN_DIR "/logactiond.fifo"
+#define PIDFILE RUN_DIR "/logactiond.pid"
 
 #define DEFAULT_PORT_STR "16473"
 

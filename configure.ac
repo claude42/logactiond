@@ -103,10 +103,6 @@ AC_LINK_IFELSE(
 
 LIBS="$HOLD_LIBS"
 
-AC_CHECK_FILE([/run],
-  [AC_DEFINE([HAVE_RUN], [1],
-    [Define to 1 if you have /run.])])
-
 AC_CONFIG_FILES([Makefile
                  src/Makefile])
 AC_OUTPUT

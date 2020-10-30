@@ -28,6 +28,7 @@
 #include <alloca.h>
 
 #include "ndebug.h"
+#include "logactiond.h"
 #include "addresses.h"
 #include "configfile.h"
 #include "endqueue.h"

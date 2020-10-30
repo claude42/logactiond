@@ -23,14 +23,6 @@
 
 #include "ndebug.h"
 
-#if !defined(STATE_DIR)
-#define STATE_DIR "/var/lib/logactiond"
-#endif /* !defined(STATE_DIR) */
-
-#define STATE_FILE "logactiond.state"
-
-#define BAK_SUFFIX ".bak"
-
 extern pthread_t save_state_thread;
 
 void save_state(const char *state_file_name);

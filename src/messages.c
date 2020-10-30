@@ -26,6 +26,7 @@
 #include <stdbool.h>
 
 #include "ndebug.h"
+#include "logactiond.h"
 #include "addresses.h"
 #include "commands.h"
 #include "configfile.h"

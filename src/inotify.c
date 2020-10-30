@@ -32,6 +32,7 @@
 #include <pthread.h>
 
 #include "ndebug.h"
+#include "logactiond.h"
 #include "configfile.h"
 #include "inotify.h"
 #include "logging.h"

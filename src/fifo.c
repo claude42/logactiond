@@ -29,6 +29,7 @@
 #include <alloca.h>
 
 #include "ndebug.h"
+#include "logactiond.h"
 #include "fifo.h"
 #include "logging.h"
 #include "messages.h"

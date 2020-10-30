@@ -22,7 +22,6 @@
 #include <config.h>
 
 #include "ndebug.h"
-#include "logactiond.h"
 
 #define RULES_HEADER \
         "En Rule          Service       Source        Detected  Invoked  In queue\n" \
@@ -39,10 +38,6 @@
 /* Parameters: address, type, factor, timedelta, unit, rule name, command name
  */
 #define HOSTS_LINE "%-43.43s %s %2d %2ld%c  %-13.13s %-13.13s\n"
-
-#define HOSTSFILE RUNDIR "/logactiond.hosts"
-#define RULESFILE RUNDIR "/logactiond.rules"
-#define DIAGFILE RUNDIR "/logactiond.diagnostics"
 
 extern pthread_t monitoring_thread;
 
