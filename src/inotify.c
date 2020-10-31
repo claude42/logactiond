@@ -22,14 +22,13 @@
 #if HAVE_INOTIFY
 
 #include <stdlib.h>
-#include <string.h>
 #include <sys/inotify.h>
 #include <unistd.h>
-#include <syslog.h>
 #include <assert.h>
 #include <libgen.h>
 #include <errno.h>
 #include <pthread.h>
+#include <stdio.h>
 
 #include "ndebug.h"
 #include "logactiond.h"

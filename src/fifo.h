@@ -19,6 +19,8 @@
 #ifndef __fifo_h
 #define __fifo_h
 
+#include <pthread.h>
+
 #include "ndebug.h"
 
 #define LA_FIFO "fifo"

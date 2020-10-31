@@ -20,11 +20,8 @@
 
 #include <time.h>
 #include <pthread.h>
-#include <syslog.h>
-#include <string.h>
 #include <assert.h>
 #include <limits.h>
-#include <stdio.h>
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -33,12 +30,9 @@
 #include "configfile.h"
 #include "endqueue.h"
 #include "logging.h"
-#include "messages.h"
 #include "misc.h"
 #include "nodelist.h"
 #include "rules.h"
-#include "sources.h"
-#include "status.h"
 
 kw_list_t *end_queue = NULL;
 pthread_t end_queue_thread = 0;
@@ -305,7 +299,7 @@ consume_end_queue(void *ptr)
 
                                 free_command(command);
                         }
-        }
+                }
 
         assert(false);
         /* Will never be reached, simple here to make potential pthread macros

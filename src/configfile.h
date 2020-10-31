@@ -20,6 +20,7 @@
 #define __configfile_h
 
 #include <pthread.h>
+#include <stdbool.h>
 
 #include <libconfig.h>
 

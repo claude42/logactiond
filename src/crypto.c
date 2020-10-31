@@ -21,14 +21,12 @@
 
 #include <assert.h>
 #include <string.h>
-#include <syslog.h>
+#include <stdbool.h>
 
 #include "ndebug.h"
-#include "addresses.h"
 #include "crypto.h"
 #include "logging.h"
 #include "messages.h"
-#include "misc.h"
 
 #ifdef WITH_LIBSODIUM
 #include <sodium.h>

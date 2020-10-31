@@ -19,11 +19,16 @@
 #ifndef __endqueue_h
 #define __endqueue_h
 
+#include <pthread.h>
+#include <time.h>
+
 #include <config.h>
 
 #include "ndebug.h"
+#include "nodelist.h"
 #include "addresses.h"
 #include "commands.h"
+
 
 extern pthread_t end_queue_thread;
 

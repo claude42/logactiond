@@ -23,9 +23,7 @@
 #include <strings.h>
 #include <syslog.h>
 #include <assert.h>
-#include <unistd.h>
 #include <pthread.h>
-#include <stdio.h>
 #include <stdbool.h>
 #include <sys/types.h>
 #include <dirent.h>

@@ -28,10 +28,10 @@
 #include <stdbool.h>
 
 #include "ndebug.h"
+#include "nodelist.h"
 #include "addresses.h"
-#include "dnsbl.h"
 #include "logging.h"
-#include "misc.h"
+#include "dnsbl.h"
 
 static int
 convert_to_dnsbl_hostname_4_sa(const struct sockaddr_in *const si,

@@ -19,8 +19,6 @@
 #ifndef __dnsbl_h
 #define __dnsbl_h
 
-#include <stdbool.h>
-
 #include "ndebug.h"
 
 const char *host_on_any_dnsbl(const kw_list_t *blacklists,
