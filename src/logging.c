@@ -81,7 +81,7 @@ log_message(int priority, const char *const fmt, va_list gp,
 #if HAVE_PTHREAD_GETNAME_NP
                         if (priority == LOG_DEBUG)
                                 fprintf(stderr, "%s: ", thread_name);
-#endif /* HAVE_PTHREAD_GENTAME_NP */
+#endif /* HAVE_PTHREAD_GETNAME_NP */
 #endif /* CLIENTONLY */
                         vfprintf(stderr, fmt, gp);
                         if (add)
