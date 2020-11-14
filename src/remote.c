@@ -124,7 +124,10 @@ send_add_entry_message(const la_command_t *const command, const la_address_t *co
                 la_config->remote_secret_changed = false;
         }
         if (!encrypt_message(message))
+        {
+                free(message);
                 LOG_RETURN(, LOG_ERR, "Unable to encrypt message");
+        }
 #endif /* WITH_LIBSODIUM */
 
         if (address)

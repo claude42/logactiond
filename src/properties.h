@@ -54,8 +54,6 @@
 
 /*
  * la_property_s
- *
- * Note: both name and value must be assigned strdup()ed strings
  */
 
 typedef struct la_property_s la_property_t;

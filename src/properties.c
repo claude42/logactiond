@@ -66,13 +66,10 @@ token_length(const char *const string)
         assert(string); assert(*string == '%');
         la_vdebug("token_length(%s)", string);
 
-        const char *ptr = string+1;
-
-        while (*ptr)
+        for (const char *ptr = string + 1; *ptr; ptr++)
         {
                 if (*ptr == '%')
                         return ptr-string+1;
-                ptr++;
         }
 
         die_hard("Closing '%%' of token missing!");

@@ -72,7 +72,7 @@ char *create_del_message(const char *ip);
 
 char *create_empty_queue_message(void);
 
-char *create_simple_message(char c);
+char *create_simple_message(char message_command, const char *message_payload);
 
 char *create_flush_message(void);
 

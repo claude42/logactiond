@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -446,28 +447,23 @@ print_add_message(FILE *const stream, const la_command_t *const command)
 char *
 create_del_message(const char *const ip)
 {
-	assert(ip);
-        char *const buffer = xmalloc(TOTAL_MSG_LEN);
-
-        const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN,
-                        PROTOCOL_VERSION_STR "-%s", ip);
-        if (msg_len > MSG_LEN-1)
-                return NULL;
-
-        /* pad right here, cannot hurt even if we don't encrypt... */
-        pad(buffer, msg_len+1);
-
-        return buffer;
+        return create_simple_message('-', ip);
 }
 
 char *
-create_simple_message(const char c)
+create_simple_message(const char message_command, const char *const message_payload)
 {
+        assert(isprint(message_command)); assert(message_payload);
+
         char *const buffer = xmalloc(TOTAL_MSG_LEN);
 
-        buffer[MSG_IDX] = PROTOCOL_VERSION;
-        buffer[MSG_IDX+1] = c;
-        buffer[MSG_IDX+2] = '\0';
+        const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, PROTOCOL_VERSION_STR
+                        "%c%s", message_command, message_payload);
+        if (msg_len > MSG_LEN-1)
+        {
+                free(buffer);
+                return NULL;
+        }
 
         /* pad right here, cannot hurt even if we don't encrypt... */
         pad(buffer, 2+1);
@@ -478,25 +474,25 @@ create_simple_message(const char c)
 char *
 create_flush_message(void)
 {
-        return create_simple_message('F');
+        return create_simple_message('F', "");
 }
 
 char *
 create_reload_message(void)
 {
-        return create_simple_message('R');
+        return create_simple_message('R', "");
 }
 
 char *
 create_shutdown_message(void)
 {
-        return create_simple_message('S');
+        return create_simple_message('S', "");
 }
 
 char *
 create_save_message(void)
 {
-        return create_simple_message('>');
+        return create_simple_message('>', "");
 }
 
 char *
@@ -504,69 +500,40 @@ create_log_level_message(const int new_log_level)
 {
         assert(new_log_level <= LOG_DEBUG+2);
 
-        char *const buffer = xmalloc(TOTAL_MSG_LEN);
+        char new_log_level_str[3];
+        snprintf(new_log_level_str, 3, "%i", new_log_level);
 
-        const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cL%u",
-                        PROTOCOL_VERSION, new_log_level);
-
-        /* pad right here, cannot hurt even if we don't encrypt... */
-        pad(buffer, msg_len+1);
-
-        return buffer;
+        return create_simple_message('L', new_log_level_str);
 }
 
 char *
 create_reset_counts_message(void)
 {
-        return create_simple_message('0');
+        return create_simple_message('0', "");
 }
 
 char *
 create_sync_message(const char *const host)
 {
-        char *const buffer = xmalloc(TOTAL_MSG_LEN);
-
-        const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cX%s",
-                        PROTOCOL_VERSION, host ? host : "");
-
-        /* pad right here, cannot hurt even if we don't encrypt... */
-        pad(buffer, msg_len+1);
-
-        return buffer;
+        return create_simple_message('X', host ? host : "");
 }
 
 char *
 create_dump_message(void)
 {
-        return create_simple_message('D');
+        return create_simple_message('D', "");
 }
 
 char *
 create_enable_message(const char *const rule)
 {
-        char *const buffer = xmalloc(TOTAL_MSG_LEN);
-
-        const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cY%s",
-                        PROTOCOL_VERSION, rule);
-
-        /* pad right here, cannot hurt even if we don't encrypt... */
-        pad(buffer, msg_len+1);
-
-        return buffer;
+        return create_simple_message('Y', rule);
 }
 
 char *
 create_disable_message(const char *const rule)
 {
-        char *const buffer = xmalloc(TOTAL_MSG_LEN);
-
-        const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, "%cN%s",
-                        PROTOCOL_VERSION, rule);
-
-        /* pad right here, cannot hurt even if we don't encrypt... */
-        pad(buffer, msg_len+1);
-
-        return buffer;
+        return create_simple_message('N', rule);
 }
 
 

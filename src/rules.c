@@ -109,6 +109,7 @@ find_trigger(const la_command_t *const template, const la_address_t *const addre
 
         if (!address)
                 return NULL;
+        assert_address(address);
 
         const time_t now = xtime(NULL);
 
@@ -236,41 +237,49 @@ trigger_single_command(la_pattern_t *const pattern,
                 return;
 
         assert_pattern(pattern); assert_command(template);
-        if (address)
-                assert_address(address);
         la_debug("trigger_single_command(%s)", template->name);
 
-        /* First check whether a command for this host is still active on
-         * end_queue. In this case, ignore new command */
-        const la_command_t *const tmp = find_end_command(address);
-        if (tmp)
-                LOG_RETURN_VERBOSE(, LOG_INFO, "Host: %s, ignored, action \"%s\" "
-                                "already active (triggered by rule \"%s\").",
-                                address->text, tmp->name, tmp->rule_name);
+        la_command_t *command = NULL;
 
-        /* Check whether the same command has been triggered (but not yet
-         * fired) by the same host before. Create new command if not found. If
-         * host is not set, always create new command.
-         */
-        la_command_t *command = find_trigger(template, address);
+        if (address)
+        {
+                assert_address(address);
+                /* First check whether a command for this host is still active
+                 * on end_queue. In this case, ignore new command */
+                command = find_end_command(address);
+                if (command)
+                        LOG_RETURN_VERBOSE(, LOG_INFO, "Host: %s, ignored, "
+                                        "action \"%s\" already active "
+                                        "(triggered by rule \"%s\").",
+                                        address->text, command->name,
+                                        command->rule_name);
 
-        bool from_trigger_list = command;
-
-        if (!from_trigger_list)
+                /* Check whether the same command has been triggered (but not yet
+                 * fired) by the same host before.
+                 */
+                command = find_trigger(template, address);
+        }
+        else if (template->need_host != LA_NEED_HOST_NO)
         {
                 /* Don't trigger command if need_host==true but no host
                  * property exists */
-                if (template->need_host != LA_NEED_HOST_NO &&
-                                !address)
-                        LOG_RETURN(, LOG_ERR, "Missing required host token, action "
-                                        "\"%s\" not fired for rule \"%s\"!",
-                                        template->name,
-                                        pattern->rule->name);
+                LOG_RETURN(, LOG_ERR, "Missing required host token, action "
+                                "\"%s\" not fired for rule \"%s\"!",
+                                template->name,
+                                pattern->rule->name);
+        }
 
+        const bool from_trigger_list = command;
+
+        if (!from_trigger_list)
+        {
+                 /* Create new command if not found. If host is not set, always
+                  * create new command.
+                 */
                 command = create_command_from_template(template, pattern,
                                 address);
                 if (!command)
-                        LOG_RETURN(, LOG_ERR, "IP address doesn't what "
+                        LOG_RETURN(, LOG_ERR, "IP address doesn't match "
                                         "requirements of action!");
         }
 
