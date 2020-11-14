@@ -27,10 +27,6 @@
 #include "ndebug.h"
 #include "nodelist.h"
 
-#define LOG_RETURN(retval, ...) do { la_log(__VA_ARGS__); return retval; } while (0)
-#define LOG_RETURN_VERBOSE(retval, ...) do { la_log_verbose(__VA_ARGS__); return retval; } while (0)
-#define LOG_RETURN_ERRNO(retval, ...) do { la_log_errno(__VA_ARGS__); return retval; } while (0)
-
 void remove_pidfile(void);
 
 void create_pidfile(void);

@@ -64,37 +64,37 @@ int parse_add_entry_message(const char *message, la_address_t *address,
 void parse_message_trigger_command(const char *buf, const char *from);
 #endif /* CLIENTONLY */
 
-char *create_add_message(const char *ip, const char *rule, const char *end_time, const char *factor);
+bool init_add_message(char *buffer, const char *ip, const char *rule, const char *end_time, const char *factor);
 
 int print_add_message(FILE *stream, const la_command_t *command);
 
-char *create_del_message(const char *ip);
+bool init_del_message(char *buffer, const char *ip);
 
-char *create_empty_queue_message(void);
+bool init_empty_queue_message(char *buffer);
 
-char *create_simple_message(char message_command, const char *message_payload);
+bool init_simple_message(char *buffer, char message_command, const char *message_payload);
 
-char *create_flush_message(void);
+bool init_flush_message(char *buffer);
 
-char *create_reload_message(void);
+bool init_reload_message(char *buffer);
 
-char *create_shutdown_message(void);
+bool init_shutdown_message(char *buffer);
 
-char *create_save_message(void);
+bool init_save_message(char *buffer);
 
-char *create_restore_message(void);
+bool init_restore_message(char *buffer);
 
-char *create_log_level_message(int new_log_level);
+bool init_log_level_message(char *buffer, int new_log_level);
 
-char *create_reset_counts_message(void);
+bool init_reset_counts_message(char *buffer);
 
-char *create_sync_message(const char *host);
+bool init_sync_message(char *buffer, const char *host);
 
-char *create_dump_message(void);
+bool init_dump_message(char *buffer);
 
-char *create_enable_message(const char *rule);
+bool init_enable_message(char *buffer, const char *rule);
 
-char *create_disable_message(const char *rule);
+bool init_disable_message(char *buffer, const char *rule);
 
 #endif /* __messages_h */
 

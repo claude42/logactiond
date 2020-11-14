@@ -218,7 +218,8 @@ main(int argc, char *argv[])
                 die_hard("Wrong number of arguments.");
 
         char *command = argv[optind++];
-        char *message = NULL;
+        bool success = false;
+        char message[TOTAL_MSG_LEN] = "";
 
         if (!strcmp(command, "add"))
         {
@@ -230,80 +231,80 @@ main(int argc, char *argv[])
                 char *end_time = NULL;
                 if (optind < argc)
                         end_time = argv[optind];
-                message = create_add_message(ip, rule, end_time, NULL);
+                success = init_add_message(message, ip, rule, end_time, NULL);
         }
         else if (!strcmp(command, "del"))
         {
                 if (optind != argc-1)
                         die_hard("Wrong number of arguments.");
 
-                message = create_del_message(argv[optind]);
+                success = init_del_message(message, argv[optind]);
         }
         else if (!strcmp(command, "flush"))
         {
-                message = create_flush_message();
+                success = init_flush_message(message);
         }
         else if (!strcmp(command, "reload"))
         {
-                message = create_reload_message();
+                success = init_reload_message(message);
         }
         else if (!strcmp(command, "shutdown"))
         {
-                message = create_shutdown_message();
+                success = init_shutdown_message(message);
         }
         else if (!strcmp(command, "save"))
         {
-                message = create_save_message();
+                success = init_save_message(message);
         }
         else if (!strcmp(command, "debug"))
         {
-                message = create_log_level_message(LOG_DEBUG+1);
+                success = init_log_level_message(message, LOG_DEBUG+1);
         }
         else if (!strcmp(command, "vdebug"))
         {
-                message = create_log_level_message(LOG_DEBUG+2);
+                success = init_log_level_message(message, LOG_DEBUG+2);
         }
         else if (!strcmp(command, "nodebug"))
         {
-                message = create_log_level_message(LOG_INFO+1);
+                success = init_log_level_message(message, LOG_INFO+1);
         }
         else if (!strcmp(command, "reset-counts"))
         {
-                message = create_reset_counts_message();
+                success = init_reset_counts_message(message);
         }
         else if (!strcmp(command, "sync"))
         {
                 if (optind == argc)
-                        message = create_sync_message(NULL);
+                        success = init_sync_message(message, NULL);
                 else if (optind == argc-1)
-                        message = create_sync_message(argv[optind++]);
+                        success = init_sync_message(message, argv[optind++]);
                 else
                         die_hard("Wrong num ber of arguments.");
         }
         else if (!strcmp(command, "dump"))
         {
-                message = create_dump_message();
+                success = init_dump_message(message);
         }
         else if (!strcmp(command, "enable"))
         {
                 if (optind != argc-1)
                         die_hard("Wrong number of arguments.");
 
-                message = create_enable_message(argv[optind]);
+                success = init_enable_message(message, argv[optind]);
         }
         else if (!strcmp(command, "disable"))
         {
                 if (optind != argc-1)
                         die_hard("Wrong number of arguments.");
 
-                message = create_disable_message(argv[optind]);
+                success = init_disable_message(message, argv[optind]);
         }
         else
         {
                 die_hard("Unknown command \"%s\".", command);
         }
 
-        if (!message)
+        if (!success)
                 die_err("Unable to create message");
 
         if (host)
@@ -320,8 +321,6 @@ main(int argc, char *argv[])
         {
                 send_local_message(message);
         }
-
-        free(message);
 
         exit(0);
 }

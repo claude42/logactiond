@@ -113,9 +113,9 @@ send_add_entry_message(const la_command_t *const command, const la_address_t *co
 
         /* delibarately left out end_time and factor  here. Receiving end
          * should decide on duration. TODO: does that make sense? */
-        char *const message = create_add_message(command->address->text,
-                        command->rule_name, NULL, NULL);
-        if (!message)
+        char message[TOTAL_MSG_LEN];
+        if (!init_add_message(message, command->address->text,
+                                command->rule_name, NULL, NULL))
                 LOG_RETURN(, LOG_ERR, "Unable to create message");
 #ifdef WITH_LIBSODIUM
         if (la_config->remote_secret_changed)
@@ -124,10 +124,7 @@ send_add_entry_message(const la_command_t *const command, const la_address_t *co
                 la_config->remote_secret_changed = false;
         }
         if (!encrypt_message(message))
-        {
-                free(message);
                 LOG_RETURN(, LOG_ERR, "Unable to encrypt message");
-        }
 #endif /* WITH_LIBSODIUM */
 
         if (address)
@@ -144,9 +141,6 @@ send_add_entry_message(const la_command_t *const command, const la_address_t *co
                         send_message_to_single_address(message, remote_address);
                 }
         }
-
-
-        free(message);
 }
 
 /*
@@ -331,10 +325,13 @@ sync_all_entries(void *ptr)
 
                         {
                                 assert(message_array_length < queue_length);
-                                message_array[message_array_length++] =
-                                        create_add_message(command->address->text,
-                                                        command->rule_name, NULL,
-                                                        NULL);
+                                char *message = alloca(TOTAL_MSG_LEN);
+                                if (init_add_message(message,
+                                                        command->address->text,
+                                                        command->rule_name,
+                                                        NULL, NULL))
+                                        message_array[message_array_length++] =
+                                                message;
                         }
                 }
 
@@ -352,7 +349,6 @@ sync_all_entries(void *ptr)
                         LOG_RETURN(NULL, LOG_ERR, "Unable to encrypt message");
 #endif /* WITH_LIBSODIUM */
                 send_message_to_single_address(message_array[i], &address);
-                free(message_array[i]);
                 xnanosleep(0, 200000000);
         }
 

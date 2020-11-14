@@ -372,9 +372,11 @@ sync_with_other_instances(void)
                         ITERATE_ADDRESSES(la_config->remote_send_to);
                         (remote_address = NEXT_ADDRESS(remote_address));)
         {
-                char *message = create_sync_message(NULL);
-                send_message_to_single_address(message, remote_address);
-                free(message);
+                char message[TOTAL_MSG_LEN];
+                if (init_sync_message(message, NULL))
+                        send_message_to_single_address(message, remote_address);
+                else
+                        la_log(LOG_ERR, "Syncing with other instances failed!");
         }
 }
 

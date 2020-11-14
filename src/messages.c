@@ -395,15 +395,14 @@ parse_message_trigger_command(const char *const buf, const char *const from)
 
 #endif /* CLIENTONLY */
 
-char *
-create_add_message(const char *const ip, const char *const rule,
-                const char *const end_time, const char *const factor)
+bool
+init_add_message(char *const buffer, const char *const ip,
+                const char *const rule, const char *const end_time,
+                const char *const factor)
 {
 	assert(ip); assert(rule);
         /* if factor is specified, end_time must be specified as well */
         assert(!factor || (factor && end_time));
-
-        char *const buffer = xmalloc(TOTAL_MSG_LEN);
 
         const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, PROTOCOL_VERSION_STR
                         "+%s,%s%s%s%s%s", ip, rule,
@@ -412,15 +411,12 @@ create_add_message(const char *const ip, const char *const rule,
                         factor ? "," : "",
                         factor ? factor : "");
         if (msg_len > MSG_LEN-1)
-        {
-                free(buffer);
-                return NULL;
-        }
+                return false;
 
         /* pad right here, cannot hurt even if we don't encrypt... */
         pad(buffer, msg_len+1);
 
-        return buffer;
+        return true;
 }
 
 int
@@ -444,96 +440,92 @@ print_add_message(FILE *const stream, const la_command_t *const command)
                         command->end_time, command->factor);
 }
 
-char *
-create_del_message(const char *const ip)
+bool
+init_del_message(char *const buffer, const char *const ip)
 {
-        return create_simple_message('-', ip);
+        return init_simple_message(buffer, '-', ip);
 }
 
-char *
-create_simple_message(const char message_command, const char *const message_payload)
+bool
+init_simple_message(char *const buffer, const char message_command,
+                const char *const message_payload)
 {
         assert(isprint(message_command)); assert(message_payload);
-
-        char *const buffer = xmalloc(TOTAL_MSG_LEN);
 
         const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, PROTOCOL_VERSION_STR
                         "%c%s", message_command, message_payload);
         if (msg_len > MSG_LEN-1)
-        {
-                free(buffer);
-                return NULL;
-        }
+                return false;
 
         /* pad right here, cannot hurt even if we don't encrypt... */
         pad(buffer, 2+1);
 
-        return buffer;
+        return true;
 }
 
-char *
-create_flush_message(void)
+bool
+init_flush_message(char *const buffer)
 {
-        return create_simple_message('F', "");
+        return init_simple_message(buffer, 'F', "");
 }
 
-char *
-create_reload_message(void)
+bool
+init_reload_message(char *const buffer)
 {
-        return create_simple_message('R', "");
+        return init_simple_message(buffer, 'R', "");
 }
 
-char *
-create_shutdown_message(void)
+bool
+init_shutdown_message(char *const buffer)
 {
-        return create_simple_message('S', "");
+        return init_simple_message(buffer, 'S', "");
 }
 
-char *
-create_save_message(void)
+bool
+init_save_message(char *const buffer)
 {
-        return create_simple_message('>', "");
+        return init_simple_message(buffer, '>', "");
 }
 
-char *
-create_log_level_message(const int new_log_level)
+bool
+init_log_level_message(char *const buffer, const int new_log_level)
 {
         assert(new_log_level <= LOG_DEBUG+2);
 
         char new_log_level_str[3];
         snprintf(new_log_level_str, 3, "%i", new_log_level);
 
-        return create_simple_message('L', new_log_level_str);
+        return init_simple_message(buffer, 'L', new_log_level_str);
 }
 
-char *
-create_reset_counts_message(void)
+bool
+init_reset_counts_message(char *const buffer)
 {
-        return create_simple_message('0', "");
+        return init_simple_message(buffer, '0', "");
 }
 
-char *
-create_sync_message(const char *const host)
+bool
+init_sync_message(char *const buffer, const char *const host)
 {
-        return create_simple_message('X', host ? host : "");
+        return init_simple_message(buffer, 'X', host ? host : "");
 }
 
-char *
-create_dump_message(void)
+bool
+init_dump_message(char *const buffer)
 {
-        return create_simple_message('D', "");
+        return init_simple_message(buffer, 'D', "");
 }
 
-char *
-create_enable_message(const char *const rule)
+bool
+init_enable_message(char *const buffer, const char *const rule)
 {
-        return create_simple_message('Y', rule);
+        return init_simple_message(buffer, 'Y', rule);
 }
 
-char *
-create_disable_message(const char *const rule)
+bool
+init_disable_message(char *const buffer, const char *const rule)
 {
-        return create_simple_message('N', rule);
+        return init_simple_message(buffer, 'N', rule);
 }
 
 
