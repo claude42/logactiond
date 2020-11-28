@@ -52,6 +52,10 @@ assert_rule_ffl(const la_rule_t *rule, const char *func, const char *file, int l
                 die_hard("%s:%u: %s: Assertion 'rule' failed. ", file, line, func);
         if (!rule->name)
                 die_hard("%s:%u: %s: Assertion 'rule->name' failed. ", file, line, func);
+        if (strlen(rule->name) >= RULE_LENGTH)
+                die_hard("%s:%u: %s: Assertion 'strlen(rule->name) < "
+                                "RULE_LENGTH' failed. ", file, line, func);
+
         assert_source_group_ffl(rule->source_group, func, file, line);
         assert_list_ffl(rule->patterns, func, file, line);
         assert_list_ffl(rule->begin_commands, func, file, line);
@@ -468,6 +472,9 @@ create_rule(const bool enabled, const char *const name,
 
         result->enabled = enabled;
 
+        if (xstrlen(name) >= RULE_LENGTH)
+                die_hard("Rulename too long - must be less than %u characters!",
+                                RULE_LENGTH);
         result->name = xstrdup(name);
         result->id = ++id_counter;
         result->source_group = source_group;

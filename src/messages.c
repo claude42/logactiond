@@ -135,7 +135,7 @@ parse_add_entry_message(const char *const message, la_address_t *const address,
                 return 0;
 
         char parsed_address_str[MSG_ADDRESS_LENGTH + 1];
-        char parsed_rule_str[MSG_RULE_LENGTH + 1];
+        char parsed_rule_str[RULE_LENGTH + 1];
         unsigned int parsed_end_time; unsigned int parsed_factor;
         const int n = sscanf(message, PROTOCOL_VERSION_STR "+%50[^,],%100[^,],%u,%u",
                         parsed_address_str, parsed_rule_str, &parsed_end_time,

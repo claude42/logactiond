@@ -30,6 +30,10 @@
 
 #define MAX_NMATCH 20
 
+// rule length is restricted mainly so that message length is limited
+
+#define RULE_LENGTH 100
+
 #define ITERATE_RULES(RULES) (la_rule_t *) &(RULES)->head
 #define NEXT_RULE(RULE) (la_rule_t *) (RULE->node.succ->succ ? RULE->node.succ : NULL)
 #define HAS_NEXT_RULE(RULE) RULE->node.succ

@@ -36,7 +36,6 @@
 
 /* Some message parts */
 #define MSG_ADDRESS_LENGTH 50
-#define MSG_RULE_LENGTH 100
 #define MSG_END_TIME_LENGTH 20
 #define MSG_FACTOR_LENGTH 4
 
