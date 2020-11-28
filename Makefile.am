@@ -1,5 +1,5 @@
 #SUBDIRS = lib src
-SUBDIRS = libconfig src
+SUBDIRS = libconfig src tests
 
 confdir = $(sysconfdir)/logactiond
 dist_conf_DATA = conf/logactiond.cfg conf/remote.cfg

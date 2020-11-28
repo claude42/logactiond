@@ -118,6 +118,16 @@ src/ladc
 src/.deps/
 src/testerli
 
+tests/check_addresses
+tests/check_commands
+tests/check_misc
+tests/check_patterns
+tests/check_properties
+tests/*.gcda
+tests/*.gcno
+tests/*.log
+tests/*.trs
+
 libconfig/.gitignore
 libconfig/ac_config.h.in
 libconfig/ac_config.h

@@ -15,8 +15,9 @@ there's definitely potential for stuff to go wrong.
 A simple ./configure; make; make install should do. For more elaborate
 instructions, see the standard GNU INSTALL file.
 
-As mentioned, the code in its current form depends on inotify, thus will only
-compile on Linux.
+logactiond will require libsystemd to make use of systemd, libsodium
+(https://doc.libsodium.org) to encrypt its communication. Optionally the tests
+will require the check package (https://libcheck.github.io/check/)
 
 ### Initial Configuration
 
@@ -55,7 +56,6 @@ There's quite a bit that's still missing. Among others and in no particular
 order:
 * man pages or other form of documentation
 * rules and actions - currently there's only a minimal example set
-* any kind of tests
 
 ## Features
 
