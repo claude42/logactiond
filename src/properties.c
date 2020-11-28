@@ -124,15 +124,17 @@ get_value_from_property_list(const kw_list_t *const property_list,
         return property ? property->value : NULL;
 }
 
-/* Will copy at most dest_size - 1 bytes; less if src is shorter. Will make
- * sure dest ends with a '\0' byte in any case.
+/*
+ * Will copy src to test until delim is reached.  Will copy at most
+ * MAX_PROP-SIZE - 1 bytes; less if src is shorter. Will make sure dest ends
+ * with a '\0' byte in any case.
  *
  * Will return number of characters copied.
  *
- * Will return -1 if strlen(src) >= dest_size (i.e. src + '\0' wouldn't have
+ * Will fail if strlen(src) >= MAX_PROP_SIZE (i.e. src + '\0' wouldn't have
  * fitted into dest.
  *
- * Will return -2 if non-alphanumeric character is detected.
+ * Will fail if non-alphanumeric character is detected.
  */
 static int
 copy_str_and_tolower(char *const dest, const char *const src,
