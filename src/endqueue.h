@@ -34,7 +34,9 @@ extern pthread_t end_queue_thread;
 
 extern pthread_mutex_t end_queue_mutex;
 
-extern kw_list_t *end_queue;
+extern la_command_t *end_queue_adr;
+extern la_command_t *end_queue_end_time;
+extern int queue_length;
 
 void update_queue_count_numbers(void);
 
@@ -49,6 +51,10 @@ void enqueue_end_command(la_command_t *end_command, time_t manual_end_time);
 void init_end_queue(void);
 
 void start_end_queue_thread(void);
+
+la_command_t *first_command_in_queue(void);
+
+la_command_t *next_command_in_queue(la_command_t *const command);
 
 #endif /* __endqueue_h */
 

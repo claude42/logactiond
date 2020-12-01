@@ -221,6 +221,19 @@ adrcmp(const la_address_t *const a1, const la_address_t *const a2)
                         struct sockaddr_in sa1 = *((struct sockaddr_in *) &a1->sa);
                         struct sockaddr_in sa2 = *((struct sockaddr_in *) &a2->sa);
                         return ntohl(sa1.sin_addr.s_addr) - ntohl(sa2.sin_addr.s_addr);
+
+                        long result = (unsigned long) ntohl(sa1.sin_addr.s_addr) -
+                                (unsigned long) ntohl(sa2.sin_addr.s_addr);
+
+                        /* Don't simply return result of subtraction because
+                         * long won't fit into int - sigh... */
+                        if (result < 0)
+                                return -1;
+                        else if (result > 0)
+                                return 1;
+                        else
+                                return 0;
+
                 }
                 else if (a1->sa.ss_family == AF_INET6)
                 {
@@ -230,8 +243,10 @@ adrcmp(const la_address_t *const a1, const la_address_t *const a2)
                         for (int i=0; i<16; i++)
                         {
                                 const int result = sa1.sin6_addr.s6_addr[i] - sa2.sin6_addr.s6_addr[i];
-                                if (result)
-                                        return result;
+                                if (result < 0)
+                                        return -1;
+                                else if (result > 0)
+                                        return 1;
                         }
                         return 0;
                 }
@@ -307,7 +322,7 @@ init_address_sa(la_address_t *const addr, const struct sockaddr *const sa,
 {
         assert(addr); // NOT assert_address() - not initialized yet!
         assert(sa); assert(salen > 0);
-        la_vdebug("create_address_sa()");
+        la_vdebug("init_address_sa()");
 
         if (sa->sa_family != AF_INET && sa->sa_family != AF_INET6)
                 LOG_RETURN(false, LOG_ERR, "Unsupported address family!");
@@ -479,6 +494,7 @@ free_address(la_address_t *const address)
 {
         if (!address)
                 return;
+        assert_address(address);
 
         la_vdebug("free_address(%s)", address->text);
 

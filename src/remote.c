@@ -313,19 +313,20 @@ sync_all_entries(void *ptr)
 
         xpthread_mutex_lock(&end_queue_mutex);
 
-                const int queue_length = list_length(end_queue);
                 char **message_array = (char **) xmalloc((queue_length + 1) *
                                 sizeof (char *));
+                char *message_buffer = xmalloc(queue_length * TOTAL_MSG_LEN);
                 int message_array_length = 0;
 
-                for (la_command_t *command = ITERATE_COMMANDS(end_queue);
-                                (command = NEXT_COMMAND(command));)
+                for (la_command_t *command = first_command_in_queue(); command;
+                                (command = next_command_in_queue(command)))
                 {
                         if (!command->is_template && command->address)
 
                         {
                                 assert(message_array_length < queue_length);
-                                char *message = alloca(TOTAL_MSG_LEN);
+                                char *message = message_buffer +
+                                        message_array_length * TOTAL_MSG_LEN;
                                 if (init_add_message(message,
                                                         command->address->text,
                                                         command->rule_name,
@@ -352,6 +353,7 @@ sync_all_entries(void *ptr)
                 xnanosleep(0, 200000000);
         }
 
+        free(message_buffer);
         free(message_array);
 
         return NULL;

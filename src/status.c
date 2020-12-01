@@ -277,8 +277,8 @@ dump_queue_status(const bool force)
 
         xpthread_mutex_lock(&end_queue_mutex);
 
-                for (la_command_t *command = ITERATE_COMMANDS(end_queue);
-                                (command = NEXT_COMMAND(command));)
+                for (la_command_t *command = first_command_in_queue(); command;
+                                (command = next_command_in_queue(command)))
                 {
                         /* Don't assert_command() here, as after a reload some
                          * commands might not have a rule attached to them
@@ -324,17 +324,15 @@ dump_queue_status(const bool force)
                                         command->name);
                 }
 
-        xpthread_mutex_unlock(&end_queue_mutex);
-
-        if (status_monitoring >= 2 || force)
-        {
-                xpthread_mutex_lock(&config_mutex);
+                if (status_monitoring >= 2 || force)
+                {
                         fprintf(hosts_file, "\nQueue length: %u (%u local), "
                                         "meta_command: %u\n",
                                         num_elems, num_elems_local,
                                         meta_list_length());
-                xpthread_mutex_unlock(&config_mutex);
-        }
+                }
+
+        xpthread_mutex_unlock(&end_queue_mutex);
 
         if (fclose(hosts_file))
                 die_hard("Can't close \" HOSTSFILE \"!");

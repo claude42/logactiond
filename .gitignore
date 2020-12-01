@@ -118,8 +118,12 @@ src/ladc
 src/.deps/
 src/testerli
 
+tests/tags
+tests/TAGS
+
 tests/check_addresses
 tests/check_commands
+tests/check_endqueue
 tests/check_misc
 tests/check_patterns
 tests/check_properties

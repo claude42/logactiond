@@ -69,7 +69,7 @@ save_state(const char *const state_file_name)
         assert(state_file_name);
         la_debug("save_state(%s)", state_file_name);
 
-        if (!end_queue)
+        if (!queue_length == 0)
                 return;
 
         const char *const real_state_file_name = state_file_name ?
@@ -88,8 +88,8 @@ save_state(const char *const state_file_name)
 
         xpthread_mutex_lock(&end_queue_mutex);
 
-                for (la_command_t *command = ITERATE_COMMANDS(end_queue);
-                                (command = NEXT_COMMAND(command));)
+                for (la_command_t *command = first_command_in_queue(); command;
+                                (command = next_command_in_queue(command)))
                 {
                         if (!command->is_template &&
                                         print_add_message(stream, command) < 0)

@@ -50,6 +50,12 @@ typedef struct la_command_s la_command_t;
 struct la_command_s
 {
         struct kw_node_s node;
+        la_command_t *adr_left;
+        la_command_t *adr_right;
+        la_command_t *adr_parent;
+        la_command_t *end_time_left;
+        la_command_t *end_time_right;
+        la_command_t *end_time_parent;
         char *name;       /* name of action */
         int id;        /* unique id */
         bool is_template;       /* true for templates, false for derived commands */

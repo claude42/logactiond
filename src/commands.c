@@ -781,6 +781,10 @@ dup_command(const la_command_t *const command)
 
         result->is_template = false;
 
+        result->adr_left = result->adr_right = result->adr_parent =
+                result->end_time_left = result->end_time_right =
+                result->end_time_parent = NULL;
+
         result->name = xstrdup(command->name);
         result->begin_string = xstrdup(command->begin_string);
         result->begin_properties = dup_property_list(command->begin_properties);
@@ -803,27 +807,23 @@ dup_command(const la_command_t *const command)
 }
 
 /* Return false if action can't handle type of IP address */
-/* FIXME: logic backwards, will fail if ss_family is not AF_INET or AF_INET6 */
 
 static bool
 has_correct_address(const la_command_t *const template, const la_address_t *const address)
 {
-        if (!address)
-        {
-                if (template->need_host != LA_NEED_HOST_NO)
-                        return false;
-        }
-        else
-        {
-                if ((address->sa.ss_family == AF_INET && template->need_host ==
-                                        LA_NEED_HOST_IP6) ||
-                                (address->sa.ss_family == AF_INET6 &&
-                                                template->need_host ==
-                                                LA_NEED_HOST_IP4))
-                        return false;
-        }
+        assert_command(template);
 
-        return true;
+        if (!address && template->need_host != LA_NEED_HOST_NO)
+                return false;
+        else if (template->need_host == LA_NEED_HOST_IP4 && address->sa.ss_family != AF_INET)
+                return false;
+        else if (template->need_host == LA_NEED_HOST_IP6 && address->sa.ss_family != AF_INET6)
+                return false;
+        else if (template->need_host == LA_NEED_HOST_ANY && address->sa.ss_family != AF_INET
+                        && address->sa.ss_family != AF_INET6)
+                return false;
+        else
+                return true;
 }
 
 /*
@@ -865,6 +865,8 @@ bool is_local_address(const char *const address)
         return (!address || !strcmp("127.0.0.1", address) ||
                         !strcmp("::1", address) || !strcmp(LA_FIFO, address));
 }
+
+/* TODO: combine both create*command*() methods into one */
 
 static la_command_t *
 create_manual_command_from_template(const la_command_t *const template,
@@ -919,6 +921,10 @@ create_template(const char *const name, la_rule_t *const rule,
         result->name = xstrdup(name);
         result->id = ++id_counter;
         result->is_template = true;
+
+        result->adr_left = result->adr_right = result->adr_parent =
+                result->end_time_left = result->end_time_right =
+                result->end_time_parent = NULL;
 
         result->begin_string = xstrdup(begin_string);
         result->begin_string_converted = NULL;

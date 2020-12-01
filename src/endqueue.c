@@ -22,6 +22,7 @@
 #include <pthread.h>
 #include <assert.h>
 #include <limits.h>
+#include <stdatomic.h>
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -34,10 +35,38 @@
 #include "nodelist.h"
 #include "rules.h"
 
-kw_list_t *end_queue = NULL;
+la_command_t *end_queue_adr = NULL;
+la_command_t *end_queue_end_time = NULL;
+int queue_length = 0;
 pthread_t end_queue_thread = 0;
 pthread_mutex_t end_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t end_queue_condition = PTHREAD_COND_INITIALIZER;
+
+static void
+recursively_update_queue_count_numbers(la_command_t *command)
+{
+        if (!command)
+                return;
+        assert_command(command);
+
+        recursively_update_queue_count_numbers(command->adr_left);
+        recursively_update_queue_count_numbers(command->adr_right);
+
+        la_rule_t *rule = NULL;
+
+        if (!command->is_template)
+        {
+                rule = find_rule(command->rule_name);
+                if (rule)
+                        rule->queue_count++;
+        }
+
+        /* Clean up pointers to stuff that will soon cease to
+         * exist.  Just to make sure, nobdoy acidentally wants
+         * to use outdated stuff it later on */
+        command->rule = rule;
+        command->pattern = NULL;
+}
 
 /*
  * Only invoked after a config reload. Goes through all commands in the
@@ -52,29 +81,11 @@ void
 update_queue_count_numbers(void)
 {
         la_debug("update_queue_count_numbers()");
-        assert_list(end_queue);
 
         xpthread_mutex_lock(&config_mutex);
         xpthread_mutex_lock(&end_queue_mutex);
 
-                for (la_command_t *command = ITERATE_COMMANDS(end_queue);
-                                (command = NEXT_COMMAND(command));)
-                {
-                        la_rule_t *rule = NULL;
-
-                        if (!command->is_template)
-                        {
-                                rule = find_rule(command->rule_name);
-                                if (rule)
-                                        rule->queue_count++;
-                        }
-
-                        /* Clean up pointers to stuff that will soon cease to
-                         * exist.  Just to make sure, nobdoy acidentally wants
-                         * to use outdated stuff it later on */
-                        command->rule = rule;
-                        command->pattern = NULL;
-                }
+                recursively_update_queue_count_numbers(end_queue_adr);
 
         xpthread_mutex_unlock(&end_queue_mutex);
         xpthread_mutex_unlock(&config_mutex);
@@ -87,38 +98,176 @@ update_queue_count_numbers(void)
  * host may be NULL
  */
 
-la_command_t *
-find_end_command(const la_address_t *const address)
+static la_command_t *
+find_end_command_no_mutex(const la_address_t *const address)
 {
-        la_debug("find_end_command()");
-
-        if (!end_queue)
-                return NULL;
+        la_debug("find_end_command_no_mutex()");
 
         if (!address)
                 return NULL;
         assert_address(address);
 
+        if (!end_queue_adr)
+                return NULL;
+        assert_command(end_queue_adr);
+        la_command_t *result = end_queue_adr;
+
+        while (result)
+        {
+                int cmp = adrcmp(result->address, address);
+                if (cmp == 0)
+                {
+                        break;
+                }
+                else if (cmp < 0 && result->adr_right)
+                {
+                        result = result->adr_right;
+                }
+                else if (cmp > 0 && result->adr_left)
+                {
+                        result = result->adr_left;
+                }
+                else
+                {
+                        result = NULL;
+                        break;
+                }
+        }
+
+        return result;
+}
+
+la_command_t *
+find_end_command(const la_address_t *const address)
+{
         la_command_t *result = NULL;
 
         xpthread_mutex_lock(&end_queue_mutex);
 
-                assert_list(end_queue);
-
-                for (la_command_t *command = ITERATE_COMMANDS(end_queue);
-                                (command = NEXT_COMMAND(command));)
-                {
-                        if (!adrcmp(command->address, address))
-                        {
-                                result = command;
-                                break;
-                        }
-                }
+                result = find_end_command_no_mutex(address);
 
         xpthread_mutex_unlock(&end_queue_mutex);
 
         return result;
 }
+
+static void
+remove_command_from_queues(la_command_t *command)
+{
+        assert_command(command);
+        if (command->adr_parent)
+                assert_command(command->adr_parent);
+
+        /* Used to alternatingly use left or right subtree */
+        static int left_or_right = 0;
+
+        la_command_t *parent = command->adr_parent;
+        la_command_t **ptr = NULL;
+
+        if (parent)
+        {
+                assert (parent->adr_left == command || parent->adr_right == command);
+
+                if (parent->adr_left == command)
+                        ptr = &parent->adr_left;
+                else if (parent->adr_right == command)
+                        ptr = &parent->adr_right;
+        }
+        else
+        {
+                ptr = &end_queue_adr;
+        }
+
+        if (command->adr_left == NULL)
+        {
+                /* if left subtree does not exist simply attach right subtree
+                 * to parent and we're done */
+                *ptr = command->adr_right;
+        } else if (command->adr_right == NULL)
+        {
+                /* if right subtree does not exist simply attach left subtree
+                 * to parent and we're done */
+                *ptr = command->adr_left;
+        }
+        else
+        {
+                /* if both subtrees exist, then randomly attach one of the
+                 * subtrees and attach the other to the its opposite far end */
+                if ((left_or_right++ % 2) == 0)
+                {
+                        *ptr = command->adr_left;
+                        la_command_t *q;
+                        /* find far right end of left subtree */
+                        for (q = command->adr_left; q->adr_right; q = q->adr_right)
+                                ;
+                        q->adr_right = command->adr_right;
+                }
+                else
+                {
+                        *ptr = command->adr_right;
+                        la_command_t *q;
+                        /* find far left end of right subtree */
+                        for (q = command->adr_right; q->adr_left; q = q->adr_left)
+                                ;
+                        q->adr_left = command->adr_left;
+                }
+        }
+
+        /* Clean up dangling links of removed command just to make sure they
+         * won't be used anymore */
+        command->adr_parent = command->adr_left = command->adr_right = NULL;
+
+        parent = command->end_time_parent;
+
+        if (parent)
+        {
+                assert (parent->end_time_left == command || parent->end_time_right == command);
+
+                if (parent->end_time_left == command)
+                        ptr = &parent->end_time_left;
+                else if (parent->end_time_right == command)
+                        ptr = &parent->end_time_right;
+        }
+        else
+        {
+                ptr = &end_queue_end_time;
+        }
+
+        if (command->end_time_left == NULL)
+        {
+                *ptr = command->end_time_right;
+        } else if (command->end_time_right == NULL)
+        {
+                *ptr = command->end_time_left;
+        }
+        else
+        {
+                if ((left_or_right++ % 2) == 0)
+                {
+                        *ptr = command->end_time_left;
+                        la_command_t *q;
+                        for (q = command->end_time_left; q->end_time_right; q = q->end_time_right)
+                                ;
+                        q->end_time_right = command->end_time_right;
+                }
+                else
+                {
+                        *ptr = command->end_time_right;
+                        la_command_t *q;
+                        for (q = command->end_time_right; q->end_time_left; q = q->end_time_left)
+                                ;
+                        q->end_time_left = command->end_time_left;
+                }
+        }
+
+        /* Clean up dangling links of removed command just to make sure they
+         * won't be used anymore */
+        command->end_time_parent = command->end_time_left = command->end_time_right = NULL;
+
+        assert(queue_length > 0);
+        queue_length--;
+}
+
 
 /*
  * Searches for command with given address in end queue. If found, removes it
@@ -134,34 +283,45 @@ remove_and_trigger(la_address_t *const address)
         assert_address(address);
         la_debug("remove_and_trigger()");
 
-        if (!end_queue)
-                return -1;
-        assert_list(end_queue);
+        int result = -1;
 
         xpthread_mutex_lock(&end_queue_mutex);
 
-                /* Don't use find_end_command() here but do it ourself so we
-                 * can keep the mutex locked during the whole function to avoid
-                 * creating a race condition. */
-                la_command_t *command = NULL;
-                int result = -1;
-                for (la_command_t *tmp = ITERATE_COMMANDS(end_queue);
-                                (tmp = NEXT_COMMAND(tmp));)
+                la_command_t *command = find_end_command_no_mutex(address);
+
+                if (command)
                 {
-                        if (!adrcmp(tmp->address, address))
-                        {
-                                command = tmp;
-                                remove_node((kw_node_t *) command);
-                                trigger_end_command(command, false);
-                                free_command(command);
-                                result = 0;
-                                break;
-                        }
+                        remove_command_from_queues(command);
+                        trigger_end_command(command, false);
+                        free_command(command);
+                        result = 0;
+                }
+                else
+                {
+                        result = -1;
                 }
 
         xpthread_mutex_unlock(&end_queue_mutex);
 
         return result;
+}
+
+static void
+recursively_empty_queue(la_command_t *command)
+{
+        if (!command)
+                return;
+        assert_command(command);
+
+        recursively_empty_queue(command->adr_left);
+
+        la_command_t *adr_right = command->adr_right;
+
+        if (!command->quick_shutdown || command->is_template)
+                trigger_end_command(command, true);
+        free_command(command);
+
+        recursively_empty_queue(adr_right);
 }
 
 #ifndef NOCOMMANDS
@@ -176,10 +336,6 @@ empty_end_queue(void)
          * call shutdown_daemon() again and we will end up in a fun loop... */
         la_log(LOG_INFO, "Flushing active actions.");
 
-        if (!end_queue)
-                return;
-        assert_list(end_queue);
-
         /* Don't care about locking the mutex in case of system shutdown as
          * empty_end_queue() has been called from cleanup action.
          *
@@ -187,12 +343,9 @@ empty_end_queue(void)
         if (!shutdown_ongoing && end_queue_thread)
                 xpthread_mutex_lock(&end_queue_mutex);
 
-        for (la_command_t *tmp; (tmp = REM_COMMANDS_HEAD(end_queue));)
-        {
-                if (!tmp->quick_shutdown)
-                        trigger_end_command(tmp, true);
-                free_command(tmp);
-        }
+        recursively_empty_queue(end_queue_adr);
+        end_queue_adr = end_queue_end_time = NULL;
+        queue_length = 0;
 
         if (!shutdown_ongoing && end_queue_thread)
         {
@@ -240,12 +393,53 @@ wait_for_next_end_command(const la_command_t *command)
         }
 }
 
+/*
+ * Will only be called when thread exits.
+ */
+
 static void
 cleanup_end_queue(void *arg)
 {
         la_debug("cleanup_end_queue()");
 
         empty_end_queue();
+}
+
+static la_command_t *
+leftmost_command(la_command_t *const command)
+{
+        la_command_t *result = command;
+
+        while (result->end_time_left)
+                result = result->end_time_left;
+
+        return result;
+}
+
+la_command_t *
+first_command_in_queue(void)
+{
+        if (!end_queue_end_time)
+                return NULL;
+        else
+                return leftmost_command(end_queue_end_time);
+}
+
+la_command_t *
+next_command_in_queue(la_command_t *const command)
+{
+        if (command->end_time_right)
+        {
+                return leftmost_command(command->end_time_right);
+        }
+        else
+        {
+                la_command_t *result = command;
+                while (result->end_time_parent &&
+                                result == result->end_time_parent->end_time_right)
+                        result = result->end_time_parent;
+                return result;
+        }
 }
 
 /*
@@ -259,7 +453,6 @@ static void *
 consume_end_queue(void *ptr)
 {
         la_debug("consume_end_queue()");
-        assert_list(end_queue);
 
         pthread_cleanup_push(cleanup_end_queue, NULL);
 
@@ -273,31 +466,35 @@ consume_end_queue(void *ptr)
                                 pthread_exit(NULL);
                         }
 
-                        la_command_t *const command =
-                                (la_command_t *) end_queue->head.succ;
-
-                        if (is_list_empty(end_queue))
+                        if (!end_queue_adr)
                         {
                                 /* list is empty, wait indefinitely */
                                 xpthread_cond_wait(&end_queue_condition,
                                                 &end_queue_mutex);
                         }
-                        else if (xtime(NULL) < command->end_time)
-                        {
-                                /* non-empty list, but end_time of first
-                                 * command not reached yet */
-                                wait_for_next_end_command(command);
-                        }
                         else
                         {
-                                /* end_time of next command reached, remove it
-                                 * and don't sleep but immediately look for
-                                 * more */
-                                remove_node((kw_node_t *) command);
+                                la_command_t *const command =
+                                        first_command_in_queue();
 
-                                trigger_end_command(command, false);
+                                if (xtime(NULL) < command->end_time)
+                                {
+                                        /* non-empty list, but end_time of
+                                         * first command not reached yet */
+                                        wait_for_next_end_command(command);
+                                }
+                                else
+                                {
+                                        /* end_time of next command reached,
+                                         * remove it and don't sleep but
+                                         * immediately look for more */
+                                        remove_command_from_queues(command);
 
-                                free_command(command);
+                                        trigger_end_command(command, false);
+
+                                        free_command(command);
+                                }
+
                         }
                 }
 
@@ -311,9 +508,9 @@ void
 init_end_queue(void)
 {
         la_debug("create_end_queue()");
-        assert(!end_queue);
+        //assert(!end_queue);
 
-        end_queue = xcreate_list();
+        //end_queue = xcreate_list();
 }
 
 
@@ -360,6 +557,72 @@ set_end_time(la_command_t *const command, const time_t manual_end_time)
         }
 }
 
+static void
+recursively_add_to_end_queue_adr(la_command_t **root, la_command_t *command)
+{
+        assert_command(*root);
+
+        if (adrcmp(command->address, (*root)->address) <= 0)
+        {
+                if ((*root)->adr_left)
+                {
+                        recursively_add_to_end_queue_adr(&((*root)->adr_left),
+                                        command);
+                }
+                else
+                {
+                        (*root)->adr_left = command;
+                        command->adr_parent = (*root);
+                }
+        }
+        else
+        {
+                if ((*root)->adr_right)
+                {
+                        recursively_add_to_end_queue_adr(&((*root)->adr_right),
+                                        command);
+                }
+                else
+                {
+                        (*root)->adr_right = command;
+                        command->adr_parent = (*root);
+                }
+        }
+}
+
+static void
+recursively_add_to_end_queue_end_time(la_command_t **root, la_command_t *command)
+{
+        assert_command(*root);
+
+        if (command->end_time <= (*root)->end_time)
+        {
+                if ((*root)->end_time_left)
+                {
+                        recursively_add_to_end_queue_end_time(&((*root)->end_time_left),
+                                        command);
+                }
+                else
+                {
+                        (*root)->end_time_left = command;
+                        command->end_time_parent = (*root);
+                }
+        }
+        else
+        {
+                if ((*root)->end_time_right)
+                {
+                        recursively_add_to_end_queue_end_time(&((*root)->end_time_right),
+                                        command);
+                }
+                else
+                {
+                        (*root)->end_time_right = command;
+                        command->end_time_parent = (*root);
+                }
+        }
+}
+
 /*
  * Adds command to correct position in end queue (only if duration is
  * non-negative). Sets end time.
@@ -383,19 +646,29 @@ enqueue_end_command(la_command_t *const end_command, const time_t manual_end_tim
 
         xpthread_mutex_lock(&end_queue_mutex);
 
-                /* We don't use the ITERATE_COMMANDS, NEXT_COMMAND here for a
-                 * reason... */
-                la_command_t *tmp;
-                assert_list(end_queue);
-                for (tmp = (la_command_t *) end_queue->head.succ;
-                                tmp->node.succ;
-                                tmp = (la_command_t *) tmp->node.succ)
+                if (end_queue_adr)
                 {
-                        if (end_command->end_time <= tmp->end_time)
-                                break;
+                        recursively_add_to_end_queue_adr(&end_queue_adr,
+                                        end_command);
+                }
+                else
+                {
+                        end_queue_adr = end_command;
+                        end_command->adr_parent = NULL;
                 }
 
-                insert_node_before((kw_node_t *) tmp, (kw_node_t *) end_command);
+                if (end_queue_end_time)
+                {
+                        recursively_add_to_end_queue_end_time(&end_queue_end_time,
+                                        end_command);
+                }
+                else
+                {
+                        end_queue_end_time = end_command;
+                        end_command->end_time_parent = NULL;
+                }
+
+                queue_length++;
 
                 xpthread_cond_signal(&end_queue_condition);
 
