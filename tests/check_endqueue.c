@@ -132,6 +132,7 @@ recursively_check_end_queue_end_time(la_command_t *command)
                 return;
 
         recursively_check_end_queue_end_time(command->end_time_left);
+        la_debug("Found %u: %s, %lu", command_id, command->address->text, command->end_time);
         commands[command_id++] = command;
         recursively_check_end_queue_end_time(command->end_time_right);
 }
@@ -142,22 +143,31 @@ check_end_queues(void)
         command_id = 0;
         recursively_check_end_queue_end_time(end_queue_end_time);
 
-        for (int i = 0; i < command_id - 1; i++)
+        int i;
+        for (i = 0; i < command_id - 1; i++)
         {
-                la_log(LOG_INFO,"commands[%u]=%lu\n", i, commands[i]->end_time);
+                la_log(LOG_INFO,"commands[%u]=%s,%lu\n", i,
+                                commands[i]->address->text,
+                                commands[i]->end_time);
                 ck_assert_int_le(commands[i]->end_time, commands[i+1]->end_time);
         }
+        la_log(LOG_INFO,"commands[%u]=%s,%lu\n", i, commands[i]->address->text,
+                        commands[i]->end_time);
 
         int command_id_1 = command_id;
 
         command_id = 0;
         recursively_check_end_queue_adr(end_queue_adr);
 
-        for (int i = 0; i < command_id - 1; i++)
+        for (i = 0; i < command_id - 1; i++)
         {
-                la_log(LOG_INFO, "commands[%u]=%s\n", i, commands[i]->address->text);
+                la_log(LOG_INFO,"commands[%u]=%s,%lu\n", i,
+                                commands[i]->address->text,
+                                commands[i]->end_time);
                 ck_assert_int_le(adrcmp(commands[i]->address, commands[i+1]->address), 0);
         }
+        la_log(LOG_INFO,"commands[%u]=%s,%lu\n", i, commands[i]->address->text,
+                        commands[i]->end_time);
 
         ck_assert_int_eq(command_id, command_id_1);
 
@@ -192,19 +202,44 @@ START_TEST (trees)
         ck_assert(cmd);
         ck_assert_str_eq(cmd->address->text, "20.20.20.20");
         remove_command_from_queues(cmd);
+        ck_assert(!find_end_command(create_address("20.20.20.20")));
         ck_assert_int_eq(check_end_queues(), 6);
 
-        cmd = find_first_element();
+        cmd = first_command_in_queue();
         ck_assert(cmd);
         ck_assert_str_eq(cmd->address->text, "2.2.2.2");
         remove_command_from_queues(cmd);
+        ck_assert(!find_end_command(create_address("2.2.2.2")));
         ck_assert_int_eq(check_end_queues(), 5);
 
         cmd = find_end_command(create_address("5.5.5.5"));
         ck_assert(cmd);
         ck_assert_str_eq(cmd->address->text, "5.5.5.5");
+        //ck_assert(!find_end_command(create_address("5.5.5.5")));
         remove_command_from_queues(cmd);
         ck_assert_int_eq(check_end_queues(), 4);
+
+        la_log(LOG_INFO, "Going!");
+
+        cmd = first_command_in_queue();
+        ck_assert(cmd);
+        la_log(LOG_INFO, "Found %s,%lu", cmd->address->text,cmd->end_time);
+        ck_assert_str_eq(cmd->address->text, "10.10.10.10");
+        cmd = next_command_in_queue(cmd);
+        ck_assert(cmd);
+        la_log(LOG_INFO, "Found %s,%lu", cmd->address->text,cmd->end_time);
+        ck_assert_str_eq(cmd->address->text, "1.1.1.1");
+        cmd = next_command_in_queue(cmd);
+        ck_assert(cmd);
+        la_log(LOG_INFO, "Found %s,%lu", cmd->address->text,cmd->end_time);
+        ck_assert_str_eq(cmd->address->text, "8.8.8.8");
+        cmd = next_command_in_queue(cmd);
+        ck_assert(cmd);
+        la_log(LOG_INFO, "Found %s,%lu", cmd->address->text,cmd->end_time);
+        ck_assert_str_eq(cmd->address->text, "7.7.7.7");
+        ck_assert(!next_command_in_queue(cmd));
+        ck_assert(false);
+
 
         /*empty_end_queue();
         ck_assert(end_queue_adr);

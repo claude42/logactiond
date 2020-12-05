@@ -183,11 +183,15 @@ remove_command_from_queues(la_command_t *command)
                 /* if left subtree does not exist simply attach right subtree
                  * to parent and we're done */
                 *ptr = command->adr_right;
+                if (command->adr_right)
+                        command->adr_right->adr_parent = parent;
         } else if (command->adr_right == NULL)
         {
                 /* if right subtree does not exist simply attach left subtree
                  * to parent and we're done */
                 *ptr = command->adr_left;
+                if (command->adr_left)
+                        command->adr_left->adr_parent = parent;
         }
         else
         {
@@ -196,6 +200,8 @@ remove_command_from_queues(la_command_t *command)
                 if ((left_or_right++ % 2) == 0)
                 {
                         *ptr = command->adr_left;
+                        if (command->adr_left)
+                                command->adr_left->adr_parent = parent;
                         la_command_t *q;
                         /* find far right end of left subtree */
                         for (q = command->adr_left; q->adr_right; q = q->adr_right)
@@ -205,6 +211,8 @@ remove_command_from_queues(la_command_t *command)
                 else
                 {
                         *ptr = command->adr_right;
+                        if (command->adr_right)
+                                command->adr_right->adr_parent = parent;
                         la_command_t *q;
                         /* find far left end of right subtree */
                         for (q = command->adr_right; q->adr_left; q = q->adr_left)
@@ -236,15 +244,21 @@ remove_command_from_queues(la_command_t *command)
         if (command->end_time_left == NULL)
         {
                 *ptr = command->end_time_right;
+                if (command->end_time_right)
+                        command->end_time_right->end_time_parent = parent;
         } else if (command->end_time_right == NULL)
         {
                 *ptr = command->end_time_left;
+                if (command->end_time_left)
+                        command->end_time_left->end_time_parent = parent;
         }
         else
         {
                 if ((left_or_right++ % 2) == 0)
                 {
                         *ptr = command->end_time_left;
+                        if (command->end_time_left)
+                                command->end_time_left->end_time_parent = parent;
                         la_command_t *q;
                         for (q = command->end_time_left; q->end_time_right; q = q->end_time_right)
                                 ;
@@ -253,6 +267,8 @@ remove_command_from_queues(la_command_t *command)
                 else
                 {
                         *ptr = command->end_time_right;
+                        if (command->end_time_right)
+                                command->end_time_right->end_time_parent = parent;
                         la_command_t *q;
                         for (q = command->end_time_right; q->end_time_left; q = q->end_time_left)
                                 ;
@@ -408,6 +424,7 @@ cleanup_end_queue(void *arg)
 static la_command_t *
 leftmost_command(la_command_t *const command)
 {
+        la_debug("leftmost_comnmand(%s)", command->address->text);
         la_command_t *result = command;
 
         while (result->end_time_left)
@@ -428,6 +445,7 @@ first_command_in_queue(void)
 la_command_t *
 next_command_in_queue(la_command_t *const command)
 {
+        la_debug("next_command_in_queue(%s)", command->address->text);
         if (command->end_time_right)
         {
                 return leftmost_command(command->end_time_right);
@@ -438,7 +456,8 @@ next_command_in_queue(la_command_t *const command)
                 while (result->end_time_parent &&
                                 result == result->end_time_parent->end_time_right)
                         result = result->end_time_parent;
-                return result;
+
+                return result->end_time_parent;
         }
 }
 
