@@ -373,7 +373,7 @@ int
 string_copy(char *const dest, const size_t dest_size, const char *const src,
                 const size_t n, char delim)
 {
-        assert(dest); assert(src); assert(dest_size >= 1); assert(n >= 0);
+        assert(dest); assert(src);
 
         const size_t copy_bytes = (!n || dest_size-1 < n) ? dest_size-1 : n;
         size_t i;
@@ -427,7 +427,8 @@ strendcmp(const char *const string, const char *const suffix)
 void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, const size_t on_top)
 {
         la_vdebug("realloc_buffer(%lu, %lu)", *dst_len, on_top);
-        assert (*dst); assert((*dst_ptr - *dst) < *dst_len); assert(on_top >= 0);
+        assert (*dst); assert (*dst < *dst_ptr);
+        assert((size_t) (*dst_ptr - *dst) < *dst_len);
 
         if (*dst_ptr + on_top >= *dst + *dst_len)
         {
