@@ -28,14 +28,15 @@
 #include "nodelist.h"
 #include "addresses.h"
 #include "commands.h"
+#include "binarytree.h"
 
 
 extern pthread_t end_queue_thread;
 
 extern pthread_mutex_t end_queue_mutex;
 
-extern la_command_t *end_queue_adr;
-extern la_command_t *end_queue_end_time;
+extern kw_tree_t *adr_tree;
+extern kw_tree_t *end_time_tree;
 extern int queue_length;
 
 void update_queue_count_numbers(void);

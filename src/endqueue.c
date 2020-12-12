@@ -34,39 +34,15 @@
 #include "misc.h"
 #include "nodelist.h"
 #include "rules.h"
+#include "binarytree.h"
 
-la_command_t *end_queue_adr = NULL;
-la_command_t *end_queue_end_time = NULL;
+kw_tree_t *adr_tree = NULL;
+kw_tree_t *end_time_tree = NULL;
+
 int queue_length = 0;
 pthread_t end_queue_thread = 0;
 pthread_mutex_t end_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t end_queue_condition = PTHREAD_COND_INITIALIZER;
-
-static void
-recursively_update_queue_count_numbers(la_command_t *command)
-{
-        if (!command)
-                return;
-        assert_command(command);
-
-        recursively_update_queue_count_numbers(command->adr_left);
-        recursively_update_queue_count_numbers(command->adr_right);
-
-        la_rule_t *rule = NULL;
-
-        if (!command->is_template)
-        {
-                rule = find_rule(command->rule_name);
-                if (rule)
-                        rule->queue_count++;
-        }
-
-        /* Clean up pointers to stuff that will soon cease to
-         * exist.  Just to make sure, nobdoy acidentally wants
-         * to use outdated stuff it later on */
-        command->rule = rule;
-        command->pattern = NULL;
-}
 
 /*
  * Only invoked after a config reload. Goes through all commands in the
@@ -81,21 +57,47 @@ void
 update_queue_count_numbers(void)
 {
         la_debug("update_queue_count_numbers()");
+        assert(adr_tree);
 
         xpthread_mutex_lock(&config_mutex);
         xpthread_mutex_lock(&end_queue_mutex);
 
-                recursively_update_queue_count_numbers(end_queue_adr);
+                for (kw_tree_node_t *node = first_tree_node(adr_tree); node;
+                                (node = next_node_in_tree(node)))
+                {
+                        la_rule_t *rule = NULL;
+
+                        la_command_t *command = (la_command_t *) node->payload;
+                        assert_command(command);
+                        if (!command->is_template)
+                        {
+                                rule = find_rule(command->rule_name);
+                                if (rule)
+                                        rule->queue_count++;
+                        }
+
+                        /* Clean up pointers to stuff that will soon cease to
+                         * exist.  Just to make sure, nobdoy accidentally wants
+                         * to use outdated stuff it later on */
+                        command->rule = rule;
+                        command->pattern = NULL;
+                }
 
         xpthread_mutex_unlock(&end_queue_mutex);
         xpthread_mutex_unlock(&config_mutex);
+}
+
+static int
+cmp_command_address(const void *p1, const void *p2)
+{
+        return adrcmp(((la_command_t *) p1)->address, (la_address_t *) p2);
 }
 
 /*
  * Search for a command by a certain host for a given rule on the end_que
  * list. Return if found, return NULL otherwise
  *
- * host may be NULL
+ * address may be NULL
  */
 
 static la_command_t *
@@ -107,34 +109,15 @@ find_end_command_no_mutex(const la_address_t *const address)
                 return NULL;
         assert_address(address);
 
-        if (!end_queue_adr)
+        if (queue_length == 0)
                 return NULL;
-        assert_command(end_queue_adr);
-        la_command_t *result = end_queue_adr;
 
-        while (result)
-        {
-                int cmp = adrcmp(result->address, address);
-                if (cmp == 0)
-                {
-                        break;
-                }
-                else if (cmp < 0 && result->adr_right)
-                {
-                        result = result->adr_right;
-                }
-                else if (cmp > 0 && result->adr_left)
-                {
-                        result = result->adr_left;
-                }
-                else
-                {
-                        result = NULL;
-                        break;
-                }
-        }
-
-        return result;
+        kw_tree_node_t *node = (kw_tree_node_t *) find_tree_node(adr_tree,
+                        address, cmp_command_address);
+        if (node)
+                return (la_command_t *) node->payload;
+        else
+                return NULL;
 }
 
 la_command_t *
@@ -154,136 +137,14 @@ find_end_command(const la_address_t *const address)
 static void
 remove_command_from_queues(la_command_t *command)
 {
-        assert_command(command);
-        if (command->adr_parent)
-                assert_command(command->adr_parent);
+        assert_command(command); assert(adr_tree); assert(end_time_tree);
 
-        /* Used to alternatingly use left or right subtree */
-        static int left_or_right = 0;
-
-        la_command_t *parent = command->adr_parent;
-        la_command_t **ptr = NULL;
-
-        if (parent)
-        {
-                assert (parent->adr_left == command || parent->adr_right == command);
-
-                if (parent->adr_left == command)
-                        ptr = &parent->adr_left;
-                else if (parent->adr_right == command)
-                        ptr = &parent->adr_right;
-        }
-        else
-        {
-                ptr = &end_queue_adr;
-        }
-
-        if (command->adr_left == NULL)
-        {
-                /* if left subtree does not exist simply attach right subtree
-                 * to parent and we're done */
-                *ptr = command->adr_right;
-                if (command->adr_right)
-                        command->adr_right->adr_parent = parent;
-        } else if (command->adr_right == NULL)
-        {
-                /* if right subtree does not exist simply attach left subtree
-                 * to parent and we're done */
-                *ptr = command->adr_left;
-                if (command->adr_left)
-                        command->adr_left->adr_parent = parent;
-        }
-        else
-        {
-                /* if both subtrees exist, then randomly attach one of the
-                 * subtrees and attach the other to the its opposite far end */
-                if ((left_or_right++ % 2) == 0)
-                {
-                        *ptr = command->adr_left;
-                        if (command->adr_left)
-                                command->adr_left->adr_parent = parent;
-                        la_command_t *q;
-                        /* find far right end of left subtree */
-                        for (q = command->adr_left; q->adr_right; q = q->adr_right)
-                                ;
-                        q->adr_right = command->adr_right;
-                }
-                else
-                {
-                        *ptr = command->adr_right;
-                        if (command->adr_right)
-                                command->adr_right->adr_parent = parent;
-                        la_command_t *q;
-                        /* find far left end of right subtree */
-                        for (q = command->adr_right; q->adr_left; q = q->adr_left)
-                                ;
-                        q->adr_left = command->adr_left;
-                }
-        }
-
-        /* Clean up dangling links of removed command just to make sure they
-         * won't be used anymore */
-        command->adr_parent = command->adr_left = command->adr_right = NULL;
-
-        parent = command->end_time_parent;
-
-        if (parent)
-        {
-                assert (parent->end_time_left == command || parent->end_time_right == command);
-
-                if (parent->end_time_left == command)
-                        ptr = &parent->end_time_left;
-                else if (parent->end_time_right == command)
-                        ptr = &parent->end_time_right;
-        }
-        else
-        {
-                ptr = &end_queue_end_time;
-        }
-
-        if (command->end_time_left == NULL)
-        {
-                *ptr = command->end_time_right;
-                if (command->end_time_right)
-                        command->end_time_right->end_time_parent = parent;
-        } else if (command->end_time_right == NULL)
-        {
-                *ptr = command->end_time_left;
-                if (command->end_time_left)
-                        command->end_time_left->end_time_parent = parent;
-        }
-        else
-        {
-                if ((left_or_right++ % 2) == 0)
-                {
-                        *ptr = command->end_time_left;
-                        if (command->end_time_left)
-                                command->end_time_left->end_time_parent = parent;
-                        la_command_t *q;
-                        for (q = command->end_time_left; q->end_time_right; q = q->end_time_right)
-                                ;
-                        q->end_time_right = command->end_time_right;
-                }
-                else
-                {
-                        *ptr = command->end_time_right;
-                        if (command->end_time_right)
-                                command->end_time_right->end_time_parent = parent;
-                        la_command_t *q;
-                        for (q = command->end_time_right; q->end_time_left; q = q->end_time_left)
-                                ;
-                        q->end_time_left = command->end_time_left;
-                }
-        }
-
-        /* Clean up dangling links of removed command just to make sure they
-         * won't be used anymore */
-        command->end_time_parent = command->end_time_left = command->end_time_right = NULL;
+        remove_tree_node(adr_tree, &(command->adr_node));
+        remove_tree_node(end_time_tree, &command->end_time_node);
 
         assert(queue_length > 0);
         queue_length--;
 }
-
 
 /*
  * Searches for command with given address in end queue. If found, removes it
@@ -322,25 +183,18 @@ remove_and_trigger(la_address_t *const address)
         return result;
 }
 
+#ifndef NOCOMMANDS
 static void
-recursively_empty_queue(la_command_t *command)
+finalize_command(const void *p)
 {
-        if (!command)
-                return;
+        la_command_t *command = (la_command_t *) p;
         assert_command(command);
-
-        recursively_empty_queue(command->adr_left);
-
-        la_command_t *adr_right = command->adr_right;
 
         if (!command->quick_shutdown || command->is_template)
                 trigger_end_command(command, true);
         free_command(command);
-
-        recursively_empty_queue(adr_right);
 }
 
-#ifndef NOCOMMANDS
 /*
  * Remove and trigger all remaining end and shutdown commands in the queue
  */
@@ -359,8 +213,10 @@ empty_end_queue(void)
         if (!shutdown_ongoing && end_queue_thread)
                 xpthread_mutex_lock(&end_queue_mutex);
 
-        recursively_empty_queue(end_queue_adr);
-        end_queue_adr = end_queue_end_time = NULL;
+        empty_tree(adr_tree, finalize_command, false);
+        /* manually reset end_time_tree, adr_tree has already been reset by
+         * empty_tree() */
+        end_time_tree->root = NULL;
         queue_length = 0;
 
         if (!shutdown_ongoing && end_queue_thread)
@@ -419,46 +275,34 @@ cleanup_end_queue(void *arg)
         la_debug("cleanup_end_queue()");
 
         empty_end_queue();
+
+        free_tree(adr_tree);
+        adr_tree = NULL;
+
+        free_tree(end_time_tree);
+        end_time_tree = NULL;
 }
 
 static la_command_t *
-leftmost_command(la_command_t *const command)
+return_payload_as_command(kw_tree_node_t *node)
 {
-        la_debug("leftmost_comnmand(%s)", command->address->text);
-        la_command_t *result = command;
-
-        while (result->end_time_left)
-                result = result->end_time_left;
-
-        return result;
+        if (node)
+                return (la_command_t *) node->payload;
+        else
+                return NULL;
 }
 
 la_command_t *
 first_command_in_queue(void)
 {
-        if (!end_queue_end_time)
-                return NULL;
-        else
-                return leftmost_command(end_queue_end_time);
+        return return_payload_as_command(first_tree_node(end_time_tree));
 }
 
 la_command_t *
 next_command_in_queue(la_command_t *const command)
 {
-        la_debug("next_command_in_queue(%s)", command->address->text);
-        if (command->end_time_right)
-        {
-                return leftmost_command(command->end_time_right);
-        }
-        else
-        {
-                la_command_t *result = command;
-                while (result->end_time_parent &&
-                                result == result->end_time_parent->end_time_right)
-                        result = result->end_time_parent;
-
-                return result->end_time_parent;
-        }
+        return return_payload_as_command(next_node_in_tree(
+                                &command->end_time_node));
 }
 
 /*
@@ -485,7 +329,7 @@ consume_end_queue(void *ptr)
                                 pthread_exit(NULL);
                         }
 
-                        if (!end_queue_adr)
+                        if (queue_length == 0)
                         {
                                 /* list is empty, wait indefinitely */
                                 xpthread_cond_wait(&end_queue_condition,
@@ -527,9 +371,10 @@ void
 init_end_queue(void)
 {
         la_debug("create_end_queue()");
-        //assert(!end_queue);
+        assert(!adr_tree); assert(!end_time_tree);
 
-        //end_queue = xcreate_list();
+        adr_tree = create_tree();
+        end_time_tree = create_tree();
 }
 
 
@@ -576,70 +421,16 @@ set_end_time(la_command_t *const command, const time_t manual_end_time)
         }
 }
 
-static void
-recursively_add_to_end_queue_adr(la_command_t **root, la_command_t *command)
+static int
+cmp_addresses(const void *p1, const void *p2)
 {
-        assert_command(*root);
-
-        if (adrcmp(command->address, (*root)->address) <= 0)
-        {
-                if ((*root)->adr_left)
-                {
-                        recursively_add_to_end_queue_adr(&((*root)->adr_left),
-                                        command);
-                }
-                else
-                {
-                        (*root)->adr_left = command;
-                        command->adr_parent = (*root);
-                }
-        }
-        else
-        {
-                if ((*root)->adr_right)
-                {
-                        recursively_add_to_end_queue_adr(&((*root)->adr_right),
-                                        command);
-                }
-                else
-                {
-                        (*root)->adr_right = command;
-                        command->adr_parent = (*root);
-                }
-        }
+        return adrcmp(((la_command_t *) p1)->address, ((la_command_t *) p2)->address);
 }
 
-static void
-recursively_add_to_end_queue_end_time(la_command_t **root, la_command_t *command)
+static int
+cmp_end_times(const void *p1, const void *p2)
 {
-        assert_command(*root);
-
-        if (command->end_time <= (*root)->end_time)
-        {
-                if ((*root)->end_time_left)
-                {
-                        recursively_add_to_end_queue_end_time(&((*root)->end_time_left),
-                                        command);
-                }
-                else
-                {
-                        (*root)->end_time_left = command;
-                        command->end_time_parent = (*root);
-                }
-        }
-        else
-        {
-                if ((*root)->end_time_right)
-                {
-                        recursively_add_to_end_queue_end_time(&((*root)->end_time_right),
-                                        command);
-                }
-                else
-                {
-                        (*root)->end_time_right = command;
-                        command->end_time_parent = (*root);
-                }
-        }
+        return ((la_command_t *) p1)->end_time - ((la_command_t *) p2)->end_time;
 }
 
 /*
@@ -665,27 +456,8 @@ enqueue_end_command(la_command_t *const end_command, const time_t manual_end_tim
 
         xpthread_mutex_lock(&end_queue_mutex);
 
-                if (end_queue_adr)
-                {
-                        recursively_add_to_end_queue_adr(&end_queue_adr,
-                                        end_command);
-                }
-                else
-                {
-                        end_queue_adr = end_command;
-                        end_command->adr_parent = NULL;
-                }
-
-                if (end_queue_end_time)
-                {
-                        recursively_add_to_end_queue_end_time(&end_queue_end_time,
-                                        end_command);
-                }
-                else
-                {
-                        end_queue_end_time = end_command;
-                        end_command->end_time_parent = NULL;
-                }
+                add_to_tree(adr_tree, &end_command->adr_node, cmp_addresses);
+                add_to_tree(end_time_tree, &end_command->end_time_node, cmp_end_times);
 
                 queue_length++;
 
@@ -693,5 +465,7 @@ enqueue_end_command(la_command_t *const end_command, const time_t manual_end_tim
 
         xpthread_mutex_unlock(&end_queue_mutex);
 }
+
+
 
 /* vim: set autowrite expandtab: */

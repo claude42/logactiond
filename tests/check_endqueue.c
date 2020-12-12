@@ -31,6 +31,7 @@
 #include <../src/commands.h>
 #include <../src/commands.c>
 #include <../src/addresses.h>
+#include <../src/binarytree.h>
 /*#include <../src/properties.h>
 #include <../src/rules.h>
 #include <../src/patterns.h>
@@ -115,33 +116,34 @@ static int command_id;
 static la_command_t *commands[100];
 
 static void
-recursively_check_end_queue_adr(la_command_t *command)
+recursively_check_end_queue_adr(kw_tree_node_t *node)
 {
-        if (!command)
+        if (!node)
                 return;
 
-        recursively_check_end_queue_adr(command->adr_left);
-        commands[command_id++] = command;
-        recursively_check_end_queue_adr(command->adr_right);
+        recursively_check_end_queue_adr(node->left);
+        commands[command_id++] = (la_command_t *) node->payload;
+        recursively_check_end_queue_adr(node->right);
 }
 
 static void
-recursively_check_end_queue_end_time(la_command_t *command)
+recursively_check_end_queue_end_time(kw_tree_node_t *node)
 {
-        if (!command)
+        if (!node)
                 return;
 
-        recursively_check_end_queue_end_time(command->end_time_left);
+        recursively_check_end_queue_end_time(node->left);
+        la_command_t *command = (la_command_t *) node->payload;
         la_debug("Found %u: %s, %lu", command_id, command->address->text, command->end_time);
         commands[command_id++] = command;
-        recursively_check_end_queue_end_time(command->end_time_right);
+        recursively_check_end_queue_end_time(node->right);
 }
 
 static int
 check_end_queues(void)
 {
         command_id = 0;
-        recursively_check_end_queue_end_time(end_queue_end_time);
+        recursively_check_end_queue_end_time(end_time_tree->root);
 
         int i;
         for (i = 0; i < command_id - 1; i++)
@@ -157,7 +159,7 @@ check_end_queues(void)
         int command_id_1 = command_id;
 
         command_id = 0;
-        recursively_check_end_queue_adr(end_queue_adr);
+        recursively_check_end_queue_adr(adr_tree->root);
 
         for (i = 0; i < command_id - 1; i++)
         {
@@ -181,6 +183,8 @@ START_TEST (trees)
         la_command_t *template = create_template("Ruebezahl", &rule, "", "", 1,
                         LA_NEED_HOST_NO, true);
 
+        init_end_queue();
+
         enqueue_end_command(create_manual_command_from_template(template,
                                 create_address("5.5.5.5"), ""), 2);
         enqueue_end_command(create_manual_command_from_template(template,
@@ -197,6 +201,7 @@ START_TEST (trees)
                                 create_address("2.2.2.2"), ""), 1);
 
         ck_assert_int_eq(check_end_queues(), 7);
+        ck_assert_int_eq(queue_length, 7);
 
         la_command_t *cmd = find_end_command(create_address("20.20.20.20"));
         ck_assert(cmd);
@@ -204,6 +209,7 @@ START_TEST (trees)
         remove_command_from_queues(cmd);
         ck_assert(!find_end_command(create_address("20.20.20.20")));
         ck_assert_int_eq(check_end_queues(), 6);
+        ck_assert_int_eq(queue_length, 6);
 
         cmd = first_command_in_queue();
         ck_assert(cmd);
@@ -211,6 +217,7 @@ START_TEST (trees)
         remove_command_from_queues(cmd);
         ck_assert(!find_end_command(create_address("2.2.2.2")));
         ck_assert_int_eq(check_end_queues(), 5);
+        ck_assert_int_eq(queue_length, 5);
 
         cmd = find_end_command(create_address("5.5.5.5"));
         ck_assert(cmd);
@@ -218,8 +225,7 @@ START_TEST (trees)
         //ck_assert(!find_end_command(create_address("5.5.5.5")));
         remove_command_from_queues(cmd);
         ck_assert_int_eq(check_end_queues(), 4);
-
-        la_log(LOG_INFO, "Going!");
+        ck_assert_int_eq(queue_length, 4);
 
         cmd = first_command_in_queue();
         ck_assert(cmd);
@@ -238,12 +244,12 @@ START_TEST (trees)
         la_log(LOG_INFO, "Found %s,%lu", cmd->address->text,cmd->end_time);
         ck_assert_str_eq(cmd->address->text, "7.7.7.7");
         ck_assert(!next_command_in_queue(cmd));
-        ck_assert(false);
 
-
-        /*empty_end_queue();
-        ck_assert(end_queue_adr);
-        ck_assert(end_queue_end_time);*/
+        empty_end_queue();
+        ck_assert_int_eq(check_end_queues(), 0);
+        ck_assert_int_eq(queue_length, 0);
+        ck_assert(is_empty(adr_tree));
+        ck_assert(is_empty(end_time_tree));
 
 
 }

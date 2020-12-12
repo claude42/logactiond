@@ -42,6 +42,7 @@
 #include "remote.h"
 #include "rules.h"
 #include "sources.h"
+#include "binarytree.h"
 
 #define ITERATE_META_COMMANDS(COMMANDS) (meta_command_t *) &(COMMANDS)->head
 #define NEXT_META_COMMAND(COMMAND) (meta_command_t *) (COMMAND->node.succ->succ ? COMMAND->node.succ : NULL)
@@ -781,9 +782,10 @@ dup_command(const la_command_t *const command)
 
         result->is_template = false;
 
-        result->adr_left = result->adr_right = result->adr_parent =
-                result->end_time_left = result->end_time_right =
-                result->end_time_parent = NULL;
+        /* only set payload here, other node links have already been
+         * initialized in template */
+        result->adr_node.payload = result;
+        result->end_time_node.payload = result;
 
         result->name = xstrdup(command->name);
         result->begin_string = xstrdup(command->begin_string);
@@ -916,41 +918,31 @@ create_template(const char *const name, la_rule_t *const rule,
         assert(name); assert_rule(rule); assert(begin_string);
         la_debug("create_template(%s, %d)", name, duration);
 
-        la_command_t *const result = xmalloc(sizeof *result);
+        la_command_t *const result = xmalloc0(sizeof *result);
 
         result->name = xstrdup(name);
         result->id = ++id_counter;
         result->is_template = true;
 
-        result->adr_left = result->adr_right = result->adr_parent =
-                result->end_time_left = result->end_time_right =
-                result->end_time_parent = NULL;
+        result->adr_node = (kw_tree_node_t) { 0 };
+        result->end_time_node = (kw_tree_node_t) { 0 };
 
         result->begin_string = xstrdup(begin_string);
-        result->begin_string_converted = NULL;
         result->begin_properties = xcreate_list();
         result->n_begin_properties =
                 scan_action_tokens(result->begin_properties, begin_string);
 
         result->end_string = xstrdup(end_string);
-        result->end_string_converted = NULL;
         result->end_properties = xcreate_list();
         result->n_end_properties = end_string ?
                 scan_action_tokens(result->end_properties, end_string) : 0;
 
         result->rule = rule;
-        result->pattern = NULL;
-        result->pattern_properties = NULL;
-        result->address = NULL;
         result->need_host = need_host;
         result->quick_shutdown = quick_shutdown;
 
         result->duration = duration;
         result->factor = 1;
-        result->end_time = 0;
-
-        result->n_triggers = 0;
-        result->start_time = 0;
 
         /* Will be used to restore queue counters on reload. Yes, it's a bit
          * ugly but such is life... */

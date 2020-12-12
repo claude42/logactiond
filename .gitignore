@@ -131,6 +131,7 @@ tests/*.gcda
 tests/*.gcno
 tests/*.log
 tests/*.trs
+tests/.deps/
 
 libconfig/.gitignore
 libconfig/ac_config.h.in

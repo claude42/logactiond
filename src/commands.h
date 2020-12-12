@@ -22,6 +22,7 @@
 #include "ndebug.h"
 #include "addresses.h"
 #include "patterns.h"
+#include "binarytree.h"
 
 #define ITERATE_COMMANDS(COMMANDS) (la_command_t *) &(COMMANDS)->head
 #define NEXT_COMMAND(COMMAND) (la_command_t *) (COMMAND->node.succ->succ ? COMMAND->node.succ : NULL)
@@ -50,12 +51,8 @@ typedef struct la_command_s la_command_t;
 struct la_command_s
 {
         struct kw_node_s node;
-        la_command_t *adr_left;
-        la_command_t *adr_right;
-        la_command_t *adr_parent;
-        la_command_t *end_time_left;
-        la_command_t *end_time_right;
-        la_command_t *end_time_parent;
+        kw_tree_node_t adr_node;
+        kw_tree_node_t end_time_node;
         char *name;       /* name of action */
         int id;        /* unique id */
         bool is_template;       /* true for templates, false for derived commands */
