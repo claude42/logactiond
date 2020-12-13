@@ -122,6 +122,7 @@ tests/tags
 tests/TAGS
 
 tests/check_addresses
+tests/check_binarytree
 tests/check_commands
 tests/check_endqueue
 tests/check_misc

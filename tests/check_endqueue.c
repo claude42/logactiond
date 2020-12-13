@@ -255,89 +255,24 @@ START_TEST (trees)
 }
 END_TEST
 
-
-/*START_TEST (correct_address)
+START_TEST (null_elements)
 {
-        la_rule_t rule = {
-                .name = "Rulename"
-        };
+        init_end_queue();
 
-        la_command_t *template = create_template("Bla", &rule, "Foo begin", "Foo end", 100, LA_NEED_HOST_NO, true);
+        la_rule_t rule = { .name = "Rulename" };
 
-        ck_assert_str_eq(template->name, "Bla");
-        ck_assert_int_eq(template->id, id_counter);
-        ck_assert(template->is_template);
-        ck_assert_str_eq(template->begin_string, "Foo begin");
-        ck_assert(!template->begin_string_converted);
-        ck_assert(is_list_empty(template->begin_properties));
-        ck_assert_str_eq(template->end_string, "Foo end");
-        ck_assert(!template->end_string_converted);
-        ck_assert(is_list_empty(template->end_properties));
-        ck_assert_ptr_eq(template->rule, &rule);
-        ck_assert(!template->pattern);
-        ck_assert(!template->pattern_properties);
-        ck_assert(!template->address);
-        ck_assert(template->need_host == LA_NEED_HOST_NO);
-        ck_assert(template->quick_shutdown);
-        ck_assert_int_eq(template->duration, 100);
-        ck_assert_int_eq(template->factor, 1);
-        ck_assert_str_eq(template->rule_name, rule.name);
+        la_command_t *template = create_template("Ruebezahl", &rule, "", "", 1,
+                        LA_NEED_HOST_NO, true);
 
-        ck_assert(has_correct_address(template, NULL));
+        enqueue_end_command(template, INT_MAX);
+        enqueue_end_command(create_manual_command_from_template(template,
+                                create_address("5.5.5.5"), ""), 2);
 
-        la_address_t address;
-        init_address(&address, "1.2.3.4");
-        ck_assert(has_correct_address(template, &address));
-
-        template->need_host = LA_NEED_HOST_IP4;
-        ck_assert(has_correct_address(template, &address));
-
-        template->need_host = LA_NEED_HOST_IP6;
-        ck_assert(!has_correct_address(template, &address));
-
-        template->need_host = LA_NEED_HOST_ANY;
-        ck_assert(has_correct_address(template, &address));
-
-        init_address(&address, "2a03:4000:23:8c::1");
-        template->need_host = LA_NEED_HOST_NO;
-        ck_assert(has_correct_address(template, &address));
-
-        template->need_host = LA_NEED_HOST_IP4;
-        ck_assert(!has_correct_address(template, &address));
-
-        template->need_host = LA_NEED_HOST_IP6;
-        ck_assert(has_correct_address(template, &address));
-
-        template->need_host = LA_NEED_HOST_ANY;
-        ck_assert(has_correct_address(template, &address));
-
-        address.sa.ss_family = AF_UNSPEC;
-        template->need_host = LA_NEED_HOST_NO;
-        ck_assert(has_correct_address(template, &address));
-
-        template->need_host = LA_NEED_HOST_IP4;
-        ck_assert(!has_correct_address(template, &address));
-
-        template->need_host = LA_NEED_HOST_IP6;
-        ck_assert(!has_correct_address(template, &address));
-
-        template->need_host = LA_NEED_HOST_ANY;
-        ck_assert(!has_correct_address(template, &address));
-
-        template->need_host = LA_NEED_HOST_NO;
-        ck_assert(has_correct_address(template, NULL));
-
-        template->need_host = LA_NEED_HOST_IP4;
-        ck_assert(!has_correct_address(template, NULL));
-
-        template->need_host = LA_NEED_HOST_IP6;
-        ck_assert(!has_correct_address(template, NULL));
-
-        template->need_host = LA_NEED_HOST_ANY;
-        ck_assert(!has_correct_address(template, NULL));
-
+        la_command_t *cmd = find_end_command(create_address("5.5.5.5"));
+        ck_assert_str_eq(cmd->address->text, "5.5.5.5");
 }
-END_TEST*/
+END_TEST
+
 
 
 Suite *commands_suite(void)
@@ -347,6 +282,7 @@ Suite *commands_suite(void)
         /* Core test case */
         TCase *tc_main = tcase_create("Main");
         tcase_add_test(tc_main, trees);
+        tcase_add_test(tc_main, null_elements);
         suite_add_tcase(s, tc_main);
 
         return s;

@@ -206,7 +206,8 @@ START_TEST (compare2)
         ck_assert_int_eq(adrcmp(create_address("2602:fea7:c0:3::2"), create_address("2602:fea7:c0:3::2")), 0);
         ck_assert_int_gt(adrcmp(create_address("2602:fea7:c0:3::3"), create_address("2602:fea7:c0:3::2")), 0);
         ck_assert_int_gt(adrcmp(create_address("1000::0001"), create_address("0100::0010")), 0);
-        ck_assert_int_eq(adrcmp(create_address("1.2.3.4"), NULL), 127);
+        ck_assert_int_gt(adrcmp(create_address("1.2.3.4"), NULL), 0);
+        ck_assert_int_lt(adrcmp(NULL, create_address("1.2.3.4")), 0);
         ck_assert_int_eq(adrcmp(NULL, NULL), 0);
 }
 END_TEST

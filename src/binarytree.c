@@ -248,7 +248,6 @@ first_tree_node(const kw_tree_t *const tree)
                 return NULL;
         else
                 return leftmost_tree_node(tree->root);
-
 }
 
 kw_tree_node_t *

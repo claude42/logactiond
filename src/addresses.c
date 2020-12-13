@@ -256,9 +256,17 @@ adrcmp(const la_address_t *const a1, const la_address_t *const a2)
         {
                 return 0;
         }
+        else if (!a1 && a2)
+        {
+                return -1;
+        }
+        else if (a1 && !a2)
+        {
+                return 1;
+        }
+
 
         /* Return 127 otherwise, either if
-         * - one of the two addresses is NULL, or
          * - address families differ, or
          * - unknown address family
          *

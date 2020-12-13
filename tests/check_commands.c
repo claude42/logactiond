@@ -105,7 +105,7 @@ int id_counter;
 
 /* Compare */
 
-START_TEST (correct_address)
+START_TEST (template)
 {
         la_rule_t rule = {
                 .name = "Rulename"
@@ -116,6 +116,8 @@ START_TEST (correct_address)
         ck_assert_str_eq(template->name, "Bla");
         ck_assert_int_eq(template->id, id_counter);
         ck_assert(template->is_template);
+        ck_assert_ptr_eq(template->adr_node.payload, template);
+        ck_assert_ptr_eq(template->end_time_node.payload, template);
         ck_assert_str_eq(template->begin_string, "Foo begin");
         ck_assert(!template->begin_string_converted);
         ck_assert(is_list_empty(template->begin_properties));
@@ -131,6 +133,16 @@ START_TEST (correct_address)
         ck_assert_int_eq(template->duration, 100);
         ck_assert_int_eq(template->factor, 1);
         ck_assert_str_eq(template->rule_name, rule.name);
+}
+END_TEST
+
+START_TEST (correct_address)
+{
+        la_rule_t rule = {
+                .name = "Rulename"
+        };
+
+        la_command_t *template = create_template("Bla", &rule, "Foo begin", "Foo end", 100, LA_NEED_HOST_NO, true);
 
         ck_assert(has_correct_address(template, NULL));
 
@@ -188,6 +200,43 @@ START_TEST (correct_address)
 }
 END_TEST
 
+START_TEST (manual_command)
+{
+        la_rule_t rule = {
+                .name = "Rulename"
+        };
+
+        la_command_t *template = create_template("Bla", &rule, "Foo begin", "Foo end", 100, LA_NEED_HOST_NO, true);
+
+        la_address_t address;
+        init_address(&address, "1.2.3.4");
+
+        la_command_t *command = create_manual_command_from_template(
+                        template, &address, "anywher");
+        ck_assert(command);
+        ck_assert_str_eq(command->name, "Bla");
+        ck_assert_int_eq(command->id, id_counter);
+        ck_assert(!command->is_template);
+        ck_assert_ptr_eq(command->adr_node.payload, command);
+        ck_assert_ptr_eq(command->end_time_node.payload, command);
+        ck_assert_str_eq(command->begin_string, "Foo begin");
+        ck_assert(command->begin_string_converted);
+        ck_assert(is_list_empty(command->begin_properties));
+        ck_assert_str_eq(command->end_string, "Foo end");
+        ck_assert(command->end_string_converted);
+        ck_assert(is_list_empty(command->end_properties));
+        ck_assert_ptr_eq(command->rule, &rule);
+        ck_assert(!command->pattern);
+        ck_assert(!command->pattern_properties);
+        ck_assert(has_correct_address(command, &address));
+        ck_assert(command->need_host == LA_NEED_HOST_NO);
+        ck_assert(command->quick_shutdown);
+        ck_assert_int_eq(command->duration, 100);
+        ck_assert_int_eq(command->factor, 1);
+        ck_assert_str_eq(command->rule_name, rule.name);
+}
+END_TEST
+
 
 Suite *commands_suite(void)
 {
@@ -195,7 +244,9 @@ Suite *commands_suite(void)
 
         /* Core test case */
         TCase *tc_main = tcase_create("Main");
+        tcase_add_test(tc_main, template);
         tcase_add_test(tc_main, correct_address);
+        tcase_add_test(tc_main, manual_command);
         suite_add_tcase(s, tc_main);
 
         return s;

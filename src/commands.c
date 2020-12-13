@@ -924,8 +924,8 @@ create_template(const char *const name, la_rule_t *const rule,
         result->id = ++id_counter;
         result->is_template = true;
 
-        result->adr_node = (kw_tree_node_t) { 0 };
-        result->end_time_node = (kw_tree_node_t) { 0 };
+        result->adr_node.payload = result;
+        result->end_time_node.payload = result;
 
         result->begin_string = xstrdup(begin_string);
         result->begin_properties = xcreate_list();
@@ -936,6 +936,7 @@ create_template(const char *const name, la_rule_t *const rule,
         result->end_properties = xcreate_list();
         result->n_end_properties = end_string ?
                 scan_action_tokens(result->end_properties, end_string) : 0;
+
 
         result->rule = rule;
         result->need_host = need_host;
