@@ -427,8 +427,7 @@ strendcmp(const char *const string, const char *const suffix)
 void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, const size_t on_top)
 {
         la_vdebug("realloc_buffer(%lu, %lu)", *dst_len, on_top);
-        assert (*dst); assert (*dst < *dst_ptr);
-        assert((size_t) (*dst_ptr - *dst) < *dst_len);
+        assert (*dst); assert((size_t) (*dst_ptr - *dst) < *dst_len);
 
         if (*dst_ptr + on_top >= *dst + *dst_len)
         {
