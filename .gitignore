@@ -120,6 +120,7 @@ src/testerli
 
 tests/check_addresses
 tests/check_commands
+tests/check_dnsbl
 tests/check_misc
 tests/check_patterns
 tests/check_properties
