@@ -375,6 +375,9 @@ string_copy(char *const dest, const size_t dest_size, const char *const src,
 {
         assert(dest); assert(src);
 
+        if (dest_size < 1)
+                return -1;
+
         const size_t copy_bytes = (!n || dest_size-1 < n) ? dest_size-1 : n;
         size_t i;
 
