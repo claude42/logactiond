@@ -133,20 +133,14 @@ START_TEST (check_string_copy)
                 {3, 5, '\0', "bl", -1},
                 {10, 10, '\0', "blafasel", 8},
                 {10, 0, 'f', "bla", 3},
-                {0, 0, '\0', "", -1}
+                {0, 0, '\0', "", -1},
+                {0, 0, '\0', "blafasel", -1},
         };
         static char s[10];
 
         ck_assert_int_eq(string_copy(s, t[_i].dest_size, "blafasel",
                                 t[_i].length, t[_i].delim), t[_i].ret);
         ck_assert_str_eq(s, t[_i].result);
-}
-END_TEST
-
-START_TEST (check_string_copy_destneg)
-{
-        char s[10];
-        string_copy(s, 0, "blafasel", 0, '\0');
 }
 END_TEST
 
@@ -224,8 +218,7 @@ Suite *misc_suite(void)
         TCase *tc_strings = tcase_create("Strings");
         tcase_add_loop_test(tc_strings, check_concat, 0, 8);
         tcase_add_test(tc_strings, check_concat_null);
-        tcase_add_loop_test(tc_strings, check_string_copy, 0, 6);
-        tcase_add_test_raise_signal(tc_strings, check_string_copy_destneg, SIGABRT);
+        tcase_add_loop_test(tc_strings, check_string_copy, 0, 7);
         tcase_add_loop_test(tc_strings, check_strendcmp_match, 0, 5);
         tcase_add_loop_test(tc_strings, check_strendcmp_dontmatch, 0, 5);
         tcase_add_test(tc_strings, check_realloc_buffer);
