@@ -14,8 +14,6 @@ TODOs in no particular order
 * does not shutdown correctly on a crash or when an assert() fails
   pthread_cancel(pthread_self()) doesn't invoke cleanup action
 * improve ITERATE macros
-* add assert()s everywhere :-)
-* don't initially wait 5s in dump loop
 
 * General: frequently does not shut down correctly on error, e.g. doesn't
   remove fifo. More specifically: is die_err() etc. allowed in cleanup actions?
