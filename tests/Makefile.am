@@ -1,7 +1,11 @@
 AUTOMAKE_OPTIONS = subdir-objects
-TESTS = check_misc check_addresses check_commands check_properties check_patterns #check_crypto
-check_PROGRAMS = check_misc check_addresses check_commands check_properties check_patterns #check_crypto
+TESTS = check_dnsbl check_misc check_addresses check_commands check_properties check_patterns #check_crypto
+check_PROGRAMS = check_dnsbl check_misc check_addresses check_commands check_properties check_patterns #check_crypto
 MY_CFLAGS = -g -Wall -fprofile-arcs -ftest-coverage
+
+check_dnsbl_SOURCES = check_dnsbl.c $(top_builddir)/src/dnsbl.h 
+check_dnsbl_CFLAGS = $(PTHREAD_CFLAGS) $(CFLAGS) $(CHECK_CFLAGS) $(MY_CFLAGS)
+check_dnsbl_LDADD = $(top_builddir)/src/logactiond-addresses.o $(top_builddir)/src/logactiond-logging.o $(top_builddir)/src/logactiond-nodelist.o $(top_builddir)/src/logactiond-misc.o $(CHECK_LIBS)
 
 check_misc_SOURCES = check_misc.c $(top_builddir)/src/misc.h 
 check_misc_CFLAGS = $(PTHREAD_CFLAGS) $(CFLAGS) $(CHECK_CFLAGS) $(MY_CFLAGS)
