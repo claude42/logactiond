@@ -43,6 +43,9 @@ typedef enum kw_branch_side {
 
 typedef struct kw_tree_s {
         struct kw_tree_node_s *root;
+        struct kw_tree_node_s *first;
+        struct kw_tree_node_s *last;
+        int count;
 } kw_tree_t;
 
 void assert_tree_node_ffl(const kw_tree_node_t *node, const char *func,
@@ -59,6 +62,8 @@ kw_tree_node_t *find_tree_node(kw_tree_t *const tree,
                 int (*compar)(const void *, const void *));
 
 kw_tree_node_t *first_tree_node(const kw_tree_t *const tree);
+
+kw_tree_node_t *last_tree_node(const kw_tree_t *const tree);
 
 kw_tree_node_t *next_node_in_tree(kw_tree_node_t *const node);
 

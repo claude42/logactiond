@@ -19,7 +19,6 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdbool.h>
-#include <stdio.h>
 
 #include "ndebug.h"
 #include "logging.h"
@@ -54,6 +53,8 @@ assert_tree_ffl(const kw_tree_t *tree, const char *func, const char *file,
         {
                 assert_tree_node_ffl(tree->root, func, file, line);
                 assert(!tree->root->parent);
+                assert_tree_node_ffl(tree->first, func, file, line);
+                assert_tree_node_ffl(tree->last, func, file, line);
         }
 }
 
@@ -70,6 +71,10 @@ reattach_to_end_of_tree(kw_tree_node_t *const node1,
         if (!node2)
                 /* nothing to do */
                 return;
+        assert(node1);
+        // don't assert_node(node2) because it might not be properly
+        // initialized yet
+        assert(side == kw_left_branch || side == kw_right_branch);
 
         kw_tree_node_t *q = node1;
         while (side == kw_left_branch ? q->left : q->right)
@@ -77,10 +82,8 @@ reattach_to_end_of_tree(kw_tree_node_t *const node1,
 
         if (side == kw_left_branch)
                 q->left = node2;
-        else if (side == kw_right_branch)
-                q->right = node2;
         else
-                assert(false);
+                q->right = node2;
 
         node2->parent = q;
 }
@@ -94,6 +97,8 @@ reattach_to_end_of_tree(kw_tree_node_t *const node1,
 static void
 try_left_branch(kw_tree_node_t **ptr, kw_tree_node_t *node)
 {
+        assert(ptr); assert(node);
+
         *ptr = node->left;
         node->left->parent = node->parent;
         reattach_to_end_of_tree(node->left,
@@ -109,10 +114,36 @@ try_left_branch(kw_tree_node_t **ptr, kw_tree_node_t *node)
 static void
 try_right_branch(kw_tree_node_t **ptr, kw_tree_node_t *node)
 {
+        assert(ptr); assert(node);
+
         *ptr = node->right;
         node->right->parent = node->parent;
         reattach_to_end_of_tree(node->right,
                         node->left, kw_left_branch);
+}
+
+static kw_tree_node_t *
+leftmost_tree_node(kw_tree_node_t *const node)
+{
+        assert_tree_node(node);
+        kw_tree_node_t *result = node;
+
+        while (result->left)
+                result = result->left;
+
+        return result;
+}
+
+static kw_tree_node_t *
+rightmost_tree_node(kw_tree_node_t *const node)
+{
+        assert_tree_node(node);
+        kw_tree_node_t *result = node;
+
+        while (result->right)
+                result = result->right;
+
+        return result;
 }
 
 kw_tree_node_t *
@@ -143,7 +174,7 @@ remove_tree_node(kw_tree_t *const tree, kw_tree_node_t *const node)
                 /* or to the right */
                 ptr = &node->parent->right;
         else
-                /* or somethings really wrong with this tree */
+                /* or something's really wrong with this tree */
                 assert(false);
 
         /* Used to alternatingly use left or right subtree */
@@ -171,8 +202,30 @@ remove_tree_node(kw_tree_t *const tree, kw_tree_node_t *const node)
                 }
         }
 
+        /* reassign first / last if necessary */
+        if (node == tree->first && node == tree->last)
+        {
+                tree->first = tree->last = NULL;
+        }
+        else if (node == tree->first)
+        {
+                if (node->right)
+                        tree->first = leftmost_tree_node(node->right);
+                else
+                        tree->first = node->parent;
+        }
+        else if (node == tree->last)
+        {
+                if (node->left)
+                        tree->last = rightmost_tree_node(node->left);
+                else
+                        tree->last = node->parent;
+        }
+
         /* clean up removed node */
         node->left = node->right = node->parent = NULL;
+
+        tree->count--;
 
         return node;
 
@@ -212,13 +265,16 @@ attach_to_node(kw_tree_node_t *const parent, kw_tree_node_t *const node,
                 kw_tree_node_t *const left,
                 kw_tree_node_t *const right, const kw_branch_side_t side)
 {
+        assert(node);
+        assert(!parent || (side == kw_left_branch || side == kw_right_branch));
+
         /* create link from parent in case parent is non-NULL and a proper
          * branch side has been specified */
         if (parent)
         {
                 if (side == kw_left_branch)
                         parent->left = node;
-                else if (side == kw_right_branch)
+                else
                         parent->right = node;
         }
 
@@ -227,27 +283,20 @@ attach_to_node(kw_tree_node_t *const parent, kw_tree_node_t *const node,
         node->parent = parent;
 }
 
-static kw_tree_node_t *
-leftmost_tree_node(kw_tree_node_t *const node)
-{
-        assert_tree_node(node);
-        kw_tree_node_t *result = node;
-
-        while (result->left)
-                result = result->left;
-
-        return result;
-}
-
 kw_tree_node_t *
 first_tree_node(const kw_tree_t *const tree)
 {
         assert_tree(tree);
 
-        if (!tree->root)
-                return NULL;
-        else
-                return leftmost_tree_node(tree->root);
+        return tree->first;
+}
+
+kw_tree_node_t *
+last_tree_node(const kw_tree_t *const tree)
+{
+        assert_tree(tree);
+
+        return tree->last;
 }
 
 kw_tree_node_t *
@@ -272,26 +321,52 @@ next_node_in_tree(kw_tree_node_t *const node)
         }
 }
 
-static void
+/*
+ * Will add the new element at the correct position in the tree according to
+ * the compar function.
+ *
+ * Will return kw_left_branch if the new element was put at the beginning of
+ * the tree, kw_right_branch if put at the end and kw_no_branch otherwise.
+ */
+
+static kw_branch_side_t
 recursively_add_to_tree(kw_tree_node_t *const node_in_tree,
                 kw_tree_node_t *const new_node,
                 int (*compar)(const void *, const void *))
 {
-        assert_tree_node(node_in_tree); assert(compar);
+        assert_tree_node(node_in_tree); assert(new_node); assert(compar);
 
         if (compar(new_node->payload, node_in_tree->payload) <= 0)
         {
                 if (node_in_tree->left)
-                        recursively_add_to_tree(node_in_tree->left, new_node, compar);
+                {
+                        if (recursively_add_to_tree(node_in_tree->left,
+                                                new_node, compar) == kw_left_branch)
+                                return kw_left_branch;
+                        else
+                                return kw_no_branch;
+                }
                 else
+                {
                         attach_to_node(node_in_tree, new_node, NULL, NULL, kw_left_branch);
+                        return kw_left_branch;
+                }
         }
         else
         {
                 if (node_in_tree->right)
-                        recursively_add_to_tree(node_in_tree->right, new_node, compar);
+                {
+                        if (recursively_add_to_tree(node_in_tree->right,
+                                                new_node, compar) == kw_right_branch)
+                                return kw_right_branch;
+                        else
+                                return kw_no_branch;
+                }
                 else
+                {
                         attach_to_node(node_in_tree, new_node, NULL, NULL, kw_right_branch);
+                        return kw_right_branch;
+                }
         }
 }
 
@@ -303,13 +378,25 @@ add_to_tree(kw_tree_t *const tree, kw_tree_node_t *const node,
 
         if (tree->root)
         {
-                recursively_add_to_tree(tree->root, node, compar);
+                switch (recursively_add_to_tree(tree->root, node, compar))
+                {
+                case kw_left_branch:
+                        tree->first = node;
+                        break;
+                case kw_right_branch:
+                        tree->last = node;
+                        break;
+                case kw_no_branch:
+                        break;
+                }
         }
         else
         {
-                tree->root = node;
+                tree->root = tree->first = tree->last = node;
                 attach_to_node(NULL, node, NULL, NULL, kw_no_branch);
         }
+
+        tree->count++;
 }
 
 static void
@@ -343,7 +430,33 @@ empty_tree(kw_tree_t *const tree, void (*delete_payload)(const void *),
         {
                 assert_tree(tree);
                 recursively_empty_tree(tree->root, delete_payload, free_nodes);
-                tree->root = NULL;
+                tree->root = tree->first = tree->last = NULL;
+                tree->count = 0;
+        }
+}
+
+static void
+recursively_walk_tree(kw_tree_node_t *const node,
+                void (*process_payload(const void *)))
+{
+        assert_tree_node(node); assert(process_payload);
+
+        if (node->left)
+                recursively_walk_tree(node->left, process_payload);
+
+        process_payload(node->payload);
+
+        if (node->left)
+                recursively_walk_tree(node->left, process_payload);
+}
+
+void
+walk_tree(kw_tree_t *const tree, void (*process_payload(const void *)))
+{
+        if (tree && tree->root)
+        {
+                assert_tree(tree); assert(process_payload);
+                recursively_walk_tree(tree->root, process_payload);
         }
 }
 
