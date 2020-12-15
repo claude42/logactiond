@@ -59,6 +59,7 @@ struct la_rule_s
         int threshold;
         int period;
         int duration;
+        int dnsbl_duration;
         bool meta_enabled;
         int meta_period;
         int meta_factor;
@@ -90,9 +91,9 @@ void trigger_manual_commands_for_rule(const la_address_t *address, const
 
 la_rule_t *create_rule(bool enabled, const char *name, la_source_group_t
                 *source_group, int threshold, int period, int duration,
-                int meta_enabled, int meta_period, int meta_factor,
-                int meta_max, int dnsbl_enabled, const char *service,
-                const char *systemd_unit);
+                int dnsbl_duration, int meta_enabled, int meta_period,
+                int meta_factor, int meta_max, int dnsbl_enabled,
+                const char *service, const char *systemd_unit);
 
 void free_rule(la_rule_t *rule);
 

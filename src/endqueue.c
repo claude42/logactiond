@@ -413,9 +413,17 @@ set_end_time(la_command_t *const command, const time_t manual_end_time)
         }
         else
         {
+                /* If command was activated due to a blacklist listing, use
+                 * rule->dnsbl_duration, thus ignoring the duration parameter
+                 * used when creating the command. Should not be a problem for
+                 * templates, as these always created in configfile.c and never
+                 * via a blacklist. */
+                int duration = command->blacklist ?
+                        command->rule->dnsbl_duration : command->duration;
+
                 if (command->factor != -1)
                         command->end_time = xtime(NULL) +
-                                (long) command->duration * command->factor;
+                                (long) duration * command->factor;
                 else
                         command->end_time = xtime(NULL) + command->rule->meta_max;
         }

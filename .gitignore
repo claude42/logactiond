@@ -125,6 +125,7 @@ tests/check_addresses
 tests/check_binarytree
 tests/check_commands
 tests/check_endqueue
+tests/check_dnsbl
 tests/check_misc
 tests/check_patterns
 tests/check_properties
