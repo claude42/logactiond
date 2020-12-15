@@ -765,6 +765,9 @@ load_single_rule(const config_setting_t *const uc_rule_def)
         const int duration = get_rule_unsigned_int(rule_def, uc_rule_def,
                         LA_DURATION_LABEL);
 
+        const int dnsbl_duration = get_rule_unsigned_int(rule_def, uc_rule_def,
+                        LA_DNSBL_DURATION_LABEL);
+
         /* meta_enabled could either be 1 (enabled for rule), 0 (disabled for
          * rule) or -1 (not specified in rule, use default) */
         int meta_enabled = -1;
@@ -792,9 +795,9 @@ load_single_rule(const config_setting_t *const uc_rule_def)
                         LA_SERVICE_LABEL);
 
         la_rule_t *const new_rule = create_rule(enabled, name, source_group,
-                        threshold, period, duration, meta_enabled, meta_period,
-                        meta_factor, meta_max, dnsbl_enabled, service,
-                        systemd_unit);
+                        threshold, period, duration, dnsbl_duration,
+                        meta_enabled, meta_period, meta_factor, meta_max,
+                        dnsbl_enabled, service, systemd_unit);
         assert_rule(new_rule);
 
         if (new_rule->enabled)
@@ -926,6 +929,13 @@ load_defaults(void)
                                         LA_DURATION_LABEL);
                 if (la_config->default_duration == -1)
                         la_config->default_duration = DEFAULT_DURATION;
+                la_config->default_dnsbl_duration =
+                        config_get_unsigned_int_or_negative(defaults_section,
+                                        LA_DNSBL_DURATION_LABEL);
+                if (la_config->default_dnsbl_duration == -1)
+                        la_config->default_dnsbl_duration =
+                                la_config->default_duration;
+
 
                 if (!config_setting_lookup_bool(defaults_section,
                                         LA_META_ENABLED_LABEL,

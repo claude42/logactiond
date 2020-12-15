@@ -460,10 +460,11 @@ handle_log_line_for_rule(const la_rule_t *const rule, const char *const line)
 la_rule_t *
 create_rule(const bool enabled, const char *const name,
                 la_source_group_t *const source_group, const int threshold,
-                const int period, const int duration, const int meta_enabled,
-                const int meta_period, const int meta_factor,
-                const int meta_max, const int dnsbl_enabled,
-                const char *service, const char *systemd_unit)
+                const int period, const int duration, const int dnsbl_duration,
+                const int meta_enabled, const int meta_period,
+                const int meta_factor, const int meta_max,
+                const int dnsbl_enabled, const char *service,
+                const char *systemd_unit)
 {
         assert(source_group);
         la_debug("create_rule(%s)", name);
@@ -487,6 +488,8 @@ create_rule(const bool enabled, const char *const name,
                 result->threshold = 1;
 
         result->duration = duration!=-1 ? duration : la_config->default_duration;
+        result->dnsbl_duration = dnsbl_duration!=-1 ? dnsbl_duration :
+                la_config->default_dnsbl_duration;
         result->period = period!=-1 ? period : la_config->default_period;
 
         result->meta_enabled = meta_enabled>=0 ? meta_enabled :

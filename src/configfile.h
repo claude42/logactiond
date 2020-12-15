@@ -49,6 +49,7 @@
 #define LA_THRESHOLD_LABEL "threshold"
 #define LA_PERIOD_LABEL "period"
 #define LA_DURATION_LABEL "duration"
+#define LA_DNSBL_DURATION_LABEL "dnsbl_duration"
 
 #define LA_IGNORE_LABEL "ignore"
 
@@ -105,6 +106,7 @@ typedef struct la_config_s
         int default_threshold;
         int default_period;
         int default_duration;
+        int default_dnsbl_duration;
         int default_meta_enabled; /* should be bool but well... */
         int default_meta_period;
         int default_meta_factor;
