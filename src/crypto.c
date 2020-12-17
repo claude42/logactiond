@@ -27,6 +27,7 @@
 #include "crypto.h"
 #include "logging.h"
 #include "messages.h"
+#include "addresses.h"
 
 #ifdef WITH_LIBSODIUM
 #include <sodium.h>
@@ -75,6 +76,7 @@ generate_send_key_and_salt(const char *const password)
 static bool
 same_salt_as_before(const unsigned char *const buffer, la_address_t *const from_addr)
 {
+        assert(buffer); assert_address(from_addr);
         return !sodium_memcmp(&(from_addr->salt), &buffer[SALT_IDX],
                                 crypto_pwhash_SALTBYTES);
 }
@@ -86,7 +88,7 @@ bool
 decrypt_message(char *const buffer, const char *const password,
                 la_address_t *const from_addr)
 {
-	assert(buffer); assert(password);
+	assert(buffer); assert(password); assert_address(from_addr);
         unsigned char *const ubuffer = (unsigned char *const) buffer;
 
         if (sodium_init() < 0)

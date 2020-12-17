@@ -212,6 +212,7 @@ static void
 convert_command(la_command_t *const command, const la_commandtype_t type)
 {
         assert_command(command);
+        assert(type == LA_COMMANDTYPE_BEGIN || type == LA_COMMANDTYPE_END);
         la_debug("convert_command(%s, %s)", command->name,
                         type == LA_COMMANDTYPE_BEGIN ? "begin" : "end");
 
@@ -463,6 +464,7 @@ check_meta_list(const la_command_t *const command, const int set_factor)
         if (!meta_command)
         {
                 meta_command = create_meta_command(command);
+                assert(meta_command);
                 if (set_factor)
                         meta_command->factor = set_factor;
                 meta_command->meta_start_time = now +
@@ -600,6 +602,7 @@ trigger_manual_command(const la_address_t *const address,
                         address, from);
         if (!command)
                 LOG_RETURN(, LOG_ERR, "IP address doesn't match what requirements of action!");
+        assert_command(command);
 
         if (command->rule->meta_enabled)
                 command->factor = check_meta_list(command, factor);
@@ -808,6 +811,8 @@ dup_command(const la_command_t *const command)
 static bool
 has_correct_address(const la_command_t *const template, const la_address_t *const address)
 {
+        assert_command(template);
+
         if (!address)
         {
                 if (template->need_host != LA_NEED_HOST_NO)
@@ -815,6 +820,7 @@ has_correct_address(const la_command_t *const template, const la_address_t *cons
         }
         else
         {
+                assert_address(address);
                 if ((address->sa.ss_family == AF_INET && template->need_host ==
                                         LA_NEED_HOST_IP6) ||
                                 (address->sa.ss_family == AF_INET6 &&
@@ -839,6 +845,8 @@ create_command_from_template(const la_command_t *const template,
 {
         assert_command(template); assert_pattern(pattern);
         assert_list(pattern->properties);
+        if (address)
+                assert_address(address);
         la_debug("create_command_from_template(%s)", template->name);
 
         if (!has_correct_address(template, address))
@@ -855,9 +863,12 @@ create_command_from_template(const la_command_t *const template,
 
         convert_both_commands(result);
 
-        assert_command(result);
         return result;
 }
+
+/*
+ * TODO: recognize access from other local addresses
+ */
 
 static
 bool is_local_address(const char *const address)
@@ -871,6 +882,8 @@ create_manual_command_from_template(const la_command_t *const template,
                 const la_address_t *const address, const char *const from)
 {
         assert_command(template);
+        if (address)
+                assert_address(address);
         la_debug("create_manual_command_from_template(%s)", template->name);
 
         if (!has_correct_address(template, address))
@@ -885,10 +898,8 @@ create_manual_command_from_template(const la_command_t *const template,
         result->submission_type = is_local_address(from) ?
                 LA_SUBMISSION_MANUAL : LA_SUBMISSION_REMOTE;
 
-
         convert_both_commands(result);
 
-        assert_command(result);
         return result;
 }
 
@@ -950,7 +961,6 @@ create_template(const char *const name, la_rule_t *const rule,
          * ugly but such is life... */
         result->rule_name = xstrdup(rule->name);
 
-        assert_command(result);
         return result;
 }
 

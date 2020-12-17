@@ -60,6 +60,8 @@ assert_pattern_ffl(const la_pattern_t *pattern, const char *func,
 
 static void add_property(la_pattern_t *const pattern, la_property_t *const property)
 {
+        assert(pattern); assert_list(pattern->properties); assert_property(property);
+
         add_tail(pattern->properties, (kw_node_t *) property);
         if (property->is_host_property)
                 pattern->host_property = property;
@@ -78,8 +80,8 @@ static void add_property(la_pattern_t *const pattern, la_property_t *const prope
 static void
 convert_regex(const char *const string, la_pattern_t *const pattern)
 {
-        assert(string);
-        assert(pattern); assert_list(pattern->properties);
+        assert(string); assert(pattern); assert_rule(pattern->rule);
+        assert_list(pattern->properties);
         la_vdebug("convert_regex(%s)", string);
 
         size_t dst_len = 1000;
@@ -98,6 +100,7 @@ convert_regex(const char *const string, la_pattern_t *const pattern)
                                         src_ptr-string, pattern->rule);
                         if (new_prop)
                         {
+                                assert_property(new_prop);
                                 // If we are here, we've detected a real token
                                 // (and not just "%%").
 
@@ -218,6 +221,7 @@ create_pattern(const char *const string_from_configfile,
 
         char *const full_string = concat(rule->source_group->prefix,
                         string_from_configfile);
+        assert(full_string);
         la_vdebug("full_string=%s", full_string);
 
         la_pattern_t *const result = xmalloc(sizeof *result);
