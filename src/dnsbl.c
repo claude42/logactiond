@@ -35,7 +35,7 @@
 
 static int
 convert_to_dnsbl_hostname_4_sa(const struct sockaddr_in *const si,
-                const char *const dnsbl_domainname, char *hostname)
+                const char *const dnsbl_domainname, char *const hostname)
 {
         assert(si->sin_family == AF_INET);
         uint8_t *b = (uint8_t *) &si->sin_addr;
@@ -45,7 +45,7 @@ convert_to_dnsbl_hostname_4_sa(const struct sockaddr_in *const si,
 
 static int
 convert_to_dnsbl_hostname_6_sa(const struct sockaddr_in6 *const si6,
-                const char *const dnsbl_domainname, char *hostname)
+                const char *const dnsbl_domainname, char *const hostname)
 {
         assert(si6->sin6_family == AF_INET6);
         uint8_t *b = (uint8_t *) &si6->sin6_addr;
@@ -70,7 +70,8 @@ convert_to_dnsbl_hostname_6_sa(const struct sockaddr_in6 *const si6,
  */
 
 static bool
-convert_to_dnsbl_hostname_sa(const struct sockaddr *const sa, const char *const dnsbl_domainname, char *hostname)
+convert_to_dnsbl_hostname_sa(const struct sockaddr *const sa,
+                const char *const dnsbl_domainname, char *const hostname)
 {
         la_debug("convert_to_dnsbl_hostname_sa()");
         assert(sa); assert(dnsbl_domainname); assert(hostname);
@@ -109,18 +110,20 @@ convert_to_dnsbl_hostname_sa(const struct sockaddr *const sa, const char *const 
  */
 
 static bool
-convert_to_dnsbl_hostname(const la_address_t *const address, const char *const dnsbl_domainname, char *hostname)
+convert_to_dnsbl_hostname(const la_address_t *const address,
+                const char *const dnsbl_domainname, char *hostname)
 {
         la_debug("convert_to_dnsbl_hostname()");
+        assert_address(address);
         return convert_to_dnsbl_hostname_sa((struct sockaddr *) &address->sa,
                         dnsbl_domainname, hostname);
 }
 
 static bool
-host_on_dnsbl(const la_address_t *const address, const char *const dnsbl_domainname)
+host_on_dnsbl(const la_address_t *const address,
+                const char *const dnsbl_domainname)
 {
         la_debug("host_on_dnsbl()");
-        assert(address); assert(dnsbl_domainname);
         char hostname[NI_MAXHOST];
         struct addrinfo *ai;
         if (!convert_to_dnsbl_hostname(address, dnsbl_domainname, hostname))
@@ -144,6 +147,7 @@ const char *
 host_on_any_dnsbl(const kw_list_t *const blacklists,
                 const la_address_t *const address)
 {
+        assert_list(blacklists);
         for (const kw_node_t *bl = &blacklists->head;
                         (bl = bl->succ->succ ? bl->succ : NULL);)
         {

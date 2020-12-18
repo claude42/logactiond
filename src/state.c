@@ -91,6 +91,9 @@ save_state(const char *const state_file_name)
                 for (la_command_t *command = first_command_in_queue(); command;
                                 (command = next_command_in_queue(command)))
                 {
+                        if (command->end_time == INT_MAX)
+                                break;
+
                         if (!command->is_template &&
                                         print_add_message(stream, command) < 0)
                         {

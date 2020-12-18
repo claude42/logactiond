@@ -20,7 +20,7 @@ logactiond_cleanup_SOURCES = logactiond-cleanup.c logactiond.h addresses.c addre
 logactiond_cleanup_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\"" -DRUN_DIR="\"$(runstatedir)\"" -DNOWATCH -DNOMONITORING -DONLYCLEANUPCOMMANDS -DNOCRYPTO
 logactiond_cleanup_CFLAGS = $(PTHREAD_CFLAGS)
 
-ladc_SOURCES = ladc.c logactiond.h messages.c messages.h logging.c logging.h misc.c misc.h nodelist.c nodelist.h crypto.c crypto.h ndebug.h
+ladc_SOURCES = ladc.c logactiond.h messages.c messages.h logging.c logging.h misc.c misc.h nodelist.c nodelist.h crypto.c crypto.h ndebug.h addresses.c addresses.h
 ladc_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCLIENTONLY -DRUN_DIR="\"$(runstatedir)\"" 
 ladc_CFLAGS = $(LIBSODIUM_CFLAGS) $(CFLAGS)
 ladc_LDFLAGS = $(LIBSODIUM_LIBS) $(LIBS)

@@ -200,6 +200,8 @@ handle_command_on_trigger_list(la_command_t *const command)
 static bool
 trigger_if_on_dnsbl(la_command_t *command, bool from_trigger_list)
 {
+        assert_command(command);
+
         bool triggered = false;
 
         if  (command->rule->dnsbl_enabled && command->rule->threshold > 1)
