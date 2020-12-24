@@ -28,7 +28,7 @@ PKG_CHECK_MODULES([LIBSODIUM], [libsodium], [
 #PKG_CHECK_MODULES([CHECK], [check >= 0.10.0])
 #PKG_CHECK_MODULES([CHECK], [check >= 0.10.0], [
 #	           AC_DEFINE([WITH_CHECK], [1], [Use check])
-],[true])
+#],[true])
 #PKG_CHECK_MODULES([OPENSSL], [openssl], [
 #	           AC_DEFINE([WITH_OPENSSL], [1], [Use OpenSSL])
 #])
