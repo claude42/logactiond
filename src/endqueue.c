@@ -146,6 +146,29 @@ remove_command_from_queues(la_command_t *command)
         queue_length--;
 }
 
+static int
+cmp_addresses(const void *p1, const void *p2)
+{
+        return adrcmp(((la_command_t *) p1)->address, ((la_command_t *) p2)->address);
+}
+
+static int
+cmp_end_times(const void *p1, const void *p2)
+{
+        return ((la_command_t *) p1)->end_time - ((la_command_t *) p2)->end_time;
+}
+
+static void
+add_command_to_queues(la_command_t *command)
+{
+        assert_command(command); assert(adr_tree); assert(end_time_tree);
+
+        add_to_tree(adr_tree, &command->adr_node, cmp_addresses);
+        add_to_tree(end_time_tree, &command->end_time_node, cmp_end_times);
+
+        queue_length++;
+}
+
 /*
  * Searches for command with given address in end queue. If found, removes it
  * from end queue, triggers it and then frees it.
@@ -306,6 +329,69 @@ next_command_in_queue(la_command_t *const command)
 }
 
 /*
+ * Set end time to current time + duration. Set to INT_MAX in case duration ==
+ * INT_MAX.
+ */
+
+static void
+set_end_time(la_command_t *const command, const time_t manual_end_time)
+{
+        assert_command(command);
+        assert(command->end_string);
+        la_vdebug("set_end_time(%s, %u)", command->end_string, command->duration);
+
+        if (manual_end_time)
+        {
+                command->end_time = manual_end_time;
+        }
+        else if (command->duration == INT_MAX)
+        {
+                command->end_time = INT_MAX;
+        }
+        else
+        {
+                /* If command was activated due to a blacklist listing, use
+                 * rule->dnsbl_duration, thus ignoring the duration parameter
+                 * used when creating the command. Should not be a problem for
+                 * templates, as these always created in configfile.c and never
+                 * via a blacklist. */
+                int duration = command->blacklist ?
+                        command->rule->dnsbl_duration : command->duration;
+
+                if (command->factor != -1)
+                        command->end_time = xtime(NULL) +
+                                (long) duration * command->factor;
+                else
+                        command->end_time = xtime(NULL) + command->rule->meta_max;
+        }
+}
+
+static void
+remove_or_renew(la_command_t *const command)
+{
+        const char *blname = NULL;
+        if (command->blacklist)
+                blname = command_address_on_dnsbl(command);
+
+        if (blname)
+        {
+                remove_tree_node(end_time_tree, &command->end_time_node);
+                set_end_time(command, 0);
+                la_log_verbose(LOG_INFO, "Host: %s still on blacklist %s, action "
+                                "\"%s\" renewed (%us).", command->address->text,
+                                blname, command->name, command->end_time - xtime(NULL));
+                command->submission_type = LA_SUBMISSION_RENEW;
+                add_to_tree(end_time_tree, &command->end_time_node, cmp_end_times);
+        }
+        else
+        {
+                remove_command_from_queues(command);
+                trigger_end_command(command, false);
+                free_command(command);
+        }
+}
+
+/*
  * Consumes next end command from end queue and triggers it (if any) then waits
  * appropriate amount of time.
  *
@@ -351,11 +437,7 @@ consume_end_queue(void *ptr)
                                         /* end_time of next command reached,
                                          * remove it and don't sleep but
                                          * immediately look for more */
-                                        remove_command_from_queues(command);
-
-                                        trigger_end_command(command, false);
-
-                                        free_command(command);
+                                        remove_or_renew(command);
                                 }
 
                         }
@@ -392,56 +474,6 @@ start_end_queue_thread(void)
 
 
 /*
- * Set end time to current time + duration. Set to INT_MAX in case duration ==
- * INT_MAX.
- */
-
-static void
-set_end_time(la_command_t *const command, const time_t manual_end_time)
-{
-        assert_command(command);
-        assert(command->end_string);
-        la_vdebug("set_end_time(%s, %u)", command->end_string, command->duration);
-
-        if (manual_end_time)
-        {
-                command->end_time = manual_end_time;
-        }
-        else if (command->duration == INT_MAX)
-        {
-                command->end_time = INT_MAX;
-        }
-        else
-        {
-                /* If command was activated due to a blacklist listing, use
-                 * rule->dnsbl_duration, thus ignoring the duration parameter
-                 * used when creating the command. Should not be a problem for
-                 * templates, as these always created in configfile.c and never
-                 * via a blacklist. */
-                int duration = command->blacklist ?
-                        command->rule->dnsbl_duration : command->duration;
-
-                if (command->factor != -1)
-                        command->end_time = xtime(NULL) +
-                                (long) duration * command->factor;
-                else
-                        command->end_time = xtime(NULL) + command->rule->meta_max;
-        }
-}
-
-static int
-cmp_addresses(const void *p1, const void *p2)
-{
-        return adrcmp(((la_command_t *) p1)->address, ((la_command_t *) p2)->address);
-}
-
-static int
-cmp_end_times(const void *p1, const void *p2)
-{
-        return ((la_command_t *) p1)->end_time - ((la_command_t *) p2)->end_time;
-}
-
-/*
  * Adds command to correct position in end queue (only if duration is
  * non-negative). Sets end time.
  */
@@ -464,11 +496,7 @@ enqueue_end_command(la_command_t *const end_command, const time_t manual_end_tim
 
         xpthread_mutex_lock(&end_queue_mutex);
 
-                add_to_tree(adr_tree, &end_command->adr_node, cmp_addresses);
-                add_to_tree(end_time_tree, &end_command->end_time_node, cmp_end_times);
-
-                queue_length++;
-
+                add_command_to_queues(end_command);
                 xpthread_cond_signal(&end_queue_condition);
 
         xpthread_mutex_unlock(&end_queue_mutex);

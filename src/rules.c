@@ -34,7 +34,6 @@
 #include "addresses.h"
 #include "commands.h"
 #include "configfile.h"
-#include "dnsbl.h"
 #include "endqueue.h"
 #include "logging.h"
 #include "misc.h"
@@ -206,8 +205,7 @@ trigger_if_on_dnsbl(la_command_t *command, bool from_trigger_list)
 
         if  (command->rule->dnsbl_enabled && command->rule->threshold > 1)
         {
-                const char *blname = host_on_any_dnsbl(
-                                command->rule->blacklists, command->address);
+                const char *blname = command_address_on_dnsbl(command);
                 if (blname)
                 {
                         la_log(LOG_INFO, "Host: %s blacklisted on %s.",

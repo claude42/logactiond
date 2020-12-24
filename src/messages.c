@@ -310,43 +310,6 @@ update_status_monitoring(const char *const buffer)
 #endif /* NOMONITORING */
 }
 
-/* iterates through end_queue, returns array of strings wiht add commands for
- * all non-template commands in end_queue
- */
-
-// TODO
-
-/*
-static char **
-create_add_messages_for_end_queue(void)
-{
-        xpthread_mutex_lock(&end_queue_mutex);
-
-                int queue_length = list_length(end_queue);
-                char **message_array = (char **) xmalloc((queue_length + 1) *
-                                sizeof (char *));
-                int message_array_length = 0;
-
-                for (la_command_t *command = ITERATE_COMMANDS(end_queue);
-                                (command = NEXT_COMMAND(command));)
-                {
-                        if (!command->is_template && command->address)
-
-                        {
-                                assert(message_array_length < queue_length);
-                                message_array[message_array_length++] =
-                                        create_add_message(command->address->text,
-                                                        command->rule_name, NULL,
-                                                        NULL);
-                        }
-                }
-
-        xpthread_mutex_unlock(&end_queue_mutex);
-
-        return message_array;
-}
-*/
-
 static void
 perform_dump(void)
 {

@@ -315,6 +315,8 @@ dump_queue_status(const bool force)
                                 type = "Ma";
                         else if (command->submission_type == LA_SUBMISSION_REMOTE)
                                 type = "Re";
+                        else if (command->submission_type == LA_SUBMISSION_RENEW)
+                                type = "RN";
                         else if (command->blacklist)
                                 type = "BL";
                         else

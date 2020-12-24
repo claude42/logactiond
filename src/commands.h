@@ -45,7 +45,7 @@ typedef enum la_need_host_s { LA_NEED_HOST_NO, LA_NEED_HOST_ANY,
         LA_NEED_HOST_IP4, LA_NEED_HOST_IP6 } la_need_host_t;
 
 typedef enum la_submission_s { LA_SUBMISSION_LOCAL, LA_SUBMISSION_MANUAL,
-        LA_SUBMISSION_REMOTE } la_submission_t;
+        LA_SUBMISSION_REMOTE, LA_SUBMISSION_RENEW } la_submission_t;
 
 typedef struct la_command_s la_command_t;
 struct la_command_s
@@ -117,6 +117,8 @@ la_command_t *create_template(const char *name, la_rule_t *rule,
 void free_command(la_command_t *command);
 
 void free_command_list(kw_list_t *list);
+
+const char *command_address_on_dnsbl(const la_command_t *const command);
 
 #endif /* __commands_h */
 

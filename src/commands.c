@@ -43,6 +43,7 @@
 #include "rules.h"
 #include "sources.h"
 #include "binarytree.h"
+#include "dnsbl.h"
 
 #define ITERATE_META_COMMANDS(COMMANDS) (meta_command_t *) &(COMMANDS)->head
 #define NEXT_META_COMMAND(COMMAND) (meta_command_t *) (COMMAND->node.succ->succ ? COMMAND->node.succ : NULL)
@@ -998,5 +999,11 @@ free_command_list(kw_list_t *const list)
         free(list);
 }
 
+const char *
+command_address_on_dnsbl(const la_command_t *const command)
+{
+        assert_command(command);
+        return host_on_any_dnsbl(command->rule->blacklists, command->address);
+}
 
 /* vim: set autowrite expandtab: */
