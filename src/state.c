@@ -29,6 +29,7 @@
 #include <alloca.h>
 #endif /* HAVE_ALLOCA_H */
 #include <stdlib.h>
+#include <limits.h>
 
 #include "ndebug.h"
 #include "logactiond.h"
