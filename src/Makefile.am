@@ -12,11 +12,11 @@ logactiond_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/
 logactiond_CFLAGS = $(PTHREAD_CFLAGS) $(LIBSODIUM_CFLAGS) $(CFLAGS)
 logactiond_LDFLAGS = $(LIBSODIUM_LIBS) $(LIBS)
 
-logactiond_checkrules_SOURCES = logactiond-checkrules.c logactiond.h addresses.c addresses.h commands.c commands.h configfile.c configfile.h misc.c misc.h nodelist.c nodelist.h patterns.c patterns.h properties.c properties.h rules.c rules.h sources.c sources.h logging.c logging.h ndebug.h binarytree.c binarytree.h
+logactiond_checkrules_SOURCES = logactiond-checkrules.c logactiond.h addresses.c addresses.h commands.c commands.h configfile.c configfile.h misc.c misc.h nodelist.c nodelist.h patterns.c patterns.h properties.c properties.h rules.c rules.h sources.c sources.h logging.c logging.h ndebug.h binarytree.c binarytree.h dnsbl.c dnsbl.h
 logactiond_checkrules_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\"" -DRUN_DIR="\"$(runstatedir)\"" -DNOCOMMANDS -DNOWATCH -DNOMONITORING -DNOCRYPTO
 logactiond_checkrules_CFLAGS = $(PTHREAD_CFLAGS)
 
-logactiond_cleanup_SOURCES = logactiond-cleanup.c logactiond.h addresses.c addresses.h commands.c commands.h configfile.c configfile.h misc.c misc.h nodelist.c nodelist.h patterns.c patterns.h properties.c properties.h rules.c rules.h sources.c sources.h endqueue.c endqueue.h logging.c logging.h ndebug.h binarytree.c binarytree.h
+logactiond_cleanup_SOURCES = logactiond-cleanup.c logactiond.h addresses.c addresses.h commands.c commands.h configfile.c configfile.h misc.c misc.h nodelist.c nodelist.h patterns.c patterns.h properties.c properties.h rules.c rules.h sources.c sources.h endqueue.c endqueue.h logging.c logging.h ndebug.h binarytree.c binarytree.h dnsbl.c dnsbl.h
 logactiond_cleanup_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\"" -DRUN_DIR="\"$(runstatedir)\"" -DNOWATCH -DNOMONITORING -DONLYCLEANUPCOMMANDS -DNOCRYPTO
 logactiond_cleanup_CFLAGS = $(PTHREAD_CFLAGS)
 
