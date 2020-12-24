@@ -1025,9 +1025,7 @@ init_la_config(const char *filename)
         {
                 const char *const error_file =
                         config_error_file(&la_config->config_file);
-#ifndef CLIENTONLY
-                xpthread_mutex_unlock(&config_mutex);
-#endif /* CLIENTONLY */
+
                 if (error_file)
                         la_log(LOG_ERR, "%s:%d - %s!",
                                         config_error_file(&la_config->config_file),
@@ -1062,6 +1060,8 @@ load_la_config(void)
                 load_remote_settings();
 
                 config_destroy(&la_config->config_file);
+
+        la_config->total_clocks = la_config->invocation_count = 0;
 
 #ifndef CLIENTONLY
         xpthread_mutex_unlock(&config_mutex);

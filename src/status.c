@@ -178,12 +178,12 @@ dump_rules(void)
  * Remove all previously created status files
  */
 
-void
-remove_status_files(void *const arg)
+static void
+cleanup_monitoring(void *const arg)
 {
-        la_debug("remove_status_files()");
-        if (!status_monitoring)
-                return;
+        la_debug("cleanup_monitoring()");
+
+        monitoring_thread = 0;
 
         if (remove(HOSTSFILE) && errno != ENOENT)
                 la_log_errno(LOG_ERR, "Can't remove host status file");
@@ -203,11 +203,13 @@ dump_loop(void *const ptr)
 {
         la_debug("dump_loop()");
 
-        pthread_cleanup_push(remove_status_files, NULL);
+        pthread_cleanup_push(cleanup_monitoring, NULL);
+
+        sleep(1);
 
         for (;;)
         {
-                if (shutdown_ongoing)
+                if (shutdown_ongoing || !status_monitoring)
                 {
                         la_debug("Shutting down monitoring thread.");
                         pthread_exit(NULL);
@@ -330,6 +332,14 @@ dump_queue_status(const bool force)
                                         "meta_command: %u\n",
                                         num_elems, num_elems_local,
                                         meta_list_length());
+
+                        const float average_time = la_config->invocation_count ?
+                                la_config->total_clocks / la_config->invocation_count :
+                                0;
+                        fprintf(hosts_file, "\nAverage invocation time: %f, "
+                                        "(invocation count: %u)\n",
+                                        average_time,
+                                        la_config->invocation_count);
                 }
 
         xpthread_mutex_unlock(&end_queue_mutex);

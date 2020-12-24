@@ -83,7 +83,7 @@ struct la_rule_s
 void assert_rule_ffl(const la_rule_t *rule, const char *func, const char *file,
                 int line);
 
-void handle_log_line_for_rule(const la_rule_t *rule, const char *line);
+bool handle_log_line_for_rule(const la_rule_t *rule, const char *line);
 
 void trigger_manual_commands_for_rule(const la_address_t *address, const
                 la_rule_t *rule, time_t end_time, int factor, const char *from,

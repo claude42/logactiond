@@ -78,6 +78,8 @@ void insert_node_before(kw_node_t *ex_node, kw_node_t *new_node);
 
 void remove_node(kw_node_t *node);
 
+void reprioritize_node(kw_node_t *const node, int delta_pri);
+
 void assert_node_ffl(const kw_node_t *node, const char *func, const char *file,
                 int line);
 

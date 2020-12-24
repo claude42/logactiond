@@ -30,6 +30,21 @@
 
 #define PROTOCOL_VERSION '0'
 #define PROTOCOL_VERSION_STR "0"
+#define CMD_ADD '+'
+#define CMD_ADD_STR "+"
+#define CMD_DEL '-'
+#define CMD_FLUSH 'F'
+#define CMD_RELOAD 'R'
+#define CMD_SHUTDOWN 'S'
+#define CMD_SAVE_STATE '>'
+#define CMD_CHANGE_LOG_LEVEL 'L'
+#define CMD_RESET_COUNTS '0'
+#define CMD_SYNC 'X'
+#define CMD_DUMP_STATUS 'D'
+#define CMD_ENABLE_RULE 'Y'
+#define CMD_DISABLE_RULE 'N'
+#define CMD_UPDATE_STATUS_MONITORING 'M'
+
 
 /* Length of unencrypted message*/
 #define MSG_LEN 180
@@ -84,6 +99,8 @@ bool init_save_message(char *buffer);
 bool init_restore_message(char *buffer);
 
 bool init_log_level_message(char *buffer, int new_log_level);
+
+bool init_status_monitoring_message(char *buffer, int new_status);
 
 bool init_reset_counts_message(char *buffer);
 

@@ -75,6 +75,8 @@ extern la_runtype_t run_type;
 
 extern int status_monitoring;
 
+extern const char *saved_state;
+
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
         extern atomic_bool shutdown_ongoing;
 #else /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */

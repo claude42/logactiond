@@ -153,6 +153,40 @@ remove_node(kw_node_t *const node)
 }
 
 void
+reprioritize_node(kw_node_t *const node, int delta_pri)
+{
+        if (!delta_pri)
+                return;
+
+        node->pri += delta_pri;
+
+        if (delta_pri > 0)
+        {
+                while (node->pred->pred)
+                {
+                        kw_node_t *predecessor = node->pred;
+                        if (node->pri <= predecessor->pri)
+                                return;
+
+                        remove_node(node);
+                        insert_node_before(predecessor, node);
+                }
+        }
+        else
+        {
+                while (node->succ->succ)
+                {
+                        kw_node_t *successor = node->succ;
+                        if (node->pri <= successor->pri)
+                                return;
+
+                        remove_node(node);
+                        insert_node_after(successor, node);
+                }
+        }
+}
+
+void
 add_head(kw_list_t *const list, kw_node_t *const node)
 {
         if (!list || !node)

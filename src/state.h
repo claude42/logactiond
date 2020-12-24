@@ -25,7 +25,7 @@
 
 extern pthread_t save_state_thread;
 
-void save_state(const char *state_file_name);
+void save_state(const char *state_file_name, bool verbose);
 
 bool restore_state(const char *state_file_name, const bool create_backup_file);
 

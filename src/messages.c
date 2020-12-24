@@ -77,6 +77,8 @@
  *    enable rule
  *  "0N<rule\0"
  *    disable rule
+ *  "0M<0/1/>\0"
+ *    Turn status monitoring on or off
  *
  * Example structure (with maximum lengths):
  *  "0+<ip-address>/<prefix>,<rule-name>,<end-time-in-secs>,<factor>\0"
@@ -99,7 +101,21 @@
 
 #ifndef CLIENTONLY
 
-#define IS_EMPTY_LINE(message) (*message == '\0' || *message == '#' || *message == '\n')
+static bool
+is_empty_line(const char *const message)
+{
+        assert(message);
+
+        for (const char *ptr = message; *ptr; ptr++)
+        {
+                if (*message == '#')
+                        return true;
+                else if (!isspace(*message))
+                        return false;
+        }
+
+        return true;
+}
 
 /*
  * Parses message and will populate address, rule, end time and factor. You
@@ -116,10 +132,12 @@
  * -  0 empty line or comment, address might not be properly initialized
  * - -1 parse error
  *
- * NB: address will be newly created and must be freed() by the caller, rule
- * will NOT be created and thus must NOT be free()ed!
- *
- * NB2: this function will modify the message buffer!
+ * NB:
+ * - address will be copied to the specified memory address, caller is
+ *   responsible for allocating the necessary amount of memory
+ * - rule will be set to a pointer to a rule - which must NOT be free()d by
+ *   the caller
+ * - yes, this is ugly - but such is life
  */
 
 int
@@ -131,15 +149,16 @@ parse_add_entry_message(const char *const message, la_address_t *const address,
         la_debug("parse_add_entry_message(%s)", message);
 
         /* Ignore empty lines or comments */
-        if (IS_EMPTY_LINE(message))
+        if (is_empty_line(message))
                 return 0;
 
         char parsed_address_str[MSG_ADDRESS_LENGTH + 1];
         char parsed_rule_str[RULE_LENGTH + 1];
         unsigned int parsed_end_time; unsigned int parsed_factor;
-        const int n = sscanf(message, PROTOCOL_VERSION_STR "+%50[^,],%100[^,],%u,%u",
-                        parsed_address_str, parsed_rule_str, &parsed_end_time,
-                        &parsed_factor);
+        const int n = sscanf(message, PROTOCOL_VERSION_STR CMD_ADD_STR
+                        "%50[^,],%100[^,],%u,%u",
+                        parsed_address_str,
+                        parsed_rule_str, &parsed_end_time, &parsed_factor);
 
         if (n < 2)
                 LOG_RETURN(-1, LOG_ERR, "Ignoring illegal command \"%s\"!", message);
@@ -238,7 +257,7 @@ perform_shutdown(void)
 static void
 perform_save(void)
 {
-        save_state(NULL);
+        save_state(NULL, true);
 }
 
 static void
@@ -251,11 +270,44 @@ update_log_level(const char *const buffer)
         errno = 0;
 
         const int new_log_level = strtol(buffer+2, &endptr, 10);
-        if (errno || *endptr != '\0' || new_log_level < 0 || new_log_level > 9)
-                LOG_RETURN(, LOG_ERR, "Cannot change to log level %s!", buffer);
+        if (errno || endptr == buffer+2 || *endptr != '\0' || new_log_level < 0
+                        || new_log_level > 9)
+                LOG_RETURN(, LOG_ERR, "Cannot change to log level %s!", buffer+2);
 
-        la_log (LOG_INFO, "Set log level to %u", new_log_level);
+        la_log(LOG_INFO, "Set log level to %u", new_log_level);
         log_level = new_log_level;
+}
+
+static void
+update_status_monitoring(const char *const buffer)
+{
+#ifndef NOMONITORING
+        assert(buffer);
+
+        char *endptr;
+        errno = 0;
+
+        const int new_status = strtol(buffer+2, &endptr, 10);
+        if (errno || *endptr != '\0' || new_status < 0 || new_status > 2)
+                LOG_RETURN(, LOG_ERR, "Cannot change to status level %s!", buffer+2);
+
+        if (status_monitoring > 0 && new_status == 0)
+        {
+                la_log(LOG_INFO, "Switching off status monitoring.");
+                status_monitoring = new_status;
+        }
+        else if (status_monitoring == 0 && new_status > 0)
+        {
+                la_log(LOG_INFO, "Switching on status monitoring.");
+                status_monitoring = new_status;
+                start_monitoring_thread();
+        }
+        else if (status_monitoring != new_status && new_status != 0)
+        {
+                la_log(LOG_INFO, "Changing status monitoring.");
+                status_monitoring = new_status;
+        }
+#endif /* NOMONITORING */
 }
 
 /* iterates through end_queue, returns array of strings wiht add commands for
@@ -350,41 +402,52 @@ parse_message_trigger_command(const char *const buf, const char *const from)
 
         switch (*(buf+1))
         {
-        case '+':
+        case CMD_ADD:
                 add_entry(buf, from);
                 break;
-        case '-':
+        case CMD_DEL:
                 del_entry(buf);
                 break;
-        case 'F':
+        case CMD_FLUSH:
+                la_log(LOG_INFO, "Received flush command from %s.", from);
                 perform_flush();
                 break;
-        case 'R':
+        case CMD_RELOAD:
+                la_log(LOG_INFO, "Received reload command from %s.", from);
                 perform_reload();
                 break;
-        case 'S':
+        case CMD_SHUTDOWN:
+                la_log(LOG_INFO, "Received shutdown command from %s.", from);
                 perform_shutdown();
                 break;
-        case '>':
+        case CMD_SAVE_STATE:
+                la_log(LOG_INFO, "Received save state command from %s.", from);
                 perform_save();
                 break;
-        case 'L':
+        case CMD_CHANGE_LOG_LEVEL:
+                la_log(LOG_INFO, "Received change log level command from %s.", from);
                 update_log_level(buf);
                 break;
-        case '0':
+        case CMD_RESET_COUNTS:
+                la_log(LOG_INFO, "Received reset counts command from %s.", from);
                 reset_counts();
                 break;
-        case 'X':
+        case CMD_SYNC:
+                la_log(LOG_INFO, "Received sync command from %s.", from);
                 sync_entries(buf, from);
                 break;
-        case 'D':
+        case CMD_DUMP_STATUS:
                 perform_dump();
                 break;
-        case 'Y':
+        case CMD_ENABLE_RULE:
                 enable_rule(buf);
                 break;
-        case 'N':
+        case CMD_DISABLE_RULE:
                 disable_rule(buf);
+                break;
+        case CMD_UPDATE_STATUS_MONITORING:
+                la_log(LOG_INFO, "Received change status monitoring command from %s.", from);
+                update_status_monitoring(buf);
                 break;
         default:
                 la_log(LOG_ERR, "Unknown command: '%c'",
@@ -404,8 +467,9 @@ init_add_message(char *const buffer, const char *const ip,
         /* if factor is specified, end_time must be specified as well */
         assert(!factor || (factor && end_time));
 
-        const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, PROTOCOL_VERSION_STR
-                        "+%s,%s%s%s%s%s", ip, rule,
+        const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN,
+                        "%c%c%s,%s%s%s%s%s", PROTOCOL_VERSION, CMD_ADD, ip,
+                        rule,
                         end_time ? "," : "",
                         end_time ? end_time : "",
                         factor ? "," : "",
@@ -413,8 +477,9 @@ init_add_message(char *const buffer, const char *const ip,
         if (msg_len > MSG_LEN-1)
                 return false;
 
-        /* pad right here, cannot hurt even if we don't encrypt... */
+#ifndef NOCRYPTO
         pad(buffer, msg_len+1);
+#endif /* NOCRYPTO */
 
         return true;
 }
@@ -435,7 +500,7 @@ print_add_message(FILE *const stream, const la_command_t *const command)
 
         la_debug("print_add_message(%s)", command->address->text);
 
-        return fprintf(stream, PROTOCOL_VERSION_STR "+%s,%s,%ld,%d\n",
+        return fprintf(stream, "%c%c%s,%s,%ld,%d\n", PROTOCOL_VERSION, CMD_ADD,
                         command->address->text, command->rule_name,
                         command->end_time, command->factor);
 }
@@ -443,22 +508,26 @@ print_add_message(FILE *const stream, const la_command_t *const command)
 bool
 init_del_message(char *const buffer, const char *const ip)
 {
-        return init_simple_message(buffer, '-', ip);
+        assert(ip);
+
+        return init_simple_message(buffer, CMD_DEL, ip);
 }
 
 bool
 init_simple_message(char *const buffer, const char message_command,
                 const char *const message_payload)
 {
-        assert(isprint(message_command)); assert(message_payload);
+        assert(isprint(message_command));
 
-        const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN, PROTOCOL_VERSION_STR
-                        "%c%s", message_command, message_payload);
+        const int msg_len = snprintf(&buffer[MSG_IDX], MSG_LEN,
+                        "%c%c%s", PROTOCOL_VERSION, message_command,
+                        message_payload ? message_payload : "");
         if (msg_len > MSG_LEN-1)
                 return false;
 
-        /* pad right here, cannot hurt even if we don't encrypt... */
-        pad(buffer, 2+1);
+#ifndef NOCRYPTO
+        pad(buffer, msg_len + 1);
+#endif /* NOCRYPTO */
 
         return true;
 }
@@ -466,25 +535,25 @@ init_simple_message(char *const buffer, const char message_command,
 bool
 init_flush_message(char *const buffer)
 {
-        return init_simple_message(buffer, 'F', "");
+        return init_simple_message(buffer, CMD_FLUSH, NULL);
 }
 
 bool
 init_reload_message(char *const buffer)
 {
-        return init_simple_message(buffer, 'R', "");
+        return init_simple_message(buffer, CMD_RELOAD, NULL);
 }
 
 bool
 init_shutdown_message(char *const buffer)
 {
-        return init_simple_message(buffer, 'S', "");
+        return init_simple_message(buffer, CMD_SHUTDOWN, NULL);
 }
 
 bool
 init_save_message(char *const buffer)
 {
-        return init_simple_message(buffer, '>', "");
+        return init_simple_message(buffer, CMD_SAVE_STATE, NULL);
 }
 
 bool
@@ -495,37 +564,53 @@ init_log_level_message(char *const buffer, const int new_log_level)
         char new_log_level_str[3];
         snprintf(new_log_level_str, 3, "%i", new_log_level);
 
-        return init_simple_message(buffer, 'L', new_log_level_str);
+        return init_simple_message(buffer, CMD_CHANGE_LOG_LEVEL,
+                        new_log_level_str); }
+
+bool
+init_status_monitoring_message(char *const buffer, const int new_status)
+{
+        assert(new_status >= 0); assert(new_status <= 2);
+
+        char new_status_str[3];
+        snprintf(new_status_str, 3, "%i", new_status);
+
+        return init_simple_message(buffer, CMD_UPDATE_STATUS_MONITORING,
+                        new_status_str);
 }
 
 bool
 init_reset_counts_message(char *const buffer)
 {
-        return init_simple_message(buffer, '0', "");
+        return init_simple_message(buffer, CMD_RESET_COUNTS, NULL);
 }
 
 bool
 init_sync_message(char *const buffer, const char *const host)
 {
-        return init_simple_message(buffer, 'X', host ? host : "");
+        return init_simple_message(buffer, CMD_SYNC, host ? host : NULL);
 }
 
 bool
 init_dump_message(char *const buffer)
 {
-        return init_simple_message(buffer, 'D', "");
+        assert(buffer);
+
+        return init_simple_message(buffer, CMD_DUMP_STATUS, NULL);
 }
 
 bool
 init_enable_message(char *const buffer, const char *const rule)
 {
-        return init_simple_message(buffer, 'Y', rule);
+        assert(buffer);
+
+        return init_simple_message(buffer, CMD_ENABLE_RULE, rule);
 }
 
 bool
 init_disable_message(char *const buffer, const char *const rule)
 {
-        return init_simple_message(buffer, 'N', rule);
+        return init_simple_message(buffer, CMD_DISABLE_RULE, rule);
 }
 
 

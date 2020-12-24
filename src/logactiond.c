@@ -94,7 +94,7 @@ trigger_shutdown(int status, int saved_errno)
         shutdown_ongoing = true;
 
         if (saved_state)
-                save_state(saved_state);
+                save_state(saved_state, true);
 
         if (file_watch_thread)
                 pthread_cancel(file_watch_thread);

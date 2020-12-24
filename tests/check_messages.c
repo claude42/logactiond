@@ -47,38 +47,307 @@ const char *const pidfile_name = PIDFILE;
 static bool shutdown_good = false;
 static char shutdown_msg[] = "Shutdown message not set";
 
+char *method_called = NULL;
+la_address_t *test_address = NULL;
+int status_monitoring = 0;
+
+void
+trigger_manual_commands_for_rule(const la_address_t *const address,
+                const  la_rule_t *const rule, const time_t end_time,
+                const int factor, const char *const from,
+                const bool suppress_logging)
+{
+}
+
+int
+remove_and_trigger(la_address_t *const address)
+{
+        test_address = dup_address(address);
+        method_called = "remove_and_trigger";
+}
+
+void
+empty_end_queue(void)
+{
+        method_called = "empty_end_queue";
+}
+
+void
+trigger_reload(void)
+{
+        method_called = "trigger_reload";
+}
+
 void
 trigger_shutdown(int status, int saved_errno)
 {
-        la_log(LOG_INFO, "reached shutdown");
-        if (!shutdown_good)
-                ck_abort_msg(shutdown_msg);
-}
-
-pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-void
-xpthread_mutex_lock(pthread_mutex_t *mutex)
-{
+        method_called = "trigger_shutdown";
 }
 
 void
-xpthread_mutex_unlock(pthread_mutex_t *mutex)
+save_state(const char *const state_file_name, bool verbose)
+{
+        method_called = "save_state";
+}
+
+void
+start_monitoring_thread(void)
+{
+        method_called = "start_monitoring_thread";
+}
+
+void
+dump_queue_status(const bool force)
+{
+        method_called = "dump_queue_status";
+}
+
+void
+dump_rules(void)
+{
+        if (!strcmp(method_called, "dump_queue_status"))
+                method_called = "dump_queue_status, dump_rules";
+}
+
+pthread_mutex_t config_mutex;
+
+void
+pad(char *buffer, const size_t msg_len)
 {
 }
 
-int id_counter = 0;
-
-time_t
-xtime(time_t *tloc)
+la_rule_t *
+find_rule(const char *const rule_name)
 {
-        return 1593272300;
+        if (!strcmp(rule_name, "existingrule"))
+                return (la_rule_t *) 1;
+        else
+                return NULL;
+}
+
+void
+sync_entries(const char *const buffer, const char *const from)
+{
+        method_called = "sync_entries";
+}
+
+void
+reset_counts(void)
+{
+        method_called = "reset_counts";
 }
 
 /* Tests */
 
-START_TEST (bla)
+START_TEST (parse_add_message)
 {
+        la_address_t address;
+        la_rule_t *rule;
+        time_t end_time;
+        int factor;
+
+        /* empty lines */
+        ck_assert_int_eq(parse_add_entry_message("", &address, &rule, NULL,
+                                NULL), 0);
+        ck_assert_int_eq(parse_add_entry_message("\t", &address, &rule, NULL,
+                                NULL), 0);
+        ck_assert_int_eq(parse_add_entry_message("# comment", &address, &rule, NULL,
+                                NULL), 0);
+        ck_assert_int_eq(parse_add_entry_message("      # comment", &address, &rule, NULL,
+                                NULL), 0);
+        ck_assert_int_eq(parse_add_entry_message("\n", &address, &rule, NULL,
+                                NULL), 0);
+        ck_assert_int_eq(parse_add_entry_message("  \n", &address, &rule, NULL,
+                                NULL), 0);
+
+        /* acceptable commands */
+        ck_assert_int_eq(parse_add_entry_message(
+                                "0+1.2.3.4,existingrule,1234567,16", &address,
+                                &rule, NULL, NULL), 1);
+        ck_assert_str_eq(address.text, "1.2.3.4");
+
+        ck_assert_int_eq(parse_add_entry_message(
+                                "0+1.2.3.4,existingrule,1234567,16", &address,
+                                &rule, &end_time, &factor), 1);
+        ck_assert_str_eq(address.text, "1.2.3.4");
+        ck_assert_int_eq(end_time, 1234567);
+        ck_assert_int_eq(factor, 16);
+
+        ck_assert_int_eq(parse_add_entry_message(
+                                "0+fe80::e4e3:55ff:fe76:48e4,existingrule,1234567,16", &address,
+                                &rule, &end_time, &factor), 1);
+        ck_assert_str_eq(address.text, "fe80::e4e3:55ff:fe76:48e4");
+        ck_assert_int_eq(end_time, 1234567);
+        ck_assert_int_eq(factor, 16);
+
+        ck_assert_int_eq(parse_add_entry_message(
+                                "0+1.2.3.4,existingrule", &address,
+                                &rule, &end_time, &factor), 1);
+        ck_assert_str_eq(address.text, "1.2.3.4");
+        ck_assert_int_eq(end_time, 0);
+        ck_assert_int_eq(factor, 0);
+
+        /* errors */
+
+        ck_assert_int_eq(parse_add_entry_message( "0+1.2.3.4,nonexisting",
+                                &address, &rule, &end_time, &factor), -1);
+
+        ck_assert_int_eq(parse_add_entry_message( "0+illegal,nonexisting",
+                                &address, &rule, &end_time, &factor), -1);
+
+        ck_assert_int_eq(parse_add_entry_message(
+                                "X+1.2.3.4,existingrule,1234567,16", &address,
+                                &rule, NULL, NULL), -1);
+        ck_assert_int_eq(parse_add_entry_message(
+                                "0X1.2.3.4,existingrule,1234567,16", &address,
+                                &rule, NULL, NULL), -1);
+        ck_assert_int_eq(parse_add_entry_message( "0+1.2.3.4", &address, &rule,
+                                NULL, NULL), -1);
+}
+END_TEST
+
+START_TEST (parse_xxx_message)
+{
+        /* CMD_DEL */
+        method_called = NULL;
+        test_address = NULL;
+        parse_message_trigger_command("0-1.2.3.4", "9.9.9.9");
+        ck_assert_str_eq(method_called, "remove_and_trigger");
+        ck_assert_str_eq(test_address->text, "1.2.3.4");
+
+        method_called = NULL;
+        test_address = NULL;
+        parse_message_trigger_command("0-illegal", "9.9.9.9");
+        ck_assert_ptr_eq(method_called, NULL);
+        ck_assert_ptr_eq(test_address, NULL);
+
+        /* CMD_FLUSH */
+        method_called = NULL;
+        parse_message_trigger_command("0F", "9.9.9.9");
+        ck_assert_str_eq(method_called, "empty_end_queue");
+
+        /* CMD_RELOAD */
+        method_called = NULL;
+        parse_message_trigger_command("0R", "9.9.9.9");
+        ck_assert_str_eq(method_called, "trigger_reload");
+
+        /* CMD_SHUTDOWN */
+        method_called = NULL;
+        parse_message_trigger_command("0S", "9.9.9.9");
+        ck_assert_str_eq(method_called, "trigger_shutdown");
+
+        /* CMD_SAVE_STATE */
+        method_called = NULL;
+        parse_message_trigger_command("0>", "9.9.9.9");
+        ck_assert_str_eq(method_called, "save_state");
+
+        /* CMD_CHANGE_LOG_LEVEL */
+        log_level = 7;
+        parse_message_trigger_command("0L5", "9.9.9.9");
+        ck_assert_int_eq(log_level, 5);
+        parse_message_trigger_command("0LX", "9.9.9.9");
+        ck_assert_int_eq(log_level, 5);
+        parse_message_trigger_command("0L10", "9.9.9.9");
+        ck_assert_int_eq(log_level, 5);
+        parse_message_trigger_command("0L", "9.9.9.9");
+        ck_assert_int_eq(log_level, 5);
+
+        /* CMD_RESET_COUNTS */
+        method_called = NULL;
+        parse_message_trigger_command("00", "9.9.9.9");
+        ck_assert_str_eq(method_called, "reset_counts");
+
+        /* CMD_SYNC */
+        method_called = NULL;
+        parse_message_trigger_command("0X", "9.9.9.9");
+        ck_assert_str_eq(method_called, "sync_entries");
+
+        /* CMD_DUMP_STATUS */
+        method_called = NULL;
+        parse_message_trigger_command("0D", "9.9.9.9");
+        ck_assert_str_eq(method_called, "dump_queue_status, dump_rules");
+
+        /* CMD_ENABLE_RULE */
+        /* CMD_DISABLE_RULE */
+        /* TODO! */
+
+        /* CMD_UPDATE_STATUS_MONITORING */
+        status_monitoring = 0;
+        method_called = NULL;
+        parse_message_trigger_command("0M1", "9.9.9.9");
+        ck_assert_int_eq(status_monitoring, 1);
+        ck_assert_str_eq(method_called, "start_monitoring_thread");
+        method_called = NULL;
+        parse_message_trigger_command("0M2", "9.9.9.9");
+        ck_assert_int_eq(status_monitoring, 2);
+        ck_assert_ptr_eq(method_called, NULL);
+        method_called = NULL;
+        parse_message_trigger_command("0M0", "9.9.9.9");
+        ck_assert_int_eq(status_monitoring, 0);
+        ck_assert_ptr_eq(method_called, NULL);
+
+        /* Errors */
+
+        method_called = NULL;
+        parse_message_trigger_command("XF", "9.9.9.9");
+        ck_assert_ptr_eq(method_called, NULL);
+        method_called = NULL;
+        parse_message_trigger_command("0ä", "9.9.9.9");
+        ck_assert_ptr_eq(method_called, NULL);
+
+}
+
+END_TEST
+START_TEST (init_message)
+{
+        char *const m = alloca(TOTAL_MSG_LEN);
+
+        ck_assert(init_add_message(m, "1.2.3.4", "sshd", NULL, NULL));
+        ck_assert_str_eq(m, "0+1.2.3.4,sshd");
+
+        ck_assert(init_add_message(m, "fe80::e4e3:55ff:fe76:48e4", "dovecot",
+                                "12345", "16"));
+        ck_assert_str_eq(m, "0+fe80::e4e3:55ff:fe76:48e4,dovecot,12345,16");
+
+        ck_assert(init_del_message(m, "1.2.3.4"));
+        ck_assert_str_eq(m, "0-1.2.3.4");
+
+        ck_assert(init_flush_message(m));
+        ck_assert_str_eq(m, "0F");
+
+        ck_assert(init_reload_message(m));
+        ck_assert_str_eq(m, "0R");
+
+        ck_assert(init_shutdown_message(m));
+        ck_assert_str_eq(m, "0S");
+
+        ck_assert(init_save_message(m));
+        ck_assert_str_eq(m, "0>");
+
+        ck_assert(init_log_level_message(m, 1));
+        ck_assert_str_eq(m, "0L1");
+
+        ck_assert(init_status_monitoring_message(m, 2));
+        ck_assert_str_eq(m, "0M2");
+
+        ck_assert(init_reset_counts_message(m));
+        ck_assert_str_eq(m, "00");
+
+        ck_assert(init_sync_message(m, NULL));
+        ck_assert_str_eq(m, "0X");
+
+        ck_assert(init_sync_message(m, "foo.bar.com"));
+        ck_assert_str_eq(m, "0Xfoo.bar.com");
+
+        ck_assert(init_dump_message(m));
+        ck_assert_str_eq(m, "0D");
+
+        ck_assert(init_enable_message(m, "sshd"));
+        ck_assert_str_eq(m, "0Ysshd");
+
+        ck_assert(init_disable_message(m, "postfix-sasl"));
+        ck_assert_str_eq(m, "0Npostfix-sasl");
+
 }
 END_TEST
 
@@ -88,7 +357,9 @@ Suite *crypto_suite(void)
 
         /* Core test case */
         TCase *tc_core = tcase_create("Core");
-        tcase_add_test(tc_core, bla);
+        tcase_add_test(tc_core, parse_add_message);
+        tcase_add_test(tc_core, parse_xxx_message);
+        tcase_add_test(tc_core, init_message);
         suite_add_tcase(s, tc_core);
 
         return s;

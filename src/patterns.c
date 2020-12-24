@@ -226,6 +226,7 @@ create_pattern(const char *const string_from_configfile,
 
         la_pattern_t *const result = xmalloc(sizeof *result);
 
+        result->node.pri = 0;
         result->num = num;
         result->rule = rule;
         result->host_property = NULL;

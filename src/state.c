@@ -63,20 +63,20 @@ move_state_file_to_backup(const char *const state_file_name)
 }
 
 void
-save_state(const char *const state_file_name)
+save_state(const char *const state_file_name, bool verbose)
 {
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
-        assert(state_file_name);
-        la_debug("save_state(%s)", state_file_name);
+        la_debug("save_state()");
 
-        if (!queue_length == 0)
+        if (!queue_length)
                 return;
 
         const char *const real_state_file_name = state_file_name ?
-                state_file_name : STATE_DIR "/" STATE_FILE;
+                state_file_name : saved_state;
 
-        la_log_verbose(LOG_INFO, "Dumping current state to \"%s\"",
-                        real_state_file_name);
+        if (log_verbose || verbose)
+                la_log(LOG_INFO, "Dumping current state to \"%s\"",
+                                real_state_file_name);
 
         FILE *const stream = fopen(real_state_file_name, "w");
         if (!stream)
@@ -200,7 +200,7 @@ periodically_save_state(void *const ptr)
                         pthread_exit(NULL);
                 }
 
-                save_state((char *) ptr);
+                save_state((char *) ptr, false);
         }
 }
 

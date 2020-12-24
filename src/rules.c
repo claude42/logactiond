@@ -326,7 +326,7 @@ trigger_all_commands(la_pattern_t *const pattern)
         la_debug("trigger_all_commands(%s, %s)", pattern->rule->name, pattern->string);
 
         const char *host = NULL;
-        la_address_t address;
+        la_address_t address = { 0 };
         if (pattern->host_property)
         {
                 host = pattern->host_property->value;
@@ -340,7 +340,8 @@ trigger_all_commands(la_pattern_t *const pattern)
         /* Do nothing if on ignore list */
         assert(la_config);
         if (address_on_list(&address, la_config->ignore_addresses))
-                LOG_RETURN_VERBOSE(, LOG_INFO, "Host: %s, always ignored.", host);
+                LOG_RETURN_VERBOSE(, LOG_INFO,
+                                "Host: %s, always ignored.", host);
 
         increase_detection_count(pattern);
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
@@ -348,7 +349,7 @@ trigger_all_commands(la_pattern_t *const pattern)
         for (la_command_t *template =
                         ITERATE_COMMANDS(pattern->rule->begin_commands);
                         (template = NEXT_COMMAND(template));)
-                trigger_single_command(pattern, &address, template);
+                trigger_single_command(pattern, host ? &address : NULL, template);
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
 }
 
@@ -419,7 +420,7 @@ clear_property_values(const kw_list_t *const property_list)
  * patterns. Does trigger_all_commands() for those that match.
  */
 
-void
+bool
 handle_log_line_for_rule(const la_rule_t *const rule, const char *const line)
 {
         assert_rule(rule); assert(line);
@@ -439,9 +440,13 @@ handle_log_line_for_rule(const la_rule_t *const rule, const char *const line)
                                 la_log(LOG_ERR, "Matched property too long, "
                                                 "log line ignored");
                         clear_property_values(pattern->properties);
-                        return;
+
+                        reprioritize_node((kw_node_t *) pattern, 1);
+                        return true;
                 }
         }
+
+        return false;
 }
 
 /*
@@ -473,6 +478,7 @@ create_rule(const bool enabled, const char *const name,
 
         la_rule_t *const result = xmalloc(sizeof *result);
 
+        result->node.pri = 0;
         result->enabled = enabled;
 
         if (xstrlen(name) >= RULE_LENGTH)

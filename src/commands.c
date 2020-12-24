@@ -484,12 +484,15 @@ check_meta_list(const la_command_t *const command, const int set_factor)
                         const int new_factor = set_factor ? set_factor :
                                 meta_command->factor *
                                 command->rule->meta_factor;
-                        if (command->duration * new_factor <
+                        const int duration = command->blacklist ?
+                                command->rule->dnsbl_duration :
+                                command->duration;
+                        if (duration * new_factor <
                                         command->rule->meta_max)
                         {
                                 meta_command->factor = new_factor;
                                 meta_command->meta_start_time = now +
-                                        (long) command->duration * new_factor;
+                                        (long) duration * new_factor;
                         }
                         else
                         {
@@ -642,18 +645,6 @@ trigger_command(la_command_t *const command)
         if (run_type == LA_UTIL_FOREGROUND)
                 return;
 
-        /* Don't trigger command if another command (no matter from which
-         * template) is still active */
-        if (command->address)
-        {
-                const la_command_t *const tmp = find_end_command(command->address);
-                if (tmp)
-                        LOG_RETURN_VERBOSE(, LOG_INFO, "Host: %s, ignored, action "
-                                        "\"%s\" already active (triggered by "
-                                        "rule \"%s\").", tmp->address->text,
-                                tmp->name, tmp->rule_name);
-        }
-
         if (!command->is_template)
         {
                 if (command->rule->meta_enabled)
@@ -673,8 +664,8 @@ trigger_command(la_command_t *const command)
 void
 trigger_command_from_blacklist(la_command_t *const command)
 {
-        trigger_command(command);
         command->blacklist = true;
+        trigger_command(command);
 }
 
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */

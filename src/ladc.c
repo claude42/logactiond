@@ -63,6 +63,8 @@ print_usage(void)
                         "Usage: ladc [-h host][-p password][-s port] "
                         "(no|v)?debug\n"
                         "Usage: ladc [-h host][-p password][-s port] "
+                        "(no|v)?monitoring\n"
+                        "Usage: ladc [-h host][-p password][-s port] "
                         "reset-counts\n"
                         "Usage: ladc [-h host][-p password][-s port] "
                         "save\n"
@@ -71,7 +73,7 @@ print_usage(void)
                         "Usage: ladc [-h host][-p password][-s port] "
                         "dump\n"
                         "Usage: ladc [-h host][-p password][-s port] "
-                        "(en|dis)able \n", stderr);
+                        "(en|dis)able [rule]\n", stderr);
 }
 
 static void
@@ -267,6 +269,18 @@ main(int argc, char *argv[])
         else if (!strcmp(command, "nodebug"))
         {
                 success = init_log_level_message(message, LOG_INFO+1);
+        }
+        else if (!strcmp(command, "monitoring"))
+        {
+                success = init_status_monitoring_message(message, 1);
+        }
+        else if (!strcmp(command, "vmonitoring"))
+        {
+                success = init_status_monitoring_message(message, 2);
+        }
+        else if (!strcmp(command, "nomonitoring"))
+        {
+                success = init_status_monitoring_message(message, 0);
         }
         else if (!strcmp(command, "reset-counts"))
         {

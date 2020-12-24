@@ -120,6 +120,8 @@ typedef struct la_config_s
         bool remote_secret_changed;
         char *remote_bind;
         int remote_port;
+        int total_clocks;
+        int invocation_count;
 } la_config_t;
 
 extern la_config_t *la_config;
