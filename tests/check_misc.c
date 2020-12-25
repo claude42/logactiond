@@ -70,6 +70,8 @@ START_TEST (pid)
         ck_assert(fscanf(stream, "%u", &pid) ==  1);
         ck_assert_int_eq(pid, getpid());
 
+        ck_assert(check_pidfile());
+
         remove_pidfile();
         ck_assert(!fopen(pidfile_name, "r"));
 

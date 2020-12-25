@@ -92,6 +92,9 @@ START_TEST (check_trees)
         ck_assert(!n);
         ck_assert_ptr_eq(tree->last, &fuenf);
 
+        ck_assert_int_eq(node_depth(&fuenf), 1);
+        ck_assert_int_eq(tree_depth(tree), 1);
+
         kw_tree_node_t zwei = { .payload = "2" };
         add_to_tree(tree, &zwei, cmp);
 
@@ -106,6 +109,10 @@ START_TEST (check_trees)
         n = next_node_in_tree(n);
         ck_assert(!n);
         ck_assert_ptr_eq(tree->last, &fuenf);
+
+        ck_assert_int_eq(node_depth(&fuenf), 1);
+        ck_assert_int_eq(node_depth(&zwei), 2);
+        ck_assert_int_eq(tree_depth(tree), 2);
 
         kw_tree_node_t drei = { .payload = "3" };
         add_to_tree(tree, &drei, cmp);
@@ -124,6 +131,11 @@ START_TEST (check_trees)
         n = next_node_in_tree(n);
         ck_assert(!n);
         ck_assert_ptr_eq(tree->last, &fuenf);
+
+        ck_assert_int_eq(node_depth(&fuenf), 1);
+        ck_assert_int_eq(node_depth(&zwei), 2);
+        ck_assert_int_eq(node_depth(&drei), 3);
+        ck_assert_int_eq(tree_depth(tree), 3);
 
         kw_tree_node_t neun = { .payload = "9" };
         add_to_tree(tree, &neun, cmp);
@@ -145,6 +157,12 @@ START_TEST (check_trees)
         n = next_node_in_tree(n);
         ck_assert(!n);
         ck_assert_ptr_eq(tree->last, &neun);
+
+        ck_assert_int_eq(node_depth(&fuenf), 1);
+        ck_assert_int_eq(node_depth(&zwei), 2);
+        ck_assert_int_eq(node_depth(&drei), 3);
+        ck_assert_int_eq(node_depth(&neun), 2);
+        ck_assert_int_eq(tree_depth(tree), 3);
 
         ck_assert(find_tree_node(tree, "2", cmp) == &zwei);
         ck_assert(find_tree_node(tree, "3", cmp) == &drei);

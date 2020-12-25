@@ -38,6 +38,7 @@
 /* Parameters: address, type, factor, timedelta, unit, rule name, command name
  */
 #define HOSTS_LINE "%-43.43s %s %2d %2ld%c  %-13.13s %-13.13s\n"
+#define HOSTS_LINE_V "%-43.43s %s %2d %2ld%c  %-13.13s %-13.13s (%u,%u)\n"
 
 extern pthread_t monitoring_thread;
 

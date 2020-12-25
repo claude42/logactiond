@@ -54,23 +54,21 @@ void assert_tree_node_ffl(const kw_tree_node_t *node, const char *func,
 void assert_tree_ffl(const kw_tree_t *tree, const char *func, const char *file,
                 int line);
 
-kw_tree_node_t *remove_tree_node(kw_tree_t *const tree,
-                kw_tree_node_t *const node);
+kw_tree_node_t *remove_tree_node(kw_tree_t *tree, kw_tree_node_t *node);
 
-kw_tree_node_t *find_tree_node(kw_tree_t *const tree,
-                const void *const payload,
+kw_tree_node_t *find_tree_node(kw_tree_t *tree, const void *payload,
                 int (*compar)(const void *, const void *));
 
-kw_tree_node_t *first_tree_node(const kw_tree_t *const tree);
+kw_tree_node_t *first_tree_node(const kw_tree_t *tree);
 
-kw_tree_node_t *last_tree_node(const kw_tree_t *const tree);
+kw_tree_node_t *last_tree_node(const kw_tree_t *tree);
 
-kw_tree_node_t *next_node_in_tree(kw_tree_node_t *const node);
+kw_tree_node_t *next_node_in_tree(kw_tree_node_t *node);
 
 void add_to_tree(kw_tree_t *node_in_tree, kw_tree_node_t *new_node,
                 int (*compar)(const void *, const void *));
 
-void empty_tree(kw_tree_t *const tree, void (*delete_payload)(const void *),
+void empty_tree(kw_tree_t *tree, void (*delete_payload)(const void *),
                 bool free_nodes);
 
 kw_tree_t *create_tree(void);
@@ -78,6 +76,10 @@ kw_tree_t *create_tree(void);
 void free_tree(kw_tree_t *tree);
 
 bool is_empty(kw_tree_t *tree);
+
+int node_depth(const kw_tree_node_t *node);
+
+int tree_depth(const kw_tree_t *tree);
 
 #endif /* __binarytree_h */
 

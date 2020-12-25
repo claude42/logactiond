@@ -276,6 +276,8 @@ dump_queue_status(const bool force)
 
         int num_elems = 0;
         int num_elems_local = 0;
+        int max_depth1 = 0;
+        int max_depth2 = 0;
 
         xpthread_mutex_lock(&end_queue_mutex);
 
@@ -304,6 +306,12 @@ dump_queue_status(const bool force)
                         /* Second build host table */
                         const char *const adr = command->address ?
                                 command->address->text : "-";
+                        const int depth1 = node_depth(&command->adr_node);
+                        if (depth1 > max_depth1)
+                                max_depth1 = depth1;
+                        const int depth2 = node_depth(&command->end_time_node);
+                        if (depth2 > max_depth2)
+                                max_depth2 = depth2;
 
                         time_t timedelta;
                         char unit;
@@ -322,10 +330,16 @@ dump_queue_status(const bool force)
                         else
                                 type = "  ";
 
-                        fprintf(hosts_file, HOSTS_LINE,
-                                        adr, type, command->factor, timedelta,
-                                        unit, command->rule_name,
-                                        command->name);
+                        if (status_monitoring >= 2)
+                                fprintf(hosts_file, HOSTS_LINE_V, adr, type,
+                                                command->factor, timedelta,
+                                                unit, command->rule_name,
+                                                command->name, depth1, depth2);
+                        else
+                                fprintf(hosts_file, HOSTS_LINE, adr, type,
+                                                command->factor, timedelta,
+                                                unit, command->rule_name,
+                                                command->name);
                 }
 
                 if (status_monitoring >= 2 || force)
@@ -338,10 +352,12 @@ dump_queue_status(const bool force)
                         const float average_time = la_config->invocation_count ?
                                 la_config->total_clocks / la_config->invocation_count :
                                 0;
-                        fprintf(hosts_file, "\nAverage invocation time: %f, "
+                        fprintf(hosts_file, "Average invocation time: %f, "
                                         "(invocation count: %u)\n",
                                         average_time,
                                         la_config->invocation_count);
+                        fprintf(hosts_file, "adr_tree depth=%u, end_time_tree depth=%u\n",
+                                        max_depth1, max_depth2);
                 }
 
         xpthread_mutex_unlock(&end_queue_mutex);

@@ -480,6 +480,36 @@ is_empty(kw_tree_t *tree)
         return !(tree && tree->root);
 }
 
+int
+node_depth(const kw_tree_node_t *const node)
+{
+        assert_tree_node(node);
+
+        int result = 1;
+
+        for (const kw_tree_node_t *tmp = node; tmp->parent;
+                        tmp = tmp->parent)
+                result++;
+
+        return result;
+}
+
+int
+tree_depth(const kw_tree_t *const tree)
+{
+        int max_depth = 0;
+        kw_tree_node_t *node = first_tree_node(tree);
+
+        for (kw_tree_node_t *node = first_tree_node(tree);
+                        node; node = next_node_in_tree(node))
+        {
+                const int depth = node_depth(node);
+                if (depth > max_depth)
+                        max_depth = depth;
+        }
+
+        return max_depth;
+}
 
 
 

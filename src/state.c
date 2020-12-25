@@ -63,6 +63,27 @@ move_state_file_to_backup(const char *const state_file_name)
         return true;
 }
 
+static bool
+recursively_save_state(FILE *const stream, const kw_tree_node_t *const node)
+{
+        if (node)
+        {
+                const la_command_t *const command = (la_command_t *)
+                        node->payload;
+                if (command->end_time != INT_MAX && !command->is_template)
+                {
+                        if (print_add_message(stream, command) < 0)
+                                return false;
+                }
+                if (!recursively_save_state(stream, node->left))
+                        return false;
+                if (!recursively_save_state(stream, node->right))
+                        return false;
+        }
+
+        return true;
+}
+
 void
 save_state(const char *const state_file_name, bool verbose)
 {
@@ -89,19 +110,8 @@ save_state(const char *const state_file_name, bool verbose)
 
         xpthread_mutex_lock(&end_queue_mutex);
 
-                for (la_command_t *command = first_command_in_queue(); command;
-                                (command = next_command_in_queue(command)))
-                {
-                        if (command->end_time == INT_MAX)
-                                break;
-
-                        if (!command->is_template &&
-                                        print_add_message(stream, command) < 0)
-                        {
-                                la_log_errno(LOG_ERR, "Failure to dump queue.");
-                                break;
-                        }
-                }
+                if (!recursively_save_state(stream, adr_tree->root))
+                        la_log_errno(LOG_ERR, "Failure to dump queue.");
 
         xpthread_mutex_unlock(&end_queue_mutex);
 
