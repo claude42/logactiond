@@ -498,7 +498,6 @@ int
 tree_depth(const kw_tree_t *const tree)
 {
         int max_depth = 0;
-        kw_tree_node_t *node = first_tree_node(tree);
 
         for (kw_tree_node_t *node = first_tree_node(tree);
                         node; node = next_node_in_tree(node))
