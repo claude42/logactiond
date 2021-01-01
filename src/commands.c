@@ -457,7 +457,7 @@ check_meta_list(const la_command_t *const command, const int set_factor)
                         command->duration);
 
         if (!meta_list)
-                meta_list = xcreate_list();
+                meta_list = create_list();
 
         meta_command_t *meta_command = find_on_meta_list(command);
 
@@ -590,18 +590,22 @@ trigger_manual_command(const la_address_t *const address,
                                 "is in the past.");
 
         assert(la_config);
-        if (address_on_list(address, la_config->ignore_addresses))
+        la_address_t *tmp_addr = address_on_list(address, la_config->ignore_addresses);
+        if (tmp_addr)
+        {
+                reprioritize_node((kw_node_t *) tmp_addr, 1);
                 LOG_RETURN(, LOG_INFO, "Host: %s, manual trigger ignored.", address->text);
+        }
 
-        const la_command_t *const tmp = find_end_command(address);
-        if (tmp)
+        const la_command_t *const tmp_cmd = find_end_command(address);
+        if (tmp_cmd)
                 LOG_RETURN_VERBOSE(, LOG_INFO, "Host: %s, ignored, action \"%s\" "
                                 "%s%s already "
                                 "active (triggered by rule \"%s\").",
-                                address->text, tmp->name, 
+                                address->text, tmp_cmd->name, 
                                 from ? "by host " : "",
                                 from ? from : "",
-                                tmp->rule_name);
+                                tmp_cmd->rule_name);
 
         la_command_t *const command = create_manual_command_from_template(template, 
                         address, from);
@@ -928,12 +932,12 @@ create_template(const char *const name, la_rule_t *const rule,
         result->end_time_node.payload = result;
 
         result->begin_string = xstrdup(begin_string);
-        result->begin_properties = xcreate_list();
+        result->begin_properties = create_list();
         result->n_begin_properties =
                 scan_action_tokens(result->begin_properties, begin_string);
 
         result->end_string = xstrdup(end_string);
-        result->end_properties = xcreate_list();
+        result->end_properties = create_list();
         result->n_end_properties = end_string ?
                 scan_action_tokens(result->end_properties, end_string) : 0;
 

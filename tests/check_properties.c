@@ -89,7 +89,7 @@ END_TEST
 
 START_TEST (check_properties)
 {
-        kw_list_t *l1 = xcreate_list();
+        kw_list_t *l1 = create_list();
         la_property_t *p1 = create_property_from_config("fOo", "bAr");
         ck_assert(p1);
         ck_assert_str_eq(p1->name, "foo");

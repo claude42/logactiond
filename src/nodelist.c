@@ -18,6 +18,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "ndebug.h"
 #include "logging.h"
@@ -27,6 +28,8 @@ void
 assert_node_ffl(const kw_node_t *node, const char *func, const char *file,
                 int line)
 {
+        if (!node)
+                die_hard("%s:%u: %s: Assertion 'node' failed.", file, line, func);
         if (!(node->succ || node->pred))
                 die_hard("%s:%u: %s: Assertion 'node->succ || node->pred' failed.",
                                 file, line, func);
@@ -58,9 +61,7 @@ assert_list_ffl(const kw_list_t *list, const char *func, const char *file,
                                 "!list->tail.succ' failed.", file, line, func);
 
         for (kw_node_t *node = list->head.succ; node->succ; node = node->succ)
-        {
                 assert_node_ffl(node, func, file, line);
-        }
 }
 
 
@@ -71,19 +72,12 @@ assert_list_ffl(const kw_list_t *list, const char *func, const char *file,
 kw_list_t *
 create_list(void)
 {
-        kw_list_t *const result = malloc(sizeof *result);
-        if (!result)
-        {
-                fprintf(stderr, "Memory exhausted\n");
-                exit(EXIT_FAILURE);
-        }
+        kw_list_t *const result = xmalloc(sizeof *result);
 
         result->head.succ = (kw_node_t *) &result->tail;
         result->head.pred = NULL;
         result->tail.succ = NULL;
         result->tail.pred = (kw_node_t *) &result->head;
-
-        assert_list(result);
 
         return result;
 }
@@ -98,21 +92,16 @@ insert_node_after(kw_node_t *ex_node, kw_node_t *const new_node)
 {
         if (!ex_node || !new_node)
                 return;
-
         assert_node(ex_node);
 
         /* if ex_node is the list header, insert at end of list */
         if (!ex_node->succ)
                 ex_node = ex_node->pred;
 
-        kw_node_t *const succ = ex_node->succ;
-
         new_node->pred = ex_node;
         new_node->succ = ex_node->succ;
         ex_node->succ->pred = new_node;
         ex_node->succ = new_node;
-
-        assert_node(new_node); assert_node(ex_node); assert_node(succ);
 }
 
 
@@ -121,35 +110,28 @@ insert_node_before(kw_node_t *ex_node, kw_node_t *const new_node)
 {
         if (!ex_node || !new_node)
                 return;
-
         assert_node(ex_node);
 
         /* if ex_node is the list header, insert at beginning of list */
         if (!ex_node->pred)
                 ex_node = ex_node->succ;
 
-        kw_node_t *const pred = ex_node->pred;
-
         new_node->pred = ex_node->pred;
         new_node->succ = ex_node;
         ex_node->pred->succ = new_node;
         ex_node->pred = new_node;
-
-        assert_node(new_node); assert_node(ex_node); assert_node(pred);
 }
 
 void
 remove_node(kw_node_t *const node)
 {
-        if (!node->pred || !node->succ)
+        if (!node || !node->pred || !node->succ)
                 return;
 
-        assert_node(node);
+        assert_node(node); assert(is_list_node(node));
 
         node->pred->succ = node->succ;
         node->succ->pred = node->pred;
-
-        assert_node(node->pred); assert_node(node->succ);
 }
 
 void
@@ -158,32 +140,53 @@ reprioritize_node(kw_node_t *const node, int delta_pri)
         if (!delta_pri)
                 return;
 
+        assert_node(node); assert(is_list_node(node));
         node->pri += delta_pri;
 
-        if (delta_pri > 0)
-        {
-                while (node->pred->pred)
-                {
-                        kw_node_t *predecessor = node->pred;
-                        if (node->pri <= predecessor->pri)
-                                return;
 
-                        remove_node(node);
-                        insert_node_before(predecessor, node);
-                }
-        }
-        else
+        /* When delta_pri > 0 reorder only if new priority is bigger than
+         * previous node (and previos node is not the head node). Respectively
+         * the other way round... */
+        if (delta_pri > 0 && node->pred->pred && node->pri > node->pred->pri)
         {
-                while (node->succ->succ)
-                {
-                        kw_node_t *successor = node->succ;
-                        if (node->pri <= successor->pri)
-                                return;
+                remove_node(node);
+                kw_node_t *tmp = node->pred;
 
-                        remove_node(node);
-                        insert_node_after(successor, node);
-                }
+                while (tmp->pred && node->pri > tmp->pri)
+                        tmp = tmp->pred;
+
+                insert_node_after(tmp, node);
         }
+        else if (delta_pri < 0 && node->succ->succ && node->pri < node->succ->pri)
+        {
+                remove_node(node);
+                kw_node_t *tmp = node->succ;
+
+                while (tmp->succ && node->pri < tmp->pri)
+                        tmp = tmp->succ;
+
+                insert_node_before(tmp, node);
+        }
+}
+
+void
+move_to_head(kw_node_t *const node)
+{
+        if (!node)
+                return;
+
+        assert_node(node); assert(is_list_node(node));
+
+        if (!node->pred->pred)
+                return;
+
+        remove_node(node);
+        kw_node_t *tmp = node->pred;
+        for (tmp = node->pred; tmp->pred->pred; (tmp = tmp->pred))
+                ;
+
+        insert_node_before(tmp, node);
+        node->pri = tmp->pri + 1;
 }
 
 void
@@ -198,8 +201,6 @@ add_head(kw_list_t *const list, kw_node_t *const node)
         node->pred = (kw_node_t *) &list->head;
         list->head.succ = node;
         node->succ->pred = node;
-
-        assert_list(list); assert_node(node);
 }
 
 void
@@ -214,32 +215,39 @@ add_tail(kw_list_t *const list, kw_node_t *const node)
         node->pred = list->tail.pred;
         list->tail.pred = node;
         node->pred->succ = node;
-
-        assert_list(list); assert_node(node);
 }
 
 kw_node_t *
 get_head(const kw_list_t *const list)
 {
-        /* TODO: something's wrong here */
+        if (!list)
+                return NULL;
+        assert_list(list);
+
         if (is_list_empty(list))
                 return NULL;
-
-        return list->head.succ;
+        else
+                return list->head.succ;
 }
 
 kw_node_t *
 get_tail(const kw_list_t *const list)
 {
+        if (!list)
+                return NULL;
+        assert_list(list);
+
         if (is_list_empty(list))
                 return NULL;
-
-        return list->tail.pred;
+        else
+                return list->tail.pred;
 }
 
 kw_node_t *
 rem_head(kw_list_t *const list)
 {
+        if (!list)
+                return NULL;
         assert_list(list);
 
         if (is_list_empty(list))
@@ -249,15 +257,14 @@ rem_head(kw_list_t *const list)
         list->head.succ = result->succ;
         result->succ->pred = (kw_node_t *) &list->head;
 
-        assert_list(list);
-
         return result;
-
 }
 
 kw_node_t *
 rem_tail(kw_list_t *const list)
 {
+        if (!list)
+                return NULL;
         assert_list(list);
 
         if (is_list_empty(list))
@@ -267,14 +274,14 @@ rem_tail(kw_list_t *const list)
         list->tail.pred = result->pred;
         result->pred->succ = (kw_node_t *) &list->tail;
 
-        assert_list(list);
-
         return result;
 }
 
 kw_node_t *
 get_list_iterator(const kw_list_t *const list)
 {
+        if (!list)
+                return NULL;
         assert_list(list);
 
         return (kw_node_t *) &list->head;
@@ -284,15 +291,16 @@ kw_node_t *
 get_next_node(kw_node_t **const iterator)
 {
         assert_node(*iterator);
-        
-        *iterator = (*iterator)->succ;
 
-        assert_node(*iterator);
+        if (!(*iterator)->succ)
+                return NULL;
+
+        *iterator = (*iterator)->succ;
 
         if ((*iterator)->succ == NULL)
                 return NULL;
-
-        return *iterator;
+        else
+                return *iterator;
 }
 
 void
@@ -317,94 +325,18 @@ free_list(kw_list_t *const list)
 int
 list_length(const kw_list_t *const list)
 {
+        if (!list)
+                return 0;
         assert_list(list);
 
-        const kw_node_t *node = list->head.succ;
         int result = 0;
 
-        while (node->succ)
-        {
+        for (kw_node_t *node = list->head.succ; node->succ;
+                        (node = node->succ))
                 result++;
-                node = node->succ;
-        }
 
         return result;
 }
-
-/*
- * &mylist->head = pointer auf list header
- * mylist->head.succ = pointer auf next element (list footer bei empty list)
- * mylist->head.pred = null
- * &mylist->tail = pointer auf footer
- * mylist->tail.succ
- *
- * Don't use mylist->head / mylist->tail
- */
-
-/*
-typedef struct foo_s {
-        kw_node_t node;
-        char *text;
-} foo_t;
-
-void testerli(void)
-{
-        kw_list_t *mylist = create_list();
-        printf("mylist=%u\n", mylist);
-        printf("&mylist->head=%u\n", &mylist->head);
-        printf("mylist->head.succ=%u\n", mylist->head.succ);
-        printf("mylist->head.pred=%u\n", mylist->head.pred);
-        printf("mylist->head.succ->pred=%u\n", mylist->head.succ->pred);
-        printf("&mylist->tail=%u\n", &mylist->tail);
-        printf("mylist->tail.succ=%u\n", mylist->tail.succ);
-        printf("mylist->tail.pred=%u\n", mylist->tail.pred);
-        printf("---\n");
-
-        foo_t *result = malloc(sizeof(foo_t));
-        result->text = "bla";
-
-        add_tail(mylist, (kw_node_t *) result);
-
-        printf("mylist=%u\n", mylist);
-        printf("&mylist->head=%u\n", &mylist->head);
-        printf("mylist->head.succ=%u\n", mylist->head.succ);
-        printf("mylist->head.pred=%u\n", mylist->head.pred);
-        printf("result=%u\n", result);
-        printf("result->node.succ=%u\n", result->node.succ);
-        printf("result->node.pred=%u\n", result->node.pred);
-        printf("mylist->head.succ->pred=%u\n", mylist->head.succ->pred);
-        printf("&mylist->tail=%u\n", &mylist->tail);
-        printf("mylist->tail.succ=%u\n", mylist->tail.succ);
-        printf("mylist->tail.pred=%u\n", mylist->tail.pred);
-        printf("---\n");
-
-        result = malloc(sizeof(foo_t));
-        result->text = "blub";
-
-        add_tail(mylist, (kw_node_t *) result);
-
-        result = (foo_t *) get_head(mylist);
-        printf("get_head=%s\n", result->text);
-
-        kw_node_t *i = get_list_iterator(mylist);
-        while (result = (foo_t *) get_next_node(&i))
-                printf("loop1: %s\n", result->text); 
-
-        result = (foo_t *) rem_head(mylist);
-        printf("4: %s\n", result->text);
-        free(result);
-        printf("Still there\n");
-
-        printf("isempty=%u\n", is_list_empty(mylist));
-
-        remove_node(get_tail(mylist));
-
-        printf("isempty=%u\n", is_list_empty(mylist));
-        
-
-        free_list(mylist);
-        printf("Still there\n");
-}*/
 
 
 /* vim: set autowrite expandtab: */

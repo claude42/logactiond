@@ -337,9 +337,13 @@ trigger_all_commands(la_pattern_t *const pattern)
 
         /* Do nothing if on ignore list */
         assert(la_config);
-        if (address_on_list(&address, la_config->ignore_addresses))
+        la_address_t *tmp_addr = address_on_list(&address, la_config->ignore_addresses);
+        if (tmp_addr)
+        {
+                reprioritize_node((kw_node_t *) tmp_addr, 1);
                 LOG_RETURN_VERBOSE(, LOG_INFO,
                                 "Host: %s, always ignored.", host);
+        }
 
         increase_detection_count(pattern);
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
@@ -514,11 +518,11 @@ create_rule(const bool enabled, const char *const name,
         result->systemd_unit = NULL;
 #endif /* HAVE_LIBSYSTEMD */
 
-        result->patterns = xcreate_list();
-        result->begin_commands = xcreate_list();
-        result->trigger_list = xcreate_list();
-        result->properties = xcreate_list();
-        result->blacklists = xcreate_list();
+        result->patterns = create_list();
+        result->begin_commands = create_list();
+        result->trigger_list = create_list();
+        result->properties = create_list();
+        result->blacklists = create_list();
 
         result->detection_count = result->invocation_count =
                 result->queue_count = 0;

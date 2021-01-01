@@ -443,22 +443,6 @@ void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, const size_t on
         }
 }
 
-
-kw_list_t *
-xcreate_list(void)
-{
-        kw_list_t *const result = xmalloc(sizeof (kw_list_t));
-
-        result->head.succ = (kw_node_t *) &result->tail;
-        result->head.pred = NULL;
-        result->tail.succ = NULL;
-        result->tail.pred = (kw_node_t *) &result->head;
-
-        assert_list(result);
-
-        return result;
-}
-
 /* Taken from https://www.gnu.org/software/libc/manual/html_node/getpass.html
  */
 

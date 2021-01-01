@@ -701,7 +701,7 @@ create_systemd_unit(const char *const systemd_unit)
                 /* TODO: set location also to NULL */
                 la_config->systemd_source_group = create_source_group("systemd",
                                 "systemd", NULL);
-                la_config->systemd_source_group->systemd_units = xcreate_list();
+                la_config->systemd_source_group->systemd_units = create_list();
                 la_source_t *systemd_source = create_source(
                                 la_config->systemd_source_group, "systemd");
                 add_tail(la_config->systemd_source_group->sources,
@@ -839,7 +839,7 @@ load_rules(void)
         if (n < 0)
                 return 0;
 
-        la_config->source_groups = xcreate_list();
+        la_config->source_groups = create_list();
 
         int num_rules_enabled = 0;
         for (int i=0; i<n; i++)
@@ -883,7 +883,7 @@ load_remote_settings(void)
 
         const config_setting_t *const receive_from = config_setting_lookup(
                         remote_section, LA_REMOTE_RECEIVE_FROM_LABEL);
-        la_config->remote_receive_from = xcreate_list();
+        la_config->remote_receive_from = create_list();
         compile_address_list(la_config->remote_receive_from, receive_from);
 
         la_config->remote_bind = xstrdup(config_get_string_or_null(remote_section,
@@ -897,7 +897,7 @@ load_remote_settings(void)
         /* Must obviously go after initialization of remote port... */
         const config_setting_t *const send_to = config_setting_lookup(remote_section,
                         LA_REMOTE_SEND_TO_LABEL);
-        la_config->remote_send_to = xcreate_list();
+        la_config->remote_send_to = create_list();
         compile_address_list_port(la_config->remote_send_to, send_to,
                         la_config->remote_port);
 
@@ -960,10 +960,10 @@ load_defaults(void)
                 if (la_config->default_meta_max == -1)
                         la_config->default_meta_max = DEFAULT_META_MAX;
 
-                la_config->default_properties = xcreate_list();
+                la_config->default_properties = create_list();
                 load_properties(la_config->default_properties, defaults_section);
 
-                la_config->ignore_addresses = xcreate_list();
+                la_config->ignore_addresses = create_list();
                 const config_setting_t *ignore = config_setting_get_member(
                                 defaults_section, LA_IGNORE_LABEL);
                 compile_address_list(la_config->ignore_addresses, ignore);

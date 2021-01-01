@@ -73,8 +73,6 @@ int strendcmp(const char *string, const char *suffix);
 
 void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, const size_t on_top);
 
-kw_list_t *xcreate_list(void);
-
 char *xgetpass (const char *prompt);
 
 int xnanosleep(time_t secs, long nanosecs);

@@ -54,6 +54,9 @@ typedef void * kw_iterator;
 #define is_list_empty(x) \
         ( ((x)->tail.pred) == (kw_node_t *)(x) )
 
+#define is_list_node(x) \
+        ((x)->succ && (x)->pred)
+
 void testerli(void);
 
 kw_list_t * create_list(void);
@@ -79,6 +82,8 @@ void insert_node_before(kw_node_t *ex_node, kw_node_t *new_node);
 void remove_node(kw_node_t *node);
 
 void reprioritize_node(kw_node_t *const node, int delta_pri);
+
+void move_to_head(kw_node_t *const node);
 
 void assert_node_ffl(const kw_node_t *node, const char *func, const char *file,
                 int line);

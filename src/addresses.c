@@ -382,6 +382,8 @@ init_address_port(la_address_t *const addr, const char *const host, const in_por
         assert(host);
         la_vdebug("create_address_port(%s)", host);
 
+        addr->node.pri = 0;
+
         char host_str[INET6_ADDRSTRLEN +1];
         const int n = string_copy(host_str, INET6_ADDRSTRLEN, host, 0, '/');
         if (n == -1)

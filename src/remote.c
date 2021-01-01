@@ -239,6 +239,8 @@ remote_loop(void *const ptr)
                         continue;
                 }
 
+                reprioritize_node((kw_node_t *) from_addr, 1);
+
 #ifdef WITH_LIBSODIUM
                 if (!decrypt_message(buf, la_config->remote_secret, from_addr))
                         continue;

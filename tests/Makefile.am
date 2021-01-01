@@ -1,7 +1,11 @@
 AUTOMAKE_OPTIONS = subdir-objects
-TESTS = check_messages check_binarytree check_dnsbl check_misc check_addresses check_commands check_properties check_patterns check_endqueue #check_crypto
-check_PROGRAMS = check_messages check_binarytree check_dnsbl check_misc check_addresses check_commands check_properties check_patterns check_endqueue #check_crypto
-#MY_CFLAGS = -g -Wall -fprofile-arcs -ftest-coverage
+TESTS = check_nodelist check_messages check_binarytree check_dnsbl check_misc check_addresses check_commands check_properties check_patterns check_endqueue #check_crypto
+check_PROGRAMS = check_nodelist check_messages check_binarytree check_dnsbl check_misc check_addresses check_commands check_properties check_patterns check_endqueue #check_crypto
+MY_CFLAGS = -g -Wall -fprofile-arcs -ftest-coverage
+
+check_nodelist_SOURCES = check_nodelist.c $(top_builddir)/src/nodelist.h 
+check_nodelist_CFLAGS = $(CFLAGS) $(CHECK_CFLAGS) $(MY_CFLAGS)
+check_nodelist_LDADD = $(CHECK_LIBS) $(top_builddir)/src/logactiond-misc.o $(top_builddir)/src/logactiond-logging.o
 
 check_messages_SOURCES = check_messages.c $(top_builddir)/src/messages.h 
 check_messages_CFLAGS = $(PTHREAD_CFLAGS) $(CFLAGS) $(CHECK_CFLAGS) $(MY_CFLAGS)

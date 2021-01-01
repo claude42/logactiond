@@ -230,7 +230,7 @@ create_pattern(const char *const string_from_configfile,
         result->num = num;
         result->rule = rule;
         result->host_property = NULL;
-        result->properties = xcreate_list();
+        result->properties = create_list();
         convert_regex(full_string, result);
         free(full_string);
 

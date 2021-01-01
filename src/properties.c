@@ -303,7 +303,7 @@ dup_property_list(const kw_list_t *const list)
         assert_list(list);
         la_vdebug("dup_property_list()");
 
-        kw_list_t *const result = xcreate_list();
+        kw_list_t *const result = create_list();
 
         for (la_property_t *property = ITERATE_PROPERTIES(list);
                         (property = NEXT_PROPERTY(property));)

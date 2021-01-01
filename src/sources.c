@@ -129,8 +129,8 @@ create_source_group(const char *const name, const char *const glob_pattern,
         result->name = xstrdup(name);
         result->glob_pattern = xstrdup(glob_pattern);
         result->prefix = xstrdup(prefix);
-        result->sources = xcreate_list();
-        result->rules = xcreate_list();
+        result->sources = create_list();
+        result->rules = create_list();
 #if HAVE_LIBSYSTEMD
         result->systemd_units = NULL;
 #endif

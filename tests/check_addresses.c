@@ -160,7 +160,7 @@ END_TEST
 
 START_TEST (compare)
 {
-        kw_list_t *l = xcreate_list();
+        kw_list_t *l = create_list();
         la_address_t *a1 = create_address("1.2.3.4");
         add_tail(l, (kw_node_t *) a1);
         add_tail(l, (kw_node_t *) create_address("2.3.4.0/24"));
@@ -183,7 +183,7 @@ START_TEST (compare)
 
         free_address_list(l);
 
-        l = xcreate_list();
+        l = create_list();
         la_address_t *a4 = create_address("1.2.3.4");
         a4->prefix = 24;
         add_tail(l, (kw_node_t *) a4);
