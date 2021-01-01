@@ -57,7 +57,8 @@ typedef void * kw_iterator;
 #define is_list_node(x) \
         ((x)->succ && (x)->pred)
 
-void testerli(void);
+
+void inject_nodelist_exit_function(void (*exit_function)(const char *const fmt, ...));
 
 kw_list_t * create_list(void);
 

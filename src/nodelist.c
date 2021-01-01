@@ -19,31 +19,51 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <stdarg.h>
+#include <stdio.h>
 
 #include "ndebug.h"
-#include "logging.h"
-#include "misc.h"
+#include "nodelist.h"
+
+static void
+default_nodelist_exit_function(const char *const fmt, ...)
+{
+        va_list myargs;
+
+        va_start(myargs, fmt);
+        vfprintf(stderr, fmt, myargs);
+        va_end(myargs);
+        exit(EXIT_FAILURE);
+}
+
+static void (*nodelist_exit_function)(const char *const fmt, ...) = default_nodelist_exit_function;
+
+void
+inject_nodelist_exit_function(void (*exit_function)(const char *const fmt, ...))
+{
+        nodelist_exit_function = exit_function;
+}
 
 void
 assert_node_ffl(const kw_node_t *node, const char *func, const char *file,
                 int line)
 {
         if (!node)
-                die_hard("%s:%u: %s: Assertion 'node' failed.", file, line, func);
+                nodelist_exit_function("%s:%u: %s: Assertion 'node' failed.", file, line, func);
         if (!(node->succ || node->pred))
-                die_hard("%s:%u: %s: Assertion 'node->succ || node->pred' failed.",
+                nodelist_exit_function("%s:%u: %s: Assertion 'node->succ || node->pred' failed.",
                                 file, line, func);
         if (!(node->succ != node->pred))
-                die_hard("%s:%u: %s: Assertion 'node->succ != node->pred' failed.",
+                nodelist_exit_function("%s:%u: %s: Assertion 'node->succ != node->pred' failed.",
                                 file, line, func);
         if (node->pred)
                 if (!(node->pred->succ == node))
-                        die_hard("%s:%u: %s: Assertion 'node->pred->succ == node' failed.",
+                        nodelist_exit_function("%s:%u: %s: Assertion 'node->pred->succ == node' failed.",
                                         file, line, func);
 
         if (node->succ)
                 if (!(node->succ->pred == node))
-                        die_hard("%s:%u: %s: Assertion 'node->succ->pred == node' failed.",
+                        nodelist_exit_function("%s:%u: %s: Assertion 'node->succ->pred == node' failed.",
                                         file, line, func);
 }
 
@@ -52,12 +72,12 @@ assert_list_ffl(const kw_list_t *list, const char *func, const char *file,
                 int line)
 {
         if (!list)
-                die_hard("%s:%u: %s: Assertion 'list' failed.", file, line, func);
+                nodelist_exit_function("%s:%u: %s: Assertion 'list' failed.", file, line, func);
         if (!(list->head.succ && list->tail.pred))
-                die_hard("%s:%u: %s: Assertion 'list->head.succ && "
+                nodelist_exit_function("%s:%u: %s: Assertion 'list->head.succ && "
                                 "list->tail.pred' failed.", file, line, func);
         if (!(!list->head.pred && !list->tail.succ))
-                die_hard("%s:%u: %s: Assertion '!list->head.pred && "
+                nodelist_exit_function("%s:%u: %s: Assertion '!list->head.pred && "
                                 "!list->tail.succ' failed.", file, line, func);
 
         for (kw_node_t *node = list->head.succ; node->succ; node = node->succ)
@@ -72,7 +92,9 @@ assert_list_ffl(const kw_list_t *list, const char *func, const char *file,
 kw_list_t *
 create_list(void)
 {
-        kw_list_t *const result = xmalloc(sizeof *result);
+        kw_list_t *const result = malloc(sizeof *result);
+        if (!result)
+                nodelist_exit_function("Memory exhausted");
 
         result->head.succ = (kw_node_t *) &result->tail;
         result->head.pred = NULL;

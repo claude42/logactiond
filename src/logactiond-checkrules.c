@@ -42,6 +42,8 @@
 #include "rules.h"
 #include "sources.h"
 #include "logging.h"
+#include "nodelist.h"
+#include "binarytree.h"
 
 la_runtype_t run_type = LA_UTIL_FOREGROUND;
 int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
@@ -191,6 +193,9 @@ int
 main(int argc, char *argv[])
 {
         FILE *file;
+
+        inject_nodelist_exit_function(die_hard);
+        inject_binarytree_exit_function(die_hard);
 
         read_options(argc, argv);
 

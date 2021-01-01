@@ -58,6 +58,8 @@
 #include "systemd.h"
 #endif /* HAVE_LIBSYSTEMD */
 #include "watch.h"
+#include "nodelist.h"
+#include "binarytree.h"
 
 char *cfg_filename = NULL;
 char *pid_file = NULL;
@@ -454,6 +456,9 @@ use_correct_uid(void)
 int
 main(int argc, char *argv[])
 {
+        inject_nodelist_exit_function(die_hard);
+        inject_binarytree_exit_function(die_hard);
+
         if (chdir(CONF_DIR) == -1)
                 die_err("Can't change to configuration directory!");
 

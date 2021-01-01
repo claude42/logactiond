@@ -48,6 +48,8 @@ typedef struct kw_tree_s {
         int count;
 } kw_tree_t;
 
+void inject_binarytree_exit_function(void (*exit_function)(const char *const fmt, ...));
+
 void assert_tree_node_ffl(const kw_tree_node_t *node, const char *func,
                 const char *file, int line);
 

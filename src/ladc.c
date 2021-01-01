@@ -42,6 +42,7 @@
 #include "logging.h"
 #include "messages.h"
 #include "misc.h"
+#include "nodelist.h"
 
 
 static int socket_fd;
@@ -165,6 +166,8 @@ main(int argc, char *argv[])
         const char *host = NULL;
         const char *password = NULL;
         const char *port = NULL;
+
+        inject_nodelist_exit_function(die_hard);
 
         for (;;)
         {
