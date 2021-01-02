@@ -54,6 +54,8 @@ open_new_file(la_source_t *const source, const struct stat *const sb)
                         source->file);
         if (source->file)
         {
+                /* TODO: no idea anymore what that was for, unsure whether that
+                 * makes any sense?! */
                 memcpy(&(source->stats), sb,
                                 sizeof(struct stat));
         }
@@ -81,6 +83,7 @@ open_file_again(la_source_t *source)
         }
         else
         {
+                /* TODO: log status? what about severe errors, fail?! */
                 la_vdebug("still inactive");
         }
 }
@@ -111,6 +114,7 @@ poll_source(la_source_t *source)
         {
                 open_new_file(source, &sb);
         }
+        /* TODO: what to do when the above stat() fails? */
 
         /* 3rd case: file accessible, same as before
          *
@@ -119,6 +123,8 @@ poll_source(la_source_t *source)
          */
         else if (!handle_new_content(source))
         {
+                /* TODO: log error; maybe fail on severe errors?! In inotify.c
+                 * this is considered a fatal error */
                 unwatch_source(source);
         }
 }

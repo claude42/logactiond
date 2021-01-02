@@ -405,6 +405,8 @@ watch_source_inotify(la_source_t *const source)
         if (source->wd  == -1)
                 die_err("Can't add inotify watch for %s!", source->location);
 
+        /* TODO can this really happen, i.e. source->wd == 0 but
+         * source->parent_wd != 0 ? */
         if (!source->parent_wd)
         {
                 /* all praise basename/dirname */
