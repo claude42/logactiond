@@ -30,7 +30,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
-#include <syslog.h>
 #include <stdio.h>
 #include <errno.h>
 
@@ -44,25 +43,25 @@ assert_address_ffl(const la_address_t *address, const char *func,
                 const char *file, int line)
 {
         if (!address)
-                die_hard("%s:%u: %s: Assertion 'address' failed. ", file, line,
-                                func);
+                die_hard(false, "%s:%u: %s: Assertion 'address' failed. ",
+                                file, line, func);
         switch (address->sa.ss_family)
         {
         case AF_INET:
                 if (address->prefix<0 || address->prefix>32)
-                        die_hard("%s:%u: %s: Assertion 'address->prefix>=0 && "
-                                        "address->prefix<=32' failed.", file,
-                                        line, func);
+                        die_hard(false, "%s:%u: %s: Assertion 'address->prefix>=0 "
+                                        "&& address->prefix<=32' failed.",
+                                        file, line, func);
                 break;
         case AF_INET6:
                 if (address->prefix<0 || address->prefix>128)
-                        die_hard("%s:%u: %s: Assertion 'address->prefix>=0 && "
-                                        "address->prefix<=128' failed.", file,
-                                        line, func);
+                        die_hard(false, "%s:%u: %s: Assertion 'address->prefix>=0 "
+                                        "&& address->prefix<=128' failed.",
+                                        file, line, func);
                 break;
         default:
-                die_hard("%s:%u: %s: Assertion 'address->af' failed.", file,
-                                line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'address->af' failed.",
+                                file, line, func);
                 break;
         }
 }
@@ -270,7 +269,7 @@ adrcmp(const la_address_t *const a1, const la_address_t *const a2)
          * - address families differ, or
          * - unknown address family
          *
-         * TODO: or should we rather die_err() in these cases?
+         * TODO: or should we rather die_hard() in these cases?
          */
         return 127;
 }
@@ -387,7 +386,7 @@ init_address_port(la_address_t *const addr, const char *const host, const in_por
         char host_str[INET6_ADDRSTRLEN +1];
         const int n = string_copy(host_str, INET6_ADDRSTRLEN, host, 0, '/');
         if (n == -1)
-                die_hard("Address string too long!");
+                die_hard(false, "Address string too long!");
 
         // Prefix - if any. String will include '/'
         const char *const prefix_str = host[n] == '/' ? &host[n] : NULL;
@@ -410,9 +409,14 @@ init_address_port(la_address_t *const addr, const char *const host, const in_por
                         freeaddrinfo(ai);
                         return false;
                         break;
+                case EAI_SYSTEM:
+                        freeaddrinfo(ai);
+                        die_hard(true, "Error getting address for host '%s': %s",
+                                        host_str, gai_strerror(r));
+                        break;
                 default:
                         freeaddrinfo(ai);
-                        die_hard("Error getting address for host '%s': %s",
+                        die_hard(false, "Error getting address for host '%s': %s",
                                         host_str, gai_strerror(r));
                         break;
         }

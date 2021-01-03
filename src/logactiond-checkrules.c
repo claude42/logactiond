@@ -46,9 +46,6 @@
 #include "binarytree.h"
 
 la_runtype_t run_type = LA_UTIL_FOREGROUND;
-int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
-bool log_verbose = false;
-int id_counter = 0;
 
 static char *cfg_filename = NULL;
 static char *log_filename = NULL;
@@ -194,23 +191,24 @@ main(int argc, char *argv[])
 {
         FILE *file;
 
+        inject_misc_exit_function(die_hard);
         inject_nodelist_exit_function(die_hard);
         inject_binarytree_exit_function(die_hard);
 
         read_options(argc, argv);
 
         if (chdir(CONF_DIR) == -1)
-                die_err("Can't change to configuration directory!");
+                die_hard(true, "Can't change to configuration directory");
 
         if (!init_la_config(cfg_filename))
-                die_hard("Error loading configuration");
+                die_hard(false, "Error loading configuration.");
         load_la_config();
 
         if (log_filename)
         {
                 file = fopen(log_filename, "r");
                 if (!file)
-                        die_err("Opening file \"%s\" failed:", log_filename);
+                        die_hard(true, "Opening file \"%s\" failed", log_filename);
         }
         else
         {
@@ -222,7 +220,7 @@ main(int argc, char *argv[])
         {
                 one_rule = find_rule(rule_name);
                 if (!one_rule)
-                        die_hard("Can't find rule %s", rule_name);
+                        die_hard(false, "Can't find rule %s.", rule_name);
         }
         
         size_t linebuffer_size = 0;
@@ -236,7 +234,7 @@ main(int argc, char *argv[])
 			if (feof(file))
 				break;
 			else
-                                die_err("Reading from file \"%s\" failed:",
+                                die_hard(true, "Reading from file \"%s\" failed",
                                                 log_filename);
 		}
                 if (one_rule)

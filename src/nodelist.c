@@ -26,7 +26,7 @@
 #include "nodelist.h"
 
 static void
-default_nodelist_exit_function(const char *const fmt, ...)
+default_nodelist_exit_function(bool log_strerror, const char *const fmt, ...)
 {
         va_list myargs;
 
@@ -36,10 +36,12 @@ default_nodelist_exit_function(const char *const fmt, ...)
         exit(EXIT_FAILURE);
 }
 
-static void (*nodelist_exit_function)(const char *const fmt, ...) = default_nodelist_exit_function;
+static void (*nodelist_exit_function)(bool log_strerror, const char *const fmt, ...) =
+        default_nodelist_exit_function;
 
 void
-inject_nodelist_exit_function(void (*exit_function)(const char *const fmt, ...))
+inject_nodelist_exit_function(void (*exit_function)(bool log_strerror,
+                        const char *const fmt, ...))
 {
         nodelist_exit_function = exit_function;
 }
@@ -49,22 +51,23 @@ assert_node_ffl(const kw_node_t *node, const char *func, const char *file,
                 int line)
 {
         if (!node)
-                nodelist_exit_function("%s:%u: %s: Assertion 'node' failed.", file, line, func);
+                nodelist_exit_function(false, "%s:%u: %s: Assertion 'node' "
+                                "failed.", file, line, func);
         if (!(node->succ || node->pred))
-                nodelist_exit_function("%s:%u: %s: Assertion 'node->succ || node->pred' failed.",
-                                file, line, func);
+                nodelist_exit_function(false, "%s:%u: %s: Assertion 'node->succ "
+                                "|| node->pred' failed.", file, line, func);
         if (!(node->succ != node->pred))
-                nodelist_exit_function("%s:%u: %s: Assertion 'node->succ != node->pred' failed.",
-                                file, line, func);
-        if (node->pred)
-                if (!(node->pred->succ == node))
-                        nodelist_exit_function("%s:%u: %s: Assertion 'node->pred->succ == node' failed.",
-                                        file, line, func);
+                nodelist_exit_function(false, "%s:%u: %s: Assertion 'node->succ "
+                                "!= node->pred' failed.", file, line, func);
+        if (node->pred && node->pred->succ != node)
+                nodelist_exit_function(false, "%s:%u: %s: Assertion "
+                                "'node->pred->succ == node' failed.", file,
+                                line, func);
 
-        if (node->succ)
-                if (!(node->succ->pred == node))
-                        nodelist_exit_function("%s:%u: %s: Assertion 'node->succ->pred == node' failed.",
-                                        file, line, func);
+        if (node->succ && node->succ->pred != node)
+                nodelist_exit_function(false, "%s:%u: %s: Assertion "
+                                "'node->succ->pred == node' failed.", file,
+                                line, func);
 }
 
 void
@@ -72,13 +75,16 @@ assert_list_ffl(const kw_list_t *list, const char *func, const char *file,
                 int line)
 {
         if (!list)
-                nodelist_exit_function("%s:%u: %s: Assertion 'list' failed.", file, line, func);
+                nodelist_exit_function(false, "%s:%u: %s: Assertion 'list' "
+                                "failed.", file, line, func);
         if (!(list->head.succ && list->tail.pred))
-                nodelist_exit_function("%s:%u: %s: Assertion 'list->head.succ && "
-                                "list->tail.pred' failed.", file, line, func);
+                nodelist_exit_function(false, "%s:%u: %s: Assertion "
+                                "'list->head.succ && list->tail.pred' failed.",
+                                file, line, func);
         if (!(!list->head.pred && !list->tail.succ))
-                nodelist_exit_function("%s:%u: %s: Assertion '!list->head.pred && "
-                                "!list->tail.succ' failed.", file, line, func);
+                nodelist_exit_function(false, "%s:%u: %s: Assertion "
+                                "'!list->head.pred && !list->tail.succ' failed.",
+                                file, line, func);
 
         for (kw_node_t *node = list->head.succ; node->succ; node = node->succ)
                 assert_node_ffl(node, func, file, line);
@@ -94,7 +100,7 @@ create_list(void)
 {
         kw_list_t *const result = malloc(sizeof *result);
         if (!result)
-                nodelist_exit_function("Memory exhausted");
+                nodelist_exit_function(false, "Memory exhausted");
 
         result->head.succ = (kw_node_t *) &result->tail;
         result->head.pred = NULL;

@@ -42,9 +42,7 @@
 
 /* Mocks */
 
-int log_level = LOG_DEBUG+2; /* by default log only stuff < log_level */
 la_runtype_t run_type = LA_DAEMON_FOREGROUND;
-bool log_verbose = true;
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
 atomic_bool shutdown_ongoing = false;
 #else /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
@@ -107,8 +105,6 @@ send_add_entry_message(const la_command_t *const command, const la_address_t *co
 }
 
 pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-int id_counter = 0;
 
 /* Trees */
 

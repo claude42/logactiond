@@ -18,7 +18,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <syslog.h>
 #include <assert.h>
 #include <limits.h>
 #include <stdbool.h>
@@ -59,6 +58,8 @@ typedef struct la_meta_command_s
         int factor;
 } meta_command_t;
 
+static int id_counter = 0;
+
 static kw_list_t *meta_list;
 
 static la_command_t * create_manual_command_from_template(
@@ -70,25 +71,28 @@ assert_command_ffl(const la_command_t *command, const char *func,
                 const char *file, int line)
 {
         if (!command)
-                die_hard("%s:%u: %s: Assertion 'command' failed. ", file, line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'command' failed. ",
+                                file, line, func);
         if (!command->name)
-                die_hard("%s:%u: %s: Assertion 'command->name' failed.", file,
-                                line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'command->name' failed.",
+                                file, line, func);
 
         assert_list_ffl(command->begin_properties, func, file, line);
         if (command->n_begin_properties < 0)
-                die_hard("%s:%u: %s: Assertion 'command->n_begin_properties >= 0' failed. ",
-                                file, line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'command->n_begin_properties "
+                                ">= 0' failed. ", file, line, func);
         if (command->n_begin_properties != list_length(command->begin_properties))
-                die_hard("%s:%u: %s: Assertion 'command->n_begin_properties == list_length(command->begin_properties failed.",
+                die_hard(false, "%s:%u: %s: Assertion 'command->n_begin_properties "
+                                "== list_length(command->begin_properties failed.",
                                 file, line, func);
 
         assert_list_ffl(command->end_properties, func, file, line );
         if (command->n_end_properties < 0)
-                die_hard("%s:%u: %s: Assertion 'command->n_end_properties >= 0' failed. ",
-                                file, line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'command->n_end_properties "
+                                ">= 0' failed. ", file, line, func);
         if (command->n_end_properties != list_length(command->end_properties))
-                die_hard("%s:%u: %s: Assertion 'command->n_end_properties == list_length(command->end_properties failed.",
+                die_hard(false, "%s:%u: %s: Assertion 'command->n_end_properties "
+                                "== list_length(command->end_properties failed.",
                                 file, line, func);
 
         assert_rule_ffl(command->rule, func, file, line);
@@ -100,15 +104,15 @@ assert_command_ffl(const la_command_t *command, const char *func,
                 assert_address_ffl(command->address, func, file, line);
 
         if (command->factor < -1)
-                die_hard("%s:%u: %s: Assertion 'command->factor >= 0' failed. ",
-                                file, line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'command->factor >= 0' "
+                                "failed.", file, line, func);
 
         if (command->n_triggers < 0)
-                die_hard("%s:%u: %s: Assertion 'command->n_n_triggers >= 0' failed. ",
-                                file, line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'command->n_n_triggers "
+                                ">= 0' failed.", file, line, func);
 
         if (!command->begin_string)
-                die_hard("%s:%u: %s: Assertion 'command->begin_string' "
+                die_hard(false, "%s:%u: %s: Assertion 'command->begin_string' "
                                 "failed.", file, line, func);
 
 
@@ -117,12 +121,13 @@ assert_command_ffl(const la_command_t *command, const char *func,
         assert_list_ffl(command->end_properties, func, file, line);
 
         if (command->duration < -1)
-                die_hard("%s:%u: %s: Assertion 'command->duration >= -1' failed. ",
-                                file, line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'command->duration >= -1' "
+                                "failed. ", file, line, func);
 
         if (strcmp(command->rule->name, command->rule_name))
-                die_hard("%s:%u: %s: Assertion 'strcmp(command->rule->name, command->rule_name)' failed. ",
-                                file, line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'strcmp(command->rule->name, "
+                                "command->rule_name)' failed. ", file, line,
+                                func);
 
 
 }
@@ -247,7 +252,8 @@ convert_command(la_command_t *const command, const la_commandtype_t type)
                                  */
                                 action_property = NEXT_PROPERTY(action_property);
                                 if (!action_property)
-                                        die_hard("Ran out of properties?!?");
+                                        die_hard(false, "Ran out of "
+                                                        "properties?!?");
                                 const char *const repl =
                                         get_value_for_action_property(command,
                                                         action_property);

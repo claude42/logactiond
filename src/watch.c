@@ -61,11 +61,12 @@ watch_source(la_source_t *const source, const int whence)
 #ifndef NOWATCH
         source->file = fopen(source->location, "r");
         if (!source->file)
-                die_err("Opening source \"%s\" failed", source->location);
+                die_hard(true, "Opening source \"%s\" failed", source->location);
         if (fstat(fileno(source->file), &(source->stats)) == -1)
-                die_err("Stating source \"%s\" failed", source->location);
+                die_hard(true, "Stating source \"%s\" failed", source->location);
         if (fseek(source->file, 0, whence))
-                die_err("Seeking in source \"%s\" failed", source->location);
+                die_hard(true, "Seeking in source \"%s\" failed",
+                                source->location);
 
         source->active = true;
 
@@ -96,7 +97,7 @@ unwatch_source(la_source_t *const source)
 #endif /* HAVE_INOTIFY */
 
         if (fclose(source->file))
-                die_err("Closing source \"%s\" failed", source->location);
+                die_hard(true, "Closing source \"%s\" failed", source->location);
         source->file = NULL;
         source->active = false;
 

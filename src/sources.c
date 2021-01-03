@@ -37,10 +37,12 @@ assert_source_ffl(const la_source_t *source, const char *func,
                 const char *file, int line)
 {
         if (!source)
-                die_hard("%s:%u: %s: Assertion 'source' failed. ", file, line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'source' failed.",
+                                file, line, func);
         assert_source_group_ffl(source->source_group, func, file, line);
         if (!source->location)
-                die_hard("%s:%u: %s: Assertion 'source->location' failed. ", file, line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'source->location' "
+                                "failed.", file, line, func);
 }
 
 void
@@ -48,11 +50,14 @@ assert_source_group_ffl(const la_source_group_t *source_group, const char *func,
                 const char *file, int line)
 {
         if (!source_group)
-                die_hard("%s:%u: %s: Assertion 'source_group' failed. ", file, line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'source_group' failed.",
+                                file, line, func);
         if (!source_group->name)
-                die_hard("%s:%u: %s: Assertion 'source->name' failed. ", file, line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'source->name' failed.",
+                                file, line, func);
         if (!source_group->glob_pattern)
-                die_hard("%s:%u: %s: Assertion 'source->location' failed. ", file, line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'source->location' "
+                                "failed.", file, line, func);
         assert_list_ffl(source_group->sources, func, file, line);
         assert_list_ffl(source_group->rules, func, file, line);
 }

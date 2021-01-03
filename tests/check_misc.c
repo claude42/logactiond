@@ -28,6 +28,7 @@
 #include <pthread.h>
 #include <alloca.h>
 #include <signal.h>
+#include <sys/stat.h>
 
 #include <check.h>
 
@@ -38,9 +39,7 @@
 
 /* Mocks */
 
-int log_level = LOG_DEBUG+2; /* by default log only stuff < log_level */
 la_runtype_t run_type = LA_DAEMON_FOREGROUND;
-bool log_verbose = true;
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
 atomic_bool shutdown_ongoing = false;
 #else /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
@@ -58,25 +57,39 @@ trigger_shutdown(int status, int saved_errno)
                 ck_abort_msg(shutdown_msg);
 }
 
-/* Compare */
+/* Tests */
+
+#define PIDFILE_TEST "/tmp/123xyz_test_pid"
 
 START_TEST (pid)
 {
-        create_pidfile();
+        remove(PIDFILE_TEST);
+        create_pidfile(PIDFILE_TEST);
 
-        FILE *const stream = fopen(pidfile_name, "r");
+        FILE *const stream = fopen(PIDFILE_TEST, "r");
         ck_assert(stream);
         int pid;
         ck_assert(fscanf(stream, "%u", &pid) ==  1);
         ck_assert_int_eq(pid, getpid());
 
-        ck_assert(check_pidfile());
+        ck_assert(check_pidfile(PIDFILE_TEST));
 
-        remove_pidfile();
-        ck_assert(!fopen(pidfile_name, "r"));
+        ck_assert(remove_pidfile(PIDFILE_TEST));
+        ck_assert(!fopen(PIDFILE_TEST, "r"));
 
         // must not fail on ENOENT
-        remove_pidfile();
+        ck_assert(remove_pidfile(PIDFILE_TEST));
+
+        // must return 0 on ENOENT
+        ck_assert(!check_pidfile(PIDFILE_TEST));
+}
+END_TEST
+
+START_TEST (pid_exit)
+{
+        create_pidfile(PIDFILE_TEST);
+        chmod(PIDFILE_TEST, 0);
+        check_pidfile(PIDFILE_TEST);
 }
 END_TEST
 
@@ -211,6 +224,7 @@ Suite *misc_suite(void)
         /* Core test case */
         TCase *tc_pid = tcase_create("PID");
         tcase_add_test(tc_pid, pid);
+        tcase_add_exit_test(tc_pid, pid_exit, 1);
         suite_add_tcase(s, tc_pid);
 
         TCase *tc_threads = tcase_create("Threads");

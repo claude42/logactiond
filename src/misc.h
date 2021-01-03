@@ -22,16 +22,16 @@
 #include <pthread.h>
 #include <stdbool.h>
 
-#include <config.h>
-
 #include "ndebug.h"
-#include "nodelist.h"
 
-void remove_pidfile(void);
+void inject_misc_exit_function(void (*exit_function)(bool log_strerror,
+                        const char *const fmt, ...));
 
-void create_pidfile(void);
+bool remove_pidfile(const char *pidfile_name);
 
-bool check_pidfile(void);
+void create_pidfile(const char *pidfile_name);
+
+bool check_pidfile(const char *pidfile_name);
 
 void xpthread_create(pthread_t *thread, const pthread_attr_t *attr,
                 void *(*start_routine)(void *), void *arg, const char *name);

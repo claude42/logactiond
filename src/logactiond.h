@@ -65,27 +65,13 @@ typedef enum la_runtype_s { LA_DAEMON_BACKGROUND, LA_DAEMON_FOREGROUND,
 
 /* Global variables */
 
-extern int log_level;
-
-extern bool log_verbose;
-
-extern int id_counter;
-
 extern la_runtype_t run_type;
-
-extern int status_monitoring;
-
-extern const char *saved_state;
 
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
         extern atomic_bool shutdown_ongoing;
 #else /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
         extern bool shutdown_ongoing;
 #endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
-
-extern int exit_status;
-
-extern const char *const pidfile_name;
 
 /* logactiond.c */
 

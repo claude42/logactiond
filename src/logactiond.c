@@ -64,12 +64,7 @@
 char *cfg_filename = NULL;
 char *pid_file = NULL;
 la_runtype_t run_type = LA_DAEMON_BACKGROUND;
-int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
-bool log_verbose = false;
-int id_counter = 0;
 char *run_uid_s = NULL;
-int status_monitoring = 0;
-const char *saved_state = NULL;
 bool create_backup_file = false;
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
         atomic_bool shutdown_ongoing = false;
@@ -79,7 +74,6 @@ bool create_backup_file = false;
 int exit_status = EXIT_SUCCESS;
 static int exit_errno = 0;
 bool sync_on_startup = false;
-const char *const pidfile_name = PIDFILE;
 
 void
 trigger_shutdown(int status, int saved_errno)
@@ -177,10 +171,10 @@ set_signal(struct sigaction new_act, const int signum)
         struct sigaction old_act;
 
         if (sigaction(signum, NULL, &old_act) == -1)
-                die_err("Error setting signals!");
+                die_hard(true, "Error setting signals");
         if (old_act.sa_handler != SIG_IGN)
                 if (sigaction(signum, &new_act, NULL) == -1)
-                        die_err("Error setting signals!");
+                        die_hard(true, "Error setting signals");
 
 }
 
@@ -195,7 +189,7 @@ ignore_sigpipe(void)
 	act.sa_flags = SA_RESTART;
 	r = sigaction(SIGPIPE, &act, NULL);
 	if (r)
-		die_err("Error setting signals!");
+		die_hard(true, "Error setting signals");
 }
 
 static void
@@ -207,7 +201,7 @@ register_signal_handler(void)
 
         new_act.sa_handler = handle_signal;
         if (sigemptyset(&new_act.sa_mask) == -1)
-                die_err("Error setting signals!");
+                die_hard(true, "Error setting signals");
         new_act.sa_flags = 0;
 
         set_signal(new_act, SIGINT);
@@ -264,7 +258,7 @@ skeleton_daemon(void)
 
         /* Change the working directory */
         if (chdir(CONF_DIR) == -1)
-                die_err("Can't change to configuration directory!");
+                die_hard(true, "Can't change to configuration directory");
 
         /* Close all open file descriptors */
         int x;
@@ -430,7 +424,7 @@ use_correct_uid(void)
         const uid_t cur_uid = geteuid();
         const uid_t run_uid = getrunuid(run_uid_s);
         if (run_uid == UINT_MAX)
-                die_hard("Can't determine uid!");
+                die_hard(false, "Can't determine uid!");
 
         la_debug("use_correct_uid() - uid=%d, runuid=%d", cur_uid, run_uid);
 
@@ -442,30 +436,31 @@ use_correct_uid(void)
                 if (!setuid(run_uid))
                         return;
                 else
-                        die_err("Can't change to \"%s\".", run_uid_s);
+                        die_hard(true, "Can't change to \"%s\"", run_uid_s);
         }
         else
         {
                 if (run_uid_s)
-                        die_hard("Can't change uid for non-root user.");
+                        die_hard(false, "Can't change uid for non-root user.");
                 else
-                        die_hard("Trying to run as non-root user.");
+                        die_hard(false, "Trying to run as non-root user.");
         }
 }
 
 int
 main(int argc, char *argv[])
 {
+        inject_misc_exit_function(die_hard);
         inject_nodelist_exit_function(die_hard);
         inject_binarytree_exit_function(die_hard);
 
         if (chdir(CONF_DIR) == -1)
-                die_err("Can't change to configuration directory!");
+                die_hard(true, "Can't change to configuration directory");
 
         read_options(argc, argv);
 
-        if (check_pidfile())
-                die_hard("logactiond already running!");
+        if (check_pidfile(PIDFILE))
+                die_hard(false, "logactiond already running!");
 
         use_correct_uid();
 
@@ -474,13 +469,13 @@ main(int argc, char *argv[])
         else
                 register_signal_handler();
 
-        create_pidfile();
+        create_pidfile(PIDFILE);
 
         la_log(LOG_INFO, "Starting up " PACKAGE_STRING ".");
 
         start_end_queue_thread();
         if (!init_la_config(cfg_filename))
-                die_hard("Error loading configuration");
+                die_hard(false, "Error loading configuration.");
         load_la_config();
 
         start_watching_threads();
@@ -495,7 +490,7 @@ main(int argc, char *argv[])
                 if (!restore_state(saved_state, create_backup_file))
                 {
                         saved_state = NULL;
-                        die_err("Error reading state file!");
+                        die_hard(true, "Error reading state file");
                 }
                 start_save_state_thread(saved_state);
         }
@@ -505,7 +500,7 @@ main(int argc, char *argv[])
                 if (la_config->remote_enabled)
                         sync_with_other_instances();
                 else
-                        die_hard("Remote sync requested but remote "
+                        die_hard(false, "Remote sync requested but remote "
                                         "communication not enabled!");
         }
 
@@ -571,7 +566,9 @@ main(int argc, char *argv[])
         free_meta_list();  // TODO: probably should go somewhere else
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
 
-        remove_pidfile();
+        if (!remove_pidfile(PIDFILE))
+                la_log_errno(LOG_ERR, "Unable to remove pidfile");
+
         const int loglevel = exit_status ? LOG_WARNING : LOG_INFO;
         la_log(loglevel, "Exiting (status=%u, errno=%u).", exit_status, exit_errno);
 

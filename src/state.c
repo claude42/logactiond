@@ -42,6 +42,8 @@
 #include "rules.h"
 #include "state.h"
 
+const char *saved_state = NULL;
+
 pthread_t save_state_thread = 0;
 
 static bool
@@ -171,8 +173,6 @@ restore_state(const char *const state_file_name, const bool create_backup_file)
                 line_no++;
         }
 
-        la_log_verbose(LOG_INFO, "Done restoring state from \"%s\"", state_file_name);
-
         free(linebuffer);
 
         /* Return false to make sure state file is not overwritten in case of
@@ -193,6 +193,7 @@ restore_state(const char *const state_file_name, const bool create_backup_file)
         if (create_backup_file && !move_state_file_to_backup(state_file_name))
                 LOG_RETURN_ERRNO(false, LOG_ERR, "Error creating backup file!");
 
+        la_log(LOG_INFO, "Finished restoring state from \"%s\"", state_file_name);
         return true;
 }
 

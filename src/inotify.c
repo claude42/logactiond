@@ -312,7 +312,7 @@ handle_inotify_file_event(const struct inotify_event *const event)
         la_vdebug("handle_inotify_file_event(%s)", source->location);
 
         if (!handle_new_content(source))
-                die_err("Reading from source \"%s\", file \"%s\" failed",
+                die_hard(true, "Reading from source \"%s\", file \"%s\" failed",
                                 source->source_group->name, source->location);
 }
 
@@ -368,7 +368,7 @@ watch_forever_inotify(void *const ptr)
                         if (errno == EINTR)
                                 la_debug("read interrupted!");
                         else
-                                die_err("Error reading from inotify!");
+                                die_hard(true, "Error reading from inotify");
                 }
                 else
                 {
@@ -403,7 +403,7 @@ watch_source_inotify(la_source_t *const source)
 
         source->wd  = inotify_add_watch(inotify_fd, source->location, IN_MODIFY);
         if (source->wd  == -1)
-                die_err("Can't add inotify watch for %s!", source->location);
+                die_hard(true, "Can't add inotify watch for %s", source->location);
 
         /* TODO can this really happen, i.e. source->wd == 0 but
          * source->parent_wd != 0 ? */
@@ -418,7 +418,7 @@ watch_source_inotify(la_source_t *const source)
                                 IN_MOVED_TO | IN_MOVED_FROM);
                 /* TODO: maybe this should not be a fatal error */
                 if (source->parent_wd == -1)
-                        die_err("Can't add inotify watch for %s!", parent_dir);
+                        die_hard(true, "Can't add inotify watch for %s", parent_dir);
                 free (tmp);
         }
 }
@@ -433,7 +433,7 @@ init_watching_inotify(void)
         {
                 inotify_fd = inotify_init();
                 if (inotify_fd == -1)
-                        die_err("Can't initialize inotify!");
+                        die_hard(true, "Can't initialize inotify");
         }
         
 }

@@ -26,7 +26,7 @@
 #include "binarytree.h"
 
 static void
-default_binarytree_exit_function(const char *const fmt, ...)
+default_binarytree_exit_function(bool log_strerror, const char *const fmt, ...)
 {
         va_list myargs;
 
@@ -36,10 +36,12 @@ default_binarytree_exit_function(const char *const fmt, ...)
         exit(EXIT_FAILURE);
 }
 
-static void (*binarytree_exit_function)(const char *const fmt, ...) = default_binarytree_exit_function;
+static void (*binarytree_exit_function)(bool log_strerror, const char *const fmt, ...) =
+        default_binarytree_exit_function;
 
 void
-inject_binarytree_exit_function(void (*exit_function)(const char *const fmt, ...))
+inject_binarytree_exit_function(void (*exit_function)(bool log_strerror,
+                        const char *const fmt, ...))
 {
         binarytree_exit_function = exit_function;
 }
@@ -49,17 +51,17 @@ assert_tree_node_ffl(const kw_tree_node_t *node, const char *func,
                 const char *file, int line)
 {
         if (!node)
-                binarytree_exit_function("%s:%u: %s: Assertion 'node' failed.", file, line,
-                                func);
+                binarytree_exit_function(false, "%s:%u: %s: Assertion 'node' "
+                                "failed.", file, line, func);
         if (node->parent && node->parent->left != node && node->parent->right != node)
-                binarytree_exit_function("%s:%u: %s: Assertion 'node is son of parent' failed.",
-                                file, line, func);
+                binarytree_exit_function(false, "%s:%u: %s: Assertion 'node "
+                                "is son of parent' failed.", file, line, func);
         if (node->left && node->left->parent != node)
-                binarytree_exit_function("%s:%u: %s: Assertion 'parent of left is me' failed.",
-                                file, line, func);
+                binarytree_exit_function(false, "%s:%u: %s: Assertion 'parent "
+                                "of left is me' failed.", file, line, func);
         if (node->right && node->right->parent != node)
-                binarytree_exit_function("%s:%u: %s: Assertion 'parent of right is me' failed.",
-                                file, line, func);
+                binarytree_exit_function(false, "%s:%u: %s: Assertion 'parent "
+                                "of right is me' failed.", file, line, func);
 }
 
 void
@@ -67,8 +69,8 @@ assert_tree_ffl(const kw_tree_t *tree, const char *func, const char *file,
                 int line)
 {
         if (!tree)
-                binarytree_exit_function("%s:%u: %s: Assertion 'tree' failed.", file, line,
-                                func);
+                binarytree_exit_function(false, "%s:%u: %s: Assertion 'tree' "
+                                "failed.", file, line, func);
         if (tree->root)
         {
                 assert_tree_node_ffl(tree->root, func, file, line);

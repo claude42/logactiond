@@ -44,9 +44,7 @@
 
 /* Mocks */
 
-int log_level = LOG_DEBUG+2; /* by default log only stuff < log_level */
 la_runtype_t run_type = LA_DAEMON_FOREGROUND;
-bool log_verbose = true;
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
 atomic_bool shutdown_ongoing = false;
 #else /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
@@ -142,12 +140,13 @@ START_TEST (check_add_property)
         struct tuple_s {
                 char *token;
                 char *name;
+                char *value;
                 bool is_host_token;
         };
 
         static struct tuple_s t[] = {
-                {"%host%", "host", true},
-                {"%bla%", "bla", false}
+                {"%host%", "host", "192.168.0.1", true},
+                {"%bla%", "bla", "fasel", false}
         };
 
         la_source_group_t s = {
@@ -159,13 +158,22 @@ START_TEST (check_add_property)
                 .service = "bar"
         };
 
-        la_pattern_t *p = create_pattern("ruebezahl", 0, &r);
+        la_pattern_t *pat = create_pattern("ruebezahl", 0, &r);
 
-        add_property(p, create_property_from_token(t[_i].token, _i, NULL));
-        la_property_t *pr = get_property_from_property_list(p->properties, t[_i].name);
-        ck_assert(pr);
+        la_property_t *p1 = create_property_from_token(t[_i].token, _i, NULL);
+        ck_assert(p1);
+        assert_property(p1);
+        string_copy(p1->value, MAX_PROP_SIZE, t[_i].value, 0, '\0');
+        add_property(pat, p1);
+
+        la_property_t *p2 = get_property_from_property_list(pat->properties, t[_i].name);
+        ck_assert_ptr_eq(p1, p2);
+        ck_assert_str_eq(p2->name, t[_i].name);
+        ck_assert_str_eq(p2->value, t[_i].value);
         if (t[_i].is_host_token)
-                ck_assert_ptr_eq(pr, p->host_property);
+                ck_assert_ptr_eq(p2, pat->host_property);
+
+        /* TODO: Edge cases missing */
 
 }
 END_TEST

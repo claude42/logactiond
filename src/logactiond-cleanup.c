@@ -41,9 +41,6 @@
 #include "binarytree.h"
 
 la_runtype_t run_type = LA_UTIL_FOREGROUND;
-int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
-bool log_verbose = false;
-int id_counter = 0;
 
 static char *cfg_filename = NULL;
 static char *log_filename = NULL;
@@ -119,17 +116,18 @@ read_options(int argc, char *argv[])
 int
 main(int argc, char *argv[])
 {
+        inject_misc_exit_function(die_hard);
         inject_nodelist_exit_function(die_hard);
         inject_binarytree_exit_function(die_hard);
 
         read_options(argc, argv);
 
         if (chdir(CONF_DIR) == -1)
-                die_err("Can't change to configuration directory!");
+                die_hard(true, "Can't change to configuration directory");
 
         init_end_queue();
         if (!init_la_config(cfg_filename))
-                die_hard("Error loading configuration");
+                die_hard(false, "Error loading configuration");
         load_la_config();
         la_debug("done load_la_config()");
 

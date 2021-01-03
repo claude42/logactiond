@@ -39,6 +39,9 @@
 #include "logactiond.h"
 #include "logging.h"
 
+int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
+bool log_verbose = false;
+
 void
 log_message(int priority, const char *const fmt, va_list gp,
                 const char *const add)
@@ -155,7 +158,7 @@ la_log(const int priority, const char *const fmt, ...)
 }
 
 void
-die_hard(const char *const fmt, ...)
+die_hard(const bool log_strerror, const char *const fmt, ...)
 {
         va_list myargs;
 
@@ -164,7 +167,8 @@ die_hard(const char *const fmt, ...)
 #endif /* CLIENTONLY */
 
         va_start(myargs, fmt);
-        log_message(LOG_ERR, fmt, myargs, NULL);
+        log_message(LOG_ERR, fmt, myargs, log_strerror ? strerror(errno) :
+                        NULL);
         va_end(myargs);
 
 #ifdef CLIENTONLY
@@ -176,57 +180,5 @@ die_hard(const char *const fmt, ...)
         pthread_exit(NULL);
 #endif  /* CLIENTONLY */
 }
-
-/*
- * Die reporting val as error code.
- */
-
-void
-die_val(const int val, const char *const fmt, ...)
-{
-        va_list myargs;
-
-#ifndef CLIENTONLY
-        int save_errno = errno;
-#endif /* CLIENTONLY */
-
-        va_start(myargs, fmt);
-        log_message(LOG_ERR, fmt, myargs, strerror(val));
-        va_end(myargs);
-
-#ifdef CLIENTONLY
-        exit(1);
-#else  /* CLIENTONLY */
-        if (!shutdown_ongoing)
-                trigger_shutdown(EXIT_FAILURE, save_errno);
-
-        pthread_exit(NULL);
-#endif  /* CLIENTONLY */
-}
-
-void
-die_err(const char *const fmt, ...)
-{
-        va_list myargs;
-
-#ifndef CLIENTONLY
-        int save_errno = errno;
-#endif /* CLIENTONLY */
-
-        va_start(myargs, fmt);
-        log_message(LOG_ERR, fmt, myargs, strerror(errno));
-        va_end(myargs);
-
-#ifdef CLIENTONLY
-        exit(1);
-#else  /* CLIENTONLY */
-        if (!shutdown_ongoing)
-                trigger_shutdown(EXIT_FAILURE, save_errno);
-
-        pthread_exit(NULL);
-#endif  /* CLIENTONLY */
-}
-
-
 
 /* vim: set autowrite expandtab: */

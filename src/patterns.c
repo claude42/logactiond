@@ -39,23 +39,24 @@ assert_pattern_ffl(const la_pattern_t *pattern, const char *func,
                 const char *file, int line)
 {
         if (!pattern)
-                die_hard("%s:%u: %s: Assertion 'pattern' failed. ", file, line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'pattern' failed. ",
+                                file, line, func);
         if (pattern->num < 0)
-                die_hard("%s:%u: %s: Assertion 'pattern->num >= 0' failed. ",
+                die_hard(false, "%s:%u: %s: Assertion 'pattern->num >= 0' failed. ",
                                 file, line, func);
         assert_rule_ffl(pattern->rule, func, file, line);
         if (!pattern->string)
-                die_hard("%s:%u: %s: Assertion 'pattern->string' failed. ", file, line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'pattern->string' failed. ",
+                                file, line, func);
         if (pattern->host_property)
                 assert_property_ffl(pattern->host_property, func, file, line);
         assert_list_ffl(pattern->properties, func, file, line);
         if (pattern->detection_count < 0)
-                die_hard("%s:%u: %s: Assertion 'pattern->detection_count >= 0' failed. ",
-                                file, line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'pattern->detection_count "
+                                ">= 0' failed. ", file, line, func);
         if (pattern->invocation_count < 0)
-                die_hard("%s:%u: %s: Assertion 'pattern->invocation_count >= 0' failed. ",
-                                file, line, func);
-
+                die_hard(false, "%s:%u: %s: Assertion 'pattern->invocation_count "
+                                ">= 0' failed. ", file, line, func);
 }
 
 static void add_property(la_pattern_t *const pattern, la_property_t *const property)
@@ -109,7 +110,7 @@ convert_regex(const char *const string, la_pattern_t *const pattern)
 
                                 if (new_prop->is_host_property &&
                                                 pattern->host_property)
-                                        die_hard("Only one %%HOST%% token "
+                                        die_hard(false, "Only one %%HOST%% token "
                                                         "allowed per pattern!");
 
                                 // Count open braces a.) to determine whether
@@ -133,8 +134,8 @@ convert_regex(const char *const string, la_pattern_t *const pattern)
                                         add_property(pattern, new_prop);
                                         subexpression += new_prop->replacement_braces;
                                         if (subexpression >= MAX_NMATCH)
-                                                die_hard("Too many subexpressions in regex "
-                                                                "\"%s\"!", string);
+                                                die_hard(false, "Too many subexpressions "
+                                                                "in regex \"%s\"!", string);
                                 }
 
                                 // Finally replace the token by the
@@ -167,8 +168,8 @@ convert_regex(const char *const string, la_pattern_t *const pattern)
                         // In case of '\', copy next character without any
                         // interpretation unless next character is \0...
                         if (*(src_ptr+1) == '\0') 
-                                die_hard("Last character of regex \"%s\" is \\!",
-                                                string);
+                                die_hard(false, "Last character of regex \"%s\" "
+                                                "is \\!", string);
                         realloc_buffer(&result, &dst_ptr, &dst_len, 2);
                         *dst_ptr++ = *src_ptr++;
                         *dst_ptr++ = *src_ptr++;
@@ -176,8 +177,8 @@ convert_regex(const char *const string, la_pattern_t *const pattern)
                 case '(':
                         // In case of '(', count sub expression
                         if (subexpression++ >= MAX_NMATCH)
-                                die_hard("Too many subexpressions in regex "
-                                                "\"%s\"!", string);
+                                die_hard(false, "Too many subexpressions in "
+                                                "regex \"%s\"!", string);
                         // intentional fall through!
                 default:
                         // simply copy all other characters
@@ -205,7 +206,7 @@ die_re(const int errcode, const regex_t *const preg)
 
         regerror(errcode, preg, error_msg, errbuf_size);
 
-        die_err("%s", error_msg);
+        die_hard(true, "%s", error_msg);
 }
 
 /*

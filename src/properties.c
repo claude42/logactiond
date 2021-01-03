@@ -37,20 +37,20 @@ assert_property_ffl(const la_property_t *property, const char *func,
                 const char *file, int line)
 {
         if (!property)
-                die_hard("%s:%u: %s: Assertion 'property' failed. ", file,
-                                line, func);
-        if (property->replacement_braces < 0)
-                die_hard("%s:%u: %s: Assertion 'property->replacement_braces >= 0' failed. ",
+                die_hard(false, "%s:%u: %s: Assertion 'property' failed. ",
                                 file, line, func);
+        if (property->replacement_braces < 0)
+                die_hard(false, "%s:%u: %s: Assertion 'property->replacement_braces "
+                                ">= 0' failed. ", file, line, func);
         if (property->pos < 0)
-                die_hard("%s:%u: %s: Assertion 'property->pos >= 0' failed. ",
+                die_hard(false, "%s:%u: %s: Assertion 'property->pos >= 0' failed. ",
                                 file, line, func);
         /*if (property->length < 2)
-                die_hard("%s:%u: %s: Assertion 'property->length >= 2' failed. ",
+                die_hard(false, "%s:%u: %s: Assertion 'property->length >= 2' failed. ",
                                 file, line, func);*/
         if (property->subexpression < 0)
-                die_hard("%s:%u: %s: Assertion 'property->subexpression >= 0' failed. ",
-                                file, line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'property->subexpression "
+                                ">= 0' failed. ", file, line, func);
 }
 
 /*
@@ -72,7 +72,7 @@ token_length(const char *const string)
                         return ptr-string+1;
         }
 
-        die_hard("Closing '%%' of token missing!");
+        die_hard(false, "Closing '%%' of token missing!");
 
         assert(false);
         return 0; // avoid compiler warning
@@ -147,14 +147,14 @@ copy_str_and_tolower(char *const dest, const char *const src,
         for (i = 0; i < MAX_PROP_SIZE - 1 && src[i] != delim; i++)
         {
                 if (!isalnum(src[i]))
-                        die_hard("Invalid property name %s!", src);
+                        die_hard(false, "Invalid property name %s!", src);
                 dest[i] = tolower(src[i]);
         }
 
         dest[i] = '\0';
 
         if (src[i] != delim)
-                die_hard("Property name longer than %u characters.",
+                die_hard(false, "Property name longer than %u characters.",
                                 MAX_PROP_SIZE);
 
         return i;
@@ -179,7 +179,7 @@ count_open_braces(const char *const string)
                 case '\\':
                         ptr++;
                         if (!*ptr)
-                                die_hard("String ends with \\\\0");
+                                die_hard(false, "String ends with \\\\0");
                         break;
                 case '(':
                         result++;
@@ -261,7 +261,7 @@ create_property_from_config(const char *const name, const char *const value)
 
         result->is_host_property = !strcmp(result->name, LA_HOST_TOKEN);
         if (string_copy(result->value,  MAX_PROP_SIZE, value, 0, '\0') == -1)
-                die_hard("Property value longer than %u charcters.",
+                die_hard(false, "Property value longer than %u charcters.",
                                 MAX_PROP_SIZE);
         result->replacement = NULL;
         result->replacement_braces = 0;

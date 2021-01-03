@@ -225,7 +225,7 @@ finalize_command(const void *p)
 void
 empty_end_queue(void)
 {
-        /* Always remember: don't call die_xxx() from in here as this will
+        /* Always remember: don't call die_hard() from in here as this will
          * call shutdown_daemon() again and we will end up in a fun loop... */
         la_log(LOG_INFO, "Flushing active actions.");
 

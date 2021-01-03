@@ -97,7 +97,7 @@ config_get_string_or_die(const config_setting_t *const setting,
         const char *const result = config_get_string_or_null(setting, name);
 
         if (!result)
-                die_hard("Config element %s missing!", name);
+                die_hard(false, "Config element %s missing!", name);
 
         return result;
 }
@@ -117,7 +117,7 @@ config_setting_lookup_or_die(const config_setting_t *const setting,
         const config_setting_t *const result = config_setting_lookup(
                                 (config_setting_t *) setting, path);
         if (!result)
-                die_hard("Config element %s missing!", path);
+                die_hard(false, "Config element %s missing!", path);
 
         return result;
 }
@@ -174,7 +174,7 @@ get_source(const char *const source)
         config_setting_t *const sources_section =
                 config_lookup(&la_config->config_file, LA_SOURCES_LABEL);
         if (!sources_section)
-                die_hard(LA_SOURCES_LABEL " section missing!");
+                die_hard(false, LA_SOURCES_LABEL " section missing!");
 
         config_setting_t *result = config_setting_lookup(sources_section,
                         source);
@@ -202,7 +202,7 @@ get_source_uc_rule_or_rule(const config_setting_t *const rule,
                                         LA_RULE_SOURCE_LABEL));
 
         if (!result)
-                die_hard("Source not found for rule %s!",
+                die_hard(false, "Source not found for rule %s!",
                                 config_setting_name(uc_rule));
 
         return result;
@@ -226,7 +226,7 @@ get_source_name(const config_setting_t *const rule,
                 result = config_get_string_or_null(rule, LA_RULE_SOURCE_LABEL);
 
         if (!result)
-                die_hard("No source name specified for rule %s!",
+                die_hard(false, "No source name specified for rule %s!",
                                 config_setting_name(uc_rule));
 
         return result;
@@ -269,7 +269,7 @@ get_source_location(const config_setting_t *const rule,
 
         const char *result;
         if (!config_setting_lookup_string(source_def, LA_SOURCE_LOCATION, &result))
-                die_hard("Source location missing for rule %s!",
+                die_hard(false, "Source location missing for rule %s!",
                                 config_setting_name(uc_rule));
 
         return result;
@@ -314,7 +314,7 @@ compile_actions(la_rule_t *const rule, const config_setting_t *const action_def)
         else if (!strcasecmp(tmp, LA_ACTION_NEED_HOST_IP6_LABEL))
                 need_host = LA_NEED_HOST_IP6;
         else
-                die_hard("Invalid value \"%s\" for need_host "
+                die_hard(false, "Invalid value \"%s\" for need_host "
                                 "parameter!", tmp);
 
         int quick_shutdown = false;
@@ -340,7 +340,7 @@ compile_actions(la_rule_t *const rule, const config_setting_t *const action_def)
                                         rule->duration, need_host,
                                         quick_shutdown));
         else
-                die_hard("Begin action always required!");
+                die_hard(false, "Begin action always required!");
 
         assert_list(rule->begin_commands);
 }
@@ -414,7 +414,7 @@ load_blacklists(la_rule_t *const rule, const config_setting_t *const uc_rule_def
                 }
         }
         else
-                die_hard("Element neither string nor list!");
+                die_hard(false, "Element neither string nor list!");
 }
 
 /*
@@ -436,12 +436,12 @@ load_actions(la_rule_t *const rule, const config_setting_t *const uc_rule_def)
                 config_setting_t *const defaults_section =
                         config_lookup(&la_config->config_file, LA_DEFAULTS_LABEL);
                 if (!defaults_section)
-                        die_hard("No action specified for %s!",
+                        die_hard(false, "No action specified for %s!",
                                         config_setting_name(rule));
                 action_reference = config_setting_lookup(defaults_section,
                                 LA_RULE_ACTION_LABEL);
                 if (!action_reference)
-                        die_hard("No action specified for %s!",
+                        die_hard(false, "No action specified for %s!",
                                         config_setting_name(rule));
         }
 
@@ -454,7 +454,7 @@ load_actions(la_rule_t *const rule, const config_setting_t *const uc_rule_def)
         else if (type == CONFIG_TYPE_LIST)
                 compile_list_of_actions(rule, action_reference);
         else
-                die_hard("Element neither string nor list!");
+                die_hard(false, "Element neither string nor list!");
 }
 
 static void
@@ -475,12 +475,12 @@ load_patterns(la_rule_t *const rule, const config_setting_t *const rule_def,
                                 LA_RULE_PATTERNS_LABEL);
 
         if (!patterns)
-                die_hard("No patterns specified for %s!",
+                die_hard(false, "No patterns specified for %s!",
                                 config_setting_name(rule_def));
 
         const int n = config_setting_length(patterns);
         if (n < 0)
-                die_hard("No patterns specified for %s!",
+                die_hard(false, "No patterns specified for %s!",
                                 config_setting_name(rule_def));
 
         for (int i=0; i<n; i++)
@@ -513,11 +513,11 @@ compile_address_list_port(kw_list_t *const list,
                         config_setting_get_elem(setting, i);
                 const char *const ip = config_setting_get_string(elem);
                 if (!ip)
-                        die_hard("Only strings allowed in address list!");
+                        die_hard(false, "Only strings allowed in address list!");
 
                 la_address_t *const address = create_address_port(ip, port);
                 if (!address)
-                        die_err("Invalid IP address %s!", ip);
+                        die_hard(false, "Invalid IP address %s!", ip);
 
                 la_vdebug("compile_address_list(%s)=%s",
                                 config_setting_name(setting), address->text);
@@ -561,10 +561,10 @@ load_properties(kw_list_t *const properties, const config_setting_t *const secti
                         config_setting_get_elem(properties_section, i);
                 const char *const name = config_setting_name(elem);
                 if (!name)
-                        die_hard("Property without a name?!");
+                        die_hard(false, "Property without a name?!");
                 const char *const value = config_setting_get_string(elem);
                 if (!value)
-                        die_hard("Only strings allowed for properties!");
+                        die_hard(false, "Only strings allowed for properties!");
 
                 /* if property with same name already exists, do nothing (as
                  * this could be a standard use case, e.g. rule property
@@ -879,7 +879,7 @@ load_remote_settings(void)
                         LA_REMOTE_SECRET_LABEL));
         la_config->remote_secret_changed = true;
         if (xstrlen(la_config->remote_secret) == 0)
-                die_hard("Remote handling enabled but no secret specified");
+                die_hard(false, "Remote handling enabled but no secret specified");
 
         const config_setting_t *const receive_from = config_setting_lookup(
                         remote_section, LA_REMOTE_RECEIVE_FROM_LABEL);
@@ -1001,7 +1001,7 @@ init_config_mutex(void)
 
         pthread_mutexattr_init(&config_mutex_attr);
         if (pthread_mutexattr_settype(&config_mutex_attr, PTHREAD_MUTEX_RECURSIVE))
-                die_err("Can't set mutex attributes!");
+                die_hard(true, "Can't set mutex attributes");
         pthread_mutex_init(&config_mutex, &config_mutex_attr);
 }*/
 
@@ -1055,7 +1055,7 @@ load_la_config(void)
 #ifndef CLIENTONLY
                         xpthread_mutex_unlock(&config_mutex);
 #endif /* CLIENTONLY */
-                        die_hard("No rules enabledd!");
+                        die_hard(false, "No rules enabledd!");
                 }
                 load_remote_settings();
 

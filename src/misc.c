@@ -28,7 +28,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <syslog.h>
 #include <errno.h>
 #include <unistd.h>
 #include <time.h>
@@ -36,47 +35,59 @@
 #include <termios.h>
 #include <signal.h>
 #include <assert.h>
-#include <ctype.h>
+#include <stdarg.h>
 
 #include "ndebug.h"
-#include "logactiond.h"
-#include "logging.h"
 #include "misc.h"
+
+static void
+default_misc_exit_function(bool log_strerror, const char *const fmt, ...)
+{
+        va_list myargs;
+
+        va_start(myargs, fmt);
+        vfprintf(stderr, fmt, myargs);
+        va_end(myargs);
+        exit(EXIT_FAILURE);
+}
+
+static void (*misc_exit_function)(bool log_strerror, const char *const fmt, ...) =
+        default_misc_exit_function;
+
+void
+inject_misc_exit_function(void (*exit_function)(bool log_strerror,
+                        const char *const fmt, ...))
+{
+        misc_exit_function = exit_function;
+}
 
 #ifndef CLIENTONLY
 
-void
-remove_pidfile(void)
+bool
+remove_pidfile(const char *const pidfile_name)
 {
-        la_debug("remove_pidfile()");
-
-        if (remove(pidfile_name) == -1 && errno != ENOENT)
-                la_log_errno(LOG_ERR, "Unable to remove pidfile");
+        return !(remove(pidfile_name) == -1 && errno != ENOENT);
 }
 
 void
-create_pidfile(void)
+create_pidfile(const char *const pidfile_name)
 {
-        la_debug("create_pidfile(%s)", pidfile_name);
-
         FILE *const stream = fopen(pidfile_name, "w");
         if (!stream)
-                die_err("Unable to open pidfile.");
+                misc_exit_function(true, "Unable to open pidfile");
 
         fprintf(stream, "%ld\n", (long) getpid());
 
         if (fclose(stream) == EOF)
-                die_err("Unable to close pidfile");
+                misc_exit_function(true, "Unable to close pidfile");
 }
 
 /* Returns true if logactiond process is already running */
 
 bool
-check_pidfile(void)
+check_pidfile(const char *const pidfile_name)
 {
 #define BUF_LEN 20 /* should be enough - I think */
-
-        la_debug("check_pidfile(%s)", pidfile_name);
 
         bool result = true;
 
@@ -84,7 +95,6 @@ check_pidfile(void)
 
         if (stream)
         {
-                la_debug("opened pid");
                 unsigned int pid;
                 if (fscanf(stream, "%u", &pid) == 1)
                         result = !(kill(pid, 0) == -1 && errno == ESRCH);
@@ -92,15 +102,14 @@ check_pidfile(void)
                         result = false;
 
                 if (fclose(stream) == EOF)
-                        die_err("Unable to close pidfile");
+                        misc_exit_function(true, "Unable to close pidfile");
         }
         else
         {
-                la_debug("did not open pid");
                 if (errno == ENOENT)
                         result = false;
                 else
-                        die_err("Unable to open pidfile.");
+                        misc_exit_function(true, "Unable to open pidfile");
         }
 
         return result;
@@ -115,15 +124,15 @@ xpthread_create(pthread_t *const thread, const pthread_attr_t *const attr,
                 void *(*start_routine)(void *), void *const arg,
                 const char *const name)
 {
-        int ret = pthread_create(thread, attr, start_routine, arg);
-        if (ret)
-                die_val(ret, "Failed to create thread!");
+        errno = pthread_create(thread, attr, start_routine, arg);
+        if (errno)
+                misc_exit_function(true, "Failed to create thread");
 #if HAVE_PTHREAD_SETNAME_NP
         if (name)
         {
-                ret = pthread_setname_np(*thread, name);
-                if (ret)
-                        die_val(ret, "Failed to set thread name!");
+                errno = pthread_setname_np(*thread, name);
+                if (errno)
+                        misc_exit_function(true, "Failed to set thread name");
 
         }
 #elif HAVE_PTHREAD_SET_NAME_NP
@@ -140,7 +149,7 @@ void
 xpthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
         if (pthread_cond_wait(cond, mutex))
-                die_err("Failed to wait for condition!");
+                misc_exit_function(true, "Failed to wait for condition");
 }
 
 /*
@@ -151,25 +160,11 @@ int
 xpthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
                 const struct timespec *abstime)
 {
-        const int ret = pthread_cond_timedwait(cond, mutex, abstime);
-        la_vdebug("xpthread_cond_timedwait()=%u", ret);
+        errno = pthread_cond_timedwait(cond, mutex, abstime);
+        if (errno != 0 && errno != ETIMEDOUT && errno != EINTR)
+                misc_exit_function(true, "Failed to timed wait for condition");
 
-        switch (ret)
-        {
-                case 0:
-                        break;
-                case ETIMEDOUT:
-                        la_vdebug("pthread_cond_timedwait() timed out");
-                        break;
-                case EINTR:
-                        la_vdebug("pthread_cond_timedwait() interrupted");
-                        break;
-                default:
-                        die_err("Failed to timed wait for condition");
-                        break;
-        }
-
-        return ret;
+        return errno;
 }
 
 /*
@@ -180,7 +175,7 @@ void
 xpthread_cond_signal(pthread_cond_t *cond)
 {
         if (pthread_cond_signal(cond))
-                die_err("Failed to signal thread!");
+                misc_exit_function(true, "Failed to signal thread");
 }
 
 /*
@@ -198,9 +193,9 @@ xpthread_mutex_lock(pthread_mutex_t *mutex)
 	la_vdebug("Thread %s trying to LOCK mutex %u", thread_name, mutex);*/
 #endif /* HAVE_PTHREAD_GENTAME_NP */
 
-        const int ret = pthread_mutex_lock(mutex);
-        if (ret)
-                die_val(ret, "Failed to lock mutex!");
+        errno = pthread_mutex_lock(mutex);
+        if (errno)
+                misc_exit_function(true, "Failed to lock mutex");
 
 #if HAVE_PTHREAD_GETNAME_NP
 	/*la_vdebug("Thread %s successfully LOCKED mutex %u", thread_name, mutex);*/
@@ -222,9 +217,9 @@ xpthread_mutex_unlock(pthread_mutex_t *mutex)
 	la_vdebug("Thread %s trying to UNLOCK mutex %u", thread_name, mutex);*/
 #endif /* HAVE_PTHREAD_GENTAME_NP */
 
-        const int ret = pthread_mutex_unlock(mutex);
-        if (ret)
-                die_val(ret, "Failed to unlock mutex!");
+        errno = pthread_mutex_unlock(mutex);
+        if (errno)
+                misc_exit_function(true, "Failed to unlock mutex");
 
 #if HAVE_PTHREAD_GETNAME_NP
 	/*la_vdebug("Thread %s successfully UNLOCKED mutex %u", thread_name, mutex);*/
@@ -237,9 +232,9 @@ xpthread_mutex_unlock(pthread_mutex_t *mutex)
 void
 xpthread_join(pthread_t thread, void **retval)
 {
-        const int ret = pthread_join(thread, retval);
-        if (ret)
-                die_val(ret, "Faoiled to join thread!");
+        errno = pthread_join(thread, retval);
+        if (errno)
+                misc_exit_function(true, "Faoiled to join thread");
 }
 
 #endif /* CLIENTONLY */
@@ -249,14 +244,13 @@ xtime(time_t *tloc)
 {
         const time_t result = time(tloc);
         if (result == -1)
-                die_err("Can't get time!");
+                misc_exit_function(true, "Can't get time");
 
         return result;
 }
 
 void xfree(void *ptr)
 {
-        la_debug("free(%p)", ptr);
         free(ptr);
 }
 
@@ -266,7 +260,7 @@ xrealloc(void *ptr, size_t n)
 {
         void *const result = realloc(ptr, n);
         if (!result && n!=0)
-                die_err("Memory exhausted");
+                misc_exit_function(true, "Memory exhausted");
 
         return result;
 }
@@ -276,7 +270,7 @@ xmalloc0(size_t n)
 {
         void *const result = calloc(n, 1);
         if (!result && n!=0)
-                die_err("Memory exhausted");
+                misc_exit_function(true, "Memory exhausted");
 
         return result;
 }
@@ -286,12 +280,12 @@ xmalloc(size_t n)
 {
         void *const result =  malloc(n);
         if (!result && n!=0)
-                die_err("Memory exhausted\n");
+                misc_exit_function(true, "Memory exhausted");
 
         return result;
 }
 
-/* strdup() clone; return NULL if s==NULL, calls die_err() in case off error */
+/* strdup() clone; return NULL if s==NULL, calls misc_exit_function() in case off error */
 
 char *
 xstrdup(const char *s)
@@ -301,12 +295,12 @@ xstrdup(const char *s)
 
         void *const result = strdup(s);
         if (!result)
-                die_err("Memory exhausted\n");
+                misc_exit_function(true, "Memory exhausted\n");
 
         return result;
 }
 
-/* strndup() clone; return NULL if s==NULL, calls die_err() in case off error */
+/* strndup() clone; return NULL if s==NULL, calls misc_exit_function() in case off error */
 
 char *
 xstrndup(const char *s, size_t n)
@@ -316,7 +310,7 @@ xstrndup(const char *s, size_t n)
 
         void *const result = strndup(s, n);
         if (!result)
-                die_err("Memory exhausted\n");
+                misc_exit_function(true, "Memory exhausted");
 
         return result;
 }
@@ -429,13 +423,11 @@ strendcmp(const char *const string, const char *const suffix)
 
 void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, const size_t on_top)
 {
-        la_vdebug("realloc_buffer(%lu, %lu)", *dst_len, on_top);
         assert (*dst); assert((size_t) (*dst_ptr - *dst) < *dst_len);
 
         if (*dst_ptr + on_top >= *dst + *dst_len)
         {
                 *dst_len = *dst_len * 2 + on_top;
-                la_debug("realloc_buffer()=%lu", *dst_len);
 
                 char *const tmp_ptr = xrealloc(*dst, *dst_len);
                 *dst_ptr = *dst_ptr - *dst + tmp_ptr;
@@ -479,14 +471,14 @@ xgetpass(const char *const prompt)
         printf("%s", prompt);
         FILE *tty = fopen("/dev/tty", "r");
         if (!tty)
-                die_err("Can't open /dev/tty");
+                misc_exit_function(true, "Can't open /dev/tty");
 
         size_t password_size = 0;
         static char *password_buffer = NULL;
         (void) _getpass(&password_buffer, &password_size, tty);
 
         if (fclose(tty) == EOF)
-                die_err("Can't close /dev/tty");
+                misc_exit_function(true, "Can't close /dev/tty");
 
         puts("");
 

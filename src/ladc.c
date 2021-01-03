@@ -82,7 +82,7 @@ cleanup_socket(void)
 {
         freeaddrinfo(ai);
         if (close(socket_fd) == -1)
-                die_err("Unable to close socket");
+                die_hard(true, "Unable to close socket");
 }
 
 static void
@@ -96,13 +96,13 @@ setup_socket(const char *host, const char *port)
         hints.ai_protocol = IPPROTO_UDP;
         int r = getaddrinfo(host, port, &hints, &ai);
         if (r)
-                die_hard("Unable to convert address: %s", gai_strerror(r));
+                die_hard(false, "Unable to convert address: %s.", gai_strerror(r));
 
         socket_fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
         if (socket_fd == -1)
         {
                 freeaddrinfo(ai);
-                die_err("Unable to create server socket");
+                die_hard(true, "Unable to create server socket");
         }
 }
 
@@ -115,9 +115,9 @@ send_remote_message(const char *message)
         cleanup_socket();
 
         if (message_sent == -1)
-                die_err("Unable to send message");
+                die_hard(true, "Unable to send message");
         else if (message_sent != TOTAL_MSG_LEN)
-                die_err("Sent truncated message");
+                die_hard(true, "Sent truncated message");
         else
                 return;
 }
@@ -127,37 +127,37 @@ send_local_message(char *message)
 {
         FILE *fifo = fopen(FIFOFILE, "w");
         if (!fifo)
-                die_err("Unable to open fifo");
+                die_hard(true, "Unable to open fifo");
 
         int fd = fileno(fifo);
         if (fd == -1)
         {
                 fclose(fifo);
-                die_hard("Unable to get FD for fifo");
+                die_hard(true,"Unable to get FD for fifo");
         }
 
         struct stat stats;
         if (fstat(fd, &stats) == -1)
         {
                 fclose(fifo);
-                die_err("Unable to stat fifo");
+                die_hard(true, "Unable to stat fifo");
         }
 
         if (!S_ISFIFO(stats.st_mode))
         {
                 fclose(fifo);
-                die_hard(FIFOFILE " is not a fifo");
+                die_hard(false, FIFOFILE " is not a fifo.");
         }
 
 
         if (fprintf(fifo, "%s\n", message) < 0)
         {
                 fclose(fifo);
-                die_err("Unable to write to fifo");
+                die_hard(true, "Unable to write to fifo");
         }
 
         if (fclose(fifo) == EOF)
-                die_err("Unable to close fifo");
+                die_hard(true, "Unable to close fifo");
 }
 
 int
@@ -167,6 +167,7 @@ main(int argc, char *argv[])
         const char *password = NULL;
         const char *port = NULL;
 
+        inject_misc_exit_function(die_hard);
         inject_nodelist_exit_function(die_hard);
 
         for (;;)
@@ -213,14 +214,14 @@ main(int argc, char *argv[])
         {
                 password = xgetpass("Password: ");
                 if (!strlen(password))
-                        die_hard("No password entered!");
+                        die_hard(false, "No password entered!");
         }
 
         if (host && !port)
                 port = DEFAULT_PORT_STR;
 
         if (optind > argc-1)
-                die_hard("Wrong number of arguments.");
+                die_hard(false, "Wrong number of arguments.");
 
         char *command = argv[optind++];
         bool success = false;
@@ -229,7 +230,7 @@ main(int argc, char *argv[])
         if (!strcmp(command, "add"))
         {
                 if (optind != argc-2 && optind != argc-3)
-                        die_hard("Wrong number of arguments.");
+                        die_hard(false, "Wrong number of arguments.");
 
                 char *ip = argv[optind++];
                 char *rule = argv[optind++];
@@ -241,7 +242,7 @@ main(int argc, char *argv[])
         else if (!strcmp(command, "del"))
         {
                 if (optind != argc-1)
-                        die_hard("Wrong number of arguments.");
+                        die_hard(false, "Wrong number of arguments.");
 
                 success = init_del_message(message, argv[optind]);
         }
@@ -296,7 +297,7 @@ main(int argc, char *argv[])
                 else if (optind == argc-1)
                         success = init_sync_message(message, argv[optind++]);
                 else
-                        die_hard("Wrong num ber of arguments.");
+                        die_hard(false, "Wrong num ber of arguments.");
         }
         else if (!strcmp(command, "dump"))
         {
@@ -305,31 +306,31 @@ main(int argc, char *argv[])
         else if (!strcmp(command, "enable"))
         {
                 if (optind != argc-1)
-                        die_hard("Wrong number of arguments.");
+                        die_hard(false, "Wrong number of arguments.");
 
                 success = init_enable_message(message, argv[optind]);
         }
         else if (!strcmp(command, "disable"))
         {
                 if (optind != argc-1)
-                        die_hard("Wrong number of arguments.");
+                        die_hard(false, "Wrong number of arguments.");
 
                 success = init_disable_message(message, argv[optind]);
         }
         else
         {
-                die_hard("Unknown command \"%s\".", command);
+                die_hard(false, "Unknown command \"%s\".", command);
         }
 
         if (!success)
-                die_err("Unable to create message");
+                die_hard(true, "Unable to create message");
 
         if (host)
         {
 #ifdef WITH_LIBSODIUM
                 generate_send_key_and_salt(password);
                 if (!encrypt_message(message))
-                        die_err("Unable to encrypt message");
+                        die_hard(true, "Unable to encrypt message");
 #endif /* WITH_LIBSODIUM */
                 setup_socket(host, port);
                 send_remote_message(message);

@@ -153,11 +153,11 @@ cleanup_remote(void *const arg)
         la_debug("cleanup_remote()");
         /* TODO: re-enable mt save */
         /*if (server_fd > 0 && close(server_fd) == -1)
-                die_err("Unable to close socket");*/
+                die_hard(true, "Unable to close socket");*/
         if (client_fd4 > 0 && close(client_fd4) == -1)
-                die_err("Unable to close socket");
+                die_hard(true, "Unable to close socket");
         if (client_fd6 > 0 && close(client_fd6) == -1)
-                die_err("Unable to close socket");
+                die_hard(true, "Unable to close socket");
 }
 
 
@@ -179,7 +179,7 @@ remote_loop(void *const ptr)
 
         const int server_fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
         if (server_fd == -1)
-                die_err("Unable to create server socket");
+                die_hard(true, "Unable to create server socket");
 
         /* Set IPV6_V6ONLY to 1, otherwise it's not possible to bind to both
          * 0.0.0.0 and :: a the same time. Using only IPv6 would IMHO
@@ -192,7 +192,7 @@ remote_loop(void *const ptr)
         setsockopt(server_fd, IPPROTO_IPV6, IPV6_V6ONLY, &(int) { 1 }, sizeof (int));
 
         if (bind(server_fd, (struct sockaddr *) ai->ai_addr, ai->ai_addrlen) == -1)
-                die_err("Unable to bind to server socket");
+                die_hard(true, "Unable to bind to server socket");
 
         for (;;)
         {
@@ -214,7 +214,8 @@ remote_loop(void *const ptr)
                         if (errno == EINTR)
                                 continue;
                         else
-                                die_err("Error while receiving remote messages");
+                                die_hard(true, "Error while receiving remote "
+                                                "messages");
                 }
 
                 buf[num_read] = '\0';
@@ -289,7 +290,7 @@ start_remote_thread(void)
         struct addrinfo *ai;
         int r = getaddrinfo(node, port, &hints, &ai); 
         if (r)
-                die_err("Cannot get addrinfo: %s", gai_strerror(r));
+                die_hard(true, "Cannot get addrinfo: %s", gai_strerror(r));
 
         for (; ai; ai = ai->ai_next)
                 xpthread_create(&remote_thread, NULL, remote_loop, ai, "remote");

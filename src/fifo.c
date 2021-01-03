@@ -19,7 +19,6 @@
 #include <config.h>
 
 #include <pthread.h>
-#include <syslog.h>
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
@@ -58,14 +57,14 @@ create_fifo(void)
         la_debug("create_fifo()");
 
         if (remove(FIFOFILE) && errno != ENOENT)
-                die_err("Cannot create fifo.");
+                die_hard(true, "Cannot create fifo");
 
         if (mkfifo(FIFOFILE, 0666) == -1)
-                die_err("Cannot create fifo");
+                die_hard(true, "Cannot create fifo");
 
         fifo = fopen(FIFOFILE, "r+");
         if (!fifo)
-                die_err("Cannot open fifo");
+                die_hard(true, "Cannot open fifo");
 }
 
 static void *
@@ -89,7 +88,7 @@ fifo_loop(void *const ptr)
                 const ssize_t num_read = getline(&buf, &buf_size, fifo);
                 if  (num_read == -1  && !feof(fifo))
                 {
-                        die_err("Reading from fifo  failed");
+                        die_hard(true, "Reading from fifo failed");
                 }
                 else if (num_read > 0)
                 {

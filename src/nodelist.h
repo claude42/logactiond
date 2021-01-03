@@ -19,6 +19,8 @@
 #ifndef __nodelist_h
 #define __nodelist_h
 
+#include <stdbool.h>
+
 #include "ndebug.h"
 
 /* Assertions */
@@ -58,7 +60,8 @@ typedef void * kw_iterator;
         ((x)->succ && (x)->pred)
 
 
-void inject_nodelist_exit_function(void (*exit_function)(const char *const fmt, ...));
+void inject_nodelist_exit_function(void (*exit_function)(bool log_strerror,
+                        const char *const fmt, ...));
 
 kw_list_t * create_list(void);
 

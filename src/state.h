@@ -23,6 +23,8 @@
 
 #include "ndebug.h"
 
+extern const char *saved_state;
+
 extern pthread_t save_state_thread;
 
 void save_state(const char *state_file_name, bool verbose);

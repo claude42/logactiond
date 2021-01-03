@@ -41,6 +41,8 @@
 #include "sources.h"
 #include "status.h"
 
+int status_monitoring = 0;
+
 pthread_t monitoring_thread = 0;
 
 /*
@@ -122,14 +124,14 @@ dump_rules(void)
 
         FILE *const rules_file = fopen(RULESFILE, "w");
         if (!rules_file)
-                die_err("Can't create \"" RULESFILE "\"!");
+                die_hard(true, "Can't create \"" RULESFILE "\"");
 
         FILE *diag_file = NULL;
         if (status_monitoring >= 2)
         {
                 diag_file = fopen(DIAGFILE, "w");
                 if (!diag_file)
-                        die_err("Can't create \"" DIAGFILE "\"!");
+                        die_hard(true, "Can't create \"" DIAGFILE "\"");
         }
 
         fputs(RULES_HEADER, rules_file);
@@ -168,10 +170,10 @@ dump_rules(void)
         xpthread_mutex_unlock(&config_mutex);
 
         if (fclose(rules_file))
-                die_hard("Can't close \" RULESTSFILE \"!");
+                die_hard(false, "Can't close \" RULESTSFILE \"");
         if (status_monitoring >= 2)
                 if (fclose(diag_file))
-                        die_hard("Can't close \" DIAGFILE \"!");
+                        die_hard(false, "Can't close \" DIAGFILE \"");
 }
 
 /*
@@ -268,7 +270,7 @@ dump_queue_status(const bool force)
 
         FILE *const hosts_file = fopen(HOSTSFILE, "w");
         if (!hosts_file)
-                die_err("Can't create \"" HOSTSFILE "\"!");
+                die_hard(false, "Can't create \"" HOSTSFILE "\"!");
 
         const time_t now = xtime(NULL);
         char date_string[26];
@@ -363,7 +365,7 @@ dump_queue_status(const bool force)
         xpthread_mutex_unlock(&end_queue_mutex);
 
         if (fclose(hosts_file))
-                die_hard("Can't close \" HOSTSFILE \"!");
+                die_hard(false, "Can't close \" HOSTSFILE \"!");
 }
 
 #endif /* NOMONITORING */

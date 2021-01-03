@@ -40,6 +40,8 @@
 #define HOSTS_LINE "%-43.43s %s %2d %2ld%c  %-13.13s %-13.13s\n"
 #define HOSTS_LINE_V "%-43.43s %s %2d %2ld%c  %-13.13s %-13.13s (%u,%u)\n"
 
+extern int status_monitoring;
+
 extern pthread_t monitoring_thread;
 
 void start_monitoring_thread(void);
