@@ -58,13 +58,7 @@ typedef struct la_meta_command_s
         int factor;
 } meta_command_t;
 
-static int id_counter = 0;
-
 static kw_list_t *meta_list;
-
-static la_command_t * create_manual_command_from_template(
-                const la_command_t *const template,
-                const la_address_t *const address, const char *const from);
 
 void
 assert_command_ffl(const la_command_t *command, const char *func,
@@ -327,7 +321,7 @@ exec_command(const la_command_t *command, const la_commandtype_t type)
          * not have a rule attached to them anymore */
         assert(command);
         assert(command->name);
-        la_debug("exec_command(%s)", command->name);
+        la_debug_func(command->name);
 
         const int result = system(type == LA_COMMANDTYPE_BEGIN ?
                         command->begin_string_converted :
@@ -368,7 +362,7 @@ meta_list_length(void)
 static void
 free_meta_command(meta_command_t *const meta_command)
 {
-        la_debug("free_meta_command()");
+        la_debug_func(NULL);
         assert(meta_command);
 
         free_address(meta_command->address);
@@ -378,7 +372,7 @@ free_meta_command(meta_command_t *const meta_command)
 void
 free_meta_list(void)
 {
-        la_vdebug("free_meta_list()");
+        la_vdebug_func(NULL);
         if (!meta_list)
                 return;
         assert_list(meta_list);
@@ -394,7 +388,7 @@ static meta_command_t *
 create_meta_command(const la_command_t *const command)
 {
         assert_command(command); assert(command->address);
-        la_debug("create_meta_command()");
+        la_debug_func(NULL);
         meta_command_t *result = xmalloc(sizeof *result);
 
         result->rule = command->rule;
@@ -417,7 +411,7 @@ static meta_command_t *
 find_on_meta_list(const la_command_t *const command)
 {
         assert_command(command); assert(command->address);
-        la_debug("find_on_meta_list(%s)", command->name);
+        la_debug_func(command->name);
 
         const time_t now = xtime(NULL);
 
@@ -587,7 +581,7 @@ trigger_manual_command(const la_address_t *const address,
                 const bool suppress_logging)
 {
         assert_address(address); assert_command(template);
-        la_debug("trigger_manual_command()");
+        la_debug_func(NULL);
 
         /* If end_time was specified, check whether it's already in the past.
          * If so, do nothing */
@@ -737,7 +731,7 @@ static int
 scan_action_tokens(kw_list_t *const property_list, const char *const string)
 {
         assert_list(property_list); assert(string);
-        la_debug("scan_action_tokens(%s)", string);
+        la_debug_func(string);
 
         const char *ptr = string;
         int n_tokens = 0;
@@ -848,7 +842,7 @@ create_command_from_template(const la_command_t *const template,
         assert_list(pattern->properties);
         if (address)
                 assert_address(address);
-        la_debug("create_command_from_template(%s)", template->name);
+        la_debug_func(template->name);
 
         if (!has_correct_address(template, address))
                 return NULL;
@@ -880,14 +874,14 @@ bool is_local_address(const char *const address)
 
 /* TODO: combine both create*command*() methods into one */
 
-static la_command_t *
+la_command_t *
 create_manual_command_from_template(const la_command_t *const template,
                 const la_address_t *const address, const char *const from)
 {
         assert_command(template);
         if (address)
                 assert_address(address);
-        la_debug("create_manual_command_from_template(%s)", template->name);
+        la_debug_func(template->name);
 
         if (!has_correct_address(template, address))
                 return NULL;

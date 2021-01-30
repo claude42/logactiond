@@ -236,7 +236,7 @@ Suite *misc_suite(void)
         tcase_add_test(tc_strings, check_concat_null);
         tcase_add_loop_test(tc_strings, check_string_copy, 0, 7);
         tcase_add_loop_test(tc_strings, check_strendcmp_match, 0, 5);
-        tcase_add_loop_test(tc_strings, check_strendcmp_dontmatch, 0, 5);
+        tcase_add_loop_test(tc_strings, check_strendcmp_dontmatch, 0, 4);
         tcase_add_test(tc_strings, check_realloc_buffer);
         suite_add_tcase(s, tc_strings);
 

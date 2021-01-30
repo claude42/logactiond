@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <time.h>
+#include <stdnoreturn.h>
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -91,7 +92,7 @@ static void
 dump_rule_diagnostics(FILE *const diag_file, const la_rule_t *const rule)
 {
         assert(diag_file), assert_rule(rule);
-        la_vdebug("dump_rule_diagnostics(%s)", rule->name);
+        la_vdebug_func(rule->name);
 
         fprintf(diag_file, "%s, list length=%u\n", rule->name,
                         list_length(rule->trigger_list));
@@ -105,7 +106,7 @@ static void
 dump_single_rule(FILE *const rules_file, const la_rule_t *const rule)
 {
         assert(rules_file), assert_rule(rule);
-        la_vdebug("dump_single_rule(%s)", rule->name);
+        la_vdebug_func(rule->name);
         fprintf(rules_file, RULES_LINE,
                         rule->enabled ? 'Y' : 'N', rule->name,
                         rule->systemd_unit ? rule->systemd_unit : rule->service ? rule->service : "-",
@@ -120,7 +121,7 @@ dump_single_rule(FILE *const rules_file, const la_rule_t *const rule)
 void
 dump_rules(void)
 {
-        la_debug("dump_rules()");
+        la_debug_func(NULL);
 
         FILE *const rules_file = fopen(RULESFILE, "w");
         if (!rules_file)
@@ -170,10 +171,9 @@ dump_rules(void)
         xpthread_mutex_unlock(&config_mutex);
 
         if (fclose(rules_file))
-                die_hard(false, "Can't close \" RULESTSFILE \"");
-        if (status_monitoring >= 2)
-                if (fclose(diag_file))
-                        die_hard(false, "Can't close \" DIAGFILE \"");
+                die_hard(true, "Can't close \" RULESTSFILE \"");
+        if (status_monitoring >= 2 && fclose(diag_file))
+                die_hard(true, "Can't close \" DIAGFILE \"");
 }
 
 /*
@@ -183,7 +183,7 @@ dump_rules(void)
 static void
 cleanup_monitoring(void *const arg)
 {
-        la_debug("cleanup_monitoring()");
+        la_debug_func(NULL);
 
         monitoring_thread = 0;
 
@@ -191,19 +191,18 @@ cleanup_monitoring(void *const arg)
                 la_log_errno(LOG_ERR, "Can't remove host status file");
         if (remove(RULESFILE) && errno != ENOENT)
                 la_log_errno(LOG_ERR, "Can't remove rule status file");
-        if (status_monitoring >=2)
-                if (remove(DIAGFILE) && errno != ENOENT)
-                        la_log_errno(LOG_ERR, "Can't remove diagnostics file");
+        if (status_monitoring >= 2 && remove(DIAGFILE) && errno != ENOENT)
+                la_log_errno(LOG_ERR, "Can't remove diagnostics file");
 }
 
 /*
  * Regularly dump logfiles
  */
 
-static void *
+noreturn static void *
 dump_loop(void *const ptr)
 {
-        la_debug("dump_loop()");
+        la_debug_func(NULL);
 
         pthread_cleanup_push(cleanup_monitoring, NULL);
 
@@ -237,7 +236,7 @@ dump_loop(void *const ptr)
 void
 start_monitoring_thread(void)
 {
-        la_debug("init_monitoring()");
+        la_debug_func(NULL);
         if (!status_monitoring)
                 return;
         assert(!monitoring_thread);
@@ -263,7 +262,7 @@ start_monitoring_thread(void)
 void
 dump_queue_status(const bool force)
 {
-        la_vdebug("dump_queue_status()");
+        la_vdebug_func(NULL);
 
         if ((!status_monitoring && !force) || shutdown_ongoing)
                 return;

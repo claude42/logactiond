@@ -40,6 +40,7 @@
 #include "rules.h"
 #include "state.h"
 #include "status.h"
+#include "configfile.h"
 
 /*
  * Message format:
@@ -71,6 +72,8 @@
  *  "0X<host>\0"
  *    send all banned addresses to other host (or sending host if <host> is
  *    empty) via + command
+ *  "0Y\0"
+ *    instructs daemon to stop any potentially ongoing syncing activities
  *  "0D\0"
  *    dump current queue state
  *  "0Y<rule>\0"
@@ -146,7 +149,7 @@ parse_add_entry_message(const char *const message, la_address_t *const address,
                 int *const factor)
 {
         assert(message); assert(address); assert(rule);
-        la_debug("parse_add_entry_message(%s)", message);
+        la_debug_func(message);
 
         /* Ignore empty lines or comments */
         if (is_empty_line(message))
@@ -194,7 +197,8 @@ add_entry(const char *const buffer, const char *const from)
 {
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
         assert(buffer);
-        la_debug("add_entry(%s)", buffer);
+        la_debug_func(buffer);
+
         la_address_t address;
         la_rule_t *rule;
         time_t end_time;
@@ -217,7 +221,7 @@ static void
 del_entry(const char *const buffer)
 {
         assert(buffer);
-        la_debug("del_entry(%s)", buffer);
+        la_debug_func(buffer);
 
         la_address_t address;
         if (!init_address(&address, buffer+2))
@@ -257,14 +261,14 @@ perform_shutdown(void)
 static void
 perform_save(void)
 {
-        save_state(NULL, true);
+        save_state(true);
 }
 
 static void
 update_log_level(const char *const buffer)
 {
         assert(buffer);
-        la_debug("update_log_level(%s)", buffer);
+        la_debug_func(buffer);
 
         char *endptr;
         errno = 0;
@@ -321,7 +325,7 @@ static void
 enable_rule(const char *const buffer)
 {
         assert(buffer);
-        la_debug("enable_rule(%s)", buffer);
+        la_debug_func(buffer);
 
         xpthread_mutex_lock(&config_mutex);
 
@@ -339,7 +343,7 @@ static void
 disable_rule(const char *const buffer)
 {
         assert(buffer);
-        la_debug("disable_rule(%s)", buffer);
+        la_debug_func(buffer);
 
         xpthread_mutex_lock(&config_mutex);
 
@@ -398,6 +402,10 @@ parse_message_trigger_command(const char *const buf, const char *const from)
         case CMD_SYNC:
                 la_log(LOG_INFO, "Received sync command from %s.", from);
                 sync_entries(buf, from);
+                break;
+        case CMD_STOPSYNC:
+                la_log(LOG_INFO, "Received stopsync command from %s.", from);
+                stop_syncing();
                 break;
         case CMD_DUMP_STATUS:
                 perform_dump();
@@ -461,7 +469,7 @@ print_add_message(FILE *const stream, const la_command_t *const command)
         if (!command->address)
                 return 0;
 
-        la_debug("print_add_message(%s)", command->address->text);
+        la_debug_func(command->address->text);
 
         return fprintf(stream, "%c%c%s,%s,%ld,%d\n", PROTOCOL_VERSION, CMD_ADD,
                         command->address->text, command->rule_name,
@@ -524,8 +532,8 @@ init_log_level_message(char *const buffer, const int new_log_level)
 {
         assert(new_log_level <= LOG_DEBUG+2);
 
-        char new_log_level_str[3];
-        snprintf(new_log_level_str, 3, "%i", new_log_level);
+        char new_log_level_str[12];
+        snprintf(new_log_level_str, 12, "%i", new_log_level);
 
         return init_simple_message(buffer, CMD_CHANGE_LOG_LEVEL,
                         new_log_level_str); }
@@ -551,7 +559,15 @@ init_reset_counts_message(char *const buffer)
 bool
 init_sync_message(char *const buffer, const char *const host)
 {
+        la_debug_func(host);
         return init_simple_message(buffer, CMD_SYNC, host ? host : NULL);
+}
+
+bool
+init_stopsync_message(char *buffer)
+{
+        la_debug_func(NULL);
+        return init_simple_message(buffer, CMD_STOPSYNC, NULL);
 }
 
 bool

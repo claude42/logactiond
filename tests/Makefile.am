@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = subdir-objects
-TESTS = check_nodelist check_messages check_binarytree check_dnsbl check_misc check_addresses check_commands check_properties check_patterns check_endqueue #check_crypto
-check_PROGRAMS = check_nodelist check_messages check_binarytree check_dnsbl check_misc check_addresses check_commands check_properties check_patterns check_endqueue #check_crypto
+TESTS = check_nodelist check_messages check_binarytree check_dnsbl check_misc check_addresses check_commands check_properties check_patterns check_endqueue check_crypto
+check_PROGRAMS = check_nodelist check_messages check_binarytree check_dnsbl check_misc check_addresses check_commands check_properties check_patterns check_endqueue check_crypto
 MY_CFLAGS = -g -Wall -fprofile-arcs -ftest-coverage
 
 check_nodelist_SOURCES = check_nodelist.c $(top_builddir)/src/nodelist.h 
@@ -34,7 +34,7 @@ check_commands_LDADD = $(top_builddir)/src/logactiond-logging.o $(top_builddir)/
 
 check_endqueue_SOURCES = check_endqueue.c
 check_endqueue_CFLAGS = $(PTHREAD_CFLAGS) $(CFLAGS) $(CHECK_CFLAGS) $(MY_CFLAGS)
-check_endqueue_LDADD = $(top_builddir)/src/logactiond-logging.o $(top_builddir)/src/logactiond-nodelist.o $(top_builddir)/src/logactiond-misc.o $(top_builddir)/src/logactiond-addresses.o $(top_builddir)/src/logactiond-properties.o $(top_builddir)/src/logactiond-binarytree.o $(top_builddir)/src/logactiond-dnsbl.o $(CHECK_LIBS)
+check_endqueue_LDADD = $(top_builddir)/src/logactiond-sources.o $(top_builddir)/src/logactiond-messages.o $(top_builddir)/src/logactiond-logging.o $(top_builddir)/src/logactiond-nodelist.o $(top_builddir)/src/logactiond-misc.o $(top_builddir)/src/logactiond-addresses.o $(top_builddir)/src/logactiond-properties.o $(top_builddir)/src/logactiond-binarytree.o $(top_builddir)/src/logactiond-dnsbl.o $(CHECK_LIBS)
 
 check_properties_SOURCES = check_properties.c $(top_builddir)/src/properties.h 
 check_properties_CFLAGS = $(PTHREAD_CFLAGS) $(CFLAGS) $(CHECK_CFLAGS) $(MY_CFLAGS)
@@ -44,7 +44,7 @@ check_patterns_SOURCES = check_patterns.c
 check_patterns_CFLAGS = $(PTHREAD_CFLAGS) $(CFLAGS) $(CHECK_CFLAGS) $(MY_CFLAGS)
 check_patterns_LDADD = $(top_builddir)/src/logactiond-properties.o $(top_builddir)/src/logactiond-logging.o $(top_builddir)/src/logactiond-nodelist.o $(top_builddir)/src/logactiond-misc.o $(CHECK_LIBS)
 
-#check_crypto_SOURCES = check_crypto.c
-#check_crypto_CFLAGS = $(PTHREAD_CFLAGS) $(LIBSODIUM_CFLAGS) $(CFLAGS) $(CHECK_CFLAGS) $(MY_CFLAGS)
-#check_crypto_LDADD = $(top_builddir)/src/logactiond-addresses.o $(top_builddir)/src/logactiond-properties.o $(top_builddir)/src/logactiond-logging.o $(top_builddir)/src/logactiond-nodelist.o $(top_builddir)/src/logactiond-misc.o $(CHECK_LIBS)
-#check_crypto_LDFLAGS = $(LIBSODIUM_LIBS) $(LIBS)
+check_crypto_SOURCES = check_crypto.c
+check_crypto_CFLAGS = $(PTHREAD_CFLAGS) $(LIBSODIUM_CFLAGS) $(CFLAGS) $(CHECK_CFLAGS) $(MY_CFLAGS)
+check_crypto_LDADD = $(top_builddir)/src/logactiond-addresses.o $(top_builddir)/src/logactiond-properties.o $(top_builddir)/src/logactiond-logging.o $(top_builddir)/src/logactiond-nodelist.o $(top_builddir)/src/logactiond-misc.o $(CHECK_LIBS)
+check_crypto_LDFLAGS = $(LIBSODIUM_LIBS) $(LIBS)

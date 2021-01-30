@@ -81,7 +81,7 @@ trigger_shutdown(int status, int saved_errno)
 }
 
 void
-save_state(const char *const state_file_name, bool verbose)
+save_state(bool verbose)
 {
         method_called = "save_state";
 }
@@ -125,6 +125,12 @@ void
 sync_entries(const char *const buffer, const char *const from)
 {
         method_called = "sync_entries";
+}
+
+void
+stop_syncing(void)
+{
+        method_called = "stop_syncing";
 }
 
 void
@@ -258,6 +264,11 @@ START_TEST (parse_xxx_message)
         parse_message_trigger_command("0X", "9.9.9.9");
         ck_assert_str_eq(method_called, "sync_entries");
 
+        /* CMD_STOPSYNC */
+        method_called = NULL;
+        parse_message_trigger_command("0x", "9.9.9.9");
+        ck_assert_str_eq(method_called, "stop_syncing");
+
         /* CMD_DUMP_STATUS */
         method_called = NULL;
         parse_message_trigger_command("0D", "9.9.9.9");
@@ -334,6 +345,9 @@ START_TEST (init_message)
 
         ck_assert(init_sync_message(m, "foo.bar.com"));
         ck_assert_str_eq(m, "0Xfoo.bar.com");
+
+        ck_assert(init_stopsync_message(m));
+        ck_assert_str_eq(m, "0x");
 
         ck_assert(init_dump_message(m));
         ck_assert_str_eq(m, "0D");

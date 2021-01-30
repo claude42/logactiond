@@ -87,7 +87,7 @@ START_TEST (check_trees)
         // 5
 
         ck_assert_int_eq(tree->count, 1);
-        kw_tree_node_t *n = first_tree_node(tree);
+        kw_tree_node_t *n = tree->first;
         ck_assert_str_eq(n->payload, fuenf.payload);
         n = next_node_in_tree(n);
         ck_assert(!n);
@@ -103,7 +103,7 @@ START_TEST (check_trees)
         // 5
 
         ck_assert_int_eq(tree->count, 2);
-        n = first_tree_node(tree);
+        n = tree->first;
         ck_assert_str_eq(n->payload, zwei.payload);
         n = next_node_in_tree(n);
         ck_assert_str_eq(n->payload, fuenf.payload);
@@ -123,7 +123,7 @@ START_TEST (check_trees)
         // 5
 
         ck_assert_int_eq(tree->count, 3);
-        n = first_tree_node(tree);
+        n = tree->first;
         ck_assert_str_eq(n->payload, zwei.payload);
         n = next_node_in_tree(n);
         ck_assert_str_eq(n->payload, drei.payload);
@@ -147,7 +147,7 @@ START_TEST (check_trees)
         //     9   
 
         ck_assert_int_eq(tree->count, 4);
-        n = first_tree_node(tree);
+        n = tree->first;
         ck_assert_str_eq(n->payload, zwei.payload);
         n = next_node_in_tree(n);
         ck_assert_str_eq(n->payload, drei.payload);
@@ -179,7 +179,7 @@ START_TEST (check_trees)
         //     9   
 
         ck_assert_int_eq(tree->count, 3);
-        n = first_tree_node(tree);
+        n = tree->first;
         ck_assert_str_eq(n->payload, zwei.payload);
         n = next_node_in_tree(n);
         ck_assert_str_eq(n->payload, fuenf.payload);
@@ -197,7 +197,7 @@ START_TEST (check_trees)
         //     9   
 
         ck_assert_int_eq(tree->count, 3);
-        n = first_tree_node(tree);
+        n = tree->first;
         ck_assert_str_eq(n->payload, drei.payload);
         n = next_node_in_tree(n);
         ck_assert_str_eq(n->payload, fuenf.payload);
@@ -215,7 +215,7 @@ START_TEST (check_trees)
         //     9
 
         ck_assert_int_eq(tree->count, 3);
-        n = first_tree_node(tree);
+        n = tree->first;
         ck_assert_str_eq(n->payload, zwei.payload);
         n = next_node_in_tree(n);
         ck_assert_str_eq(n->payload, drei.payload);
@@ -231,7 +231,7 @@ START_TEST (check_trees)
         //     9
 
         ck_assert_int_eq(tree->count, 2);
-        n = first_tree_node(tree);
+        n = tree->first;
         ck_assert_str_eq(n->payload, drei.payload);
         n = next_node_in_tree(n);
         ck_assert_str_eq(n->payload, neun.payload);
@@ -244,7 +244,7 @@ START_TEST (check_trees)
         // 9
 
         ck_assert_int_eq(tree->count, 1);
-        n = first_tree_node(tree);
+        n = tree->first;
         ck_assert_str_eq(n->payload, neun.payload);
         n = next_node_in_tree(n);
         ck_assert(!n);
@@ -255,7 +255,7 @@ START_TEST (check_trees)
         // 
 
         ck_assert_int_eq(tree->count, 0);
-        n = first_tree_node(tree);
+        n = tree->first;
         ck_assert(!n);
         ck_assert_ptr_eq(tree->last, NULL);
         ck_assert(!find_tree_node(create_tree(), "nix", cmp));
@@ -279,7 +279,7 @@ START_TEST (check_empty_tree)
         empty_tree(t, NULL, false);
         ck_assert_int_eq(t->count, 0);
         ck_assert(is_empty(t));
-        ck_assert_ptr_eq(first_tree_node(t), NULL);
+        ck_assert_ptr_eq(t->first, NULL);
         ck_assert_ptr_eq(t->last, NULL);
 
         empty_tree(t, NULL, false);

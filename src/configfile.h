@@ -21,6 +21,7 @@
 
 #include <pthread.h>
 #include <stdbool.h>
+#include <sys/types.h>
 
 #include <libconfig.h>
 
@@ -97,6 +98,12 @@
 #define LA_REMOTE_BIND_LABEL "bind"
 #define LA_REMOTE_PORT_LABEL "port"
 
+#define LA_FILES_LABEL "files"
+#define LA_FILES_FIFO_PATH_LABEL "fifo_path"
+#define LA_FILES_FIFO_USER_LABEL "fifo_user"
+#define LA_FILES_FIFO_GROUP_LABEL "fifo_group"
+#define LA_FILES_FIFO_MASK_LABEL "fifo_mask"
+
 typedef struct la_config_s la_config_t;
 typedef struct la_config_s
 {
@@ -122,9 +129,16 @@ typedef struct la_config_s
         int remote_port;
         int total_clocks;
         int invocation_count;
+        char *fifo_path;
+        uid_t fifo_user;
+        gid_t fifo_group;
+        mode_t fifo_mask;
+
 } la_config_t;
 
 extern la_config_t *la_config;
+
+extern int id_counter;
 
 extern pthread_mutex_t config_mutex;
 

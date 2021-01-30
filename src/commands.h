@@ -110,6 +110,10 @@ void trigger_end_command(const la_command_t *command, bool suppress_logging);
 la_command_t * create_command_from_template(const la_command_t *template,
                 la_pattern_t *pattern, const la_address_t *address);
 
+la_command_t * create_manual_command_from_template(
+                const la_command_t *const template,
+                const la_address_t *const address, const char *const from);
+
 la_command_t *create_template(const char *name, la_rule_t *rule,
                 const char *begin_string, const char *end_string,
                 int duration, la_need_host_t need_host, bool quick_shutdown);

@@ -124,6 +124,7 @@ tests/TAGS
 tests/check_addresses
 tests/check_binarytree
 tests/check_commands
+tests/check_crypto
 tests/check_endqueue
 tests/check_dnsbl
 tests/check_messages

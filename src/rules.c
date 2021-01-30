@@ -42,8 +42,6 @@
 #include "rules.h"
 #include "sources.h"
 
-static int id_counter = 0;
-
 /* FIXME: trigger_list should definitely be a hash */
 
 void
@@ -100,7 +98,7 @@ static void
 add_trigger(la_command_t *command, time_t now)
 {
         assert_command(command);
-        la_debug("add_trigger(%s)", command->name);
+        la_debug_func( command->name);
 
         command->start_time = now;
 
@@ -165,7 +163,7 @@ static void
 handle_command_on_trigger_list(la_command_t *const command)
 {
         assert_command(command);
-        la_debug("handle_command_on_trigger_list(%s)", command->name);
+        la_debug_func(command->name);
 
         const time_t now = xtime(NULL);
 
@@ -253,7 +251,7 @@ trigger_single_command(la_pattern_t *const pattern,
                 return;
 
         assert_pattern(pattern); assert_command(template);
-        la_debug("trigger_single_command(%s)", template->name);
+        la_debug_func(template->name);
 
         la_command_t *command = NULL;
 
@@ -314,7 +312,7 @@ static void
 increase_detection_count(la_pattern_t *const pattern)
 {
         assert_pattern(pattern);
-        la_vdebug("increase_detection_count()");
+        la_vdebug_func(NULL);
 
         if (pattern->detection_count < LONG_MAX)
                 pattern->detection_count++;
@@ -375,7 +373,7 @@ trigger_manual_commands_for_rule(const la_address_t *const address,
                 const int factor, const char *const from,
                 const bool suppress_logging)
 {
-        la_debug("trigger_manual_commands_for_rule()");
+        la_debug_func(NULL);
         assert_address(address); assert_rule(rule);
 
         for (la_command_t *template = ITERATE_COMMANDS(rule->begin_commands);
@@ -399,7 +397,7 @@ assign_value_to_properties(const kw_list_t *const property_list,
                 const char *const line, regmatch_t pmatch[])
 {
         assert_list(property_list); assert(line);
-        la_debug("assign_value_to_properties()");
+        la_debug_func(NULL);
 
         for (la_property_t *property = ITERATE_PROPERTIES(property_list);
                         (property = NEXT_PROPERTY(property));)
@@ -422,7 +420,7 @@ static void
 clear_property_values(const kw_list_t *const property_list)
 {
         assert_list(property_list);
-        la_debug("clear_property_values()");
+        la_debug_func(NULL);
 
         for (la_property_t *property = ITERATE_PROPERTIES(property_list);
                         (property = NEXT_PROPERTY(property));)
@@ -488,7 +486,7 @@ create_rule(const bool enabled, const char *const name,
                 const char *systemd_unit)
 {
         assert(source_group);
-        la_debug("create_rule(%s)", name);
+        la_debug_func(name);
 
         la_rule_t *const result = xmalloc(sizeof *result);
 
@@ -553,7 +551,7 @@ free_rule(la_rule_t *const rule)
         if (!rule)
                 return;
 
-        la_vdebug("free_rule(%s)", rule->name);
+        la_vdebug_func(rule->name);
 
 #if HAVE_LIBSYSTEMD
         free(rule->systemd_unit);
@@ -584,7 +582,7 @@ free_rule(la_rule_t *const rule)
 void
 free_rule_list(kw_list_t *const list)
 {
-        la_vdebug("free_rule_list()");
+        la_vdebug_func(NULL);
 
         if (!list)
                 return;
@@ -603,7 +601,7 @@ find_rule_for_source_group(const la_source_group_t *const source_group,
                 const char *const rule_name)
 {
         assert(source_group); assert(rule_name);
-        la_debug("find_rule_for_source(%s)", rule_name);
+        la_debug_func(rule_name);
 
         for (la_rule_t *result = ITERATE_RULES(source_group->rules);
                         (result = NEXT_RULE(result));)
@@ -619,7 +617,7 @@ la_rule_t *
 find_rule(const char *const rule_name)
 {
         assert(rule_name); assert(la_config);
-        la_debug("find_rule(%s)", rule_name);
+        la_debug_func(rule_name);
 
 #if HAVE_LIBSYSTEMD
         if (la_config->systemd_source_group)

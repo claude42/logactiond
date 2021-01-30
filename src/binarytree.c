@@ -93,19 +93,25 @@ reattach_to_end_of_tree(kw_tree_node_t *const node1,
         if (!node2)
                 /* nothing to do */
                 return;
-        assert(node1);
-        // don't assert_node(node2) because it might not be properly
+        assert_tree_node(node1);
+        // don't assert_tree_node(node2) because it might not be properly
         // initialized yet
         assert(side == kw_left_branch || side == kw_right_branch);
 
         kw_tree_node_t *q = node1;
-        while (side == kw_left_branch ? q->left : q->right)
-                q = side == kw_left_branch ? q->left : q->right;
 
         if (side == kw_left_branch)
+        {
+                while (q->left)
+                        q = q->left;
                 q->left = node2;
+        }
         else
+        {
+                while (q->right)
+                        q = q->right;
                 q->right = node2;
+        }
 
         node2->parent = q;
 }
@@ -186,13 +192,13 @@ remove_tree_node(kw_tree_t *const tree, kw_tree_node_t *const node)
          */
 
         /* ptr is where the remaining subtree will be attached to */
-        if (!node->parent)
+        if (is_root_node(node))
                 /* either set as the root of the tree */
                 ptr = &tree->root;
-        else if (node->parent->left == node)
+        else if (is_left_child(node))
                 /* or to the left of the remove notes parent */
                 ptr = &node->parent->left;
-        else if (node->parent->right == node)
+        else if (is_right_child(node))
                 /* or to the right */
                 ptr = &node->parent->right;
         else
@@ -202,7 +208,7 @@ remove_tree_node(kw_tree_t *const tree, kw_tree_node_t *const node)
         /* Used to alternatingly use left or right subtree */
         static int left_or_right = 0;
 
-        if (!node->left && !node->right)
+        if (is_leaf_node(node))
         {
                 *ptr = NULL;
         }
@@ -264,7 +270,7 @@ find_tree_node(kw_tree_t *const tree, const void *const payload,
         assert_tree_node(tree->root);
 
         kw_tree_node_t *result = tree->root;
-        while (result)
+        for (;;)
         {
                 const int cmp = compar(result->payload, payload);
                 if (cmp == 0)
@@ -303,22 +309,6 @@ attach_to_node(kw_tree_node_t *const parent, kw_tree_node_t *const node,
         node->left = left;
         node->right = right;
         node->parent = parent;
-}
-
-kw_tree_node_t *
-first_tree_node(const kw_tree_t *const tree)
-{
-        assert_tree(tree);
-
-        return tree->first;
-}
-
-kw_tree_node_t *
-last_tree_node(const kw_tree_t *const tree)
-{
-        assert_tree(tree);
-
-        return tree->last;
 }
 
 kw_tree_node_t *
@@ -521,7 +511,7 @@ tree_depth(const kw_tree_t *const tree)
 {
         int max_depth = 0;
 
-        for (kw_tree_node_t *node = first_tree_node(tree);
+        for (kw_tree_node_t *node = tree->first;
                         node; node = next_node_in_tree(node))
         {
                 const int depth = node_depth(node);

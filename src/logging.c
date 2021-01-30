@@ -31,6 +31,7 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <assert.h>
+#include <stdnoreturn.h>
 #if HAVE_LIBSYSTEMD
 #include <systemd/sd-journal.h>
 #endif /* HAVE_LIBSYSTEMD */
@@ -43,7 +44,21 @@ int log_level = LOG_DEBUG; /* by default log only stuff < log_level */
 bool log_verbose = false;
 
 void
-log_message(int priority, const char *const fmt, va_list gp,
+log_message(int priority, const char *const add, const char *const fmt, ...)
+{
+        assert(fmt);
+
+        va_list myargs;
+
+        va_start(myargs, fmt);
+
+        log_message_va_list(priority, fmt, myargs, add);
+
+        va_end(myargs);
+}
+
+void
+log_message_va_list(int priority, const char *const fmt, va_list gp,
                 const char *const add)
 {
         assert(fmt);
@@ -96,68 +111,7 @@ log_message(int priority, const char *const fmt, va_list gp,
 #endif /* CLIENTONLY */
 }
 
-void
-la_debug(const char *const fmt, ...)
-{
-#ifndef NDEBUG
-        va_list myargs;
-
-        va_start(myargs, fmt);
-        log_message(LOG_DEBUG, fmt, myargs, NULL);
-        va_end(myargs);
-
-#endif /* NDEBUG */
-}
-
-void
-la_vdebug(const char *const fmt, ...)
-{
-#ifndef NDEBUG
-        va_list myargs;
-
-        va_start(myargs, fmt);
-        log_message(LOG_VDEBUG, fmt, myargs, NULL);
-        va_end(myargs);
-
-#endif /* NDEBUG */
-}
-
-void
-la_log_errno(const int priority, const char *fmt, ...)
-{
-        va_list myargs;
-
-        va_start(myargs, fmt);
-        log_message(priority, fmt, myargs, strerror(errno));
-        va_end(myargs);
-}
-
-void
-la_log_verbose(const int priority, const char *const fmt, ...)
-{
-        va_list myargs;
-
-#ifndef CLIENTONLY
-        if (log_verbose)
-#endif /* CLIENTONLY */
-        {
-                va_start(myargs, fmt);
-                log_message(priority, fmt, myargs, NULL);
-                va_end(myargs);
-        }
-}
-
-void
-la_log(const int priority, const char *const fmt, ...)
-{
-        va_list myargs;
-
-        va_start(myargs, fmt);
-        log_message(priority, fmt, myargs, NULL);
-        va_end(myargs);
-}
-
-void
+noreturn void
 die_hard(const bool log_strerror, const char *const fmt, ...)
 {
         va_list myargs;
@@ -167,7 +121,7 @@ die_hard(const bool log_strerror, const char *const fmt, ...)
 #endif /* CLIENTONLY */
 
         va_start(myargs, fmt);
-        log_message(LOG_ERR, fmt, myargs, log_strerror ? strerror(errno) :
+        log_message_va_list(LOG_ERR, fmt, myargs, log_strerror ? strerror(errno) :
                         NULL);
         va_end(myargs);
 

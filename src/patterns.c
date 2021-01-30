@@ -83,7 +83,7 @@ convert_regex(const char *const string, la_pattern_t *const pattern)
 {
         assert(string); assert(pattern); assert_rule(pattern->rule);
         assert_list(pattern->properties);
-        la_vdebug("convert_regex(%s)", string);
+        la_vdebug_func(string);
 
         size_t dst_len = 1000;
         char *result = xmalloc(dst_len);
@@ -218,7 +218,7 @@ create_pattern(const char *const string_from_configfile,
                 const int num, la_rule_t *const rule)
 {
         assert(string_from_configfile); assert_rule(rule);
-        la_vdebug("create_pattern(%s)", string_from_configfile);
+        la_vdebug_func(string_from_configfile);
 
         char *const full_string = concat(rule->source_group->prefix,
                         string_from_configfile);
@@ -256,7 +256,7 @@ free_pattern(la_pattern_t *const pattern)
         if (!pattern)
                 return;
 
-        la_vdebug("free_pattern(%s)", pattern->string);
+        la_vdebug_func(pattern->string);
 
         free_property_list(pattern->properties);
 
@@ -274,7 +274,7 @@ free_pattern(la_pattern_t *const pattern)
 void
 free_pattern_list(kw_list_t *const list)
 {
-        la_vdebug("free_pattern_list()");
+        la_vdebug_func(NULL);
 
         if (!list)
                 return;

@@ -48,6 +48,13 @@ typedef struct kw_tree_s {
         int count;
 } kw_tree_t;
 
+/* Defines */
+
+#define is_root_node(node) (!node->parent)
+#define is_left_child(node) (node->parent->left == node)
+#define is_right_child(node) (node->parent->right == node)
+#define is_leaf_node(node) (!node->left && !node->right)
+
 void inject_binarytree_exit_function(void (*exit_function)(bool log_strerror,
                         const char *const fmt, ...));
 
@@ -61,10 +68,6 @@ kw_tree_node_t *remove_tree_node(kw_tree_t *tree, kw_tree_node_t *node);
 
 kw_tree_node_t *find_tree_node(kw_tree_t *tree, const void *payload,
                 int (*compar)(const void *, const void *));
-
-kw_tree_node_t *first_tree_node(const kw_tree_t *tree);
-
-kw_tree_node_t *last_tree_node(const kw_tree_t *tree);
 
 kw_tree_node_t *next_node_in_tree(kw_tree_node_t *node);
 

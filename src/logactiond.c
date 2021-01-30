@@ -60,6 +60,7 @@
 #include "watch.h"
 #include "nodelist.h"
 #include "binarytree.h"
+#include "crypto.h"
 
 char *cfg_filename = NULL;
 char *pid_file = NULL;
@@ -78,7 +79,7 @@ bool sync_on_startup = false;
 void
 trigger_shutdown(int status, int saved_errno)
 {
-        la_debug("trigger_shutdown()");
+        la_debug_func(NULL);
         if (shutdown_ongoing)
         {
                 la_log(LOG_ERR, "triggered shutdown when shutdown already ongoing!");
@@ -90,7 +91,7 @@ trigger_shutdown(int status, int saved_errno)
         shutdown_ongoing = true;
 
         if (saved_state)
-                save_state(saved_state, true);
+                save_state(true);
 
         if (file_watch_thread)
                 pthread_cancel(file_watch_thread);
@@ -139,7 +140,7 @@ trigger_reload(void)
 static void
 handle_signal(const int signal)
 {
-        la_debug("handle_signal(%u)", signal);
+        la_debug("handle_signal(%i)", signal);
 
         switch (signal)
         {
@@ -195,7 +196,7 @@ ignore_sigpipe(void)
 static void
 register_signal_handler(void)
 {
-        la_debug("register_signal_handler()");
+        la_debug_func(NULL);
 
         struct sigaction new_act;
 
@@ -220,7 +221,7 @@ register_signal_handler(void)
 static void
 skeleton_daemon(void)
 {
-        la_debug("skeleton_daemon()");
+        la_debug_func(NULL);
 
         pid_t pid;
 
@@ -281,7 +282,7 @@ print_usage(void)
 static void
 read_options(int argc, char *argv[])
 {
-        la_debug("read_options()");
+        la_debug_func(NULL);
 
         for (;;)
         {
@@ -360,53 +361,29 @@ read_options(int argc, char *argv[])
 static void
 sync_with_other_instances(void)
 {
+        la_debug_func(NULL);
         /* make sure remote thread is already set up and running */
         sleep(1);
+
+        assert(la_config);
+#ifdef WITH_LIBSODIUM
+        generate_send_key_and_salt(la_config->remote_secret);
+#endif /* WITH_LIBSODIUM */
+
+        char message[TOTAL_MSG_LEN];
+        if (!init_sync_message(message, NULL))
+                LOG_RETURN(, LOG_ERR, "Unable to create sync message");
+        la_log(LOG_INFO, "msg: %s", message);
+#ifdef WITH_LIBSODIUM
+        if (!encrypt_message(message))
+                LOG_RETURN(, LOG_ERR, "Unable to encrypt sync message");
+#endif /* WITH_LIBSODIUM */
 
         assert_list(la_config->remote_send_to);
         for (la_address_t *remote_address =
                         ITERATE_ADDRESSES(la_config->remote_send_to);
                         (remote_address = NEXT_ADDRESS(remote_address));)
-        {
-                char message[TOTAL_MSG_LEN];
-                if (init_sync_message(message, NULL))
-                        send_message_to_single_address(message, remote_address);
-                else
-                        la_log(LOG_ERR, "Syncing with other instances failed!");
-        }
-}
-
-/* Determine UID belonging to what's been specified on the command line. This
- * could be either the UID (as string) itself or as user name.
- */
-
-static uid_t
-getrunuid(const char *uid_s)
-{
-        /* If there's no argument, we assume UID 0 */
-        if (!uid_s)
-                return 0;
-        
-        /* Don't accept empty string */
-        if (*uid_s == '\0')
-                return UINT_MAX;
-
-        /* First test whether a UID has been specified on the command line. In
-         * case endptr points to a 0, the argument was a number. If otherwise
-         * there are spurious characters after the number and we don't accept
-         * the argument. */
-        char *endptr;
-        errno = 0;
-        const int value = strtol(uid_s,  &endptr, 10);
-        if (!errno && *endptr == '\0')
-                return value;
-
-        /* If its not a number, we test for a username. */
-        struct passwd *pw = getpwnam(uid_s);
-        if (pw)
-                return pw->pw_uid;
-
-        return UINT_MAX;
+                send_message_to_single_address(message, remote_address);
 }
 
 /* Run with correct UID. Correct if,
@@ -422,7 +399,7 @@ static void
 use_correct_uid(void)
 {
         const uid_t cur_uid = geteuid();
-        const uid_t run_uid = getrunuid(run_uid_s);
+        const uid_t run_uid = determine_uid(run_uid_s);
         if (run_uid == UINT_MAX)
                 die_hard(false, "Can't determine uid!");
 
@@ -487,12 +464,12 @@ main(int argc, char *argv[])
 
         if (saved_state)
         {
-                if (!restore_state(saved_state, create_backup_file))
+                if (!restore_state(create_backup_file))
                 {
                         saved_state = NULL;
                         die_hard(true, "Error reading state file");
                 }
-                start_save_state_thread(saved_state);
+                start_save_state_thread();
         }
 
         if (sync_on_startup)

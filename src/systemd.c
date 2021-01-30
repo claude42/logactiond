@@ -29,6 +29,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include <stdnoreturn.h>
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -57,7 +58,7 @@ die_systemd(const int systemd_errno, const char *const fmt, ...)
 
         assert(fmt);
         va_start(myargs, fmt);
-        log_message(LOG_ERR, fmt, myargs, strerror(-systemd_errno));
+        log_message_va_list(LOG_ERR, fmt, myargs, strerror(-systemd_errno));
         va_end(myargs);
 
         if (!shutdown_ongoing)
@@ -74,7 +75,7 @@ die_systemd(const int systemd_errno, const char *const fmt, ...)
 static void
 cleanup_watching_systemd(void *const arg)
 {
-        la_debug("cleanup_watching_systemd()");
+        la_debug_func(NULL);
 
         free(unit_buffer);
 
@@ -82,14 +83,13 @@ cleanup_watching_systemd(void *const arg)
                 sd_journal_close(journal);
 }
 
-static void *
+noreturn static void *
 watch_forever_systemd(void *const ptr)
 {
         static int unit_buffer_length = DEFAULT_LINEBUFFER_SIZE;
-        // TODO: won't get freed on cleanup_watching_systemd()
         unit_buffer = xmalloc(unit_buffer_length);
 
-        la_debug("watch_forever_systemd()");
+        la_debug_func(NULL);
         assert(journal); assert(la_config->systemd_source_group);
 
         pthread_cleanup_push(cleanup_watching_systemd, NULL);
@@ -173,7 +173,7 @@ watch_forever_systemd(void *const ptr)
 static void
 add_matches(void)
 {
-        la_debug("add_matches()");
+        la_debug_func(NULL);
         assert(la_config);
         assert(la_config->systemd_source_group);
         assert_list(la_config->systemd_source_group->systemd_units);
@@ -229,7 +229,7 @@ init_watching_systemd(void)
 void
 start_watching_systemd_thread(void)
 {
-        la_debug("start_watching_systemd_thread()");
+        la_debug_func(NULL);
         assert(!systemd_watch_thread);
 
         xpthread_create(&systemd_watch_thread, NULL,

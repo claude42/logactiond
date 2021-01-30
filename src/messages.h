@@ -40,6 +40,7 @@
 #define CMD_CHANGE_LOG_LEVEL 'L'
 #define CMD_RESET_COUNTS '0'
 #define CMD_SYNC 'X'
+#define CMD_STOPSYNC 'x'
 #define CMD_DUMP_STATUS 'D'
 #define CMD_ENABLE_RULE 'Y'
 #define CMD_DISABLE_RULE 'N'
@@ -62,14 +63,14 @@
  * - MAC
  * - the encrypted message
  */
-#define TOTAL_MSG_LEN ENC_MSG_LEN + crypto_secretbox_NONCEBYTES + crypto_pwhash_SALTBYTES
+#define TOTAL_MSG_LEN (ENC_MSG_LEN + crypto_secretbox_NONCEBYTES + crypto_pwhash_SALTBYTES)
 #else
 #define TOTAL_MSG_LEN MSG_LEN
 #endif
 
 #define MSG_IDX 0
 #define SALT_IDX ENC_MSG_LEN
-#define NONCE_IDX ENC_MSG_LEN+crypto_pwhash_SALTBYTES
+#define NONCE_IDX (ENC_MSG_LEN+crypto_pwhash_SALTBYTES)
 
 #ifndef CLIENTONLY
 int parse_add_entry_message(const char *message, la_address_t *address,
@@ -105,6 +106,8 @@ bool init_status_monitoring_message(char *buffer, int new_status);
 bool init_reset_counts_message(char *buffer);
 
 bool init_sync_message(char *buffer, const char *host);
+
+bool init_stopsync_message(char *buffer);
 
 bool init_dump_message(char *buffer);
 

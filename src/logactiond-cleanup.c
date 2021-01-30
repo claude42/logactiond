@@ -70,7 +70,7 @@ print_usage(void)
 static void
 read_options(int argc, char *argv[])
 {
-        la_debug("read_options()");
+        la_debug_func(NULL);
 
         for (;;)
         {
@@ -141,7 +141,7 @@ main(int argc, char *argv[])
                 la_log_errno(LOG_ERR, "Can't remove rule status file");
         if (remove(DIAGFILE) && errno != ENOENT)
                 la_log_errno(LOG_ERR, "Can't remove diagnostics file");
-        if (remove(FIFOFILE) && errno != ENOENT)
+        if (remove(la_config->fifo_path) && errno != ENOENT)
                 la_log_errno(LOG_ERR, "Cannot remove fifo");
 
         /* This whole exit procedure doesn't make much sense for a standalone

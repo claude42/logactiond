@@ -29,6 +29,8 @@
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <limits.h>
+#include <stdnoreturn.h>
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -41,7 +43,7 @@
 
 /* Buffer for reading inotify events */
 #define EVENT_SIZE  ( sizeof (struct inotify_event) )
-#define BUF_LEN     ( 1024 * ( EVENT_SIZE + 16 ) )
+#define BUF_LEN (EVENT_SIZE + NAME_MAX + 1)
 
 static int inotify_fd = 0;
 
@@ -49,7 +51,7 @@ static void
 la_vdebug_inotify_event(const struct inotify_event *const event, const uint32_t monitored)
 {
         assert(event);
-        const char *str = "unkown";
+        const char *str = NULL;
 
         if (event->mask & IN_ACCESS)
                 str = "IN_ACCESS";
@@ -75,6 +77,8 @@ la_vdebug_inotify_event(const struct inotify_event *const event, const uint32_t 
                 str = "IN_MOVED_TO";
         else if (event->mask & IN_OPEN)
                 str = "IN_OPEN";
+        else
+                str = "unknown";
 
         if (event->mask & monitored)
                 la_vdebug("%u: %s (%s)%s", event->wd, str, event->name, "");
@@ -90,7 +94,7 @@ void
 unwatch_source_inotify(la_source_t *const source)
 {
         assert_source(source); assert(inotify_fd != 0);
-        la_debug("unwatch_source_inotify(%s)", source->location);
+        la_debug_func(source->location);
 
         /* Remove watch for file itself */
         if (inotify_rm_watch(inotify_fd, source->wd))
@@ -259,8 +263,8 @@ watched_file_deleted(la_source_t *const source)
 static void
 handle_inotify_directory_event(const struct inotify_event *const event)
 {
+        la_vdebug_func(NULL);
         assert(event);
-        la_vdebug("handle_inotify_directory_event()");
         la_vdebug_inotify_event(event, IN_CREATE | IN_DELETE | IN_MOVED_TO);
 
         la_source_t *source = find_source_by_parent_wd(event->wd, event->name);
@@ -269,26 +273,22 @@ handle_inotify_directory_event(const struct inotify_event *const event)
 
         if (event->mask & IN_CREATE)
         {
-                la_debug("handle_inotify_directory_event(%s)",
-                                source->location);
+                la_debug_func(source->location);
                 watched_file_created(source);
         }
         else if (event->mask & IN_MOVED_FROM)
         {
-                la_debug("handle_inotify_directory_event(%s)",
-                                source->location);
+                la_debug_func(source->location);
                 watched_file_moved_from(source);
         }
         else if (event->mask & IN_MOVED_TO)
         {
-                la_debug("handle_inotify_directory_event(%s)",
-                                source->location);
+                la_debug_func(source->location);
                 watched_file_moved_to(source);
         }
         else if (event->mask & IN_DELETE)
         {
-                la_debug("handle_inotify_directory_event(%s)",
-                                source->location);
+                la_debug_func(source->location);
                 watched_file_deleted(source);
         }
 
@@ -298,8 +298,8 @@ handle_inotify_directory_event(const struct inotify_event *const event)
 static void
 handle_inotify_file_event(const struct inotify_event *const event)
 {
+        la_vdebug_func(NULL);
         assert(event);
-        la_vdebug("handle_inotify_file_event()");
         la_vdebug_inotify_event(event, IN_MODIFY);
 
         const la_source_t *const source = find_source_by_file_wd(event->wd);
@@ -309,7 +309,7 @@ handle_inotify_file_event(const struct inotify_event *const event)
                  * case" */
                 return;
 
-        la_vdebug("handle_inotify_file_event(%s)", source->location);
+        la_vdebug_func(source->location);
 
         if (!handle_new_content(source))
                 die_hard(true, "Reading from source \"%s\", file \"%s\" failed",
@@ -320,7 +320,7 @@ static void
 handle_inotify_event(const struct inotify_event *const event)
 {
         assert(event);
-        la_vdebug("handle_inotify_event()");
+        la_vdebug_func(NULL);
 
         xpthread_mutex_lock(&config_mutex);
 
@@ -335,7 +335,7 @@ handle_inotify_event(const struct inotify_event *const event)
 static void
 cleanup_watching_inotify(void *const arg)
 {
-        la_debug("cleanup_watching_inotify()");
+        la_debug_func(NULL);
 
         shutdown_watching();
 
@@ -347,10 +347,10 @@ cleanup_watching_inotify(void *const arg)
  * Event loop for inotify mechanism
  */
 
-static void *
+noreturn static void *
 watch_forever_inotify(void *const ptr)
 {
-        la_debug("watch_forever_inotify()");
+        la_debug_func(NULL);
 
         pthread_cleanup_push(cleanup_watching_inotify, NULL);
 
@@ -399,7 +399,7 @@ watch_source_inotify(la_source_t *const source)
 {
         assert_source(source); assert(inotify_fd != 0);
 
-        la_debug("watch_source_inotify(%s)", source->location);
+        la_debug_func(source->location);
 
         source->wd  = inotify_add_watch(inotify_fd, source->location, IN_MODIFY);
         if (source->wd  == -1)
@@ -441,7 +441,7 @@ init_watching_inotify(void)
 void
 start_watching_inotify_thread(void)
 {
-        la_debug("start_watching_inotify_thread()");
+        la_debug_func(NULL);
         assert(!file_watch_thread);
 
         xpthread_create(&file_watch_thread, NULL,

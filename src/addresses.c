@@ -119,7 +119,7 @@ get_ip_version(const la_address_t *const address)
 static bool
 cidr4_match(const struct in_addr addr, const struct in_addr net, const uint8_t prefix)
 {
-        la_vdebug("cidr4_match()");
+        la_vdebug_func(NULL);
 
         if (prefix == 0) {
                 /* C99 6.5.7 (3): u32 << 32 is undefined behaviour */
@@ -137,7 +137,7 @@ cidr4_match(const struct in_addr addr, const struct in_addr net, const uint8_t p
 static bool
 cidr6_match(const struct in6_addr addr, const struct in6_addr net, const uint8_t prefix)
 {
-        la_vdebug("cidr6_match()");
+        la_vdebug_func(NULL);
 
         if (prefix > 128)
                 return false;
@@ -208,7 +208,7 @@ cidr_match_sa(const struct sockaddr *sa, const la_address_t *const net)
 int
 adrcmp(const la_address_t *const a1, const la_address_t *const a2)
 {
-        la_vdebug("adrcmp(%s, %s)", a1 ? a1->text : "NULL",
+        la_vdebug("%s(%s, %s)", __func__, a1 ? a1->text : "NULL",
                         a2 ? a2->text : "NULL");
 
         /* if both are not NULL and of the same address family, look further */
@@ -329,7 +329,7 @@ init_address_sa(la_address_t *const addr, const struct sockaddr *const sa,
 {
         assert(addr); // NOT assert_address() - not initialized yet!
         assert(sa); assert(salen > 0);
-        la_vdebug("init_address_sa()");
+        la_vdebug_func(NULL);
 
         if (sa->sa_family != AF_INET && sa->sa_family != AF_INET6)
                 LOG_RETURN(false, LOG_ERR, "Unsupported address family!");
@@ -379,7 +379,7 @@ bool
 init_address_port(la_address_t *const addr, const char *const host, const in_port_t port)
 {
         assert(host);
-        la_vdebug("create_address_port(%s)", host);
+        la_vdebug_func(host);
 
         addr->node.pri = 0;
 
@@ -487,7 +487,7 @@ la_address_t *
 dup_address(const la_address_t *const address)
 {
         assert_address(address);
-        la_vdebug("dup_address(%s)", address->text);
+        la_vdebug_func(address->text);
 
         la_address_t *const result = xmalloc(sizeof *result);
 
@@ -510,7 +510,7 @@ free_address(la_address_t *const address)
                 return;
         assert_address(address);
 
-        la_vdebug("free_address(%s)", address->text);
+        la_vdebug_func(address->text);
 
         free(address);
 }
@@ -522,7 +522,7 @@ free_address(la_address_t *const address)
 void
 empty_address_list(kw_list_t *const list)
 {
-        la_vdebug("free_address_list()");
+        la_vdebug_func(NULL);
         if (!list)
                 return;
         assert_list(list);

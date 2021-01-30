@@ -73,7 +73,7 @@ static bool
 convert_to_dnsbl_hostname_sa(const struct sockaddr *const sa,
                 const char *const dnsbl_domainname, char *const hostname)
 {
-        la_debug("convert_to_dnsbl_hostname_sa()");
+        la_debug_func(NULL);
         assert(sa); assert(dnsbl_domainname); assert(hostname);
         int r = 0;
 
@@ -113,7 +113,7 @@ static bool
 convert_to_dnsbl_hostname(const la_address_t *const address,
                 const char *const dnsbl_domainname, char *hostname)
 {
-        la_debug("convert_to_dnsbl_hostname()");
+        la_debug_func(NULL);
         assert_address(address);
         return convert_to_dnsbl_hostname_sa((struct sockaddr *) &address->sa,
                         dnsbl_domainname, hostname);
@@ -123,7 +123,7 @@ static bool
 host_on_dnsbl(const la_address_t *const address,
                 const char *const dnsbl_domainname)
 {
-        la_debug("host_on_dnsbl()");
+        la_debug_func(NULL);
         char hostname[NI_MAXHOST];
         struct addrinfo *ai;
         if (!convert_to_dnsbl_hostname(address, dnsbl_domainname, hostname))

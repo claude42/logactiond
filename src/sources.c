@@ -104,7 +104,7 @@ bool
 handle_new_content(const la_source_t *const source)
 {
         assert_source(source); assert(source->file);
-        la_vdebug("handle_new_content(%s)", source->location);
+        la_vdebug_func(source->location);
 
         size_t linebuffer_size = 0;
         char *linebuffer = NULL;
@@ -179,7 +179,7 @@ create_source(la_source_group_t *const source_group, const char *const location)
 void
 free_source(la_source_t *const source)
 {
-        la_vdebug("free_source()");
+        la_vdebug_func(NULL);
         if (!source)
                 return;
 
@@ -193,7 +193,7 @@ free_source(la_source_t *const source)
 static void
 free_source_list(kw_list_t *const list)
 {
-        la_vdebug("free_source_list()");
+        la_vdebug_func(NULL);
 
         if (!list)
                 return;
@@ -212,7 +212,7 @@ free_source_group(la_source_group_t *const source_group)
         if (!source_group)
                 return;
 
-        la_vdebug("free_source_group(%s)", source_group->name);
+        la_vdebug_func(source_group->name);
 
         free(source_group->name);
         free(source_group->glob_pattern);
@@ -240,7 +240,7 @@ free_source_group(la_source_group_t *const source_group)
 void
 free_source_group_list(kw_list_t *const list)
 {
-        la_vdebug("free_source_group_list()");
+        la_vdebug_func(NULL);
 
         if (!list)
                 return;
@@ -262,7 +262,7 @@ la_source_group_t
 {
         assert(location);
         assert(la_config); assert_list(la_config->source_groups);
-        la_debug("find_source_group_by_location(%s)", location);
+        la_debug_func(location);
 
         for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
                         (source_group = NEXT_SOURCE_GROUP(source_group));)
@@ -285,7 +285,7 @@ la_source_group_t
 {
         assert(name);
         assert(la_config); assert_list(la_config->source_groups);
-        la_debug("find_source_group_by_name(%s)", name);
+        la_debug_func(name);
 
         for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
                         (source_group = NEXT_SOURCE_GROUP(source_group));)

@@ -27,6 +27,9 @@
 #if HAVE_ALLOCA_H
 #include <alloca.h>
 #endif /* HAVE_ALLOCA_H */
+#include <unistd.h>
+#include <limits.h>
+#include <stdnoreturn.h>
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -34,43 +37,56 @@
 #include "logging.h"
 #include "messages.h"
 #include "misc.h"
+#include "configfile.h"
 
 pthread_t fifo_thread = 0;
 
-static FILE *fifo;
+static FILE *fifo = NULL;
 
 static void
 cleanup_fifo(void *const arg)
 {
-        la_debug("cleanup_fifo()");
+        la_debug_func(NULL);
 
         if (fifo && fclose(fifo))
                 la_log_errno(LOG_ERR, "Problem closing fifo");
 
-        if (remove(FIFOFILE) == -1 && errno != ENOENT)
+        assert(la_config);
+        if (remove(la_config->fifo_path) == -1 && errno != ENOENT)
                 la_log_errno(LOG_ERR, "Cannot remove fifo");
+
+        fifo = NULL;
 }
 
 static void
 create_fifo(void)
 {
-        la_debug("create_fifo()");
+        la_debug_func(NULL);
+        assert(la_config);
 
-        if (remove(FIFOFILE) && errno != ENOENT)
+        if (remove(la_config->fifo_path) && errno != ENOENT)
                 die_hard(true, "Cannot create fifo");
 
-        if (mkfifo(FIFOFILE, 0666) == -1)
+        if (la_config->fifo_mask)
+                umask(la_config->fifo_mask);
+
+        if (mkfifo(la_config->fifo_path, DEFFILEMODE) == -1)
                 die_hard(true, "Cannot create fifo");
 
-        fifo = fopen(FIFOFILE, "r+");
+        if (la_config->fifo_user != UINT_MAX &&
+                        chown(la_config->fifo_path, la_config->fifo_user,
+                                la_config->fifo_group) == -1)
+                die_hard(true, "Cannot set fifo owner/group");
+
+        fifo = fopen(la_config->fifo_path, "r+");
         if (!fifo)
                 die_hard(true, "Cannot open fifo");
 }
 
-static void *
+noreturn static void *
 fifo_loop(void *const ptr)
 {
-        la_debug("fifo_loop()");
+        la_debug_func(NULL);
 
         pthread_cleanup_push(cleanup_fifo, NULL);
 
@@ -116,7 +132,7 @@ fifo_loop(void *const ptr)
 void
 start_fifo_thread(void)
 {
-        la_debug("start_fifo_thread()");
+        la_debug_func(NULL);
         assert(!fifo_thread);
 
         create_fifo();

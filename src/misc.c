@@ -36,6 +36,9 @@
 #include <signal.h>
 #include <assert.h>
 #include <stdarg.h>
+#include <limits.h>
+#include <pwd.h>
+#include <grp.h>
 
 #include "ndebug.h"
 #include "misc.h"
@@ -491,6 +494,68 @@ xnanosleep(const time_t secs, const long nanosecs)
         const struct timespec blink = {.tv_sec = secs, .tv_nsec = nanosecs};
 
         return nanosleep(&blink, NULL);
+}
+
+/* Determine UID belonging to what's been specified on the command line. This
+ * could be either the UID (as string) itself or as user name.
+ */
+
+uid_t
+determine_uid(const char *const uid_s)
+{
+        /* If there's no argument, we assume UID 0 */
+        if (!uid_s)
+                return 0;
+        
+        /* Don't accept empty string */
+        if (*uid_s == '\0')
+                return UINT_MAX;
+
+        /* First test whether a UID has been specified on the command line. In
+         * case endptr points to a 0, the argument was a number. If otherwise
+         * there are spurious characters after the number and we don't accept
+         * the argument. */
+        char *endptr;
+        errno = 0;
+        const int value = strtol(uid_s,  &endptr, 10);
+        if (!errno && *endptr == '\0')
+                return value;
+
+        /* If its not a number, we test for a username. */
+        struct passwd *pw = getpwnam(uid_s);
+        if (pw)
+                return pw->pw_uid;
+
+        return UINT_MAX;
+}
+
+gid_t
+determine_gid(const char *const gid_s)
+{
+        /* If there's no argument, we assume gid 0 */
+        if (!gid_s)
+                return 0;
+        
+        /* Don't accept empty string */
+        if (*gid_s == '\0')
+                return UINT_MAX;
+
+        /* First test whether a GID has been specified on the command line. In
+         * case endptr points to a 0, the argument was a number. If otherwise
+         * there are spurious characters after the number and we don't accept
+         * the argument. */
+        char *endptr;
+        errno = 0;
+        const int value = strtol(gid_s,  &endptr, 10);
+        if (!errno && *endptr == '\0')
+                return value;
+
+        /* If its not a number, we test for a username. */
+        struct group *gr = getgrnam(gid_s);
+        if (gr)
+                return gr->gr_gid;
+
+        return UINT_MAX;
 }
 
 

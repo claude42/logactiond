@@ -28,6 +28,8 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <syslog.h>
+#include <stdbool.h>
+#include <assert.h>
 
 #ifdef WITH_LIBSODIUM
 #ifndef NOCRYPTO
@@ -72,9 +74,14 @@ print_usage(void)
                         "Usage: ladc [-h host][-p password][-s port] "
                         "sync [host]\n"
                         "Usage: ladc [-h host][-p password][-s port] "
+                        "stopsync\n"
+                        "Usage: ladc [-h host][-p password][-s port] "
                         "dump\n"
                         "Usage: ladc [-h host][-p password][-s port] "
-                        "(en|dis)able [rule]\n", stderr);
+                        "(en|dis)able [rule]\n\n"
+                        "Usage: ladc hosts\n"
+                        "Usage: ladc rules\n"
+                        "Usage: ladc diagnostics\n", stderr);
 }
 
 static void
@@ -104,6 +111,55 @@ setup_socket(const char *host, const char *port)
                 freeaddrinfo(ai);
                 die_hard(true, "Unable to create server socket");
         }
+}
+
+static bool
+cat(const char *const filename)
+{
+        assert(filename);
+
+        FILE *const stream = fopen(filename, "r");
+        if (!stream)
+                return false;
+
+        bool result = false;
+        size_t linebuffer_size = 0;
+        char *linebuffer = NULL;
+
+        while (getline(&linebuffer, &linebuffer_size, stream) != -1)
+        {
+                if (fputs(linebuffer, stdout) == EOF)
+                        goto cleanup;
+        }
+
+        if (!feof(stream))
+                goto cleanup;
+
+        result = true;
+
+cleanup:
+        if (fclose(stream) == EOF)
+                result = false;
+
+        return result;
+}
+
+static bool
+show_hosts(void)
+{
+        return cat(HOSTSFILE);
+}
+
+static bool
+show_rules(void)
+{
+        return cat(RULESFILE);
+}
+
+static bool
+show_diagnostics(void)
+{
+        return cat(DIAGFILE);
 }
 
 static void
@@ -226,6 +282,7 @@ main(int argc, char *argv[])
         char *command = argv[optind++];
         bool success = false;
         char message[TOTAL_MSG_LEN] = "";
+        bool (*postproc_function)(void) = NULL;
 
         if (!strcmp(command, "add"))
         {
@@ -299,6 +356,10 @@ main(int argc, char *argv[])
                 else
                         die_hard(false, "Wrong num ber of arguments.");
         }
+        else if (!strcmp(command, "stopsync"))
+        {
+                success = init_stopsync_message(message);
+        }
         else if (!strcmp(command, "dump"))
         {
                 success = init_dump_message(message);
@@ -317,28 +378,58 @@ main(int argc, char *argv[])
 
                 success = init_disable_message(message, argv[optind]);
         }
+        else if (!strcmp(command, "hosts"))
+        {
+                if (host)
+                        die_hard(false, "Can only show hosts from local logactiond!");
+                success = init_dump_message(message);
+                postproc_function = show_hosts;
+        }
+        else if (!strcmp(command, "rules"))
+        {
+                if (host)
+                        die_hard(false, "Can only show rules from local logactiond!");
+                success = init_dump_message(message);
+                postproc_function = show_rules;
+        }
+        else if (!strcmp(command, "diagnostics"))
+        {
+                if (host)
+                        die_hard(false, "Can only show diagnostics from local logactiond!");
+                success = init_dump_message(message);
+                postproc_function = show_diagnostics;
+        }
         else
         {
                 die_hard(false, "Unknown command \"%s\".", command);
         }
 
         if (!success)
-                die_hard(true, "Unable to create message");
+                die_hard(true, "Unable to execute command!");
 
-        if (host)
+        /* only send a message if one actually has been created */
+        if (message[0])
         {
+                if (host)
+                {
 #ifdef WITH_LIBSODIUM
-                generate_send_key_and_salt(password);
-                if (!encrypt_message(message))
-                        die_hard(true, "Unable to encrypt message");
+                        generate_send_key_and_salt(password);
+                        if (!encrypt_message(message))
+                                die_hard(true, "Unable to encrypt message");
 #endif /* WITH_LIBSODIUM */
-                setup_socket(host, port);
-                send_remote_message(message);
+                        setup_socket(host, port);
+                        send_remote_message(message);
+                }
+                else
+                {
+                        send_local_message(message);
+                }
         }
-        else
-        {
-                send_local_message(message);
-        }
+
+        sleep(1);
+
+        if (postproc_function && !postproc_function())
+                die_hard(true, "Unable to access information!");
 
         exit(0);
 }

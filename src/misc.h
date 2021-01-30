@@ -21,6 +21,7 @@
 
 #include <pthread.h>
 #include <stdbool.h>
+#include <sys/types.h>
 
 #include "ndebug.h"
 
@@ -76,6 +77,10 @@ void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, const size_t on
 char *xgetpass (const char *prompt);
 
 int xnanosleep(time_t secs, long nanosecs);
+
+uid_t determine_uid(const char *uid_s);
+
+gid_t determine_gid(const char *gid_s);
 
 #endif /* __misc_h */
 

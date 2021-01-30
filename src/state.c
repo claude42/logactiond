@@ -30,6 +30,7 @@
 #endif /* HAVE_ALLOCA_H */
 #include <stdlib.h>
 #include <limits.h>
+#include <stdnoreturn.h>
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -47,19 +48,19 @@ const char *saved_state = NULL;
 pthread_t save_state_thread = 0;
 
 static bool
-move_state_file_to_backup(const char *const state_file_name)
+move_state_file_to_backup(void)
 {
-        assert(state_file_name);
-        la_debug("move_state_file_to_backup(%s)", state_file_name);
+        assert(saved_state);
+        la_debug_func(saved_state);
 
-        const int length = strlen(state_file_name) + sizeof BAK_SUFFIX - 1;
+        const int length = strlen(saved_state) + sizeof BAK_SUFFIX - 1;
         char *const backup_file_name = alloca(length + 1);
 
-        if (snprintf(backup_file_name, length + 1, "%s%s", state_file_name, BAK_SUFFIX) !=
+        if (snprintf(backup_file_name, length + 1, "%s%s", saved_state, BAK_SUFFIX) !=
                         length)
                 LOG_RETURN_ERRNO(false, LOG_ERR, "Unable to create backup file name!");
 
-        if (rename(state_file_name, backup_file_name) == -1 && errno != ENOENT)
+        if (rename(saved_state, backup_file_name) == -1 && errno != ENOENT)
                 LOG_RETURN_ERRNO(false, LOG_ERR, "Unable to create backup file!");
 
         return true;
@@ -87,22 +88,20 @@ recursively_save_state(FILE *const stream, const kw_tree_node_t *const node)
 }
 
 void
-save_state(const char *const state_file_name, bool verbose)
+save_state(bool verbose)
 {
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
-        la_debug("save_state()");
+        la_debug_func(NULL);
+        assert(saved_state);
 
         if (!queue_length)
                 return;
 
-        const char *const real_state_file_name = state_file_name ?
-                state_file_name : saved_state;
-
         if (log_verbose || verbose)
                 la_log(LOG_INFO, "Dumping current state to \"%s\"",
-                                real_state_file_name);
+                                saved_state);
 
-        FILE *const stream = fopen(real_state_file_name, "w");
+        FILE *const stream = fopen(saved_state, "w");
         if (!stream)
                 LOG_RETURN(, LOG_ERR, "Unable to open state file");
 
@@ -125,19 +124,19 @@ save_state(const char *const state_file_name, bool verbose)
 /* Return false on error. Non-existant state file is not considered an eror */
 
 bool
-restore_state(const char *const state_file_name, const bool create_backup_file)
+restore_state(const bool create_backup_file)
 {
-        assert(state_file_name);
-        la_log(LOG_INFO, "Restoring state from \"%s\".", state_file_name);
+        assert(saved_state);
+        la_log(LOG_INFO, "Restoring state from \"%s\".", saved_state);
 
-        FILE *const stream = fopen(state_file_name, "r");
+        FILE *const stream = fopen(saved_state, "r");
         if (!stream)
         {
                 if (errno == ENOENT)
                         return true;
                 else
                         LOG_RETURN_ERRNO(false, LOG_ERR, "Unable to open state "
-                                        "file \"%s\"", state_file_name);
+                                        "file \"%s\"", saved_state);
         }
 
 
@@ -179,28 +178,28 @@ restore_state(const char *const state_file_name, const bool create_backup_file)
          * an error */
         if (parse_result == -1)
                 LOG_RETURN_ERRNO(false, LOG_ERR, "Error parsing state file "
-                                "\"%s\" at line %u!", state_file_name,
+                                "\"%s\" at line %u!", saved_state,
                                 line_no);
 
         if (!feof(stream))
                 LOG_RETURN_ERRNO(false, LOG_ERR,
                                 "Reading from state file \"%s\" failed",
-                                state_file_name);
+                                saved_state);
 
         if (fclose(stream) == EOF)
                 LOG_RETURN_ERRNO(false, LOG_ERR, "Unable to close state file");
 
-        if (create_backup_file && !move_state_file_to_backup(state_file_name))
+        if (create_backup_file && !move_state_file_to_backup())
                 LOG_RETURN_ERRNO(false, LOG_ERR, "Error creating backup file!");
 
-        la_log(LOG_INFO, "Finished restoring state from \"%s\"", state_file_name);
+        la_log(LOG_INFO, "Finished restoring state from \"%s\"", saved_state);
         return true;
 }
 
-static void *
+noreturn static void *
 periodically_save_state(void *const ptr)
 {
-        la_debug("periodically_save_state()");
+        la_debug_func(NULL);
 
         for (;;)
         {
@@ -212,17 +211,18 @@ periodically_save_state(void *const ptr)
                         pthread_exit(NULL);
                 }
 
-                save_state((char *) ptr, false);
+                save_state(false);
         }
+        assert(false);
 }
 
 void
-start_save_state_thread(const char *const state_file_name)
+start_save_state_thread(void)
 {
-        la_debug("start_save_state_thread()");
+        la_debug_func(NULL);
 
         xpthread_create(&save_state_thread, NULL, periodically_save_state,
-                        (void *) state_file_name, "save state");
+                        NULL, "save state");
 }
 
 /* vim: set autowrite expandtab: */

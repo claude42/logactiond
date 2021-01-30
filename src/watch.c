@@ -56,7 +56,7 @@ watch_source(la_source_t *const source, const int whence)
                 return;
 
         assert_source(source); assert(!source->file);
-        la_debug("watch_source(%s)", source->location);
+        la_debug_func(source->location);
 
 #ifndef NOWATCH
         source->file = fopen(source->location, "r");
@@ -85,7 +85,7 @@ void
 unwatch_source(la_source_t *const source)
 {
         assert_source(source); assert(source->file); assert(source->active);
-        la_debug("unwatch_source(%s)", source->location);
+        la_debug_func(source->location);
 
         if (run_type == LA_UTIL_FOREGROUND)
                 return;
@@ -112,7 +112,7 @@ unwatch_source(la_source_t *const source)
 void
 init_watching(void)
 {
-        la_debug("init_watching()");
+        la_debug_func(NULL);
 
 #ifndef NOWATCH
         assert(la_config); assert_list(la_config->source_groups);
@@ -148,7 +148,7 @@ init_watching(void)
 void
 start_watching_threads(void)
 {
-        la_debug("start_watching_threads()");
+        la_debug_func(NULL);
 
         init_watching();
 
@@ -178,7 +178,7 @@ start_watching_threads(void)
 void
 shutdown_watching(void)
 {
-        la_debug("shutdown_watching()");
+        la_debug_func(NULL);
 
 #ifndef NOWATCH
         assert(la_config);

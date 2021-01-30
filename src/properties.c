@@ -64,7 +64,7 @@ size_t
 token_length(const char *const string)
 {
         assert(string); assert(*string == '%');
-        la_vdebug("token_length(%s)", string);
+        la_vdebug_func(string);
 
         for (const char *ptr = string + 1; *ptr; ptr++)
         {
@@ -89,7 +89,7 @@ get_property_from_property_list(const kw_list_t *const property_list,
                 const char *const name)
 {
         assert(name);
-        la_vdebug("get_property_from_property_list(%s)", name);
+        la_vdebug_func(name);
 
         if (!property_list)
                 return NULL;
@@ -141,7 +141,7 @@ copy_str_and_tolower(char *const dest, const char *const src,
                 const char delim)
 {
         assert(dest); assert(src);
-        la_vdebug("copy_str_and_tolower(%s)", src);
+        la_vdebug_func(src);
 
         size_t i;
         for (i = 0; i < MAX_PROP_SIZE - 1 && src[i] != delim; i++)
@@ -168,7 +168,7 @@ static int
 count_open_braces(const char *const string)
 {
         assert(string);
-        la_vdebug("count_open_braces(%s)", string);
+        la_vdebug_func(string);
 
         int result = 0;
 
@@ -209,7 +209,7 @@ create_property_from_token(const char *const name, const int pos,
                 const la_rule_t *const rule)
 {
         assert(name); assert(*name == '%');
-        la_vdebug("create_property_from_token(%s)", name);
+        la_vdebug_func(name);
 
         if (name[1] =='%') /* detected just "%%" */
                 return NULL;
@@ -281,7 +281,7 @@ static la_property_t *
 duplicate_property(const la_property_t *const property)
 {
         assert_property(property);
-        la_vdebug("duplicate_property(%s)", property->name);
+        la_vdebug_func(property->name);
         la_property_t *const result = xmalloc(sizeof *result);
 
         string_copy(result->name, MAX_PROP_SIZE, property->name, 0, '\0');
@@ -301,7 +301,7 @@ kw_list_t *
 dup_property_list(const kw_list_t *const list)
 {
         assert_list(list);
-        la_vdebug("dup_property_list()");
+        la_vdebug_func(NULL);
 
         kw_list_t *const result = create_list();
 
@@ -337,7 +337,7 @@ free_property(la_property_t *const property)
 void
 empty_property_list(kw_list_t *const list)
 {
-        la_vdebug("free_property_list()");
+        la_vdebug_func(NULL);
         if (!list)
                 return;
 

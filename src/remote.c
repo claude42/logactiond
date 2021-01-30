@@ -31,6 +31,10 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdbool.h>
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
+#include <stdatomic.h>
+#endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
+#include <stdnoreturn.h>
 
 #ifdef WITH_LIBSODIUM
 #ifndef NOCRYPTO
@@ -52,6 +56,12 @@
 pthread_t remote_thread = 0;
 static int client_fd4;
 static int client_fd6;
+pthread_t sync_entries_thread = 0;
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
+atomic_bool sync_entries_thread_running = false;
+#else /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
+bool sync_entries_thread_running = false;
+#endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
 
 /* TODO: check if current implementation really is thread safe */
 /* TODO: maybe connect socket? */
@@ -62,7 +72,7 @@ send_message_to_single_address(const char *const message,
                 const la_address_t *const remote_address)
 {
         assert(la_config); assert_address(remote_address);
-        la_debug("send_message_to_single_address(%s)", remote_address->text);
+        la_debug_func( remote_address->text);
         if (!la_config->remote_enabled)
                 return;
 
@@ -98,7 +108,7 @@ send_message_to_single_address(const char *const message,
 void
 send_add_entry_message(const la_command_t *const command, const la_address_t *const address)
 {
-        la_debug("send_add_entry_message()");
+        la_debug_func(NULL);
         assert(la_config); assert_command(command);
 
         if (!la_config->remote_enabled)
@@ -150,7 +160,7 @@ send_add_entry_message(const la_command_t *const command, const la_address_t *co
 static void
 cleanup_remote(void *const arg)
 {
-        la_debug("cleanup_remote()");
+        la_debug_func(NULL);
         /* TODO: re-enable mt save */
         /*if (server_fd > 0 && close(server_fd) == -1)
                 die_hard(true, "Unable to close socket");*/
@@ -166,10 +176,10 @@ cleanup_remote(void *const arg)
  * Main loop
  */
 
-static void *
+noreturn static void *
 remote_loop(void *const ptr)
 {
-        la_debug("remote_loop()");
+        la_debug_func(NULL);
 
         const struct addrinfo *const ai = (struct addrinfo *) ptr;
 
@@ -267,7 +277,7 @@ remote_loop(void *const ptr)
 void
 start_remote_thread(void)
 {
-        la_debug("start_remote_thread()");
+        la_debug_func(NULL);
         assert(la_config);
         if (!la_config->remote_enabled || remote_thread)
                 return;
@@ -296,6 +306,13 @@ start_remote_thread(void)
                 xpthread_create(&remote_thread, NULL, remote_loop, ai, "remote");
 }
 
+static void
+cleanup_sync_all_entries(void *arg)
+{
+        free(arg);
+        sync_entries_thread_running = false;
+}
+
 /* 
  * start_routine for pthread_create called from sync_entries(). ptr points to a
  * string with the destination IP address.
@@ -314,11 +331,17 @@ sync_all_entries(void *ptr)
 
         free(ptr);
 
+        /* Allocate in one shot so both can be free()d at once in
+         * cleanup_sync_all_entries() */
+        void *buffer = xmalloc(((queue_length + 1) * sizeof (char*)) +
+                        queue_length * TOTAL_MSG_LEN);
+        char **message_array = buffer;
+        char *message_buffer = buffer + (queue_length + 1) * sizeof (char*);
+
+        pthread_cleanup_push(cleanup_sync_all_entries, buffer);
+
         xpthread_mutex_lock(&end_queue_mutex);
 
-                char **message_array = (char **) xmalloc((queue_length + 1) *
-                                sizeof (char *));
-                char *message_buffer = xmalloc(queue_length * TOTAL_MSG_LEN);
                 int message_array_length = 0;
 
                 for (la_command_t *command = first_command_in_queue(); command;
@@ -341,14 +364,17 @@ sync_all_entries(void *ptr)
 
         xpthread_mutex_unlock(&end_queue_mutex);
 
+#ifdef WITH_LIBSODIUM
+        if (la_config->remote_secret_changed)
+        {
+                generate_send_key_and_salt(la_config->remote_secret);
+                la_config->remote_secret_changed = false;
+        }
+#endif /* WITH_LIBSODIUM */
+
         for (int i = 0; i < message_array_length; i++)
         {
 #ifdef WITH_LIBSODIUM
-                if (la_config->remote_secret_changed)
-                {
-                        generate_send_key_and_salt(la_config->remote_secret);
-                        la_config->remote_secret_changed = false;
-                }
                 if (!encrypt_message(message_array[i]))
                         LOG_RETURN(NULL, LOG_ERR, "Unable to encrypt message");
 #endif /* WITH_LIBSODIUM */
@@ -356,8 +382,7 @@ sync_all_entries(void *ptr)
                 xnanosleep(0, 200000000);
         }
 
-        free(message_buffer);
-        free(message_array);
+        pthread_cleanup_pop(1);
 
         return NULL;
 }
@@ -366,15 +391,23 @@ void
 sync_entries(const char *const buffer, const char *const from)
 {
         assert(buffer);
-        la_debug("sync_entries(%s)", buffer);
+        la_debug_func(buffer);
 
-        char *const ptr = xstrdup(buffer[2] ? buffer+2 : from);
-        //char *ptr = buffer[2] ? buffer+2 : from;
+        if (!sync_entries_thread_running)
+        {
+                char *const ptr = xstrdup(buffer[2] ? buffer+2 : from);
 
-        pthread_t sync_entries_thread = 0;
-        xpthread_create(&sync_entries_thread, NULL, sync_all_entries, ptr,
-                        "sync");
+                xpthread_create(&sync_entries_thread, NULL, sync_all_entries,
+                                ptr, "sync");
+        }
 
+}
+
+void
+stop_syncing(void)
+{
+        if (sync_entries_thread_running)
+                pthread_cancel(sync_entries_thread);
 }
 
 

@@ -23,6 +23,7 @@
 #include <assert.h>
 #include <limits.h>
 #include <stdatomic.h>
+#include <stdnoreturn.h>
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -56,13 +57,13 @@ pthread_cond_t end_queue_condition = PTHREAD_COND_INITIALIZER;
 void
 update_queue_count_numbers(void)
 {
-        la_debug("update_queue_count_numbers()");
-        assert(adr_tree);
+        la_debug_func(NULL);
+        assert_tree(adr_tree);
 
         xpthread_mutex_lock(&config_mutex);
         xpthread_mutex_lock(&end_queue_mutex);
 
-                for (kw_tree_node_t *node = first_tree_node(adr_tree); node;
+                for (kw_tree_node_t *node = adr_tree->first; node;
                                 (node = next_node_in_tree(node)))
                 {
                         la_rule_t *rule = NULL;
@@ -103,7 +104,7 @@ cmp_command_address(const void *p1, const void *p2)
 static la_command_t *
 find_end_command_no_mutex(const la_address_t *const address)
 {
-        la_debug("find_end_command_no_mutex()");
+        la_debug_func(NULL);
 
         if (!address)
                 return NULL;
@@ -112,7 +113,7 @@ find_end_command_no_mutex(const la_address_t *const address)
         if (queue_length == 0)
                 return NULL;
 
-        kw_tree_node_t *node = (kw_tree_node_t *) find_tree_node(adr_tree,
+        kw_tree_node_t *node = find_tree_node(adr_tree,
                         address, cmp_command_address);
         if (node)
                 return (la_command_t *) node->payload;
@@ -137,7 +138,7 @@ find_end_command(const la_address_t *const address)
 static void
 remove_command_from_queues(la_command_t *command)
 {
-        assert_command(command); assert(adr_tree); assert(end_time_tree);
+        assert_command(command); assert_tree(adr_tree); assert_tree(end_time_tree);
 
         remove_tree_node(adr_tree, &(command->adr_node));
         remove_tree_node(end_time_tree, &command->end_time_node);
@@ -161,7 +162,7 @@ cmp_end_times(const void *p1, const void *p2)
 static void
 add_command_to_queues(la_command_t *command)
 {
-        assert_command(command); assert(adr_tree); assert(end_time_tree);
+        assert_command(command); assert_tree(adr_tree); assert_tree(end_time_tree);
 
         add_to_tree(adr_tree, &command->adr_node, cmp_addresses);
         add_to_tree(end_time_tree, &command->end_time_node, cmp_end_times);
@@ -181,7 +182,7 @@ int
 remove_and_trigger(la_address_t *const address)
 {
         assert_address(address);
-        la_debug("remove_and_trigger()");
+        la_debug_func(NULL);
 
         int result = -1;
 
@@ -295,7 +296,7 @@ wait_for_next_end_command(const la_command_t *command)
 static void
 cleanup_end_queue(void *arg)
 {
-        la_debug("cleanup_end_queue()");
+        la_debug_func(NULL);
 
         empty_end_queue();
 
@@ -307,7 +308,7 @@ cleanup_end_queue(void *arg)
 }
 
 static la_command_t *
-return_payload_as_command(kw_tree_node_t *node)
+payload_as_command(kw_tree_node_t *node)
 {
         if (node)
                 return (la_command_t *) node->payload;
@@ -318,13 +319,13 @@ return_payload_as_command(kw_tree_node_t *node)
 la_command_t *
 first_command_in_queue(void)
 {
-        return return_payload_as_command(first_tree_node(end_time_tree));
+        return payload_as_command(end_time_tree->first);
 }
 
 la_command_t *
 next_command_in_queue(la_command_t *const command)
 {
-        return return_payload_as_command(next_node_in_tree(
+        return payload_as_command(next_node_in_tree(
                                 &command->end_time_node));
 }
 
@@ -398,10 +399,10 @@ remove_or_renew(la_command_t *const command)
  * Runs in end_queue_thread
  */
 
-static void *
+noreturn static void *
 consume_end_queue(void *ptr)
 {
-        la_debug("consume_end_queue()");
+        la_debug_func(NULL);
 
         pthread_cleanup_push(cleanup_end_queue, NULL);
 
@@ -452,7 +453,7 @@ consume_end_queue(void *ptr)
 void
 init_end_queue(void)
 {
-        la_debug("create_end_queue()");
+        la_debug_func(NULL);
         assert(!adr_tree); assert(!end_time_tree);
 
         adr_tree = create_tree();
@@ -463,7 +464,7 @@ init_end_queue(void)
 void
 start_end_queue_thread(void)
 {
-        la_debug("init_queue_processing()");
+        la_debug_func(NULL);
 
         init_end_queue();
 

@@ -48,6 +48,7 @@
 #include "sources.h"
 
 la_config_t *la_config = NULL;
+int id_counter = 0;
 
 pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -285,7 +286,7 @@ compile_actions(la_rule_t *const rule, const config_setting_t *const action_def)
 {
         assert_rule(rule); assert(action_def);
 
-        la_debug("compile_actions(%s)", rule->name);
+        la_debug_func(rule->name);
 
         const char *const name = config_setting_name(action_def);
 #ifndef NOCOMMANDS
@@ -351,7 +352,7 @@ compile_list_of_actions(la_rule_t *const rule,
 {
         assert_rule(rule); assert(action_def);
 
-        la_debug("compile_list_of_actions(%s)", rule->name);
+        la_debug_func(rule->name);
 
         const int n_items = config_setting_length(action_def);
 
@@ -373,7 +374,7 @@ load_blacklists(la_rule_t *const rule, const config_setting_t *const uc_rule_def
 {
         assert_rule(rule); assert(uc_rule_def);
 
-        la_debug("load_blacklists(%s)", rule->name);
+        la_debug_func(rule->name);
         /* again unclear why this cast is necessary */
         const config_setting_t *blacklist_reference =
                 config_setting_lookup((config_setting_t *) uc_rule_def,
@@ -426,7 +427,7 @@ load_actions(la_rule_t *const rule, const config_setting_t *const uc_rule_def)
 {
         assert_rule(rule); assert(uc_rule_def);
 
-        la_debug("load_actions(%s)", rule->name);
+        la_debug_func(rule->name);
         /* again unclear why this cast is necessary */
         const config_setting_t *action_reference =
                 config_setting_lookup((config_setting_t *) uc_rule_def,
@@ -463,7 +464,7 @@ load_patterns(la_rule_t *const rule, const config_setting_t *const rule_def,
 {
         assert_rule(rule); assert(uc_rule_def);
 
-        la_debug("load_patterns(%s)", rule->name);
+        la_debug_func(rule->name);
 
         const config_setting_t *patterns;
 
@@ -502,7 +503,7 @@ compile_address_list_port(kw_list_t *const list,
         if (!setting)
                 return;
 
-        la_debug("compile_address_list(%s)", config_setting_name(setting));
+        la_debug_func(config_setting_name(setting));
 
         assert_list(list);
 
@@ -546,7 +547,7 @@ load_properties(kw_list_t *const properties, const config_setting_t *const secti
 {
         assert_list(properties); assert(section);
 
-        la_debug("load_properties(%s)", config_setting_name(section));
+        la_debug_func(config_setting_name(section));
 
         const config_setting_t *const properties_section =
                 config_setting_get_member(section, LA_PROPERTIES_LABEL);
@@ -733,7 +734,7 @@ load_single_rule(const config_setting_t *const uc_rule_def)
                 enabled = false;
 
         const char *const name = config_setting_name(uc_rule_def);
-        la_debug("load_single_rule(%s)", name);
+        la_debug_func(name);
         const config_setting_t *const rule_def = get_rule(name);
 
         const char *systemd_unit;
@@ -827,7 +828,7 @@ load_single_rule(const config_setting_t *const uc_rule_def)
 static int
 load_rules(void)
 {
-        la_debug("load_rules()");
+        la_debug_func(NULL);
         assert(la_config);
 
         const config_setting_t *const local_section = 
@@ -857,7 +858,7 @@ load_rules(void)
 static void
 load_remote_settings(void)
 {
-        la_debug("load_remote_settings()");
+        la_debug_func(NULL);
         assert(la_config);
 
         la_config->remote_enabled = false;
@@ -904,9 +905,53 @@ load_remote_settings(void)
 }
 
 static void
+load_file_settings(void)
+{
+        la_debug_func(NULL);
+        assert(la_config);
+
+        config_setting_t *const files_section =
+                config_lookup(&la_config->config_file, LA_FILES_LABEL);
+
+        if (files_section)
+        {
+                la_config->fifo_path = xstrdup(
+                                config_get_string_or_null(files_section,
+                                        LA_FILES_FIFO_PATH_LABEL));
+                if (!la_config->fifo_path)
+                        la_config->fifo_path = xstrdup(FIFOFILE);
+
+                la_config->fifo_user = determine_uid(
+                                config_get_string_or_null(files_section,
+                                        LA_FILES_FIFO_USER_LABEL));
+                la_config->fifo_group = determine_gid(
+                                config_get_string_or_null(files_section,
+                                        LA_FILES_FIFO_GROUP_LABEL));
+                if ((la_config->fifo_user == UINT_MAX ||
+                                la_config->fifo_group == UINT_MAX) &&
+                                la_config->fifo_user != la_config->fifo_group)
+                        die_hard(false, "Must specify either both fifo_user and "
+                                        "fifo_group or neither!");
+
+                int mask = 0;
+                if (config_setting_lookup_int(files_section, LA_FILES_FIFO_MASK_LABEL, &mask))
+                        la_config->fifo_mask = mask;
+                else
+                        la_config->fifo_mask = 0;
+        }
+        else
+        {
+                la_config->fifo_path = xstrdup(FIFOFILE);
+                la_config->fifo_user = 0;
+                la_config->fifo_group = 0;
+                la_config->fifo_mask = 0;
+        }
+}
+
+static void
 load_defaults(void)
 {
-        la_debug("load_defaults()");
+        la_debug_func(NULL);
         assert(la_config);
 
         const config_setting_t *const defaults_section =
@@ -1058,6 +1103,7 @@ load_la_config(void)
                         die_hard(false, "No rules enabledd!");
                 }
                 load_remote_settings();
+                load_file_settings();
 
                 config_destroy(&la_config->config_file);
 
@@ -1071,7 +1117,7 @@ load_la_config(void)
 void
 unload_la_config(void)
 {
-        la_debug("unload_la_config()");
+        la_debug_func(NULL);
         assert(la_config);
 
         /* In case shutdown is ongoing, don't bother with a mutex (which might
@@ -1099,6 +1145,9 @@ unload_la_config(void)
         free_address_list(la_config->remote_send_to);
         la_config->remote_send_to = NULL;
         free(la_config->remote_bind);
+        la_config->remote_bind = NULL;
+        free(la_config->fifo_path);
+        la_config->fifo_path = NULL;
 
 #ifndef CLIENTONLY
         if (!shutdown_ongoing)
@@ -1116,7 +1165,7 @@ include_func(config_t *config, const char *const include_dir,
                 const char *const path, const char **const error)
 {
         assert(path);
-        la_debug("include_func(%s)", path);
+        la_debug_func(path);
 
         glob_t pglob;
 

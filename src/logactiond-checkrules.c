@@ -76,7 +76,7 @@ print_usage(void)
 static void
 read_options(int argc, char *argv[])
 {
-        la_debug("read_options()");
+        la_debug_func(NULL);
 
         for (;;)
         {
@@ -132,7 +132,7 @@ next_line(la_rule_t *rule, char *line)
 {
         assert_rule(rule); assert(line);
 
-        la_debug("next_line(%s)", line);
+        la_debug_func(line);
 
         for (la_pattern_t *pattern = ITERATE_PATTERNS(rule->patterns);
                         (pattern = NEXT_PATTERN(pattern));)
@@ -166,7 +166,7 @@ next_line(la_rule_t *rule, char *line)
 static void
 iterate_through_all_rules(char *line)
 {
-        la_debug("iterate_through_all_rules()");
+        la_debug_func(NULL);
 
         for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
                         (source_group = NEXT_SOURCE_GROUP(source_group));)

@@ -50,6 +50,8 @@ const char *const pidfile_name = PIDFILE;
 static bool shutdown_good = false;
 static char shutdown_msg[] = "Shutdown message not set";
 
+int id_counter = 0;
+
 void
 trigger_shutdown(int status, int saved_errno)
 {

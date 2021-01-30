@@ -32,6 +32,8 @@ void send_message_to_single_address(const char *message,
 
 void sync_entries(const char *buffer, const char *from);
 
+void stop_syncing(void);
+
 #endif /* __remote_h */
 
 /* vim: set autowrite expandtab: */

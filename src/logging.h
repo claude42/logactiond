@@ -21,6 +21,9 @@
 
 #include <stdarg.h>
 #include <syslog.h>
+#include <errno.h>
+#include <string.h>
+#include <stdnoreturn.h>
 
 #include <config.h>
 
@@ -39,19 +42,39 @@ extern int log_level;
 
 extern bool log_verbose;
 
-void log_message(int priority, const char *fmt, va_list gp, const char *add);
+#define la_debug(...) log_message(LOG_DEBUG, NULL, __VA_ARGS__)
+#define la_vdebug(...) log_message(LOG_VDEBUG, NULL, __VA_ARGS__)
+#define la_log_errno(PRIORITY, ...) log_message(PRIORITY, strerror(errno), __VA_ARGS__)
+#define la_log_verbose(PRIORITY, ...) if (log_verbose) log_message(PRIORITY, NULL, __VA_ARGS__)
+#define la_log(PRIORITY, ...) log_message(PRIORITY, NULL, __VA_ARGS__)
+#define la_debug_func(PARAMS) log_message(LOG_DEBUG, NULL, "%s(%s)", __func__, PARAMS ? PARAMS : "")
+#define la_vdebug_func(PARAMS) log_message(LOG_VDEBUG, NULL, "%s(%s)", __func__, PARAMS ? PARAMS : "")
 
-void la_debug(const char *fmt, ...);
+/* The following needs more work */
+#if 0
+#ifdef CLIENTONLY
+#define die_hard(LOG_STRERROR, ...) \
+        do { \
+                log_message(LOG_ERR, LOG_STRERROR ? strerror(errno) : NULL, __VA_ARGS__); \
+                exit(1); \
+        } while (0)
+#else /* CLIENTONLY */
+#define die_hard(LOG_STRERROR, ...) \
+        do { \
+                int save_errno = errno; \
+                log_message(LOG_ERR, LOG_STRERROR ? strerror(errno) : NULL, __VA_ARGS__); \
+                if (!shutdown_ongoing) \
+                        trigger_shutdown(EXIT_FAILURE, save_errno); \
+                pthread_exit(NULL); \
+        } while (0)
+#endif /* CLIENTONLY */
+#endif
 
-void la_vdebug(const char *fmt, ...);
+void log_message(int priority, const char *add, const char *fmt, ...);
 
-void la_log_errno(int priority, const char *fmt, ...);
+void log_message_va_list(int priority, const char *fmt, va_list gp, const char *add);
 
-void la_log_verbose(int priority, const char *fmt, ...);
-
-void la_log(int priority, const char *fmt, ...);
-
-void die_hard(bool log_strerror, const char *fmt, ...);
+noreturn void die_hard(bool log_strerror, const char *fmt, ...);
 
 #endif /* logging_h */
 

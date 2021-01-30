@@ -30,6 +30,7 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <time.h>
+#include <stdnoreturn.h>
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -42,7 +43,7 @@
 static void
 cleanup_watching_polling(void *const arg)
 {
-        la_debug("cleanup_watching_polling()");
+        la_debug_func(NULL);
 
         shutdown_watching();
 }
@@ -133,10 +134,10 @@ poll_source(la_source_t *source)
  * Event loop for poll mechanism
  */
 
-static void *
+noreturn static void *
 watch_forever_polling(void *ptr)
 {
-        la_debug("watch_forever_polling()");
+        la_debug_func(NULL);
         assert(la_config); assert_list(la_config->source_groups);
 
         pthread_cleanup_push(cleanup_watching_polling, NULL);
@@ -174,7 +175,7 @@ watch_forever_polling(void *ptr)
 void
 start_watching_polling_thread(void)
 {
-        la_debug("start_watching_polling_thread()");
+        la_debug_func(NULL);
         assert(!file_watch_thread);
 
         xpthread_create(&file_watch_thread, NULL,
