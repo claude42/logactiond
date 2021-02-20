@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <stdnoreturn.h>
+#include <stddef.h>
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -53,7 +54,7 @@ move_state_file_to_backup(void)
         assert(saved_state);
         la_debug_func(saved_state);
 
-        const int length = strlen(saved_state) + sizeof BAK_SUFFIX - 1;
+        const size_t length = strlen(saved_state) + sizeof BAK_SUFFIX - 1;
         char *const backup_file_name = alloca(length + 1);
 
         if (snprintf(backup_file_name, length + 1, "%s%s", saved_state, BAK_SUFFIX) !=

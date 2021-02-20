@@ -94,7 +94,7 @@ dump_rule_diagnostics(FILE *const diag_file, const la_rule_t *const rule)
         assert(diag_file), assert_rule(rule);
         la_vdebug_func(rule->name);
 
-        fprintf(diag_file, "%s, list length=%u\n", rule->name,
+        fprintf(diag_file, "%s, list length=%i\n", rule->name,
                         list_length(rule->trigger_list));
 }
 
@@ -326,7 +326,7 @@ dump_queue_status(const bool force)
                                 type = "Re";
                         else if (command->submission_type == LA_SUBMISSION_RENEW)
                                 type = "RN";
-                        else if (command->blacklist)
+                        else if (command->previously_on_blacklist)
                                 type = "BL";
                         else
                                 type = "  ";
@@ -345,8 +345,8 @@ dump_queue_status(const bool force)
 
                 if (status_monitoring >= 2 || force)
                 {
-                        fprintf(hosts_file, "\nQueue length: %u (%u local), "
-                                        "meta_command: %u\n",
+                        fprintf(hosts_file, "\nQueue length: %i (%i local), "
+                                        "meta_command: %i\n",
                                         num_elems, num_elems_local,
                                         meta_list_length());
 
@@ -354,10 +354,10 @@ dump_queue_status(const bool force)
                                 la_config->total_clocks / la_config->invocation_count :
                                 0;
                         fprintf(hosts_file, "Average invocation time: %f, "
-                                        "(invocation count: %u)\n",
+                                        "(invocation count: %i)\n",
                                         average_time,
                                         la_config->invocation_count);
-                        fprintf(hosts_file, "adr_tree depth=%u, end_time_tree depth=%u\n",
+                        fprintf(hosts_file, "adr_tree depth=%i, end_time_tree depth=%i\n",
                                         max_depth1, max_depth2);
                 }
 

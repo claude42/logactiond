@@ -54,6 +54,12 @@ bool shutdown_ongoing = false;
 #endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
 const char *const pidfile_name = PIDFILE;
 
+la_address_t fifo_address =
+{
+        .text = "fifo",
+        .domainname = NULL
+};
+
 static bool shutdown_good = false;
 static char shutdown_msg[] = "Shutdown message not set";
 
@@ -86,7 +92,7 @@ void
 send_add_entry_message(const la_command_t *const command, const la_address_t *const address) { }
 
 void
-sync_entries(const char *const buffer, const char *const from) { }
+sync_entries(const char *const buffer, la_address_t *from_addr) { }
 
 void
 stop_syncing(void) { }
@@ -190,19 +196,19 @@ START_TEST (trees)
         init_stuff();
 
         enqueue_end_command(create_manual_command_from_template(template,
-                                create_address("5.5.5.5"), ""), 2);
+                                create_address("5.5.5.5"), NULL), 2);
         enqueue_end_command(create_manual_command_from_template(template,
-                                create_address("1.1.1.1"), ""), 5);
+                                create_address("1.1.1.1"), NULL), 5);
         enqueue_end_command(create_manual_command_from_template(template,
-                                create_address("10.10.10.10"), ""), 3);
+                                create_address("10.10.10.10"), NULL), 3);
         enqueue_end_command(create_manual_command_from_template(template,
-                                create_address("7.7.7.7"), ""), 25);
+                                create_address("7.7.7.7"), NULL), 25);
         enqueue_end_command(create_manual_command_from_template(template,
-                                create_address("8.8.8.8"), ""), 20);
+                                create_address("8.8.8.8"), NULL), 20);
         enqueue_end_command(create_manual_command_from_template(template,
-                                create_address("20.20.20.20"), ""), 4);
+                                create_address("20.20.20.20"), NULL), 4);
         enqueue_end_command(create_manual_command_from_template(template,
-                                create_address("2.2.2.2"), ""), 1);
+                                create_address("2.2.2.2"), NULL), 1);
 
         ck_assert_int_eq(check_end_queues(), 7);
         ck_assert_int_eq(queue_length, 7);
@@ -265,7 +271,7 @@ START_TEST (null_elements)
 
         enqueue_end_command(template, INT_MAX);
         enqueue_end_command(create_manual_command_from_template(template,
-                                create_address("5.5.5.5"), ""), 2);
+                                create_address("5.5.5.5"), NULL), 2);
 
         la_command_t *cmd = find_end_command(create_address("5.5.5.5"));
         ck_assert_str_eq(cmd->address->text, "5.5.5.5");
@@ -280,31 +286,31 @@ START_TEST (state)
         time_t now = xtime(NULL);
 
         la_command_t *c = create_manual_command_from_template(template,
-                        create_address("5.5.5.5"), "");
+                        create_address("5.5.5.5"), NULL);
         enqueue_end_command(c, now + 2);
 
         c = create_manual_command_from_template(template,
-                        create_address("1.1.1.1"), "");
+                        create_address("1.1.1.1"), NULL);
         enqueue_end_command(c, now + 5);
 
         c = create_manual_command_from_template(template,
-                        create_address("10.10.10.10"), "");
+                        create_address("10.10.10.10"), NULL);
         enqueue_end_command(c, now + 3);
 
         c = create_manual_command_from_template(template,
-                        create_address("7.7.7.7"), "");
+                        create_address("7.7.7.7"), NULL);
         enqueue_end_command(c, now + 25);
 
         c = create_manual_command_from_template(template,
-                        create_address("8.8.8.8"), "");
+                        create_address("8.8.8.8"), NULL);
         enqueue_end_command(c, now + 20);
 
         c = create_manual_command_from_template(template,
-                        create_address("20.20.20.20"), "");
+                        create_address("20.20.20.20"), NULL);
         enqueue_end_command(c, now + 4);
 
         c = create_manual_command_from_template(template,
-                        create_address("2.2.2.2"), "");
+                        create_address("2.2.2.2"), NULL);
         enqueue_end_command(c, now + 1);
 
         saved_state = "./testsavestate";

@@ -39,6 +39,7 @@
 #include <limits.h>
 #include <pwd.h>
 #include <grp.h>
+#include <stddef.h>
 
 #include "ndebug.h"
 #include "misc.h"
@@ -403,8 +404,8 @@ strendcmp(const char *const string, const char *const suffix)
         else if (!string || !suffix)
                 return 1;
 
-        const int string_len = strlen(string);
-        const int suffix_len = strlen(suffix);
+        const size_t string_len = strlen(string);
+        const size_t suffix_len = strlen(suffix);
 
         if (suffix_len > string_len)
                 return 1;

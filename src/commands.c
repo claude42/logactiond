@@ -43,6 +43,7 @@
 #include "sources.h"
 #include "binarytree.h"
 #include "dnsbl.h"
+#include "fifo.h"
 
 #define ITERATE_META_COMMANDS(COMMANDS) (meta_command_t *) &(COMMANDS)->head
 #define NEXT_META_COMMAND(COMMAND) (meta_command_t *) (COMMAND->node.succ->succ ? COMMAND->node.succ : NULL)
@@ -362,7 +363,7 @@ meta_list_length(void)
 static void
 free_meta_command(meta_command_t *const meta_command)
 {
-        la_debug_func(NULL);
+        la_vdebug_func(NULL);
         assert(meta_command);
 
         free_address(meta_command->address);
@@ -485,7 +486,7 @@ check_meta_list(const la_command_t *const command, const int set_factor)
                         const int new_factor = set_factor ? set_factor :
                                 meta_command->factor *
                                 command->rule->meta_factor;
-                        const int duration = command->blacklist ?
+                        const int duration = command->previously_on_blacklist ?
                                 command->rule->dnsbl_duration :
                                 command->duration;
                         if (duration * new_factor <
@@ -520,22 +521,25 @@ incr_invocation_counts(la_command_t *const command)
 }
 
 static void
-log_trigger(const la_command_t *const command, const char *const from)
+log_trigger(const la_command_t *const command, const la_address_t *const from_addr)
 {
-        if (from)
+
+        if (from_addr)
         {
                 /* manual command */
                 if (command->factor)
                         la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
                                         "by host %s, rule \"%s\" (factor %d).",
                                         command->address->text, command->name,
-                                        from, command->rule_name,
+                                        ADDRESS_NAME(from_addr),
+                                        command->rule_name,
                                         command->factor);
                 else
                         la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
                                         "by host %s, rule \"%s\".",
                                         command->address->text, command->name,
-                                        from, command->rule_name);
+                                        ADDRESS_NAME(from_addr),
+                                        command->rule_name);
         }
         else if (command->is_template)
         {
@@ -577,7 +581,7 @@ log_trigger(const la_command_t *const command, const char *const from)
 void
 trigger_manual_command(const la_address_t *const address,
                 const la_command_t *const template, const time_t end_time,
-                const int factor, const char *const from,
+                const int factor, const la_address_t *const from_addr,
                 const bool suppress_logging)
 {
         assert_address(address); assert_command(template);
@@ -594,7 +598,8 @@ trigger_manual_command(const la_address_t *const address,
         if (tmp_addr)
         {
                 reprioritize_node((kw_node_t *) tmp_addr, 1);
-                LOG_RETURN(, LOG_INFO, "Host: %s, manual trigger ignored.", address->text);
+                LOG_RETURN(, LOG_INFO, "Host: %s, manual trigger ignored.",
+                                ADDRESS_NAME(tmp_addr));
         }
 
         const la_command_t *const tmp_cmd = find_end_command(address);
@@ -603,12 +608,12 @@ trigger_manual_command(const la_address_t *const address,
                                 "%s%s already "
                                 "active (triggered by rule \"%s\").",
                                 address->text, tmp_cmd->name, 
-                                from ? "by host " : "",
-                                from ? from : "",
+                                from_addr ? "by host " : "",
+                                from_addr ? from_addr->text : "",
                                 tmp_cmd->rule_name);
 
         la_command_t *const command = create_manual_command_from_template(template, 
-                        address, from);
+                        address, from_addr);
         if (!command)
                 LOG_RETURN(, LOG_ERR, "IP address doesn't match what requirements of action!");
         assert_command(command);
@@ -619,7 +624,7 @@ trigger_manual_command(const la_address_t *const address,
                 command->factor = 0;
 
         if (!suppress_logging || log_verbose)
-                log_trigger(command, from);
+                log_trigger(command, from_addr);
 
         command->rule->queue_count++;
 
@@ -669,7 +674,7 @@ trigger_command(la_command_t *const command)
 void
 trigger_command_from_blacklist(la_command_t *const command)
 {
-        command->blacklist = true;
+        command->previously_on_blacklist = true;
         trigger_command(command);
 }
 
@@ -854,7 +859,7 @@ create_command_from_template(const la_command_t *const template,
         result->address = address ? dup_address(address) : NULL;
         result->end_time = result->n_triggers = result->start_time= 0;
         result->submission_type = LA_SUBMISSION_LOCAL;
-        result->blacklist = false;
+        result->previously_on_blacklist = false;
 
         convert_both_commands(result);
 
@@ -866,17 +871,18 @@ create_command_from_template(const la_command_t *const template,
  */
 
 static
-bool is_local_address(const char *const address)
+bool is_local_address(const la_address_t *const address)
 {
-        return (!address || !strcmp("127.0.0.1", address) ||
-                        !strcmp("::1", address) || !strcmp(LA_FIFO, address));
+        return (!address || address == &fifo_address ||
+                        !strcmp("127.0.0.1", address->text) ||
+                        !strcmp("::1", address->text));
 }
 
 /* TODO: combine both create*command*() methods into one */
 
 la_command_t *
 create_manual_command_from_template(const la_command_t *const template,
-                const la_address_t *const address, const char *const from)
+                const la_address_t *const address, const la_address_t *const from_addr)
 {
         assert_command(template);
         if (address)
@@ -892,7 +898,7 @@ create_manual_command_from_template(const la_command_t *const template,
         result->pattern_properties = NULL;
         result->address = address ? dup_address(address) : NULL;
         result->end_time = result->n_triggers = result->start_time= 0;
-        result->submission_type = is_local_address(from) ?
+        result->submission_type = is_local_address(from_addr) ?
                 LA_SUBMISSION_MANUAL : LA_SUBMISSION_REMOTE;
 
         convert_both_commands(result);

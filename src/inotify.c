@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include <stdnoreturn.h>
+#include <stddef.h>
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -373,7 +374,7 @@ watch_forever_inotify(void *const ptr)
                 else
                 {
                         struct inotify_event *event = NULL;
-                        for (int i = 0; i <  num_read; i += EVENT_SIZE + event->len)
+                        for (size_t i = 0; i <  num_read; i += EVENT_SIZE + event->len)
                         {
                                 event = (struct inotify_event *) &buffer[i];
                                 handle_inotify_event(event);

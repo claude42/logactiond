@@ -47,12 +47,16 @@
 #define assert_address(ADDRESS) assert_address_ffl(ADDRESS, __func__, __FILE__, __LINE__)
 #endif /* NDEBUG */
 
+#define ADDRESS_NAME(ADDRESS) (ADDRESS->domainname ? ADDRESS->domainname : ADDRESS->text)
+
 typedef struct la_address_s
 {
         kw_node_t node;
         struct sockaddr_storage sa;
+        socklen_t salen;
         int prefix;
         char text[MAX_ADDR_TEXT_SIZE + 1];
+        char *domainname;
 
         /* only used for hosts that we receive messages from */
 #ifndef NOCRYPTO
@@ -66,7 +70,11 @@ typedef struct la_address_s
 void assert_address_ffl(const la_address_t *address, const char *func,
                 const char *file, int line);
 
+bool query_domainname(la_address_t *address);
+
 int get_port(const la_address_t *address);
+
+void set_port(la_address_t *address, int port);
 
 const char *get_ip_version(const la_address_t *address);
 

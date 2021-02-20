@@ -208,13 +208,14 @@ move_to_head(kw_node_t *const node)
         if (!node->pred->pred)
                 return;
 
-        remove_node(node);
         kw_node_t *tmp = node->pred;
-        for (tmp = node->pred; tmp->pred->pred; (tmp = tmp->pred))
+        remove_node(node);
+        for (; tmp->pred->pred; (tmp = tmp->pred))
                 ;
 
         insert_node_before(tmp, node);
-        node->pri = tmp->pri + 1;
+        if (node->pri < tmp->pri)
+                node->pri = tmp->pri + 1;
 }
 
 void

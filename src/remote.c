@@ -52,6 +52,7 @@
 #include "logging.h"
 #include "messages.h"
 #include "misc.h"
+#include "fifo.h"
 
 pthread_t remote_thread = 0;
 static int client_fd4;
@@ -63,9 +64,9 @@ atomic_bool sync_entries_thread_running = false;
 bool sync_entries_thread_running = false;
 #endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
 
-/* TODO: check if current implementation really is thread safe */
-/* TODO: maybe connect socket? */
-/* TODO: fd mutex? */
+/* TODO: freeaddrinfo(), but only once. Probably need a mutex for this.
+ * TODO: close server_fd (will also need a mutex)
+ * TODO: maybe connect socket? */
 
 void
 send_message_to_single_address(const char *const message,
@@ -91,7 +92,7 @@ send_message_to_single_address(const char *const message,
                         LOG_RETURN_ERRNO(, LOG_ERR, "Unable to create server socket");
         }
 
-        const int message_sent = sendto(*fd_ptr, message, TOTAL_MSG_LEN, 0,
+        const ssize_t message_sent = sendto(*fd_ptr, message, TOTAL_MSG_LEN, 0,
                         (struct sockaddr *) &remote_address->sa,
                         sizeof remote_address->sa);
         if (message_sent == -1)
@@ -252,6 +253,12 @@ remote_loop(void *const ptr)
 
                 reprioritize_node((kw_node_t *) from_addr, 1);
 
+                /* TODO: this might go wrong if la_config->remote_receive_from
+                 * would contain addresses with prefixes other than 32 / 128.
+                 * Salt might be different for different address in a network.
+                 * Plus the subsequent log messages will list the network
+                 * rather than the address :-O */
+
 #ifdef WITH_LIBSODIUM
                 if (!decrypt_message(buf, la_config->remote_secret, from_addr))
                         continue;
@@ -259,7 +266,7 @@ remote_loop(void *const ptr)
 
                 la_debug("Received message '%s' from %s",  buf, from_addr->text);
 
-                parse_message_trigger_command(buf, from_addr->text);
+                parse_message_trigger_command(buf, from_addr);
                 
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
         }
@@ -321,28 +328,28 @@ cleanup_sync_all_entries(void *arg)
 static void *
 sync_all_entries(void *ptr)
 {
-        la_address_t address;
-        if (!init_address_port(&address, (char *) ptr, la_config->remote_port))
-        {
-                la_log(LOG_ERR, "Cannot convert address in command %s!", (char *) ptr);
-                free(ptr);
-                return NULL;
-        }
+        la_address_t *address = (la_address_t *) ptr;
 
-        free(ptr);
+        assert(la_config);
+        set_port(address, la_config->remote_port);
 
         /* Allocate in one shot so both can be free()d at once in
          * cleanup_sync_all_entries() */
         void *buffer = xmalloc(((queue_length + 1) * sizeof (char*)) +
                         queue_length * TOTAL_MSG_LEN);
         char **message_array = buffer;
-        char *message_buffer = buffer + (queue_length + 1) * sizeof (char*);
+        char *message_buffer = (char *) buffer + (queue_length + 1) * sizeof (char*);
 
         pthread_cleanup_push(cleanup_sync_all_entries, buffer);
 
         xpthread_mutex_lock(&end_queue_mutex);
 
                 int message_array_length = 0;
+
+                /* TODO: walking through tree via next_command_in_queue() will
+                 * create a highly imbalanced tree on the other end. Better
+                 * recurse through adr_tree from bottom to top (like
+                 * recursively_save_state does). */
 
                 for (la_command_t *command = first_command_in_queue(); command;
                                 (command = next_command_in_queue(command)))
@@ -378,7 +385,7 @@ sync_all_entries(void *ptr)
                 if (!encrypt_message(message_array[i]))
                         LOG_RETURN(NULL, LOG_ERR, "Unable to encrypt message");
 #endif /* WITH_LIBSODIUM */
-                send_message_to_single_address(message_array[i], &address);
+                send_message_to_single_address(message_array[i], address);
                 xnanosleep(0, 200000000);
         }
 
@@ -388,18 +395,35 @@ sync_all_entries(void *ptr)
 }
 
 void
-sync_entries(const char *const buffer, const char *const from)
+sync_entries(const char *const buffer, la_address_t *from_addr)
 {
         assert(buffer);
         la_debug_func(buffer);
 
-        if (!sync_entries_thread_running)
-        {
-                char *const ptr = xstrdup(buffer[2] ? buffer+2 : from);
+        if (sync_entries_thread_running)
+                return;
 
-                xpthread_create(&sync_entries_thread, NULL, sync_all_entries,
-                                ptr, "sync");
+        la_address_t *thread_argument = NULL;
+
+        if (buffer[2])
+        {
+                /* static is important, as a pointer to this may be referenced
+                 * from within sync_all_entries() */
+                static la_address_t manual_addr;
+                thread_argument = &manual_addr;
+                init_address(thread_argument, buffer + 2);
         }
+        else if (from_addr != &fifo_address)
+        {
+                thread_argument = from_addr;
+        }
+        else
+        {
+                return;
+        }
+
+        xpthread_create(&sync_entries_thread, NULL, sync_all_entries,
+                        thread_argument, "sync");
 
 }
 

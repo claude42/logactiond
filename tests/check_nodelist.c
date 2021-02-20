@@ -391,6 +391,33 @@ START_TEST (check_edgecases)
 }
 END_TEST
 
+START_TEST (mv_hd)
+{
+        kw_list_t *l = create_list();
+        kw_node_t n1 = { .pri = 1, .name = "n1" };
+        add_tail(l, &n1);
+        kw_node_t n2 = { .pri = 2, .name = "n2" };
+        add_tail (l, &n2);
+        move_to_head(&n1);
+        ck_assert_ptr_eq(get_head(l), &n1);
+        ck_assert_ptr_eq(get_tail(l), &n2);
+        ck_assert_ptr_eq(n1.pred, &(l->head));
+        ck_assert_ptr_eq(n2.succ, &(l->tail));
+        ck_assert_ptr_eq(l->head.pred, NULL);
+        ck_assert_ptr_eq(l->tail.succ, NULL);
+        ck_assert_int_eq(n1.pri, 1);
+
+        move_to_head(&n2);
+        ck_assert_ptr_eq(get_head(l), &n2);
+        ck_assert_ptr_eq(get_tail(l), &n1);
+        ck_assert_ptr_eq(n2.pred, &(l->head));
+        ck_assert_ptr_eq(n1.succ, &(l->tail));
+        ck_assert_ptr_eq(l->head.pred, NULL);
+        ck_assert_ptr_eq(l->tail.succ, NULL);
+        ck_assert_int_gt(n2.pri, n1.pri);
+}
+END_TEST
+
 
 
 Suite *commands_suite(void)
@@ -401,6 +428,7 @@ Suite *commands_suite(void)
         TCase *tc_main = tcase_create("Main");
         tcase_add_test(tc_main, check_nodelist);
         tcase_add_test(tc_main, check_edgecases);
+        tcase_add_test(tc_main, mv_hd);
         suite_add_tcase(s, tc_main);
 
         return s;

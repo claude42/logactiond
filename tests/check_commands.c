@@ -47,6 +47,12 @@ bool shutdown_ongoing = false;
 #endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
 const char *const pidfile_name = PIDFILE;
 
+la_address_t fifo_address =
+{
+        .text = "fifo",
+        .domainname = NULL
+};
+
 static bool shutdown_good = false;
 static char shutdown_msg[] = "Shutdown message not set";
 
@@ -208,9 +214,11 @@ START_TEST (manual_command)
 
         la_address_t address;
         init_address(&address, "1.2.3.4");
+        la_address_t from_addr;
+        init_address(&from_addr, "9.9.9.9");
 
         la_command_t *command = create_manual_command_from_template(
-                        template, &address, "anywher");
+                        template, &address, &from_addr);
         ck_assert(command);
         ck_assert_str_eq(command->name, "Bla");
         ck_assert_int_eq(command->id, id_counter);

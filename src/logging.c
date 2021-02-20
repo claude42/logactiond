@@ -93,7 +93,7 @@ log_message_va_list(int priority, const char *const fmt, va_list gp,
 #endif /* HAVE_LIBSYSTEMD */
                         break;
                 case LA_DAEMON_FOREGROUND:
-                        fprintf(stderr, "<%u>", priority);
+                        fprintf(stderr, "<%i>", priority);
                         /* intentional fall through! */
                 case LA_UTIL_FOREGROUND:
 #if HAVE_PTHREAD_GETNAME_NP

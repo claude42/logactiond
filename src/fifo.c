@@ -38,10 +38,17 @@
 #include "messages.h"
 #include "misc.h"
 #include "configfile.h"
+#include "addresses.h"
 
 pthread_t fifo_thread = 0;
 
 static FILE *fifo = NULL;
+
+la_address_t fifo_address =
+{
+        .text = "fifo",
+        .domainname = NULL
+};
 
 static void
 cleanup_fifo(void *const arg)
@@ -114,7 +121,7 @@ fifo_loop(void *const ptr)
                         la_debug("Received message '%s'", buf);
 
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
-                        parse_message_trigger_command(buf, LA_FIFO);
+                        parse_message_trigger_command(buf, &fifo_address);
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
                 }
         }

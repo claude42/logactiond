@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdnoreturn.h>
+#include <stddef.h>
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -186,7 +187,7 @@ add_matches(void)
                         (unit = unit->succ->succ ? unit->succ : NULL);)
         {
                 // space for "_SYSTEMD_UNIT=" + unit->name + '\0'
-                const int len = UNIT_LEN + 1 + xstrlen(unit->name);
+                const size_t len = UNIT_LEN + 1 + xstrlen(unit->name);
                 match = xrealloc(match, len);
                 snprintf(match, len, UNIT "=%s", unit->name);
                 int r = sd_journal_add_match(journal, match, 0);

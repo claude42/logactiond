@@ -76,7 +76,7 @@
 int parse_add_entry_message(const char *message, la_address_t *address,
                 la_rule_t **rule, time_t *end_time, int *factor);
 
-void parse_message_trigger_command(const char *buf, const char *from);
+void parse_message_trigger_command(const char *buf, la_address_t *from_addr);
 #endif /* CLIENTONLY */
 
 bool init_add_message(char *buffer, const char *ip, const char *rule, const char *end_time, const char *factor);

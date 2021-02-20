@@ -29,7 +29,7 @@
 
 /* Parameters: enabled, name, service, source, detection count, invocation
  * count, queue count */
-#define RULES_LINE "%c  %-13.13s %-13.13s %-13.13s %8lu %8lu %8lu\n"
+#define RULES_LINE "%c  %-13.13s %-13.13s %-13.13s %8li %8li %8li\n"
 
 #define HOSTS_HEADER \
         "%s\n\nIP address                                  Ma Fa Time Rule          Action\n" \
@@ -38,7 +38,7 @@
 /* Parameters: address, type, factor, timedelta, unit, rule name, command name
  */
 #define HOSTS_LINE "%-43.43s %s %2d %2ld%c  %-13.13s %-13.13s\n"
-#define HOSTS_LINE_V "%-43.43s %s %2d %2ld%c  %-13.13s %-13.13s (%u,%u)\n"
+#define HOSTS_LINE_V "%-43.43s %s %2d %2ld%c  %-13.13s %-13.13s (%i,%i)\n"
 
 extern int status_monitoring;
 

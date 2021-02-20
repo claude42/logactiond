@@ -41,6 +41,7 @@
 #include "state.h"
 #include "status.h"
 #include "configfile.h"
+#include "fifo.h"
 
 /*
  * Message format:
@@ -193,7 +194,7 @@ parse_add_entry_message(const char *const message, la_address_t *const address,
  */
 
 static void
-add_entry(const char *const buffer, const char *const from)
+add_entry(const char *const buffer, la_address_t *from_addr)
 {
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
         assert(buffer);
@@ -210,7 +211,7 @@ add_entry(const char *const buffer, const char *const from)
                 xpthread_mutex_lock(&config_mutex);
 
                         trigger_manual_commands_for_rule(&address, rule,
-                                        end_time, factor, from, false);
+                                        end_time, factor, from_addr, false);
 
                 xpthread_mutex_unlock(&config_mutex);
         }
@@ -358,19 +359,23 @@ disable_rule(const char *const buffer)
 }
 
 void
-parse_message_trigger_command(const char *const buf, const char *const from)
+parse_message_trigger_command(const char *const buf, la_address_t *from_addr)
 {
-        la_debug("parse_message_trigger_command(%s, %s)", buf, from);
+        la_debug("parse_message_trigger_command(%s, %s)", buf, from_addr->text);
         assert(buf);
 
         if (*buf != PROTOCOL_VERSION)
                 LOG_RETURN(, LOG_ERR, "Wrong protocol version '%c' in message "
-                                "from %s!", *buf, from);
+                                "from %s!", *buf, from_addr->text);
+
+        if (from_addr != &fifo_address)
+                (void) query_domainname(from_addr);
+        const char *const from = ADDRESS_NAME(from_addr);
 
         switch (*(buf+1))
         {
         case CMD_ADD:
-                add_entry(buf, from);
+                add_entry(buf, from_addr);
                 break;
         case CMD_DEL:
                 del_entry(buf);
@@ -401,7 +406,7 @@ parse_message_trigger_command(const char *const buf, const char *const from)
                 break;
         case CMD_SYNC:
                 la_log(LOG_INFO, "Received sync command from %s.", from);
-                sync_entries(buf, from);
+                sync_entries(buf, from_addr);
                 break;
         case CMD_STOPSYNC:
                 la_log(LOG_INFO, "Received stopsync command from %s.", from);
@@ -421,8 +426,8 @@ parse_message_trigger_command(const char *const buf, const char *const from)
                 update_status_monitoring(buf);
                 break;
         default:
-                la_log(LOG_ERR, "Unknown command: '%c'",
-                                *(buf+1));
+                la_log(LOG_ERR, "Received unknown command: '%c' from %s.",
+                                *(buf+1), from);
                 break;
         }
 }

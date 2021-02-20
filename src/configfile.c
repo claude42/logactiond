@@ -497,8 +497,9 @@ load_patterns(la_rule_t *const rule, const config_setting_t *const rule_def,
 
 
 static void
-compile_address_list_port(kw_list_t *const list,
-                const config_setting_t *const setting, const in_port_t port)
+compile_address_list_port_domainname(kw_list_t *const list,
+                const config_setting_t *const setting, const in_port_t port,
+                const bool domainname)
 {
         if (!setting)
                 return;
@@ -520,8 +521,12 @@ compile_address_list_port(kw_list_t *const list,
                 if (!address)
                         die_hard(false, "Invalid IP address %s!", ip);
 
-                la_vdebug("compile_address_list(%s)=%s",
-                                config_setting_name(setting), address->text);
+                if (domainname)
+                        (void) query_domainname(address);
+
+                la_debug("compile_address_list_port_domainname(%s)=%s(%s)",
+                                config_setting_name(setting),
+                                address->domainname, address->text);
                 add_tail(list, (kw_node_t *) address);
         }
         assert_list(list);
@@ -533,7 +538,7 @@ static void
 compile_address_list(kw_list_t *const list,
                 const config_setting_t *const setting)
 {
-        compile_address_list_port(list, setting, 0);
+        compile_address_list_port_domainname(list, setting, 0, false);
 }
 
 /*
@@ -885,7 +890,8 @@ load_remote_settings(void)
         const config_setting_t *const receive_from = config_setting_lookup(
                         remote_section, LA_REMOTE_RECEIVE_FROM_LABEL);
         la_config->remote_receive_from = create_list();
-        compile_address_list(la_config->remote_receive_from, receive_from);
+        compile_address_list_port_domainname(la_config->remote_receive_from,
+                        receive_from, 0, true);
 
         la_config->remote_bind = xstrdup(config_get_string_or_null(remote_section,
                         LA_REMOTE_BIND_LABEL));
@@ -899,8 +905,8 @@ load_remote_settings(void)
         const config_setting_t *const send_to = config_setting_lookup(remote_section,
                         LA_REMOTE_SEND_TO_LABEL);
         la_config->remote_send_to = create_list();
-        compile_address_list_port(la_config->remote_send_to, send_to,
-                        la_config->remote_port);
+        compile_address_list_port_domainname(la_config->remote_send_to, send_to,
+                        la_config->remote_port, false);
 
 }
 
@@ -1011,7 +1017,8 @@ load_defaults(void)
                 la_config->ignore_addresses = create_list();
                 const config_setting_t *ignore = config_setting_get_member(
                                 defaults_section, LA_IGNORE_LABEL);
-                compile_address_list(la_config->ignore_addresses, ignore);
+                compile_address_list_port_domainname(la_config->ignore_addresses,
+                                ignore, 0, true);
         }
         else
         {
@@ -1088,7 +1095,7 @@ init_la_config(const char *filename)
 void
 load_la_config(void)
 {
-        //init_config_mutex();
+        char *die_str = NULL;
 
 #ifndef CLIENTONLY
         xpthread_mutex_lock(&config_mutex);
@@ -1097,10 +1104,8 @@ load_la_config(void)
                 load_defaults();
                 if (!load_rules())
                 {
-#ifndef CLIENTONLY
-                        xpthread_mutex_unlock(&config_mutex);
-#endif /* CLIENTONLY */
-                        die_hard(false, "No rules enabledd!");
+                        die_str = "No rules enabled!";
+                        goto cleanup;
                 }
                 load_remote_settings();
                 load_file_settings();
@@ -1109,9 +1114,12 @@ load_la_config(void)
 
         la_config->total_clocks = la_config->invocation_count = 0;
 
+cleanup:
 #ifndef CLIENTONLY
         xpthread_mutex_unlock(&config_mutex);
 #endif /* CLIENTONLY */
+        if (die_str)
+                die_hard(false, die_str);
 }
 
 void

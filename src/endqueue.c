@@ -79,7 +79,7 @@ update_queue_count_numbers(void)
 
                         /* Clean up pointers to stuff that will soon cease to
                          * exist.  Just to make sure, nobdoy accidentally wants
-                         * to use outdated stuff it later on */
+                         * to use outdated stuff later on */
                         command->rule = rule;
                         command->pattern = NULL;
                 }
@@ -356,7 +356,7 @@ set_end_time(la_command_t *const command, const time_t manual_end_time)
                  * used when creating the command. Should not be a problem for
                  * templates, as these always created in configfile.c and never
                  * via a blacklist. */
-                int duration = command->blacklist ?
+                int duration = command->previously_on_blacklist ?
                         command->rule->dnsbl_duration : command->duration;
 
                 if (command->factor != -1)
@@ -371,7 +371,7 @@ static void
 remove_or_renew(la_command_t *const command)
 {
         const char *blname = NULL;
-        if (command->blacklist)
+        if (command->previously_on_blacklist)
                 blname = command_address_on_dnsbl(command);
 
         if (blname)

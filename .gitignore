@@ -132,6 +132,7 @@ tests/check_misc
 tests/check_nodelist
 tests/check_patterns
 tests/check_properties
+tests/testsavestate
 tests/*.gcda
 tests/*.gcno
 tests/*.log

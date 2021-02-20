@@ -60,9 +60,40 @@ assert_address_ffl(const la_address_t *address, const char *func,
                                         file, line, func);
                 break;
         default:
-                die_hard(false, "%s:%u: %s: Assertion 'address->af' failed.",
-                                file, line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'address->sa.ss_family' failed. "
+                                "Address family %u not supported.",
+                                file, line, func, address->sa.ss_family);
                 break;
+        }
+}
+
+bool
+query_domainname(la_address_t *address)
+{
+        assert_address(address);
+        la_debug_func(address->text);
+
+        if (address->domainname)
+                return true;
+
+        address->domainname = xmalloc(NI_MAXHOST);
+        const int r = getnameinfo((struct sockaddr *) &(address->sa),
+                        address->salen, address->domainname, NI_MAXHOST, NULL,
+                        0, 0);
+
+        if (!r)
+        {
+                return true;
+        }
+        else if (r == EAI_AGAIN || r == EAI_FAMILY || r == EAI_NONAME)
+        {
+                free(address->domainname);
+                address->domainname = NULL;
+                return false;
+        }
+        else
+        {
+                die_hard(true, "Resolving hostname failed: %u", r);
         }
 }
 
@@ -81,6 +112,25 @@ get_port(const la_address_t *const address)
                 break;
         default:
                 return 0;
+                break;
+        }
+}
+
+void
+set_port(la_address_t *const address, const int port)
+{
+        assert_address(address);
+
+        switch (address->sa.ss_family)
+        {
+        case AF_INET:
+                ((struct sockaddr_in *) &address->sa)->sin_port = htons(port);
+                break;
+        case AF_INET6:
+                ((struct sockaddr_in6 *) &address->sa)->sin6_port = htons(port);
+                break;
+        default:
+                /* TODO */
                 break;
         }
 }
@@ -199,6 +249,8 @@ cidr_match_sa(const struct sockaddr *sa, const la_address_t *const net)
  * Compare two addresses. Return 0 if addresses are the same, return value < 0
  * if * first address is smaller a value > 0 if it's larger than second address.
  *
+ * Note: ports are not taken into consideration when comparing addresses
+ *
  * Return 127 in case 
  * - one of the two addresses is NULL, or
  * - address families differ, or
@@ -239,7 +291,7 @@ adrcmp(const la_address_t *const a1, const la_address_t *const a2)
                         struct sockaddr_in6 sa1 = *((struct sockaddr_in6 *) &a1->sa);
                         struct sockaddr_in6 sa2 = *((struct sockaddr_in6 *) &a2->sa);
 
-                        for (int i=0; i<16; i++)
+                        for (size_t i = 0; i < 16; i++)
                         {
                                 const int result = sa1.sin6_addr.s6_addr[i] - sa2.sin6_addr.s6_addr[i];
                                 if (result < 0)
@@ -274,6 +326,15 @@ adrcmp(const la_address_t *const a1, const la_address_t *const a2)
         return 127;
 }
 
+/*
+ * Check whether ip address matches one of the networks (address + prefix) on the list.
+ * Return matching network, NULL otherwise.
+ *
+ * NB: Returned address may be the same as the input but that won't be the case
+ * in case the list contains address with other prefixes than 32 / 128 (for
+ * IPv4 or v6 respectively).
+ */
+
 la_address_t *
 address_on_list_sa(const struct sockaddr *const sa, const kw_list_t *const list)
 {
@@ -290,7 +351,12 @@ address_on_list_sa(const struct sockaddr *const sa, const kw_list_t *const list)
 }
 
 /*
- * Check whether ip address is on a list. Returns false if address==NULL
+ * Check whether ip address matches one of the networks (address + prefix) on the list.
+ * Return matching network, NULL otherwise.
+ *
+ * NB: Returned address may be the same as the input but that won't be the case
+ * in case the list contains address with other prefixes than 32 / 128 (for
+ * IPv4 or v6 respectively).
  */
 
 la_address_t *
@@ -335,6 +401,7 @@ init_address_sa(la_address_t *const addr, const struct sockaddr *const sa,
                 LOG_RETURN(false, LOG_ERR, "Unsupported address family!");
 
         memcpy(&(addr->sa), sa, salen);
+        addr->salen = salen;
 
         /* TODO better error handling */
         if (getnameinfo(sa, salen, addr->text,
@@ -342,6 +409,8 @@ init_address_sa(la_address_t *const addr, const struct sockaddr *const sa,
                 LOG_RETURN(false, LOG_ERR, "getnameinfo failed.");
 
         addr->prefix = sa->sa_family == AF_INET ? 32 : 128;
+
+        addr->domainname = NULL;
 
         return true;
 }
@@ -494,6 +563,7 @@ dup_address(const la_address_t *const address)
         memcpy(&(result->sa), &(address->sa), sizeof (struct sockaddr_storage));
         result->prefix = address->prefix;
         string_copy(result->text, MAX_ADDR_TEXT_SIZE + 1, address->text, 0, '\0');
+        result->domainname = xstrdup(address->domainname);
 
         assert_address(result);
         return result;
@@ -511,6 +581,9 @@ free_address(la_address_t *const address)
         assert_address(address);
 
         la_vdebug_func(address->text);
+
+        if (address->domainname)
+                free(address->domainname);
 
         free(address);
 }

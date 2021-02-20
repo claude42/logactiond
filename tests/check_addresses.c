@@ -55,7 +55,7 @@ trigger_shutdown(int status, int saved_errno)
 
 START_TEST (create_address_v4)
 {
-        const char a_str[] = "1.2.3.4";
+        const char a_str[] = "185.228.136.144";
         const in_port_t port = 80;
         la_address_t *a = create_address_port(a_str, port);
         if (!a)
@@ -78,13 +78,16 @@ START_TEST (create_address_v4)
         ck_assert_int_eq(b->prefix, 32);
         ck_assert(!adrcmp(a, b));
 
-        const char d_str[] = "1.2.3.4/24";
-        la_address_t *d = create_address(d_str);
+        set_port(b, 80);
+        ck_assert_int_eq(get_port(b), 80);
+
+        const char d_str[] = "185.228.136.144/24";
+        la_address_t *d = create_address_port(d_str, 80);
         if (!d)
                 ck_abort_msg("Failed to create IP4 address");
 
         // TODO: compare to int
-        ck_assert_int_eq(get_port(d), 0);
+        ck_assert_int_eq(get_port(d), 80);
         ck_assert_str_eq(d->text, d_str);
         ck_assert_str_eq(get_ip_version(d), "4");
         ck_assert_int_eq(d->prefix, 24);
@@ -120,14 +123,17 @@ START_TEST (create_address_v6)
         ck_assert_int_eq(b->prefix, 128);
         ck_assert(!adrcmp(a, b));
 
+        set_port(b, 80);
+        ck_assert_int_eq(get_port(b), 80);
+
         const char c_str[] = "2602:fea7:00c0:0003:0000:0000:0000:0000/64";
         const char c_result_str[] = "2602:fea7:c0:3::/64";
-        la_address_t *c = create_address(c_str);
+        la_address_t *c = create_address_port(c_str, 80);
         if (!c)
                 ck_abort_msg("Failed to create IP6 address");
         //
         // TODO: compare to int
-        ck_assert_int_eq(get_port(c), 0);
+        ck_assert_int_eq(get_port(c), 80);
         ck_assert_str_eq(c->text, c_result_str);
         ck_assert_str_eq(get_ip_version(c), "6");
         ck_assert_int_eq(c->prefix, 64);

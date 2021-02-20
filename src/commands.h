@@ -73,7 +73,7 @@ struct la_command_s
                                    -1 if none */
         int factor;
         enum la_submission_s submission_type;
-        bool blacklist;         /* True if command has been triggered via blacklist */
+        bool previously_on_blacklist;         /* True if command has been triggered via blacklist */
         bool quick_shutdown;
 
         /* only relevant for end_commands */
@@ -99,7 +99,7 @@ void assert_command_ffl(const la_command_t *command, const char *func,
 
 void trigger_manual_command(const la_address_t *address,
                 const la_command_t *template, time_t end_time, int factor,
-                const char *from, bool suppress_logging);
+                const la_address_t *from_addr, bool suppress_logging);
 
 void trigger_command(la_command_t *command);
 
@@ -111,8 +111,8 @@ la_command_t * create_command_from_template(const la_command_t *template,
                 la_pattern_t *pattern, const la_address_t *address);
 
 la_command_t * create_manual_command_from_template(
-                const la_command_t *const template,
-                const la_address_t *const address, const char *const from);
+                const la_command_t *template, const la_address_t *address,
+                const la_address_t *from_addr);
 
 la_command_t *create_template(const char *name, la_rule_t *rule,
                 const char *begin_string, const char *end_string,

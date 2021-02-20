@@ -42,8 +42,6 @@
 #include "rules.h"
 #include "sources.h"
 
-/* FIXME: trigger_list should definitely be a hash */
-
 void
 assert_rule_ffl(const la_rule_t *rule, const char *func, const char *file, int line)
 {
@@ -343,16 +341,18 @@ trigger_all_commands(la_pattern_t *const pattern)
                 if (!init_address(&address, host))
                         LOG_RETURN(, LOG_ERR, "Invalid IP address \"%s\", trigger "
                                         "ignored!", host);
-        }
 
-        /* Do nothing if on ignore list */
-        assert(la_config);
-        la_address_t *tmp_addr = address_on_list(&address, la_config->ignore_addresses);
-        if (tmp_addr)
-        {
-                reprioritize_node((kw_node_t *) tmp_addr, 1);
-                LOG_RETURN_VERBOSE(, LOG_INFO,
-                                "Host: %s, always ignored.", host);
+                /* Do nothing if on ignore list */
+                assert(la_config);
+                la_address_t *tmp_addr = address_on_list(&address, la_config->ignore_addresses);
+                if (tmp_addr)
+                {
+                        reprioritize_node((kw_node_t *) tmp_addr, 1);
+                        LOG_RETURN_VERBOSE(, LOG_INFO,
+                                        "Host: %s, always ignored.",
+                                        tmp_addr->domainname ? tmp_addr->domainname :
+                                        tmp_addr->text);
+                }
         }
 
         increase_detection_count(pattern);
@@ -370,7 +370,7 @@ trigger_all_commands(la_pattern_t *const pattern)
 void
 trigger_manual_commands_for_rule(const la_address_t *const address,
                 const  la_rule_t *const rule, const time_t end_time,
-                const int factor, const char *const from,
+                const int factor, const la_address_t *const from_addr,
                 const bool suppress_logging)
 {
         la_debug_func(NULL);
@@ -379,7 +379,7 @@ trigger_manual_commands_for_rule(const la_address_t *const address,
         for (la_command_t *template = ITERATE_COMMANDS(rule->begin_commands);
                         (template = NEXT_COMMAND(template));)
                 trigger_manual_command(address, template, end_time, factor,
-                                from, suppress_logging);
+                                from_addr, suppress_logging);
 }
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
 
@@ -447,7 +447,9 @@ handle_log_line_for_rule(const la_rule_t *const rule, const char *const line)
                 {
                         if (assign_value_to_properties(pattern->properties,
                                                 line, pmatch))
+                        {
                                 trigger_all_commands(pattern);
+                        }
                         else
                                 la_log(LOG_ERR, "Matched property too long, "
                                                 "log line ignored");

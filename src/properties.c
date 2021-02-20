@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #include "ndebug.h"
 #include "logging.h"
@@ -136,7 +137,7 @@ get_value_from_property_list(const kw_list_t *const property_list,
  *
  * Will fail if non-alphanumeric character is detected.
  */
-static int
+static size_t
 copy_str_and_tolower(char *const dest, const char *const src,
                 const char delim)
 {

@@ -22,6 +22,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #include "ndebug.h"
 #include "crypto.h"
@@ -45,7 +46,7 @@ static unsigned char send_salt[crypto_pwhash_SALTBYTES];
  */
 
 static bool
-generate_key(unsigned char *const key, const int key_len,
+generate_key(unsigned char *const key, const size_t key_len,
                 const char *const password, const unsigned char *const salt)
 {
 	assert(key); assert(key_len > 0); assert(password); assert(salt);
@@ -151,7 +152,7 @@ pad(char *buffer, const size_t msg_len)
         assert(MSG_LEN - msg_len < 256);
 
         const unsigned char pad = MSG_LEN - msg_len;
-        for (int i=msg_len; i<MSG_LEN; i++)
+        for (size_t i=msg_len; i<MSG_LEN; i++)
                 buffer[MSG_IDX+i] = pad;
 }
 

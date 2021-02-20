@@ -75,7 +75,6 @@ static void add_property(la_pattern_t *const pattern, la_property_t *const prope
  * Returns newly allocated string, doesn't modify original.
  *
  * TODO 1: really no error handling necessary?
- * pattern->string instead of returning it
  */
 
 static void

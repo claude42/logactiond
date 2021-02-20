@@ -165,7 +165,7 @@ show_diagnostics(void)
 static void
 send_remote_message(const char *message)
 {
-        int message_sent = sendto(socket_fd, message, TOTAL_MSG_LEN, 0,
+        ssize_t message_sent = sendto(socket_fd, message, TOTAL_MSG_LEN, 0,
                         ai->ai_addr, ai->ai_addrlen);
 
         cleanup_socket();
@@ -181,6 +181,8 @@ send_remote_message(const char *message)
 static void
 send_local_message(char *message)
 {
+        const char *err_msg = NULL;
+        bool print_strerror = true;
         FILE *fifo = fopen(FIFOFILE, "w");
         if (!fifo)
                 die_hard(true, "Unable to open fifo");
@@ -188,32 +190,45 @@ send_local_message(char *message)
         int fd = fileno(fifo);
         if (fd == -1)
         {
-                fclose(fifo);
-                die_hard(true,"Unable to get FD for fifo");
+                err_msg = "Unable to get FD for fifo";
+                goto cleanup;
         }
 
         struct stat stats;
         if (fstat(fd, &stats) == -1)
         {
-                fclose(fifo);
-                die_hard(true, "Unable to stat fifo");
+                err_msg = "Unable to stat fifo";
+                goto cleanup;
         }
 
         if (!S_ISFIFO(stats.st_mode))
         {
-                fclose(fifo);
-                die_hard(false, FIFOFILE " is not a fifo.");
+                err_msg = FIFOFILE " is not a fifo.";
+                print_strerror = false;
+                goto cleanup;
         }
 
 
         if (fprintf(fifo, "%s\n", message) < 0)
         {
-                fclose(fifo);
-                die_hard(true, "Unable to write to fifo");
+                err_msg = "Unable to write to fifo";
+                goto cleanup;
         }
 
         if (fclose(fifo) == EOF)
-                die_hard(true, "Unable to close fifo");
+        {
+                err_msg = "Unable to close fifo";
+                fifo = NULL;
+                goto cleanup;
+        }
+        fifo = NULL;
+        
+cleanup:
+        if (fifo)
+                fclose(fifo);
+
+        if (err_msg)
+                die_hard(print_strerror, err_msg);
 }
 
 int
@@ -269,7 +284,7 @@ main(int argc, char *argv[])
         if (host && !password)
         {
                 password = xgetpass("Password: ");
-                if (!strlen(password))
+                if (password[0] == '\0')
                         die_hard(false, "No password entered!");
         }
 

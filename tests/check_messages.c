@@ -42,6 +42,12 @@ bool shutdown_ongoing = false;
 #endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
 const char *const pidfile_name = PIDFILE;
 
+la_address_t fifo_address =
+{
+        .text = "fifo",
+        .domainname = NULL
+};
+
 char *method_called = NULL;
 la_address_t *test_address = NULL;
 int status_monitoring = 0;
@@ -49,7 +55,7 @@ int status_monitoring = 0;
 void
 trigger_manual_commands_for_rule(const la_address_t *const address,
                 const  la_rule_t *const rule, const time_t end_time,
-                const int factor, const char *const from,
+                const int factor, const la_address_t *const from_addr,
                 const bool suppress_logging)
 {
 }
@@ -122,7 +128,7 @@ find_rule(const char *const rule_name)
 }
 
 void
-sync_entries(const char *const buffer, const char *const from)
+sync_entries(const char *const buffer, la_address_t *from_addr)
 {
         method_called = "sync_entries";
 }
@@ -213,65 +219,67 @@ START_TEST (parse_xxx_message)
         /* CMD_DEL */
         method_called = NULL;
         test_address = NULL;
-        parse_message_trigger_command("0-1.2.3.4", "9.9.9.9");
+        la_address_t from_addr;
+        init_address(&from_addr, "9.9.9.9");
+        parse_message_trigger_command("0-1.2.3.4", &from_addr);
         ck_assert_str_eq(method_called, "remove_and_trigger");
         ck_assert_str_eq(test_address->text, "1.2.3.4");
 
         method_called = NULL;
         test_address = NULL;
-        parse_message_trigger_command("0-illegal", "9.9.9.9");
+        parse_message_trigger_command("0-illegal", &from_addr);
         ck_assert_ptr_eq(method_called, NULL);
         ck_assert_ptr_eq(test_address, NULL);
 
         /* CMD_FLUSH */
         method_called = NULL;
-        parse_message_trigger_command("0F", "9.9.9.9");
+        parse_message_trigger_command("0F", &from_addr);
         ck_assert_str_eq(method_called, "empty_end_queue");
 
         /* CMD_RELOAD */
         method_called = NULL;
-        parse_message_trigger_command("0R", "9.9.9.9");
+        parse_message_trigger_command("0R", &from_addr);
         ck_assert_str_eq(method_called, "trigger_reload");
 
         /* CMD_SHUTDOWN */
         method_called = NULL;
-        parse_message_trigger_command("0S", "9.9.9.9");
+        parse_message_trigger_command("0S", &from_addr);
         ck_assert_str_eq(method_called, "trigger_shutdown");
 
         /* CMD_SAVE_STATE */
         method_called = NULL;
-        parse_message_trigger_command("0>", "9.9.9.9");
+        parse_message_trigger_command("0>", &from_addr);
         ck_assert_str_eq(method_called, "save_state");
 
         /* CMD_CHANGE_LOG_LEVEL */
         log_level = 7;
-        parse_message_trigger_command("0L5", "9.9.9.9");
+        parse_message_trigger_command("0L5", &from_addr);
         ck_assert_int_eq(log_level, 5);
-        parse_message_trigger_command("0LX", "9.9.9.9");
+        parse_message_trigger_command("0LX", &from_addr);
         ck_assert_int_eq(log_level, 5);
-        parse_message_trigger_command("0L10", "9.9.9.9");
+        parse_message_trigger_command("0L10", &from_addr);
         ck_assert_int_eq(log_level, 5);
-        parse_message_trigger_command("0L", "9.9.9.9");
+        parse_message_trigger_command("0L", &from_addr);
         ck_assert_int_eq(log_level, 5);
 
         /* CMD_RESET_COUNTS */
         method_called = NULL;
-        parse_message_trigger_command("00", "9.9.9.9");
+        parse_message_trigger_command("00", &from_addr);
         ck_assert_str_eq(method_called, "reset_counts");
 
         /* CMD_SYNC */
         method_called = NULL;
-        parse_message_trigger_command("0X", "9.9.9.9");
+        parse_message_trigger_command("0X", &from_addr);
         ck_assert_str_eq(method_called, "sync_entries");
 
         /* CMD_STOPSYNC */
         method_called = NULL;
-        parse_message_trigger_command("0x", "9.9.9.9");
+        parse_message_trigger_command("0x", &from_addr);
         ck_assert_str_eq(method_called, "stop_syncing");
 
         /* CMD_DUMP_STATUS */
         method_called = NULL;
-        parse_message_trigger_command("0D", "9.9.9.9");
+        parse_message_trigger_command("0D", &from_addr);
         ck_assert_str_eq(method_called, "dump_queue_status, dump_rules");
 
         /* CMD_ENABLE_RULE */
@@ -281,25 +289,25 @@ START_TEST (parse_xxx_message)
         /* CMD_UPDATE_STATUS_MONITORING */
         status_monitoring = 0;
         method_called = NULL;
-        parse_message_trigger_command("0M1", "9.9.9.9");
+        parse_message_trigger_command("0M1", &from_addr);
         ck_assert_int_eq(status_monitoring, 1);
         ck_assert_str_eq(method_called, "start_monitoring_thread");
         method_called = NULL;
-        parse_message_trigger_command("0M2", "9.9.9.9");
+        parse_message_trigger_command("0M2", &from_addr);
         ck_assert_int_eq(status_monitoring, 2);
         ck_assert_ptr_eq(method_called, NULL);
         method_called = NULL;
-        parse_message_trigger_command("0M0", "9.9.9.9");
+        parse_message_trigger_command("0M0", &from_addr);
         ck_assert_int_eq(status_monitoring, 0);
         ck_assert_ptr_eq(method_called, NULL);
 
         /* Errors */
 
         method_called = NULL;
-        parse_message_trigger_command("XF", "9.9.9.9");
+        parse_message_trigger_command("XF", &from_addr);
         ck_assert_ptr_eq(method_called, NULL);
         method_called = NULL;
-        parse_message_trigger_command("0ä", "9.9.9.9");
+        parse_message_trigger_command("0ä", &from_addr);
         ck_assert_ptr_eq(method_called, NULL);
 
 }
