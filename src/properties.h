@@ -52,6 +52,9 @@
 #define assert_property(PROPERTY) assert_property_ffl(PROPERTY, __func__, __FILE__, __LINE__)
 #endif /* NDEBUG */
 
+#define free_property_list(list) \
+        free_list(list, (void (*)(void *const)) free_property)
+
 /*
  * la_property_s
  */
@@ -118,10 +121,6 @@ la_property_t *create_property_from_config(const char *name, const char *value);
 kw_list_t *dup_property_list(const kw_list_t *list);
 
 void free_property(la_property_t *property);
-
-void empty_property_list(kw_list_t *list);
-
-void free_property_list(kw_list_t *list);
 
 #endif /* __properties_h */
 

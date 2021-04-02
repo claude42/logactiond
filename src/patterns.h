@@ -35,6 +35,9 @@
 #define assert_pattern(PATTERN) assert_pattern_ffl(PATTERN, __func__, __FILE__, __LINE__)
 #endif /* NDEBUG */
 
+#define free_pattern_list(list) \
+        free_list(list, (void (*)(void *const)) free_pattern)
+
 typedef struct la_pattern_s
 {
         kw_node_t node;
@@ -55,8 +58,6 @@ la_pattern_t *create_pattern(const char *string_from_configfile, int num,
                 la_rule_t *rule);
 
 void free_pattern(la_pattern_t *pattern);
-
-void free_pattern_list(kw_list_t *list);
 
 #endif /* __patterns_h */
 

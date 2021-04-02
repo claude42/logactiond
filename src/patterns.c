@@ -266,23 +266,4 @@ free_pattern(la_pattern_t *const pattern)
         free(pattern);
 }
 
-/*
- * Free all patterns in list
- */
-
-void
-free_pattern_list(kw_list_t *const list)
-{
-        la_vdebug_func(NULL);
-
-        if (!list)
-                return;
-
-        for (la_pattern_t *tmp;
-                        (tmp = REM_PATTERNS_HEAD(list));)
-                free_pattern(tmp);
-
-        free(list);
-}
-
 /* vim: set autowrite expandtab: */

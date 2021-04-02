@@ -65,6 +65,8 @@ void inject_nodelist_exit_function(void (*exit_function)(bool log_strerror,
 
 kw_list_t * create_list(void);
 
+void free_list(kw_list_t *list, void (*free_node)(void *));
+
 void add_head(kw_list_t *list, kw_node_t *node);
 
 void add_tail(kw_list_t *list, kw_node_t *node);

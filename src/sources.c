@@ -190,22 +190,6 @@ free_source(la_source_t *const source)
         free(source);
 }
 
-static void
-free_source_list(kw_list_t *const list)
-{
-        la_vdebug_func(NULL);
-
-        if (!list)
-                return;
-        assert_list(list);
-
-        for (la_source_t *tmp;
-                        (tmp = REM_SOURCES_HEAD(list));)
-                free_source(tmp);
-
-        free(list);
-}
-
 void
 free_source_group(la_source_group_t *const source_group)
 {
@@ -237,21 +221,6 @@ free_source_group(la_source_group_t *const source_group)
         free(source_group);
 }
 
-void
-free_source_group_list(kw_list_t *const list)
-{
-        la_vdebug_func(NULL);
-
-        if (!list)
-                return;
-        assert_list(list);
-
-        for (la_source_group_t *tmp;
-                        (tmp = REM_SOURCE_GROUPS_HEAD(list));)
-                free_source_group(tmp);
-
-        free(list);
-}
 
 /*
  * Find existing la_source for a given filename, return NULL if no la_source exists yet

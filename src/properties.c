@@ -331,30 +331,5 @@ free_property(la_property_t *const property)
         free(property);
 }
 
-/*
- * Free all properties in list
- */
-
-void
-empty_property_list(kw_list_t *const list)
-{
-        la_vdebug_func(NULL);
-        if (!list)
-                return;
-
-        assert_list(list);
-        for (la_property_t *tmp; (tmp = REM_PROPERTIES_HEAD(list));)
-                free_property(tmp);
-
-}
-
-void
-free_property_list(kw_list_t *const list)
-{
-        empty_property_list(list);
-
-        free(list);
-}
-
 
 /* vim: set autowrite expandtab: */

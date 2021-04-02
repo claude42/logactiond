@@ -577,26 +577,6 @@ free_rule(la_rule_t *const rule)
         free(rule);
 }
 
-/*
- * Free all rules in list
- */
-
-void
-free_rule_list(kw_list_t *const list)
-{
-        la_vdebug_func(NULL);
-
-        if (!list)
-                return;
-        assert_list(list);
-
-        for (la_rule_t *tmp;
-                        (tmp = REM_RULES_HEAD(list));)
-                free_rule(tmp);
-
-        free(list);
-}
-
 
 static la_rule_t *
 find_rule_for_source_group(const la_source_group_t *const source_group,

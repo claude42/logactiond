@@ -37,6 +37,9 @@
 #define assert_command(COMMAND) assert_command_ffl(COMMAND, __func__, __FILE__, __LINE__)
 #endif /* NDEBUG */
 
+#define free_command_list(list) \
+        free_list(list, (void (*)(void *const)) free_command)
+
 #define BAK_SUFFIX ".bak"
 
 typedef enum la_commandtype_s { LA_COMMANDTYPE_BEGIN, LA_COMMANDTYPE_END } la_commandtype_t;
@@ -119,8 +122,6 @@ la_command_t *create_template(const char *name, la_rule_t *rule,
                 int duration, la_need_host_t need_host, bool quick_shutdown);
 
 void free_command(la_command_t *command);
-
-void free_command_list(kw_list_t *list);
 
 const char *command_address_on_dnsbl(const la_command_t *const command);
 

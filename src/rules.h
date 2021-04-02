@@ -45,6 +45,9 @@
 #define assert_rule(RULE) assert_rule_ffl(RULE, __func__, __FILE__, __LINE__)
 #endif /* NDEBUG */
 
+#define free_rule_list(list) \
+        free_list(list, (void (*)(void *const)) free_rule)
+
 typedef struct la_rule_s la_rule_t;
 struct la_rule_s
 {
@@ -96,8 +99,6 @@ la_rule_t *create_rule(bool enabled, const char *name, la_source_group_t
                 const char *service, const char *systemd_unit);
 
 void free_rule(la_rule_t *rule);
-
-void free_rule_list(kw_list_t *list);
 
 la_rule_t *find_rule(const char *rule_name);
 

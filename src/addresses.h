@@ -49,6 +49,9 @@
 
 #define ADDRESS_NAME(ADDRESS) (ADDRESS->domainname ? ADDRESS->domainname : ADDRESS->text)
 
+#define free_address_list(list) \
+        free_list(list, (void (*)(void *const)) free_address)
+
 typedef struct la_address_s
 {
         kw_node_t node;
@@ -97,10 +100,6 @@ la_address_t *create_address(const char *ip);
 la_address_t *dup_address(const la_address_t *address);
 
 void free_address(la_address_t *address);
-
-void empty_address_list(kw_list_t *list);
-
-void free_address_list(kw_list_t *list);
 
 #endif /* __addresses_h */
 

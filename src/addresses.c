@@ -588,29 +588,4 @@ free_address(la_address_t *const address)
         free(address);
 }
 
-/*
- * Free all addresses in list
- */
-
-void
-empty_address_list(kw_list_t *const list)
-{
-        la_vdebug_func(NULL);
-        if (!list)
-                return;
-        assert_list(list);
-
-        for (la_address_t *tmp; (tmp = REM_ADDRESSES_HEAD(list));)
-                free_address(tmp);
-}
-
-void
-free_address_list(kw_list_t *const list)
-{
-        empty_address_list(list);
-
-        free(list);
-}
-
-
 /* vim: set autowrite expandtab: */

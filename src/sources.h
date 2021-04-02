@@ -46,6 +46,12 @@
 #define assert_source_group(SOURCE_GROUP) assert_source_group_ffl(SOURCE_GROUP, __func__, __FILE__, __LINE__)
 #endif /* NDEBUG */
 
+#define free_source_list(list) \
+        free_list(list, (void (*)(void *const)) free_source)
+
+#define free_source_group_list(list) \
+        free_list(list, (void (*)(void *const)) free_source_group)
+
 typedef struct la_source_group_s la_source_group_t;
 struct la_source_group_s
 {
@@ -114,8 +120,6 @@ la_source_t *create_source(la_source_group_t *source_group, const char *location
 void free_source(la_source_t *source);
 
 void free_source_group(la_source_group_t *source_group);
-
-void free_source_group_list(kw_list_t *list);
 
 la_source_group_t *find_source_group_by_location(const char *location);
 

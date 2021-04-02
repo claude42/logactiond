@@ -333,9 +333,10 @@ get_next_node(kw_node_t **const iterator)
 }
 
 void
-free_list(kw_list_t *const list)
+free_list(kw_list_t *const list, void (*free_node)(void *const))
 {
-        assert_list(list);
+        if (!list)
+                return;
 
         kw_node_t *node = list->head.succ;
 
@@ -345,7 +346,10 @@ free_list(kw_list_t *const list)
                 node = node->succ;
                 if (tmp->name)
                         free(tmp->name);
-                free(tmp);
+                if (free_node)
+                        free_node(tmp);
+                else
+                        free(tmp);
         }
 
         free(list);

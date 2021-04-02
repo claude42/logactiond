@@ -990,25 +990,6 @@ free_command(la_command_t *const command)
         free(command);
 }
 
-/*
- * Free all commands in list
- */
-
-void
-free_command_list(kw_list_t *const list)
-{
-        la_vdebug("free_command_list()");
-        if (!list)
-                return;
-        assert_list(list);
-
-        for (la_command_t *tmp;
-                        (tmp = REM_COMMANDS_HEAD(list));)
-                free_command(tmp);
-
-        free(list);
-}
-
 const char *
 command_address_on_dnsbl(const la_command_t *const command)
 {
