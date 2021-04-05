@@ -20,6 +20,7 @@
 #define __commands_h
 
 #include "ndebug.h"
+#include "nodelist.h"
 #include "addresses.h"
 #include "patterns.h"
 #include "binarytree.h"
