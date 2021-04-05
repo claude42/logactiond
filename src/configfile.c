@@ -395,9 +395,8 @@ load_blacklists(la_rule_t *const rule, const config_setting_t *const uc_rule_def
 
         if (type == CONFIG_TYPE_STRING)
         {
-                kw_node_t *const new = xmalloc(sizeof *new);
-                new->name = xstrdup(config_setting_get_string(
-                                        blacklist_reference));
+                kw_node_t *const new = create_node(sizeof *new, 0,
+                                config_setting_get_string(blacklist_reference));
                 add_tail(rule->blacklists, new);
         }
         else if (type == CONFIG_TYPE_LIST)
@@ -408,9 +407,8 @@ load_blacklists(la_rule_t *const rule, const config_setting_t *const uc_rule_def
                 {
                         const config_setting_t *const list_item = 
                                 config_setting_get_elem(blacklist_reference, i);
-                        kw_node_t *const new = xmalloc(sizeof *new);
-                        new->name = xstrdup(config_setting_get_string(
-                                                list_item));
+                        kw_node_t *const new = create_node(sizeof *new, 0, 
+                                        config_setting_get_string(list_item));
                         add_tail(rule->blacklists, new);
                 }
         }
@@ -681,12 +679,11 @@ add_systemd_unit_to_list(const char *const systemd_unit)
         for (kw_node_t *tmp = &(ex_systemd_units)->head;
                         (tmp = tmp->succ->succ ? tmp->succ : NULL);)
         {
-                if (!strcmp(systemd_unit, tmp->name))
+                if (!strcmp(systemd_unit, tmp->nodename))
                         return;
         }
 
-        kw_node_t *const node = xmalloc(sizeof *node);
-        node->name = xstrdup(systemd_unit);
+        kw_node_t *const node = create_node(sizeof *node, 0, systemd_unit);
         add_tail(ex_systemd_units, node);
 }
 #endif /* NOWATCH */

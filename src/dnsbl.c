@@ -151,10 +151,10 @@ host_on_any_dnsbl(const kw_list_t *const blacklists,
         for (const kw_node_t *bl = &blacklists->head;
                         (bl = bl->succ->succ ? bl->succ : NULL);)
         {
-                if (host_on_dnsbl(address, bl->name))
+                if (host_on_dnsbl(address, bl->nodename))
                 {
                         reprioritize_node((kw_node_t *) bl, 1);
-                        return bl->name;
+                        return bl->nodename;
                 }
         }
         

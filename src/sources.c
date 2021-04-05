@@ -130,7 +130,7 @@ create_source_group(const char *const name, const char *const glob_pattern,
         assert(name);
         la_debug("create_source_group(%s, %s, %s)", name, glob_pattern, prefix);
 
-        la_source_group_t *const result = xmalloc(sizeof *result);
+        la_source_group_t *const result = create_node(sizeof *result, 0, NULL);
         result->name = xstrdup(name);
         result->glob_pattern = xstrdup(glob_pattern);
         result->prefix = xstrdup(prefix);
@@ -155,7 +155,7 @@ create_source(la_source_group_t *const source_group, const char *const location)
         assert_source_group(source_group); assert(location);
         la_debug("create_source(%s, %s)", source_group->name, location);
 
-        la_source_t *const result = xmalloc(sizeof *result);
+        la_source_t *const result = create_node(sizeof *result, 0, NULL);
         result->source_group = source_group;
         result->location = xstrdup(location);
         result->file = NULL;
@@ -209,12 +209,8 @@ free_source_group(la_source_group_t *const source_group)
 #if HAVE_LIBSYSTEMD
         if (source_group->systemd_units)
         {
-                for (kw_node_t *tmp; (tmp = rem_head(source_group->systemd_units));)
-                {
-                        free(tmp->name);
-                        free(tmp);
-                }
-                free(source_group->systemd_units);
+                free_list(source_group->systemd_units, NULL);
+                source_group->systemd_units = NULL;
         }
 #endif /* HAVE_LISTSYSTEMD */
 

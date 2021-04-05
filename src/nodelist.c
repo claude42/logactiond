@@ -21,6 +21,8 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stddef.h>
+#include <string.h>
 
 #include "ndebug.h"
 #include "nodelist.h"
@@ -90,6 +92,54 @@ assert_list_ffl(const kw_list_t *list, const char *func, const char *file,
                 assert_node_ffl(node, func, file, line);
 }
 
+static void
+init_node(kw_node_t *node, const int pri, const char *const nodename)
+{
+        node->succ = node->pred = NULL;
+        node->pri = pri;
+
+        if (nodename)
+        {
+                node->nodename = strdup(nodename);
+                if (!node->nodename)
+                        nodelist_exit_function(false, "Memory exhausted");
+        }
+        else
+        {
+                node->nodename = NULL;
+        }
+}
+
+void *
+create_node(size_t size, const int pri, const char *const nodename)
+{
+        kw_node_t *const result = malloc(size);
+        if (!result)
+                nodelist_exit_function(false, "Memory exhausted");
+
+        init_node(result, pri, nodename);
+
+        return result;
+}
+
+void *
+create_node0(size_t size, const int pri, const char *const nodename)
+{
+        kw_node_t *const result = calloc(size, 1);
+        if (!result)
+                nodelist_exit_function(false, "Memory exhausted");
+
+        init_node(result, pri, nodename);
+
+        return result;
+}
+
+void
+free_node(kw_node_t *const node)
+{
+        free(node->nodename);
+        free(node);
+}
 
 /*
  * Can be freed with free()
@@ -344,8 +394,7 @@ free_list(kw_list_t *const list, void (*free_node)(void *const))
         {
                 kw_node_t *const tmp = node;
                 node = node->succ;
-                if (tmp->name)
-                        free(tmp->name);
+                free(tmp->nodename);
                 if (free_node)
                         free_node(tmp);
                 else

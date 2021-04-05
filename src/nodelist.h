@@ -39,16 +39,12 @@ typedef struct kw_node_s {
         struct kw_node_s *succ;
         struct kw_node_s *pred;
         int pri;
-        char *name;
+        char *nodename;
 } kw_node_t;
 
 typedef struct kw_list_s {
         kw_node_t head;
         kw_node_t tail;
-        /*kw_node_t *head_succ;
-        kw_node_t *head_pred;
-        kw_node_t *tail_succ;
-        kw_node_t *tail_pred;*/
 } kw_list_t;
 
 typedef void * kw_iterator;
@@ -63,7 +59,13 @@ typedef void * kw_iterator;
 void inject_nodelist_exit_function(void (*exit_function)(bool log_strerror,
                         const char *const fmt, ...));
 
-kw_list_t * create_list(void);
+void *create_node(size_t size, const int pri, const char *const nodename);
+
+void *create_node0(size_t size, const int pri, const char *const nodename);
+
+void free_node(kw_node_t *node);
+
+kw_list_t *create_list(void);
 
 void free_list(kw_list_t *list, void (*free_node)(void *));
 

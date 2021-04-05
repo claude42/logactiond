@@ -523,7 +523,7 @@ init_address_port(la_address_t *const addr, const char *const host, const in_por
 la_address_t *
 create_address_port(const char *const host, const in_port_t port)
 {
-        la_address_t *const result = xmalloc0(sizeof *result);
+        la_address_t *const result = create_node0(sizeof *result, 0, NULL);
 
         if (!init_address_port(result, host, port))
         {
@@ -558,7 +558,7 @@ dup_address(const la_address_t *const address)
         assert_address(address);
         la_vdebug_func(address->text);
 
-        la_address_t *const result = xmalloc(sizeof *result);
+        la_address_t *const result = create_node0(sizeof *result, 0, NULL);
 
         memcpy(&(result->sa), &(address->sa), sizeof (struct sockaddr_storage));
         result->prefix = address->prefix;

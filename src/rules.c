@@ -490,7 +490,7 @@ create_rule(const bool enabled, const char *const name,
         assert(source_group);
         la_debug_func(name);
 
-        la_rule_t *const result = xmalloc(sizeof *result);
+        la_rule_t *const result = create_node(sizeof *result, 0, NULL);
 
         result->node.pri = 0;
         result->enabled = enabled;
@@ -564,13 +564,7 @@ free_rule(la_rule_t *const rule)
         free_command_list(rule->begin_commands);
         free_command_list(rule->trigger_list);
         free_property_list(rule->properties);
-        for (kw_node_t *node; ((node = rem_head(rule->blacklists)));)
-        {
-                free(node->name);
-                free(node);
-        }
-
-        free(rule->blacklists);
+        free_list(rule->blacklists, NULL);
 
         free(rule->name);
 

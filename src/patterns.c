@@ -224,7 +224,7 @@ create_pattern(const char *const string_from_configfile,
         assert(full_string);
         la_vdebug("full_string=%s", full_string);
 
-        la_pattern_t *const result = xmalloc(sizeof *result);
+        la_pattern_t *const result = create_node(sizeof *result, 0, NULL);
 
         result->node.pri = 0;
         result->num = num;

@@ -89,7 +89,7 @@ void print_list(const kw_list_t *list)
         fprintf(stderr, "List: ");
         for (kw_node_t *n = list->head.succ; n->succ; n = n->succ)
         {
-                fprintf(stderr, "%s(%i) ->", n->name, n->pri);
+                fprintf(stderr, "%s(%i) ->", n->nodename, n->pri);
         }
         fprintf(stderr, "\n");
 }
@@ -106,7 +106,7 @@ START_TEST (check_nodelist)
 
         kw_node_t fuenf = {
                 .pri = 5,
-                .name ="fünf",
+                .nodename ="fünf",
         };
         add_head(l, &fuenf);
         print_list(l);
@@ -120,7 +120,7 @@ START_TEST (check_nodelist)
 
         kw_node_t eins = {
                 .pri = 1,
-                .name = "eins",
+                .nodename = "eins",
         };
         add_tail(l, &eins);
         print_list(l);
@@ -137,7 +137,7 @@ START_TEST (check_nodelist)
 
         kw_node_t vier = {
                 .pri = 4,
-                .name = "vier",
+                .nodename = "vier",
         };
         insert_node_after(&fuenf, &vier);
         print_list(l);
@@ -157,7 +157,7 @@ START_TEST (check_nodelist)
 
         kw_node_t drei = {
                 .pri = 3,
-                .name = "drei",
+                .nodename = "drei",
         };
         insert_node_before(&eins, &drei);
         print_list(l);
@@ -197,7 +197,7 @@ START_TEST (check_nodelist)
 
         kw_node_t null = {
                 .pri = 0,
-                .name = "null",
+                .nodename = "null",
         };
         add_tail(l, &null);
         move_to_head(&null);
@@ -332,11 +332,11 @@ START_TEST (check_edgecases)
 
         kw_node_t eins = {
                 .pri = 1,
-                .name ="eins",
+                .nodename ="eins",
         };
         kw_node_t fuenf = {
                 .pri = 5,
-                .name ="fünf",
+                .nodename ="fünf",
         };
 
         add_head(l, &fuenf);
@@ -394,9 +394,9 @@ END_TEST
 START_TEST (mv_hd)
 {
         kw_list_t *l = create_list();
-        kw_node_t n1 = { .pri = 1, .name = "n1" };
+        kw_node_t n1 = { .pri = 1, .nodename = "n1" };
         add_tail(l, &n1);
-        kw_node_t n2 = { .pri = 2, .name = "n2" };
+        kw_node_t n2 = { .pri = 2, .nodename = "n2" };
         add_tail (l, &n2);
         move_to_head(&n1);
         ck_assert_ptr_eq(get_head(l), &n1);

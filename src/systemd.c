@@ -187,9 +187,9 @@ add_matches(void)
                         (unit = unit->succ->succ ? unit->succ : NULL);)
         {
                 // space for "_SYSTEMD_UNIT=" + unit->name + '\0'
-                const size_t len = UNIT_LEN + 1 + xstrlen(unit->name);
+                const size_t len = UNIT_LEN + 1 + xstrlen(unit->nodename);
                 match = xrealloc(match, len);
-                snprintf(match, len, UNIT "=%s", unit->name);
+                snprintf(match, len, UNIT "=%s", unit->nodename);
                 int r = sd_journal_add_match(journal, match, 0);
                 if (r < 0)
                         die_systemd(r, "sd_journal_add_match() failed");

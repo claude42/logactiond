@@ -85,8 +85,7 @@ trigger_shutdown(int status, int saved_errno)
 void
 assert_pattern_ffl(const la_pattern_t *pattern, const char *func, const char *file, int line) { }
 
-void
-free_pattern_list(kw_list_t *const list) { }
+void free_pattern(la_pattern_t *pattern) { }
 
 void
 send_add_entry_message(const la_command_t *const command, const la_address_t *const address) { }
