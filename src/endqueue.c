@@ -159,7 +159,12 @@ cmp_end_times(const void *p1, const void *p2)
         return ((la_command_t *) p1)->end_time - ((la_command_t *) p2)->end_time;
 }
 
-static void
+/*
+ * Will return true if inserted command is the will be the first in the queue -
+ * i.e. the one with the nearest end_time.
+ */
+
+static bool
 add_command_to_queues(la_command_t *command)
 {
         assert_command(command); assert_tree(adr_tree); assert_tree(end_time_tree);
@@ -168,6 +173,8 @@ add_command_to_queues(la_command_t *command)
         add_to_tree(end_time_tree, &command->end_time_node, cmp_end_times);
 
         queue_length++;
+
+        return &command->end_time_node == end_time_tree->first;
 }
 
 /*
@@ -246,7 +253,7 @@ empty_end_queue(void)
         if (!shutdown_ongoing && end_queue_thread)
         {
                 /* signal probably not strictly necessary... */
-                xpthread_cond_signal(&end_queue_condition);
+                (void) xpthread_cond_signal(&end_queue_condition);
                 xpthread_mutex_unlock(&end_queue_mutex);
         }
 }
@@ -284,8 +291,11 @@ wait_for_next_end_command(const la_command_t *command)
                 struct timespec wait_interval;
                 wait_interval.tv_nsec = 0;
                 wait_interval.tv_sec = command->end_time;
-                xpthread_cond_timedwait(&end_queue_condition, &end_queue_mutex,
-                                &wait_interval);
+                /* Wait only once, return even if xpthread_cond_timedwait()
+                 * returned with EINTR. Idea is to check for changes in the
+                 * queue / to shutdown_ongoing anyway - just to be sure... */
+                (void) xpthread_cond_timedwait(&end_queue_condition,
+                                &end_queue_mutex, &wait_interval);
         }
 }
 
@@ -419,7 +429,7 @@ consume_end_queue(void *ptr)
                         if (queue_length == 0)
                         {
                                 /* list is empty, wait indefinitely */
-                                xpthread_cond_wait(&end_queue_condition,
+                                (void) xpthread_cond_wait(&end_queue_condition,
                                                 &end_queue_mutex);
                         }
                         else
@@ -427,7 +437,13 @@ consume_end_queue(void *ptr)
                                 la_command_t *const command =
                                         first_command_in_queue();
 
-                                if (xtime(NULL) < command->end_time)
+                                /* Subtract 1 from end_time to work around
+                                 * obscure bug where pthread_cond_timedwait()
+                                 * returns one second early.  See also
+                                 * https://stackoverflow.com/questions/11769687/pthread-cond-timedwait-returns-one-second-early
+                                 * (although this might a different issue...).
+                                 */
+                                if (xtime(NULL) <= command->end_time - 1)
                                 {
                                         /* non-empty list, but end_time of
                                          * first command not reached yet */
@@ -497,8 +513,13 @@ enqueue_end_command(la_command_t *const end_command, const time_t manual_end_tim
 
         xpthread_mutex_lock(&end_queue_mutex);
 
-                add_command_to_queues(end_command);
-                xpthread_cond_signal(&end_queue_condition);
+                /* wake up end queue thread only if command is the first
+                 * command to execute in the list */
+                if (add_command_to_queues(end_command))
+                {
+                        la_vdebug("Waking up end queue thread.");
+                        xpthread_cond_signal(&end_queue_condition);
+                }
 
         xpthread_mutex_unlock(&end_queue_mutex);
 }
