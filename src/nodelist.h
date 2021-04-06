@@ -20,6 +20,7 @@
 #define __nodelist_h
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #include "ndebug.h"
 
