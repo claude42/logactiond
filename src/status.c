@@ -41,6 +41,7 @@
 #include "rules.h"
 #include "sources.h"
 #include "status.h"
+#include "metacommands.h"
 
 int status_monitoring = 0;
 

@@ -41,8 +41,6 @@
 #define free_command_list(list) \
         free_list(list, (void (*)(void *const)) free_command)
 
-#define BAK_SUFFIX ".bak"
-
 typedef enum la_commandtype_s { LA_COMMANDTYPE_BEGIN, LA_COMMANDTYPE_END } la_commandtype_t;
 
 typedef enum la_need_host_s { LA_NEED_HOST_NO, LA_NEED_HOST_ANY,
@@ -93,10 +91,6 @@ struct la_command_s
 /* commands.c */
 
 void convert_both_commands(la_command_t *command);
-
-int meta_list_length(void);
-
-void free_meta_list(void);
 
 void assert_command_ffl(const la_command_t *command, const char *func,
                 const char *file, int line);

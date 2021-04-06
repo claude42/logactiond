@@ -23,6 +23,8 @@
 
 #include "ndebug.h"
 
+#define BAK_SUFFIX ".bak"
+
 extern const char *saved_state;
 
 extern pthread_t save_state_thread;

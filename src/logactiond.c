@@ -61,6 +61,7 @@
 #include "nodelist.h"
 #include "binarytree.h"
 #include "crypto.h"
+#include "metacommands.h"
 
 char *cfg_filename = NULL;
 char *pid_file = NULL;
