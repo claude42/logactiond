@@ -140,8 +140,8 @@ remove_command_from_queues(la_command_t *command)
 {
         assert_command(command); assert_tree(adr_tree); assert_tree(end_time_tree);
 
-        remove_tree_node(adr_tree, &(command->adr_node));
-        remove_tree_node(end_time_tree, &command->end_time_node);
+        (void) remove_tree_node(adr_tree, &(command->adr_node));
+        (void) remove_tree_node(end_time_tree, &command->end_time_node);
 
         assert(queue_length > 0);
         queue_length--;
@@ -380,13 +380,14 @@ set_end_time(la_command_t *const command, const time_t manual_end_time)
 static void
 remove_or_renew(la_command_t *const command)
 {
+        la_debug_func(NULL);
         const char *blname = NULL;
         if (command->previously_on_blacklist)
                 blname = command_address_on_dnsbl(command);
 
         if (blname)
         {
-                remove_tree_node(end_time_tree, &command->end_time_node);
+                (void) remove_tree_node(end_time_tree, &command->end_time_node);
                 set_end_time(command, 0);
                 la_log_verbose(LOG_INFO, "Host: %s still on blacklist %s, action "
                                 "\"%s\" renewed (%us).", command->address->text,
@@ -443,7 +444,7 @@ consume_end_queue(void *ptr)
                                  * https://stackoverflow.com/questions/11769687/pthread-cond-timedwait-returns-one-second-early
                                  * (although this might a different issue...).
                                  */
-                                if (xtime(NULL) <= command->end_time - 1)
+                                if (xtime(NULL) < command->end_time - 1)
                                 {
                                         /* non-empty list, but end_time of
                                          * first command not reached yet */

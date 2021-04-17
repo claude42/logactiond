@@ -174,6 +174,9 @@ rightmost_tree_node(kw_tree_node_t *const node)
         return result;
 }
 
+/* Will return the node in the tree that has taken the previous place of the
+ * removed node - NULL if removed node was a leaf node */
+
 kw_tree_node_t *
 remove_tree_node(kw_tree_t *const tree, kw_tree_node_t *const node)
 {
@@ -255,7 +258,7 @@ remove_tree_node(kw_tree_t *const tree, kw_tree_node_t *const node)
 
         tree->count--;
 
-        return node;
+        return *ptr;
 
 }
 

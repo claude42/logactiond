@@ -24,11 +24,7 @@
 #include "nodelist.h"
 #include "rules.h"
 #include "addresses.h"
-
-#define ITERATE_META_COMMANDS(COMMANDS) (meta_command_t *) &(COMMANDS)->head
-#define NEXT_META_COMMAND(COMMAND) (meta_command_t *) (COMMAND->node.succ->succ ? COMMAND->node.succ : NULL)
-#define HAS_NEXT_META_COMMAND(COMMAND) COMMAND->node.succ
-#define REM_META_COMMANDS_HEAD(COMMANDS) (meta_command_t *) rem_head(COMMANDS)
+#include "binarytree.h"
 
 /* assertions */
 
@@ -42,12 +38,12 @@
 
 typedef struct la_meta_command_s
 {
-        kw_node_t node;
+        kw_tree_node_t adr_node;
         la_rule_t *rule;
         la_address_t *address;
         time_t meta_start_time;
         int factor;
-} meta_command_t;
+} la_meta_command_t;
 
 int meta_list_length(void);
 

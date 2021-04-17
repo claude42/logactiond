@@ -24,8 +24,9 @@
 #include "commands.h"
 #include "logging.h"
 #include "misc.h"
+#include "binarytree.h"
 
-static kw_list_t *meta_list;
+static kw_tree_t *meta_list;
 
 int
 meta_list_length(void)
@@ -33,12 +34,12 @@ meta_list_length(void)
         if (!meta_list)
                 return 0;
 
-        return list_length(meta_list);
+        return meta_list->count;
 }
 
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
 static void
-free_meta_command(meta_command_t *const meta_command)
+free_meta_command(la_meta_command_t *const meta_command)
 {
         la_vdebug_func(NULL);
         assert(meta_command);
@@ -53,21 +54,20 @@ free_meta_list(void)
         la_vdebug_func(NULL);
         if (!meta_list)
                 return;
-        assert_list(meta_list);
+        assert_tree(meta_list);
 
-        for (meta_command_t *tmp;
-                        (tmp = REM_META_COMMANDS_HEAD(meta_list));)
-                free_meta_command(tmp);
-
-        free(meta_list);
+        empty_tree(meta_list, (void (*)(const void *)) free_meta_command, false);
+        free_tree(meta_list);
 }
 
-static meta_command_t *
+static la_meta_command_t *
 create_meta_command(const la_command_t *const command)
 {
-        assert_command(command); assert(command->address);
-        la_debug_func(NULL);
-        meta_command_t *result = create_node(sizeof *result, 0, NULL);
+        assert_command(command); assert_address(command->address);
+        la_debug_func(command->address->text);
+
+        la_meta_command_t *result = xmalloc(sizeof *result);
+        result->adr_node.payload = result;
 
         result->rule = command->rule;
         result->address = dup_address(command->address);
@@ -85,38 +85,60 @@ create_meta_command(const la_command_t *const command)
  * which have already expired.
  */
 
-static meta_command_t *
+static la_meta_command_t *
 find_on_meta_list(const la_command_t *const command)
 {
-        assert_command(command); assert(command->address);
-        la_debug_func(command->name);
+        assert_command(command); assert_address(command->address);
+        la_debug_func(command->address->text);
 
         const time_t now = xtime(NULL);
 
-        /* Don't use standard ITERATE_COMMANDS/NEXT_COMMAND idiom here to avoid
-         * that remove_node() breaks the whole thing */
-        assert_list(meta_list);
-        meta_command_t *list_command = ITERATE_META_COMMANDS(meta_list);
-        list_command = NEXT_META_COMMAND(list_command);
-        while (list_command)
+        assert_tree(meta_list);
+
+        kw_tree_node_t *node = meta_list->root;
+        for (;;)
         {
-                if (now < list_command->meta_start_time + list_command->rule->meta_period)
+                if (!node)
+                        return NULL;
+
+                la_meta_command_t *mcmd = (la_meta_command_t *) node->payload;
+                assert(mcmd);
+                const int cmp = adrcmp(mcmd->address, command->address);
+
+                if (now >= mcmd->meta_start_time + mcmd->rule->meta_period)
                 {
-                        if (!adrcmp(command->address, list_command->address))
-                                return list_command;
-                        list_command = NEXT_META_COMMAND(list_command);
+                        /* Remove expired commands from meta list */
+                        kw_tree_node_t *tmp = node;
+                        node = remove_tree_node(meta_list, node);
+                        free_meta_command((la_meta_command_t *) tmp->payload);
+                }
+                else if (cmp == 0)
+                {
+                        return mcmd;
+                }
+                else if (cmp < 0 && node->right)
+                {
+                        node = node->right;
+                }
+                else if (cmp > 0 && node->left)
+                {
+                        node = node->left;
                 }
                 else
                 {
-                        /* Remove expired commands from meta list */
-                        meta_command_t *const tmp = list_command;
-                        list_command = NEXT_META_COMMAND(list_command);
-                        remove_node((kw_node_t *) tmp);
-                        free_meta_command(tmp);
+                        return NULL;
                 }
         }
 
+        /* control flow must not reach this point */
+        assert(false);
         return NULL;
+}
+
+static int
+cmp_meta_commands(const void *p1, const void *p2)
+{
+        return adrcmp(((la_meta_command_t *) p1)->address, ((la_meta_command_t *) p2)->address);
 }
 
 /*
@@ -135,12 +157,11 @@ check_meta_list(const la_command_t *const command, const int set_factor)
                         command->duration);
 
         if (!meta_list)
-                meta_list = create_list();
-
-        meta_command_t *meta_command = find_on_meta_list(command);
+                meta_list = create_tree();
 
         const time_t now = xtime(NULL);
 
+        la_meta_command_t *meta_command = find_on_meta_list(command);
         if (!meta_command)
         {
                 meta_command = create_meta_command(command);
@@ -149,7 +170,7 @@ check_meta_list(const la_command_t *const command, const int set_factor)
                         meta_command->factor = set_factor;
                 meta_command->meta_start_time = now +
                         (long) meta_command->factor * command->duration;
-                add_head(meta_list, (kw_node_t *) meta_command);
+                add_to_tree(meta_list, &meta_command->adr_node, cmp_meta_commands);
         }
         else if (now > meta_command->meta_start_time)
         {
