@@ -1,3 +1,10 @@
+New TODOs
+
+* Rule names must not contain commas
+* Wake up remote thread correctly: https://stackoverflow.com/questions/29237539/how-to-wake-up-a-pthread-which-is-sleeping-in-recvmsg
+* replace meta_list with tree
+* do commands and meta commands really need to have both nodes and tree_nodes?
+
 TODOs in no particular order
 
 * Limit regexes to one instance per token
