@@ -490,14 +490,19 @@ create_rule(const bool enabled, const char *const name,
         assert(source_group);
         la_debug_func(name);
 
+        if (!name)
+                die_hard(false, "No rule name specified!");
+        if (strchr(name, ','))
+                die_hard(false, "Rule name may not contain a ','!");
+        if (xstrlen(name) >= RULE_LENGTH)
+                die_hard(false, "Rulename too long - must be less than %u "
+                                "characters!", RULE_LENGTH);
+
         la_rule_t *const result = create_node(sizeof *result, 0, NULL);
 
         result->node.pri = 0;
         result->enabled = enabled;
 
-        if (xstrlen(name) >= RULE_LENGTH)
-                die_hard(false, "Rulename too long - must be less than %u "
-                                "characters!", RULE_LENGTH);
         result->name = xstrdup(name);
         result->id = ++id_counter;
         result->source_group = source_group;
