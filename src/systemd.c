@@ -177,13 +177,13 @@ add_matches(void)
         la_debug_func(NULL);
         assert(la_config);
         assert(la_config->systemd_source_group);
-        assert_list(la_config->systemd_source_group->systemd_units);
+        assert_list(&la_config->systemd_source_group->systemd_units);
 
         char *match = NULL;
 
         sd_journal_flush_matches(journal);
 
-        for (kw_node_t *unit = &(la_config->systemd_source_group->systemd_units)->head;
+        for (kw_node_t *unit = get_head(&la_config->systemd_source_group->systemd_units);
                         (unit = unit->succ->succ ? unit->succ : NULL);)
         {
                 // space for "_SYSTEMD_UNIT=" + unit->name + '\0'

@@ -96,7 +96,7 @@ dump_rule_diagnostics(FILE *const diag_file, const la_rule_t *const rule)
         la_vdebug_func(rule->name);
 
         fprintf(diag_file, "%s, list length=%i\n", rule->name,
-                        list_length(rule->trigger_list));
+                        list_length(&rule->trigger_list));
 }
 
 /*
@@ -142,11 +142,11 @@ dump_rules(void)
 
                 /* First print rules of sources watched via inotify / polling */
 
-                assert(la_config); assert(la_config->source_groups);
-                for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
+                assert(la_config); assert_list(&la_config->source_groups);
+                for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(&la_config->source_groups);
                                 (source_group = NEXT_SOURCE_GROUP(source_group));)
                 {
-                        for (la_rule_t *rule = ITERATE_RULES(source_group->rules);
+                        for (la_rule_t *rule = ITERATE_RULES(&source_group->rules);
                                         (rule = NEXT_RULE(rule));)
                         {
                                 dump_single_rule(rules_file, rule);
@@ -159,7 +159,7 @@ dump_rules(void)
                 /* Then print systemd rules - if any */
                 if (la_config->systemd_source_group)
                 {
-                        for (la_rule_t *rule = ITERATE_RULES(la_config->systemd_source_group->rules);
+                        for (la_rule_t *rule = ITERATE_RULES(&la_config->systemd_source_group->rules);
                                         (rule = NEXT_RULE(rule));)
                         {
                                 dump_single_rule(rules_file, rule);

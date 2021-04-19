@@ -49,6 +49,9 @@
 
 #define ADDRESS_NAME(ADDRESS) (ADDRESS->domainname ? ADDRESS->domainname : ADDRESS->text)
 
+#define empty_address_list(list) \
+        empty_list(list, (void (*)(void *const)) free_address)
+
 #define free_address_list(list) \
         free_list(list, (void (*)(void *const)) free_address)
 

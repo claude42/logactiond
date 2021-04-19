@@ -50,7 +50,7 @@ assert_pattern_ffl(const la_pattern_t *pattern, const char *func,
                                 file, line, func);
         if (pattern->host_property)
                 assert_property_ffl(pattern->host_property, func, file, line);
-        assert_list_ffl(pattern->properties, func, file, line);
+        assert_list_ffl(&pattern->properties, func, file, line);
         if (pattern->detection_count < 0)
                 die_hard(false, "%s:%u: %s: Assertion 'pattern->detection_count "
                                 ">= 0' failed. ", file, line, func);
@@ -61,9 +61,10 @@ assert_pattern_ffl(const la_pattern_t *pattern, const char *func,
 
 static void add_property(la_pattern_t *const pattern, la_property_t *const property)
 {
-        assert(pattern); assert_list(pattern->properties); assert_property(property);
+        /* TODO: don't remember, why not just assert_pattern() here?! */
+        assert(pattern); assert_list(&pattern->properties); assert_property(property);
 
-        add_tail(pattern->properties, (kw_node_t *) property);
+        add_tail(&pattern->properties, (kw_node_t *) property);
         if (property->is_host_property)
                 pattern->host_property = property;
 }
@@ -81,7 +82,7 @@ static void
 convert_regex(const char *const string, la_pattern_t *const pattern)
 {
         assert(string); assert(pattern); assert_rule(pattern->rule);
-        assert_list(pattern->properties);
+        assert_list(&pattern->properties);
         la_vdebug_func(string);
 
         size_t dst_len = 1000;
@@ -230,7 +231,7 @@ create_pattern(const char *const string_from_configfile,
         result->num = num;
         result->rule = rule;
         result->host_property = NULL;
-        result->properties = create_list();
+        init_list(&result->properties);
         convert_regex(full_string, result);
         free(full_string);
 
@@ -257,7 +258,7 @@ free_pattern(la_pattern_t *const pattern)
 
         la_vdebug_func(pattern->string);
 
-        free_property_list(pattern->properties);
+        empty_property_list(&pattern->properties);
 
         free(pattern->string);
 

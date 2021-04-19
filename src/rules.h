@@ -48,6 +48,9 @@
 #define assert_rule(RULE) assert_rule_ffl(RULE, __func__, __FILE__, __LINE__)
 #endif /* NDEBUG */
 
+#define empty_rule_list(list) \
+        empty_list(list, (void (*)(void *const)) free_rule)
+
 #define free_rule_list(list) \
         free_list(list, (void (*)(void *const)) free_rule)
 
@@ -60,8 +63,8 @@ struct la_rule_s
         int id;
         struct la_source_group_s *source_group;
         char *service;
-        struct kw_list_s *patterns;
-        struct kw_list_s *begin_commands;
+        struct kw_list_s patterns;
+        struct kw_list_s begin_commands;
         int threshold;
         int period;
         int duration;
@@ -71,8 +74,8 @@ struct la_rule_s
         int meta_factor;
         int meta_max;
         char *systemd_unit;
-        struct kw_list_s *trigger_list;
-        struct kw_list_s *properties;
+        struct kw_list_s trigger_list;
+        struct kw_list_s properties;
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
         atomic_long detection_count;
         atomic_long invocation_count;
@@ -83,7 +86,7 @@ struct la_rule_s
         long int queue_count;
 #endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
         bool dnsbl_enabled;
-        struct kw_list_s *blacklists;
+        struct kw_list_s blacklists;
 };
 
 void assert_rule_ffl(const la_rule_t *rule, const char *func, const char *file,

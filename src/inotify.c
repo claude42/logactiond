@@ -128,15 +128,11 @@ find_source_by_parent_wd(const int parent_wd, const char *const file_name)
         assert(la_config);
         la_vdebug("find_source_by_parent_wd(%s)", file_name);
 
-	/* Bail out if configuration is currently not available (e.g.
-	 * during a reload*/
-	if (!la_config->source_groups)
-		return NULL;
-
-        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
+        assert_list(&la_config->source_groups);
+        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(&la_config->source_groups);
                         (source_group = NEXT_SOURCE_GROUP(source_group));)
         {
-                for (la_source_t *source = ITERATE_SOURCES(source_group->sources);
+                for (la_source_t *source = ITERATE_SOURCES(&source_group->sources);
                                 (source = NEXT_SOURCE(source));)
                 {
                         if (source->parent_wd == parent_wd &&
@@ -160,15 +156,11 @@ find_source_by_file_wd(const int file_wd)
         assert(la_config);
         la_vdebug("find_source_by_file_wd(%u)", file_wd);
 
-	/* Bail out if configuration is currently not available (e.g.
-	 * during a reload*/
-	if (!la_config->source_groups)
-		return NULL;
-
-        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
+        assert_list(&la_config->source_groups);
+        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(&la_config->source_groups);
                         (source_group = NEXT_SOURCE_GROUP(source_group));)
         {
-                for (la_source_t *source = ITERATE_SOURCES(source_group->sources);
+                for (la_source_t *source = ITERATE_SOURCES(&source_group->sources);
                                 (source = NEXT_SOURCE(source));)
                 {
                         if (source->wd == file_wd)

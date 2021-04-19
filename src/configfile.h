@@ -108,7 +108,7 @@ typedef struct la_config_s la_config_t;
 typedef struct la_config_s
 {
         config_t config_file;
-        kw_list_t *source_groups;
+        kw_list_t source_groups;
         la_source_group_t *systemd_source_group;
         int default_threshold;
         int default_period;
@@ -118,11 +118,11 @@ typedef struct la_config_s
         int default_meta_period;
         int default_meta_factor;
         int default_meta_max;
-        kw_list_t *default_properties;
-        kw_list_t *ignore_addresses;
+        kw_list_t default_properties;
+        kw_list_t ignore_addresses;
         int remote_enabled;
-        kw_list_t *remote_receive_from;
-        kw_list_t *remote_send_to;
+        kw_list_t remote_receive_from;
+        kw_list_t remote_send_to;
         char *remote_secret;
         bool remote_secret_changed;
         char *remote_bind;

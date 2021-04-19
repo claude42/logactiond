@@ -38,6 +38,9 @@
 #define assert_command(COMMAND) assert_command_ffl(COMMAND, __func__, __FILE__, __LINE__)
 #endif /* NDEBUG */
 
+#define empty_command_list(list) \
+        empty_list(list, (void (*)(void *const)) free_command)
+
 #define free_command_list(list) \
         free_list(list, (void (*)(void *const)) free_command)
 
@@ -60,15 +63,15 @@ struct la_command_s
         bool is_template;       /* true for templates, false for derived commands */
         char *begin_string;        /* string with tokens */
         char *begin_string_converted;
-        struct kw_list_s *begin_properties;        /* detected tokens */
+        struct kw_list_s begin_properties;        /* detected tokens */
         int n_begin_properties;/* number of detected tokens */
         char *end_string;        /* string with tokens */
         char *end_string_converted;
-        struct kw_list_s *end_properties;        /* detected tokens */
+        struct kw_list_s end_properties;        /* detected tokens */
         int n_end_properties;/* number of detected tokens */
         struct la_rule_s *rule;        /* related rule */
         struct la_pattern_s *pattern;        /* related pattern*/
-        struct kw_list_s *pattern_properties; /* properties from matched pattern */
+        struct kw_list_s pattern_properties; /* properties from matched pattern */
         struct la_address_s *address;     /* IP address */
         enum la_need_host_s need_host;    /* Command requires host */
         int duration;                /* duration how long command shall stay active,

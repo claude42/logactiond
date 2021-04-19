@@ -37,6 +37,9 @@
 #define assert_pattern(PATTERN) assert_pattern_ffl(PATTERN, __func__, __FILE__, __LINE__)
 #endif /* NDEBUG */
 
+#define empty_pattern_list(list) \
+        empty_list(list, (void (*)(void *const)) free_pattern)
+
 #define free_pattern_list(list) \
         free_list(list, (void (*)(void *const)) free_pattern)
 
@@ -48,7 +51,7 @@ typedef struct la_pattern_s
         char *string; /* already converted regex, doesn't contain tokens anymore */
         regex_t regex; /* compiled regex */
         la_property_t *host_property;
-        kw_list_t *properties; /* list of la_property_t */
+        kw_list_t properties; /* list of la_property_t */
         long int detection_count;
         long int invocation_count;
 } la_pattern_t;

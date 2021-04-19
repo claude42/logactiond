@@ -380,9 +380,9 @@ sync_with_other_instances(void)
                 LOG_RETURN(, LOG_ERR, "Unable to encrypt sync message");
 #endif /* WITH_LIBSODIUM */
 
-        assert_list(la_config->remote_send_to);
+        assert_list(&la_config->remote_send_to);
         for (la_address_t *remote_address =
-                        ITERATE_ADDRESSES(la_config->remote_send_to);
+                        ITERATE_ADDRESSES(&la_config->remote_send_to);
                         (remote_address = NEXT_ADDRESS(remote_address));)
                 send_message_to_single_address(message, remote_address);
 }

@@ -336,14 +336,14 @@ compile_actions(la_rule_t *const rule, const config_setting_t *const action_def)
 #endif /* NOCOMMANDS */
 
         if (begin)
-                add_tail(rule->begin_commands, (kw_node_t *)
+                add_tail(&rule->begin_commands, (kw_node_t *)
                                 create_template(name, rule, begin, end,
                                         rule->duration, need_host,
                                         quick_shutdown));
         else
                 die_hard(false, "Begin action always required!");
 
-        assert_list(rule->begin_commands);
+        assert_list(&rule->begin_commands);
 }
 
 static void
@@ -397,7 +397,7 @@ load_blacklists(la_rule_t *const rule, const config_setting_t *const uc_rule_def
         {
                 kw_node_t *const new = create_node(sizeof *new, 0,
                                 config_setting_get_string(blacklist_reference));
-                add_tail(rule->blacklists, new);
+                add_tail(&rule->blacklists, new);
         }
         else if (type == CONFIG_TYPE_LIST)
         {
@@ -409,7 +409,7 @@ load_blacklists(la_rule_t *const rule, const config_setting_t *const uc_rule_def
                                 config_setting_get_elem(blacklist_reference, i);
                         kw_node_t *const new = create_node(sizeof *new, 0, 
                                         config_setting_get_string(list_item));
-                        add_tail(rule->blacklists, new);
+                        add_tail(&rule->blacklists, new);
                 }
         }
         else
@@ -488,9 +488,9 @@ load_patterns(la_rule_t *const rule, const config_setting_t *const rule_def,
 
                 la_pattern_t *pattern = create_pattern(item, i, rule);
 
-                add_tail(rule->patterns, (kw_node_t *) pattern);
+                add_tail(&rule->patterns, (kw_node_t *) pattern);
         }
-        assert_list(rule->patterns);
+        assert_list(&rule->patterns);
 }
 
 
@@ -633,7 +633,7 @@ create_file_sources(const config_setting_t *const rule_def,
                 const config_setting_t *const uc_rule_def)
 {
         assert(uc_rule_def);
-        assert(la_config); assert_list(la_config->source_groups);
+        assert(la_config); assert_list(&la_config->source_groups);
 
         const char *const name = get_source_name(rule_def, uc_rule_def);
         const char *const location = get_source_location(rule_def, uc_rule_def);
@@ -651,12 +651,12 @@ create_file_sources(const config_setting_t *const rule_def,
         for (size_t i = 0; i < pglob.gl_pathc; i++)
         {
                 la_source_t *src = create_source(result, pglob.gl_pathv[i]);
-                add_tail(result->sources, (kw_node_t *) src);
+                add_tail(&result->sources, (kw_node_t *) src);
         }
 
         globfree(&pglob);
 
-        add_tail(la_config->source_groups, (kw_node_t *) result);
+        add_tail(&la_config->source_groups, (kw_node_t *) result);
 
         return result;
 }
@@ -673,7 +673,7 @@ add_systemd_unit_to_list(const char *const systemd_unit)
 {
         assert(systemd_unit);
 
-        kw_list_t *const ex_systemd_units = la_config->systemd_source_group->systemd_units;
+        kw_list_t *const ex_systemd_units = &la_config->systemd_source_group->systemd_units;
         assert_list(ex_systemd_units);
 
         for (kw_node_t *tmp = &(ex_systemd_units)->head;
@@ -704,10 +704,9 @@ create_systemd_unit(const char *const systemd_unit)
                 /* TODO: set location also to NULL */
                 la_config->systemd_source_group = create_source_group("systemd",
                                 "systemd", NULL);
-                la_config->systemd_source_group->systemd_units = create_list();
                 la_source_t *systemd_source = create_source(
                                 la_config->systemd_source_group, "systemd");
-                add_tail(la_config->systemd_source_group->sources,
+                add_tail(&la_config->systemd_source_group->sources,
                                 (kw_node_t *) systemd_source);
         }
 #ifndef NOWATCH
@@ -808,9 +807,9 @@ load_single_rule(const config_setting_t *const uc_rule_def)
 
         /* Properties from uc_rule_def have priority over those from
          * rule_def */
-        load_properties(new_rule->properties, uc_rule_def);
+        load_properties(&new_rule->properties, uc_rule_def);
         if (rule_def)
-                load_properties(new_rule->properties, rule_def);
+                load_properties(&new_rule->properties, rule_def);
 
         /* Patterns from uc_rule_def have priority over those from rule_def */
         load_patterns(new_rule, rule_def, uc_rule_def);
@@ -821,7 +820,7 @@ load_single_rule(const config_setting_t *const uc_rule_def)
         /* blacklists are only taken from uc_rule_def (or default settings) */
         load_blacklists(new_rule, uc_rule_def);
 
-        add_tail(source_group->rules, (kw_node_t *) new_rule);
+        add_tail(&source_group->rules, (kw_node_t *) new_rule);
 
         return enabled;
 }
@@ -842,7 +841,7 @@ load_rules(void)
         if (n < 0)
                 return 0;
 
-        la_config->source_groups = create_list();
+        init_list(&la_config->source_groups);
 
         int num_rules_enabled = 0;
         for (int i=0; i<n; i++)
@@ -886,8 +885,8 @@ load_remote_settings(void)
 
         const config_setting_t *const receive_from = config_setting_lookup(
                         remote_section, LA_REMOTE_RECEIVE_FROM_LABEL);
-        la_config->remote_receive_from = create_list();
-        compile_address_list_port_domainname(la_config->remote_receive_from,
+        init_list(&la_config->remote_receive_from);
+        compile_address_list_port_domainname(&la_config->remote_receive_from,
                         receive_from, 0, true);
 
         la_config->remote_bind = xstrdup(config_get_string_or_null(remote_section,
@@ -901,8 +900,8 @@ load_remote_settings(void)
         /* Must obviously go after initialization of remote port... */
         const config_setting_t *const send_to = config_setting_lookup(remote_section,
                         LA_REMOTE_SEND_TO_LABEL);
-        la_config->remote_send_to = create_list();
-        compile_address_list_port_domainname(la_config->remote_send_to, send_to,
+        init_list(&la_config->remote_send_to);
+        compile_address_list_port_domainname(&la_config->remote_send_to, send_to,
                         la_config->remote_port, false);
 
 }
@@ -960,6 +959,9 @@ load_defaults(void)
         const config_setting_t *const defaults_section =
                 config_lookup(&la_config->config_file, LA_DEFAULTS_LABEL);
 
+        init_list(&la_config->default_properties);
+        init_list(&la_config->ignore_addresses);
+
         if (defaults_section)
         {
                 la_config->default_threshold =
@@ -1008,13 +1010,11 @@ load_defaults(void)
                 if (la_config->default_meta_max == -1)
                         la_config->default_meta_max = DEFAULT_META_MAX;
 
-                la_config->default_properties = create_list();
-                load_properties(la_config->default_properties, defaults_section);
+                load_properties(&la_config->default_properties, defaults_section);
 
-                la_config->ignore_addresses = create_list();
                 const config_setting_t *ignore = config_setting_get_member(
                                 defaults_section, LA_IGNORE_LABEL);
-                compile_address_list_port_domainname(la_config->ignore_addresses,
+                compile_address_list_port_domainname(&la_config->ignore_addresses,
                                 ignore, 0, true);
         }
         else
@@ -1025,8 +1025,6 @@ load_defaults(void)
                 la_config->default_meta_enabled = DEFAULT_META_ENABLED;
                 la_config->default_meta_period = DEFAULT_META_PERIOD;
                 la_config->default_meta_max = DEFAULT_META_MAX;
-                la_config->default_properties = NULL;
-                la_config->ignore_addresses = NULL;
         }
 }
 
@@ -1134,21 +1132,16 @@ unload_la_config(void)
                 xpthread_mutex_lock(&config_mutex);
 #endif /* CLIENTONLY */
 
-        free_source_group_list(la_config->source_groups);
-        la_config->source_groups = NULL;
+        empty_source_group_list(&la_config->source_groups);
 #if HAVE_LIBSYSTEMD
         free_source_group(la_config->systemd_source_group);
         la_config->systemd_source_group = NULL;
 #endif /* HAVE_LIBSYSTEMD */
-        free_property_list(la_config->default_properties);
-        la_config->default_properties = NULL;
-        free_address_list(la_config->ignore_addresses);
-        la_config->ignore_addresses = NULL;
+        empty_property_list(&la_config->default_properties);
+        empty_address_list(&la_config->ignore_addresses);
         free(la_config->remote_secret);
-        free_address_list(la_config->remote_receive_from);
-        la_config->remote_receive_from = NULL;
-        free_address_list(la_config->remote_send_to);
-        la_config->remote_send_to = NULL;
+        empty_address_list(&la_config->remote_receive_from);
+        empty_address_list(&la_config->remote_send_to);
         free(la_config->remote_bind);
         la_config->remote_bind = NULL;
         free(la_config->fifo_path);

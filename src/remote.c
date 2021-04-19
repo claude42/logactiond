@@ -144,9 +144,9 @@ send_add_entry_message(const la_command_t *const command, const la_address_t *co
         }
         else
         {
-                assert_list(la_config->remote_send_to);
+                assert_list(&la_config->remote_send_to);
                 for (la_address_t *remote_address =
-                                ITERATE_ADDRESSES(la_config->remote_send_to);
+                                ITERATE_ADDRESSES(&la_config->remote_send_to);
                                 (remote_address = NEXT_ADDRESS(remote_address));)
                 {
                         send_message_to_single_address(message, remote_address);
@@ -234,7 +234,7 @@ remote_loop(void *const ptr)
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
                 la_address_t *const from_addr = address_on_list_sa(
                                 (struct sockaddr *) &remote_client,
-                                la_config->remote_receive_from);
+                                &la_config->remote_receive_from);
 
                 if (!from_addr)
                 {

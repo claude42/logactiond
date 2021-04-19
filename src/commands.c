@@ -45,6 +45,7 @@
 #include "dnsbl.h"
 #include "fifo.h"
 #include "metacommands.h"
+#include "nodelist.h"
 
 static kw_list_t *meta_list;
 
@@ -59,20 +60,20 @@ assert_command_ffl(const la_command_t *command, const char *func,
                 die_hard(false, "%s:%u: %s: Assertion 'command->name' failed.",
                                 file, line, func);
 
-        assert_list_ffl(command->begin_properties, func, file, line);
+        assert_list_ffl(&command->begin_properties, func, file, line);
         if (command->n_begin_properties < 0)
                 die_hard(false, "%s:%u: %s: Assertion 'command->n_begin_properties "
                                 ">= 0' failed. ", file, line, func);
-        if (command->n_begin_properties != list_length(command->begin_properties))
+        if (command->n_begin_properties != list_length(&command->begin_properties))
                 die_hard(false, "%s:%u: %s: Assertion 'command->n_begin_properties "
-                                "== list_length(command->begin_properties failed.",
+                                "== list_length(&command->begin_properties failed.",
                                 file, line, func);
 
-        assert_list_ffl(command->end_properties, func, file, line );
+        assert_list_ffl(&command->end_properties, func, file, line );
         if (command->n_end_properties < 0)
                 die_hard(false, "%s:%u: %s: Assertion 'command->n_end_properties "
                                 ">= 0' failed. ", file, line, func);
-        if (command->n_end_properties != list_length(command->end_properties))
+        if (command->n_end_properties != list_length(&command->end_properties))
                 die_hard(false, "%s:%u: %s: Assertion 'command->n_end_properties "
                                 "== list_length(command->end_properties failed.",
                                 file, line, func);
@@ -80,8 +81,8 @@ assert_command_ffl(const la_command_t *command, const char *func,
         assert_rule_ffl(command->rule, func, file, line);
         if (command->pattern)
                 assert_pattern_ffl(command->pattern, func, file, line);
-        if (command->pattern_properties)
-                assert_list_ffl(command->pattern_properties, func, file, line);
+        if (command->pattern_properties.head.succ)
+                assert_list_ffl(&command->pattern_properties, func, file, line);
         if (command->address)
                 assert_address_ffl(command->address, func, file, line);
 
@@ -99,8 +100,8 @@ assert_command_ffl(const la_command_t *command, const char *func,
 
 
 
-        assert_list_ffl(command->begin_properties, func, file, line);
-        assert_list_ffl(command->end_properties, func, file, line);
+        assert_list_ffl(&command->begin_properties, func, file, line);
+        assert_list_ffl(&command->end_properties, func, file, line);
 
         if (command->duration < -1)
                 die_hard(false, "%s:%u: %s: Assertion 'command->duration >= -1' "
@@ -176,20 +177,20 @@ get_value_for_action_property(const la_command_t *const command,
 
         /* next search among tokens from matched line */
         result = get_value_from_property_list(
-                        command->pattern_properties,
+                        &command->pattern_properties,
                         action_property->name);
         if (result)
                 return result;
 
         /* next search in config file rule section */
-        result = get_value_from_property_list(command->rule->properties,
+        result = get_value_from_property_list(&command->rule->properties,
                         action_property->name);
         if (result)
                 return result;
 
         /* lastly search in config file default section, return NULL if
          * nothing is there either */
-        return get_value_from_property_list(la_config->default_properties,
+        return get_value_from_property_list(&la_config->default_properties,
                         action_property->name);
 }
 
@@ -205,10 +206,12 @@ convert_command(la_command_t *const command, const la_commandtype_t type)
         la_debug("convert_command(%s, %s)", command->name,
                         type == LA_COMMANDTYPE_BEGIN ? "begin" : "end");
 
-        if (!((type == LA_COMMANDTYPE_BEGIN && command->begin_properties &&
-                                command->begin_string) ||
-                        (type == LA_COMMANDTYPE_END && command->end_properties &&
-                         command->end_string)))
+        if (!((type == LA_COMMANDTYPE_BEGIN &&
+                                        !is_list_empty(&command->begin_properties) &&
+                                        command->begin_string) ||
+                        (type == LA_COMMANDTYPE_END &&
+                                         !is_list_empty(&command->end_properties) &&
+                                         command->end_string)))
                 return;
 
         const char *const source_string = (type == LA_COMMANDTYPE_BEGIN) ?
@@ -220,8 +223,8 @@ convert_command(la_command_t *const command, const la_commandtype_t type)
 
         la_property_t *action_property = ITERATE_PROPERTIES(
                         type == LA_COMMANDTYPE_BEGIN ?
-                        command->begin_properties :
-                        command->end_properties);
+                        &command->begin_properties :
+                        &command->end_properties);
 
         while (*src_ptr)
         {
@@ -425,7 +428,7 @@ trigger_manual_command(const la_address_t *const address,
                                 "is in the past.");
 
         assert(la_config);
-        la_address_t *tmp_addr = address_on_list(address, la_config->ignore_addresses);
+        la_address_t *tmp_addr = address_on_list(address, &la_config->ignore_addresses);
         if (tmp_addr)
         {
                 reprioritize_node((kw_node_t *) tmp_addr, 1);
@@ -566,8 +569,11 @@ trigger_end_command(const la_command_t *const command, const bool suppress_loggi
 static int
 scan_action_tokens(kw_list_t *const property_list, const char *const string)
 {
-        assert_list(property_list); assert(string);
+        assert(string);
         la_debug_func(string);
+
+        assert(property_list);
+        init_list(property_list);
 
         const char *ptr = string;
         int n_tokens = 0;
@@ -624,11 +630,13 @@ dup_command(const la_command_t *const command)
 
         result->name = xstrdup(command->name);
         result->begin_string = xstrdup(command->begin_string);
-        result->begin_properties = dup_property_list(command->begin_properties);
+        init_list(&result->begin_properties);
+        copy_property_list(&result->begin_properties, &command->begin_properties);
         result->n_begin_properties = command->n_begin_properties;
 
         result->end_string = xstrdup(command->end_string);
-        result->end_properties = dup_property_list(command->end_properties);
+        init_list(&result->end_properties);
+        copy_property_list(&result->end_properties, &command->end_properties);
         result->n_end_properties = command->n_end_properties;
 
         result->rule = command->rule;
@@ -675,7 +683,7 @@ create_command_from_template(const la_command_t *const template,
                 const la_address_t *const address)
 {
         assert_command(template); assert_pattern(pattern);
-        assert_list(pattern->properties);
+        assert_list(&pattern->properties);
         if (address)
                 assert_address(address);
         la_debug_func(template->name);
@@ -686,7 +694,9 @@ create_command_from_template(const la_command_t *const template,
         la_command_t *const result = dup_command(template);
 
         result->pattern = pattern;
-        result->pattern_properties = dup_property_list(pattern->properties);
+        init_list(&result->pattern_properties);
+        copy_property_list(&result->pattern_properties, &pattern->properties);
+
         result->address = address ? dup_address(address) : NULL;
         result->end_time = result->n_triggers = result->start_time= 0;
         result->submission_type = LA_SUBMISSION_LOCAL;
@@ -726,7 +736,8 @@ create_manual_command_from_template(const la_command_t *const template,
         la_command_t *const result = dup_command(template);
 
         result->pattern = NULL;
-        result->pattern_properties = NULL;
+        init_list(&result->pattern_properties);
+
         result->address = address ? dup_address(address) : NULL;
         result->end_time = result->n_triggers = result->start_time= 0;
         result->submission_type = is_local_address(from_addr) ?
@@ -743,9 +754,8 @@ create_manual_command_from_template(const la_command_t *const template,
  * Duration = 0 prevents any end command
  * Duration = INT_MAX will result that the end command will only be fired on shutdown
  *
- * Note: begin_properties, end_properties will be initialized with
- * create_list(); pattern_properties will always be NULL after
- * create_template()
+ * Note: pattern_properties will not be initialized by create_template() or
+ * dup_command()
  *
  * FIXME: use another value than INT_MAX
  */
@@ -769,15 +779,12 @@ create_template(const char *const name, la_rule_t *const rule,
         result->end_time_node.payload = result;
 
         result->begin_string = xstrdup(begin_string);
-        result->begin_properties = create_list();
         result->n_begin_properties =
-                scan_action_tokens(result->begin_properties, begin_string);
+                scan_action_tokens(&result->begin_properties, begin_string);
 
         result->end_string = xstrdup(end_string);
-        result->end_properties = create_list();
         result->n_end_properties = end_string ?
-                scan_action_tokens(result->end_properties, end_string) : 0;
-
+                scan_action_tokens(&result->end_properties, end_string) : 0;
 
         result->rule = rule;
         result->need_host = need_host;
@@ -789,6 +796,8 @@ create_template(const char *const name, la_rule_t *const rule,
         /* Will be used to restore queue counters on reload. Yes, it's a bit
          * ugly but such is life... */
         result->rule_name = xstrdup(rule->name);
+
+        init_list(&result->pattern_properties);
 
         return result;
 }
@@ -812,9 +821,9 @@ free_command(la_command_t *const command)
         free(command->begin_string_converted);
         free(command->end_string);
         free(command->end_string_converted);
-        free_property_list(command->begin_properties);
-        free_property_list(command->end_properties);
-        free_property_list(command->pattern_properties);
+        empty_property_list(&command->begin_properties);
+        empty_property_list(&command->end_properties);
+        empty_property_list(&command->pattern_properties);
         free(command->rule_name);
 
         free_address(command->address);
@@ -825,7 +834,7 @@ const char *
 command_address_on_dnsbl(const la_command_t *const command)
 {
         assert_command(command);
-        return host_on_any_dnsbl(command->rule->blacklists, command->address);
+        return host_on_any_dnsbl(&command->rule->blacklists, command->address);
 }
 
 /* vim: set autowrite expandtab: */

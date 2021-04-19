@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "ndebug.h"
 #include "nodelist.h"
@@ -141,6 +142,15 @@ free_node(kw_node_t *const node)
         free(node);
 }
 
+void
+init_list(kw_list_t *const list)
+{
+        list->head.succ = (kw_node_t *) &list->tail;
+        list->head.pred = NULL;
+        list->tail.succ = NULL;
+        list->tail.pred = (kw_node_t *) &list->head;
+}
+
 /*
  * Can be freed with free()
  */
@@ -152,10 +162,7 @@ create_list(void)
         if (!result)
                 nodelist_exit_function(false, "Memory exhausted");
 
-        result->head.succ = (kw_node_t *) &result->tail;
-        result->head.pred = NULL;
-        result->tail.succ = NULL;
-        result->tail.pred = (kw_node_t *) &result->head;
+        init_list(result);
 
         return result;
 }
@@ -383,7 +390,7 @@ get_next_node(kw_node_t **const iterator)
 }
 
 void
-free_list(kw_list_t *const list, void (*free_node)(void *const))
+empty_list(kw_list_t *const list, void (*free_node)(void *const))
 {
         if (!list)
                 return;
@@ -400,6 +407,12 @@ free_list(kw_list_t *const list, void (*free_node)(void *const))
                 else
                         free(tmp);
         }
+}
+
+void
+free_list(kw_list_t *const list, void (*free_node)(void *const))
+{
+        empty_list(list, free_node);
 
         free(list);
 }

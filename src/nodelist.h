@@ -66,7 +66,11 @@ void *create_node0(size_t size, const int pri, const char *const nodename);
 
 void free_node(kw_node_t *node);
 
+void init_list(kw_list_t *list);
+
 kw_list_t *create_list(void);
+
+void empty_list(kw_list_t *list, void (*free_node)(void *));
 
 void free_list(kw_list_t *list, void (*free_node)(void *));
 

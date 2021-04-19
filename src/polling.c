@@ -138,7 +138,7 @@ noreturn static void *
 watch_forever_polling(void *ptr)
 {
         la_debug_func(NULL);
-        assert(la_config); assert_list(la_config->source_groups);
+        assert(la_config); assert_list(&la_config->source_groups);
 
         pthread_cleanup_push(cleanup_watching_polling, NULL);
 
@@ -153,10 +153,10 @@ watch_forever_polling(void *ptr)
                 xpthread_mutex_lock(&config_mutex);
 
                         for (la_source_group_t *source_group =
-                                        ITERATE_SOURCE_GROUPS(la_config->source_groups);
+                                        ITERATE_SOURCE_GROUPS(&la_config->source_groups);
                                         (source_group = NEXT_SOURCE_GROUP(source_group));)
                         {
-                                for (la_source_t *source = ITERATE_SOURCES(source_group->sources);
+                                for (la_source_t *source = ITERATE_SOURCES(&source_group->sources);
                                                 (source = NEXT_SOURCE(source));)
                                         poll_source(source);
                         }

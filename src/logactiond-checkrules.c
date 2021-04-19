@@ -134,7 +134,7 @@ next_line(la_rule_t *rule, char *line)
 
         la_debug_func(line);
 
-        for (la_pattern_t *pattern = ITERATE_PATTERNS(rule->patterns);
+        for (la_pattern_t *pattern = ITERATE_PATTERNS(&rule->patterns);
                         (pattern = NEXT_PATTERN(pattern));)
         {
                 la_debug("pattern %u: %s\n", pattern->num, pattern->string);
@@ -168,10 +168,10 @@ iterate_through_all_rules(char *line)
 {
         la_debug_func(NULL);
 
-        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
+        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(&la_config->source_groups);
                         (source_group = NEXT_SOURCE_GROUP(source_group));)
         {
-                for (la_rule_t *rule = ITERATE_RULES(source_group->rules);
+                for (la_rule_t *rule = ITERATE_RULES(&source_group->rules);
                                 (rule = NEXT_RULE(rule));)
                         next_line(rule, line);
         }
@@ -179,7 +179,7 @@ iterate_through_all_rules(char *line)
 #if HAVE_LIBSYSTEMD
         if (la_config->systemd_source_group)
         {
-                for (la_rule_t *rule = ITERATE_RULES(la_config->systemd_source_group->rules);
+                for (la_rule_t *rule = ITERATE_RULES(&la_config->systemd_source_group->rules);
                                 (rule = NEXT_RULE(rule));)
                         next_line(rule, line);
         }

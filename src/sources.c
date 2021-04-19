@@ -58,8 +58,8 @@ assert_source_group_ffl(const la_source_group_t *source_group, const char *func,
         if (!source_group->glob_pattern)
                 die_hard(false, "%s:%u: %s: Assertion 'source->location' "
                                 "failed.", file, line, func);
-        assert_list_ffl(source_group->sources, func, file, line);
-        assert_list_ffl(source_group->rules, func, file, line);
+        assert_list_ffl(&source_group->sources, func, file, line);
+        assert_list_ffl(&source_group->rules, func, file, line);
 }
 
 /*
@@ -75,7 +75,7 @@ handle_log_line(const la_source_t *const source, const char *const line,
          * logging to syslog */
         /* la_debug("handle_log_line(%s, %s)", systemd_unit, line); */
 
-        for (la_rule_t *rule = ITERATE_RULES(source->source_group->rules);
+        for (la_rule_t *rule = ITERATE_RULES(&source->source_group->rules);
                         (rule = NEXT_RULE(rule));)
         {
                 if (rule->enabled)
@@ -134,10 +134,10 @@ create_source_group(const char *const name, const char *const glob_pattern,
         result->name = xstrdup(name);
         result->glob_pattern = xstrdup(glob_pattern);
         result->prefix = xstrdup(prefix);
-        result->sources = create_list();
-        result->rules = create_list();
+        init_list(&result->sources);
+        init_list(&result->rules);
 #if HAVE_LIBSYSTEMD
-        result->systemd_units = NULL;
+        init_list(&result->systemd_units);
 #endif
 
         assert_source_group(result);
@@ -201,17 +201,13 @@ free_source_group(la_source_group_t *const source_group)
         free(source_group->name);
         free(source_group->glob_pattern);
 
-        free_source_list(source_group->sources);
-        free_rule_list(source_group->rules);
+        empty_source_list(&source_group->sources);
+        empty_rule_list(&source_group->rules);
 
         free(source_group->prefix);
 
 #if HAVE_LIBSYSTEMD
-        if (source_group->systemd_units)
-        {
-                free_list(source_group->systemd_units, NULL);
-                source_group->systemd_units = NULL;
-        }
+        empty_list(&source_group->systemd_units, NULL);
 #endif /* HAVE_LISTSYSTEMD */
 
         free(source_group);
@@ -226,13 +222,13 @@ la_source_group_t
 *find_source_group_by_location(const char *const location)
 {
         assert(location);
-        assert(la_config); assert_list(la_config->source_groups);
+        assert(la_config); assert_list(&la_config->source_groups);
         la_debug_func(location);
 
-        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
+        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(&la_config->source_groups);
                         (source_group = NEXT_SOURCE_GROUP(source_group));)
         {
-                for (la_source_t *source = ITERATE_SOURCES(source_group->sources);
+                for (la_source_t *source = ITERATE_SOURCES(&source_group->sources);
                                 (source = NEXT_SOURCE(source));)
                         if (!strcmp(location, source->location))
                                 return source_group;
@@ -249,10 +245,10 @@ la_source_group_t
 *find_source_group_by_name(const char *const name)
 {
         assert(name);
-        assert(la_config); assert_list(la_config->source_groups);
+        assert(la_config); assert_list(&la_config->source_groups);
         la_debug_func(name);
 
-        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
+        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(&la_config->source_groups);
                         (source_group = NEXT_SOURCE_GROUP(source_group));)
         {
                 if (!strcmp(name, source_group->name))
@@ -265,12 +261,12 @@ la_source_group_t
 void
 reset_counts(void)
 {
-        assert_list(la_config->source_groups);
+        assert_list(&la_config->source_groups);
 
-        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(la_config->source_groups);
+        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(&la_config->source_groups);
                         (source_group = NEXT_SOURCE_GROUP(source_group));)
         {
-                for (la_rule_t *rule = ITERATE_RULES(source_group->rules);
+                for (la_rule_t *rule = ITERATE_RULES(&source_group->rules);
                                 (rule = NEXT_RULE(rule));)
                         rule->invocation_count = rule->detection_count = 0;
         }

@@ -115,8 +115,8 @@ init_watching(void)
         la_debug_func(NULL);
 
 #ifndef NOWATCH
-        assert(la_config); assert_list(la_config->source_groups);
-        if (!is_list_empty(la_config->source_groups))
+        assert(la_config); assert_list(&la_config->source_groups);
+        if (!is_list_empty(&la_config->source_groups))
         {
 #if HAVE_INOTIFY
                 init_watching_inotify();
@@ -124,11 +124,11 @@ init_watching(void)
 
                 xpthread_mutex_lock(&config_mutex);
                         for (la_source_group_t *source_group = 
-                                        ITERATE_SOURCE_GROUPS(la_config->source_groups);
+                                        ITERATE_SOURCE_GROUPS(&la_config->source_groups);
                                         (source_group = NEXT_SOURCE_GROUP(source_group));)
                         {
                                 for (la_source_t *source = ITERATE_SOURCES(
-                                                        source_group->sources);
+                                                        &source_group->sources);
                                                 (source = NEXT_SOURCE(source));)
                                 {
                                         watch_source(source, SEEK_END);
@@ -153,8 +153,8 @@ start_watching_threads(void)
         init_watching();
 
 #ifndef NOWATCH
-        assert(la_config); assert_list(la_config->source_groups);
-        if (!is_list_empty(la_config->source_groups))
+        assert(la_config); assert_list(&la_config->source_groups);
+        if (!is_list_empty(&la_config->source_groups))
         {
 #if HAVE_INOTIFY
                 start_watching_inotify_thread();
@@ -183,20 +183,16 @@ shutdown_watching(void)
 #ifndef NOWATCH
         assert(la_config);
 
-	/* Bail out if configuration is currently not available (e.g.
-	 * during a reload*/
-	if (!la_config->source_groups)
-		return;
-
-        if (!is_list_empty(la_config->source_groups))
+        assert_list(&la_config->source_groups);
+        if (!is_list_empty(&la_config->source_groups))
         {
                 xpthread_mutex_lock(&config_mutex);
                 for (la_source_group_t *source_group = 
-                                ITERATE_SOURCE_GROUPS(la_config->source_groups);
+                                ITERATE_SOURCE_GROUPS(&la_config->source_groups);
                                 (source_group = NEXT_SOURCE_GROUP(source_group));)
                 {
                         for (la_source_t *source = ITERATE_SOURCES(
-                                                source_group->sources);
+                                                &source_group->sources);
                                         (source = NEXT_SOURCE(source));)
                         {
                                 unwatch_source(source);

@@ -89,7 +89,7 @@ la_property_t *
 get_property_from_property_list(const kw_list_t *const property_list,
                 const char *const name)
 {
-        assert(name);
+        assert_list(property_list); assert(name);
         la_vdebug_func(name);
 
         if (!property_list)
@@ -119,6 +119,7 @@ const char *
 get_value_from_property_list(const kw_list_t *const property_list,
                 const char *const name)
 {
+        assert_list(property_list); assert(name);
         const la_property_t *const property = get_property_from_property_list(
                                 property_list, name);
 
@@ -298,19 +299,22 @@ duplicate_property(const la_property_t *const property)
         return result;
 }
 
+void copy_property_list(kw_list_t *const dest, const kw_list_t *const source)
+{
+        assert_list(dest); assert_list(source);
+        for (la_property_t *property = ITERATE_PROPERTIES(source);
+                        (property = NEXT_PROPERTY(property));)
+                add_tail(dest, (kw_node_t *) duplicate_property(property));
+}
+
 kw_list_t *
 dup_property_list(const kw_list_t *const list)
 {
-        assert_list(list);
         la_vdebug_func(NULL);
 
         kw_list_t *const result = create_list();
+        copy_property_list(result, list);
 
-        for (la_property_t *property = ITERATE_PROPERTIES(list);
-                        (property = NEXT_PROPERTY(property));)
-                add_tail(result, (kw_node_t *) duplicate_property(property));
-
-        assert_list(result);
         return result;
 }
 

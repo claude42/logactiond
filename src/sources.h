@@ -46,8 +46,14 @@
 #define assert_source_group(SOURCE_GROUP) assert_source_group_ffl(SOURCE_GROUP, __func__, __FILE__, __LINE__)
 #endif /* NDEBUG */
 
+#define empty_source_list(list) \
+        empty_list(list, (void (*)(void *const)) free_source)
+
 #define free_source_list(list) \
         free_list(list, (void (*)(void *const)) free_source)
+
+#define empty_source_group_list(list) \
+        empty_list(list, (void (*)(void *const)) free_source_group)
 
 #define free_source_group_list(list) \
         free_list(list, (void (*)(void *const)) free_source_group)
@@ -61,15 +67,15 @@ struct la_source_group_s
         /* Specified path, potentially glob pattern */
         char *glob_pattern;
         /* All source files */
-        struct kw_list_s *sources;
+        struct kw_list_s sources;
         /* Rules assigned to log file */
-        struct kw_list_s *rules;
+        struct kw_list_s rules;
         /* Prefix to prepend before rule patterns */
         char *prefix;
         /* Next one is only used in systemd.c */
         /* systemd_units we're interested in */
 #if HAVE_LIBSYSTEMD
-        struct kw_list_s *systemd_units;
+        struct kw_list_s systemd_units;
 #endif /* HAVE_LIBSYSTEMD */
 };
 
