@@ -22,7 +22,9 @@
 #include <regex.h>
 
 #include "ndebug.h"
+#include "nodelist.h"
 #include "properties.h"
+#include "rules.h"
 
 #define ITERATE_PATTERNS(PATTERNS) (la_pattern_t *) &(PATTERNS)->head
 #define NEXT_PATTERN(PATTERN) (la_pattern_t *) (PATTERN->node.succ->succ ? PATTERN->node.succ : NULL)

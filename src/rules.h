@@ -19,12 +19,15 @@
 #ifndef __rules_h
 #define __rules_h
 
-#include "ndebug.h"
-#include "addresses.h"
-#include "sources.h"
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
 #include <stdatomic.h>
 #endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
+
+#include "ndebug.h"
+#include "addresses.h"
+#include "sources.h"
+#include "nodelist.h"
+#include "rules.h"
 
 // maximum number of tokens that can be matched
 
