@@ -582,8 +582,13 @@ free_address(la_address_t *const address)
 
         la_vdebug_func(address->text);
 
-        if (address->domainname)
-                free(address->domainname);
+        free(address->domainname);
+#ifndef NOCRYPTO
+#ifdef WITH_LIBSODIUM
+        free(address->key);
+        free(address->salt);
+#endif /* WITH_LIBSODIUM */
+#endif /* NOCRYPTO */
 
         free(address);
 }

@@ -29,6 +29,7 @@
 #include "logging.h"
 #include "messages.h"
 #include "addresses.h"
+#include "misc.h"
 
 #ifdef WITH_LIBSODIUM
 #include <sodium.h>
@@ -78,7 +79,10 @@ static bool
 same_salt_as_before(const unsigned char *const buffer, la_address_t *const from_addr)
 {
         assert(buffer); assert_address(from_addr);
-        return !sodium_memcmp(&(from_addr->salt), &buffer[SALT_IDX],
+        if (!from_addr->salt)
+                return NULL;
+        else
+                return !sodium_memcmp(from_addr->salt, &buffer[SALT_IDX],
                                 crypto_pwhash_SALTBYTES);
 }
 
@@ -100,7 +104,12 @@ decrypt_message(char *const buffer, const char *const password,
         /* TODO: Refactor */
         if (!same_salt_as_before(ubuffer, from_addr))
         {
-                memcpy(&(from_addr->salt), &ubuffer[SALT_IDX], crypto_pwhash_SALTBYTES);
+                if (!from_addr->salt)
+                        from_addr->salt = xmalloc(crypto_pwhash_SALTBYTES);
+                memcpy(from_addr->salt, &ubuffer[SALT_IDX], crypto_pwhash_SALTBYTES);
+
+                if (!from_addr->key)
+                        from_addr->key = xmalloc(crypto_secretbox_KEYBYTES);
                 if (!generate_key(from_addr->key, crypto_secretbox_KEYBYTES,
                                         password, &ubuffer[SALT_IDX]))
                         LOG_RETURN_ERRNO(false, LOG_ERR,

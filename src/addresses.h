@@ -64,8 +64,8 @@ typedef struct la_address_s
         /* only used for hosts that we receive messages from */
 #ifndef NOCRYPTO
 #ifdef WITH_LIBSODIUM
-        unsigned char key[crypto_secretbox_KEYBYTES];
-        unsigned char salt[crypto_pwhash_SALTBYTES];
+        unsigned char *key;
+        unsigned char *salt;
 #endif /* WITH_LIBSODIUM */
 #endif /* NOCRYPTO */
 } la_address_t;
