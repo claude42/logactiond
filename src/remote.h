@@ -23,6 +23,8 @@
 
 extern pthread_t remote_thread;
 
+void send_message_to_all_remote_hosts(const char *message);
+
 void send_add_entry_message(const la_command_t *command, const la_address_t *address);
 
 void start_remote_thread(void);
