@@ -103,6 +103,18 @@ send_message_to_single_address(const char *const message,
                                 remote_address->text);
 }
 
+void
+send_message_to_all_remote_hosts(const char *const message)
+{
+        assert(la_config); assert_list(&la_config->remote_send_to);
+        for (const la_address_t *remote_address =
+                        ITERATE_ADDRESSES(&la_config->remote_send_to);
+                        (remote_address = NEXT_ADDRESS(remote_address));)
+        {
+                send_message_to_single_address(message, remote_address);
+        }
+}
+
 /*
  * Currently only called from trigger_command()
  */
@@ -139,19 +151,9 @@ send_add_entry_message(const la_command_t *const command, const la_address_t *co
 #endif /* WITH_LIBSODIUM */
 
         if (address)
-        {
                 send_message_to_single_address(message, address);
-        }
         else
-        {
-                assert_list(&la_config->remote_send_to);
-                for (la_address_t *remote_address =
-                                ITERATE_ADDRESSES(&la_config->remote_send_to);
-                                (remote_address = NEXT_ADDRESS(remote_address));)
-                {
-                        send_message_to_single_address(message, remote_address);
-                }
-        }
+                send_message_to_all_remote_hosts(message);
 }
 
 /*

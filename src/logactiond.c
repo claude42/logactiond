@@ -374,17 +374,12 @@ sync_with_other_instances(void)
         char message[TOTAL_MSG_LEN];
         if (!init_sync_message(message, NULL))
                 LOG_RETURN(, LOG_ERR, "Unable to create sync message");
-        la_log(LOG_INFO, "msg: %s", message);
 #ifdef WITH_LIBSODIUM
         if (!encrypt_message(message))
                 LOG_RETURN(, LOG_ERR, "Unable to encrypt sync message");
 #endif /* WITH_LIBSODIUM */
 
-        assert_list(&la_config->remote_send_to);
-        for (la_address_t *remote_address =
-                        ITERATE_ADDRESSES(&la_config->remote_send_to);
-                        (remote_address = NEXT_ADDRESS(remote_address));)
-                send_message_to_single_address(message, remote_address);
+        send_message_to_all_remote_hosts(message);
 }
 
 /* Run with correct UID. Correct if,
