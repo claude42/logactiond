@@ -286,14 +286,8 @@ duplicate_property(const la_property_t *const property)
         la_vdebug_func(property->name);
         la_property_t *const result = create_node(sizeof *result, 0, NULL);
 
-        string_copy(result->name, MAX_PROP_SIZE, property->name, 0, '\0');
-        result->is_host_property = property->is_host_property;
-        string_copy(result->value, MAX_PROP_SIZE, property->value, 0, '\0');
+        *result = *property;
         result->replacement = xstrdup(property->replacement);
-        result->replacement_braces = property->replacement_braces;
-        result->pos = property->pos;
-        result->length = property->length;
-        result->subexpression = property->subexpression;
 
         assert_property(result);
         return result;

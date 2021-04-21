@@ -517,6 +517,12 @@ init_address_port(la_address_t *const addr, const char *const host, const in_por
 
         freeaddrinfo(ai);
 
+#ifndef NOCRYPTO
+#ifdef WITH_LIBSODIUM
+        addr->key = addr->salt = NULL;
+#endif /* WITH_LIBSODIUM */
+#endif /* NOCRYPTO */
+
         return true;
 }
 
@@ -560,9 +566,7 @@ dup_address(const la_address_t *const address)
 
         la_address_t *const result = create_node0(sizeof *result, 0, NULL);
 
-        memcpy(&(result->sa), &(address->sa), sizeof (struct sockaddr_storage));
-        result->prefix = address->prefix;
-        string_copy(result->text, MAX_ADDR_TEXT_SIZE + 1, address->text, 0, '\0');
+        *result = *address;
         result->domainname = xstrdup(address->domainname);
 
         assert_address(result);
