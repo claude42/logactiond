@@ -80,9 +80,11 @@ convert_to_dnsbl_hostname_sa(const struct sockaddr *const sa,
         if (sa->sa_family == AF_INET)
                 r = convert_to_dnsbl_hostname_4_sa((struct  sockaddr_in *) sa,
                                 dnsbl_domainname,  hostname);
-        else
+        else if (sa->sa_family == AF_INET6)
                 r = convert_to_dnsbl_hostname_6_sa((struct  sockaddr_in6 *) sa,
                                 dnsbl_domainname,  hostname);
+        else
+                return false;
 
         if (r>=NI_MAXHOST)
                 return false;
