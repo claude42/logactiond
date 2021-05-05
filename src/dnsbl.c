@@ -97,7 +97,7 @@ convert_to_dnsbl_hostname_sa(const struct sockaddr *const sa,
                         return false;
 
                 hostname[r] = '.';
-                hostname[r+] = '\0';
+                hostname[r+1] = '\0';
         }
 
         return true;
