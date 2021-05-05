@@ -35,6 +35,7 @@
 #if HAVE_LIBSYSTEMD
 #include <systemd/sd-journal.h>
 #endif /* HAVE_LIBSYSTEMD */
+#include <time.h>
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -93,7 +94,9 @@ log_message_va_list(int priority, const char *const fmt, va_list gp,
 #endif /* HAVE_LIBSYSTEMD */
                         break;
                 case LA_DAEMON_FOREGROUND:
-                        fprintf(stderr, "<%i>", priority);
+                        /* TODO: use flockfile() around all the separate printf
+                         * statements */
+                        fprintf(stderr, "<%i> %u:", priority, time(NULL));
                         /* intentional fall through! */
                 case LA_UTIL_FOREGROUND:
 #if HAVE_PTHREAD_GETNAME_NP

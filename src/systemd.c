@@ -82,6 +82,8 @@ cleanup_watching_systemd(void *const arg)
 
         if (journal)
                 sd_journal_close(journal);
+
+        systemd_watch_thread = 0;
 }
 
 noreturn static void *

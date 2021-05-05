@@ -93,9 +93,9 @@ static void
 dump_rule_diagnostics(FILE *const diag_file, const la_rule_t *const rule)
 {
         assert(diag_file), assert_rule(rule);
-        la_vdebug_func(rule->name);
+        la_vdebug_func(rule->node.nodename);
 
-        fprintf(diag_file, "%s, list length=%i\n", rule->name,
+        fprintf(diag_file, "%s, list length=%i\n", rule->node.nodename,
                         list_length(&rule->trigger_list));
 }
 
@@ -107,11 +107,11 @@ static void
 dump_single_rule(FILE *const rules_file, const la_rule_t *const rule)
 {
         assert(rules_file), assert_rule(rule);
-        la_vdebug_func(rule->name);
+        la_vdebug_func(rule->node.nodename);
         fprintf(rules_file, RULES_LINE,
-                        rule->enabled ? 'Y' : 'N', rule->name,
+                        rule->enabled ? 'Y' : 'N', rule->node.nodename,
                         rule->systemd_unit ? rule->systemd_unit : rule->service ? rule->service : "-",
-                        rule->source_group->name, rule->detection_count,
+                        rule->source_group->node.nodename, rule->detection_count,
                         rule->invocation_count, rule->queue_count);
 }
 
@@ -194,6 +194,8 @@ cleanup_monitoring(void *const arg)
                 la_log_errno(LOG_ERR, "Can't remove rule status file");
         if (status_monitoring >= 2 && remove(DIAGFILE) && errno != ENOENT)
                 la_log_errno(LOG_ERR, "Can't remove diagnostics file");
+
+        monitoring_thread = 0;
 }
 
 /*
@@ -289,7 +291,7 @@ dump_queue_status(const bool force)
                         /* Don't assert_command() here, as after a reload some
                          * commands might not have a rule attached to them
                          * anymore */
-                        assert(command); assert(command->name);
+                        assert(command); assert(command->node.nodename);
                         /* not interested in shutdown commands (or anything
                          * beyond...) */
                         if (command->end_time == INT_MAX)
@@ -336,12 +338,12 @@ dump_queue_status(const bool force)
                                 fprintf(hosts_file, HOSTS_LINE_V, adr, type,
                                                 command->factor, timedelta,
                                                 unit, command->rule_name,
-                                                command->name, depth1, depth2);
+                                                command->node.nodename, depth1, depth2);
                         else
                                 fprintf(hosts_file, HOSTS_LINE, adr, type,
                                                 command->factor, timedelta,
                                                 unit, command->rule_name,
-                                                command->name);
+                                                command->node.nodename);
                 }
 
                 if (status_monitoring >= 2 || force)

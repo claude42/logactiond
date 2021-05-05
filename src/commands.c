@@ -47,8 +47,6 @@
 #include "metacommands.h"
 #include "nodelist.h"
 
-static kw_list_t *meta_list;
-
 void
 assert_command_ffl(const la_command_t *command, const char *func,
                 const char *file, int line)
@@ -56,7 +54,7 @@ assert_command_ffl(const la_command_t *command, const char *func,
         if (!command)
                 die_hard(false, "%s:%u: %s: Assertion 'command' failed. ",
                                 file, line, func);
-        if (!command->name)
+        if (!command->node.nodename)
                 die_hard(false, "%s:%u: %s: Assertion 'command->name' failed.",
                                 file, line, func);
 
@@ -107,7 +105,7 @@ assert_command_ffl(const la_command_t *command, const char *func,
                 die_hard(false, "%s:%u: %s: Assertion 'command->duration >= -1' "
                                 "failed. ", file, line, func);
 
-        if (strcmp(command->rule->name, command->rule_name))
+        if (strcmp(command->rule->node.nodename, command->rule_name))
                 die_hard(false, "%s:%u: %s: Assertion 'strcmp(command->rule->name, "
                                 "command->rule_name)' failed. ", file, line,
                                 func);
@@ -147,7 +145,7 @@ check_for_special_names(const la_command_t *const command, const la_property_t *
 
         /* SOURCE */
         if (!strcmp(action_property->name, LA_SOURCENAME_TOKEN))
-                return command->rule->source_group->name;
+                return command->rule->source_group->node.nodename;
 
         return NULL;
 }
@@ -203,7 +201,7 @@ convert_command(la_command_t *const command, const la_commandtype_t type)
 {
         assert_command(command);
         assert(type == LA_COMMANDTYPE_BEGIN || type == LA_COMMANDTYPE_END);
-        la_debug("convert_command(%s, %s)", command->name,
+        la_debug("convert_command(%s, %s)", command->node.nodename,
                         type == LA_COMMANDTYPE_BEGIN ? "begin" : "end");
 
         if (!((type == LA_COMMANDTYPE_BEGIN &&
@@ -311,8 +309,8 @@ exec_command(const la_command_t *command, const la_commandtype_t type)
         /* Don't assert_command() here, as after a reload some commands might
          * not have a rule attached to them anymore */
         assert(command);
-        assert(command->name);
-        la_debug_func(command->name);
+        assert(command->node.nodename);
+        la_debug_func(command->node.nodename);
 
         const int result = system(type == LA_COMMANDTYPE_BEGIN ?
                         command->begin_string_converted :
@@ -323,15 +321,15 @@ exec_command(const la_command_t *command, const la_commandtype_t type)
                 break;
         case -1:
                 la_log(LOG_ERR, "Could not create child process for "
-                                "action \"%s\".", command->name);
+                                "action \"%s\".", command->node.nodename);
                 break;
         case 127:
                 la_log(LOG_ERR, "Could not execute shell for action "
-                                "\"%s\".", command->name);
+                                "\"%s\".", command->node.nodename);
                 break;
         default:
                 la_log(LOG_ERR, "Action \"%s\" returned with error "
-                                "code %d.", command->name, result);
+                                "code %d.", command->node.nodename, result);
                 la_log(LOG_ERR, "Tried to execute \"%s\"",
                                 type == LA_COMMANDTYPE_BEGIN ?
                                 command->begin_string_converted :
@@ -364,14 +362,14 @@ log_trigger(const la_command_t *const command, const la_address_t *const from_ad
                 if (command->factor)
                         la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
                                         "by host %s, rule \"%s\" (factor %d).",
-                                        command->address->text, command->name,
+                                        command->address->text, command->node.nodename,
                                         ADDRESS_NAME(from_addr),
                                         command->rule_name,
                                         command->factor);
                 else
                         la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
                                         "by host %s, rule \"%s\".",
-                                        command->address->text, command->name,
+                                        command->address->text, command->node.nodename,
                                         ADDRESS_NAME(from_addr),
                                         command->rule_name);
         }
@@ -379,22 +377,22 @@ log_trigger(const la_command_t *const command, const la_address_t *const from_ad
         {
                 /* template */
                 la_log_verbose(LOG_INFO, "Initializing action \"%s\" for "
-                                "rule \"%s\", source \"%s\".", command->name,
+                                "rule \"%s\", source \"%s\".", command->node.nodename,
                                 command->rule_name,
-                                command->rule->source_group->name);
+                                command->rule->source_group->node.nodename);
         }
         else if (!command->address)
         {
                 /* command without associated address */
                 la_log(LOG_INFO, "Action \"%s\" activated by rule \"%s\".",
-                                command->name, command->rule_name);
+                                command->node.nodename, command->rule_name);
         }
         else if (command->rule->meta_enabled)
         {
                 /* command with factor */
                 la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
                                 "by rule \"%s\" (factor %d).",
-                                command->address->text, command->name,
+                                command->address->text, command->node.nodename,
                                 command->rule_name, command->factor);
         }
         else
@@ -402,7 +400,7 @@ log_trigger(const la_command_t *const command, const la_address_t *const from_ad
                 /* command w/o factor */
                 la_log(LOG_INFO, "Host: %s, action \"%s\" activated "
                                 "by rule \"%s\".",
-                                command->address->text, command->name,
+                                command->address->text, command->node.nodename,
                                 command->rule_name);
         }
 }
@@ -441,7 +439,7 @@ trigger_manual_command(const la_address_t *const address,
                 LOG_RETURN_VERBOSE(, LOG_INFO, "Host: %s, ignored, action \"%s\" "
                                 "%s%s already "
                                 "active (triggered by rule \"%s\").",
-                                address->text, tmp_cmd->name, 
+                                address->text, tmp_cmd->node.nodename, 
                                 from_addr ? "by host " : "",
                                 from_addr ? from_addr->text : "",
                                 tmp_cmd->rule_name);
@@ -484,7 +482,7 @@ void
 trigger_command(la_command_t *const command)
 {
         assert_command(command);
-        la_debug("trigger_command(%s, %d)", command->name, command->duration);
+        la_debug("trigger_command(%s, %d)", command->node.nodename, command->duration);
 
         if (run_type == LA_UTIL_FOREGROUND)
                 return;
@@ -505,13 +503,6 @@ trigger_command(la_command_t *const command)
         exec_command(command, LA_COMMANDTYPE_BEGIN);
 }
 
-void
-trigger_command_from_blacklist(la_command_t *const command)
-{
-        command->previously_on_blacklist = true;
-        trigger_command(command);
-}
-
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
 
 static void
@@ -522,10 +513,10 @@ log_end_trigger(const la_command_t *const command)
         else if (command->address)
                 la_log(LOG_INFO, "Host: %s, action \"%s\" ended for "
                                 "rule \"%s\".", command->address->text,
-                                command->name, command->rule_name);
+                                command->node.nodename, command->rule_name);
         else
                 la_log(LOG_INFO, "Action \"%s\" ended for rule " "\"%s\".",
-                                command->name, command->rule_name);
+                                command->node.nodename, command->rule_name);
 }
 
 /*
@@ -543,7 +534,7 @@ trigger_end_command(const la_command_t *const command, const bool suppress_loggi
         /* Don't assert_command() here, as after a reload some commands might
          * not have a rule attached to them anymore */
         assert(command);
-        la_vdebug("trigger_end_command(%s, %d)", command->name,
+        la_vdebug("trigger_end_command(%s, %d)", command->node.nodename,
                         command->duration);
 
         /* condition used to be (!suppress_logging || log_verbose) but that was
@@ -615,9 +606,9 @@ static la_command_t *
 dup_command(const la_command_t *const command)
 {
         assert_command(command);
-        la_vdebug("dup_command(%s)", command->name);
+        la_vdebug("dup_command(%s)", command->node.nodename);
 
-        la_command_t *const result = create_node0(sizeof *result, 0, NULL);
+        la_command_t *const result = create_node0(sizeof *result, 0, command->node.nodename);
 
         result->id = command->id;
 
@@ -628,7 +619,6 @@ dup_command(const la_command_t *const command)
         result->adr_node.payload = result;
         result->end_time_node.payload = result;
 
-        result->name = xstrdup(command->name);
         result->begin_string = xstrdup(command->begin_string);
         init_list(&result->begin_properties);
         copy_property_list(&result->begin_properties, &command->begin_properties);
@@ -686,7 +676,7 @@ create_command_from_template(const la_command_t *const template,
         assert_list(&pattern->properties);
         if (address)
                 assert_address(address);
-        la_debug_func(template->name);
+        la_debug_func(template->node.nodename);
 
         if (!has_correct_address(template, address))
                 return NULL;
@@ -728,7 +718,7 @@ create_manual_command_from_template(const la_command_t *const template,
         assert_command(template);
         if (address)
                 assert_address(address);
-        la_debug_func(template->name);
+        la_debug_func(template->node.nodename);
 
         if (!has_correct_address(template, address))
                 return NULL;
@@ -769,9 +759,8 @@ create_template(const char *const name, la_rule_t *const rule,
         assert(name); assert_rule(rule); assert(begin_string);
         la_debug("create_template(%s, %d)", name, duration);
 
-        la_command_t *const result = create_node0(sizeof *result, 0, NULL);
+        la_command_t *const result = create_node0(sizeof *result, 0, name);
 
-        result->name = xstrdup(name);
         result->id = ++id_counter;
         result->is_template = true;
 
@@ -795,7 +784,7 @@ create_template(const char *const name, la_rule_t *const rule,
 
         /* Will be used to restore queue counters on reload. Yes, it's a bit
          * ugly but such is life... */
-        result->rule_name = xstrdup(rule->name);
+        result->rule_name = xstrdup(rule->node.nodename);
 
         init_list(&result->pattern_properties);
 
@@ -814,9 +803,10 @@ free_command(la_command_t *const command)
         if (!command)
                 return;
 
-        la_vdebug("free_command(%s)", command->name);
+        la_vdebug("free_command(%s)", command->node.nodename);
 
-        free(command->name);
+        free(command->node.nodename);
+
         free(command->begin_string);
         free(command->begin_string_converted);
         free(command->end_string);

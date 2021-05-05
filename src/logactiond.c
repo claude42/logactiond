@@ -106,9 +106,9 @@ trigger_shutdown(int status, int saved_errno)
         if (monitoring_thread)
                 pthread_cancel(monitoring_thread);
 #endif /* NOMONITORING */
-        if (fifo_thread)
+        if (fifo_thread && pthread_self() != fifo_thread)
                 pthread_cancel(fifo_thread);
-        if (remote_thread)
+        if (remote_thread && pthread_self() != remote_thread)
                 pthread_cancel(remote_thread);
         if (save_state_thread)
                 pthread_cancel(save_state_thread);

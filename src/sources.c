@@ -52,7 +52,7 @@ assert_source_group_ffl(const la_source_group_t *source_group, const char *func,
         if (!source_group)
                 die_hard(false, "%s:%u: %s: Assertion 'source_group' failed.",
                                 file, line, func);
-        if (!source_group->name)
+        if (!source_group->node.nodename)
                 die_hard(false, "%s:%u: %s: Assertion 'source->name' failed.",
                                 file, line, func);
         if (!source_group->glob_pattern)
@@ -130,8 +130,7 @@ create_source_group(const char *const name, const char *const glob_pattern,
         assert(name);
         la_debug("create_source_group(%s, %s, %s)", name, glob_pattern, prefix);
 
-        la_source_group_t *const result = create_node(sizeof *result, 0, NULL);
-        result->name = xstrdup(name);
+        la_source_group_t *const result = create_node(sizeof *result, 0, name);
         result->glob_pattern = xstrdup(glob_pattern);
         result->prefix = xstrdup(prefix);
         init_list(&result->sources);
@@ -153,7 +152,7 @@ la_source_t *
 create_source(la_source_group_t *const source_group, const char *const location)
 {
         assert_source_group(source_group); assert(location);
-        la_debug("create_source(%s, %s)", source_group->name, location);
+        la_debug("create_source(%s, %s)", source_group->node.nodename, location);
 
         la_source_t *const result = create_node(sizeof *result, 0, NULL);
         result->source_group = source_group;
@@ -196,9 +195,10 @@ free_source_group(la_source_group_t *const source_group)
         if (!source_group)
                 return;
 
-        la_vdebug_func(source_group->name);
+        la_vdebug_func(source_group->node.nodename);
 
-        free(source_group->name);
+        free(source_group->node.nodename);
+
         free(source_group->glob_pattern);
 
         empty_source_list(&source_group->sources);
@@ -251,7 +251,7 @@ la_source_group_t
         for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(&la_config->source_groups);
                         (source_group = NEXT_SOURCE_GROUP(source_group));)
         {
-                if (!strcmp(name, source_group->name))
+                if (!strcmp(name, source_group->node.nodename))
                         return source_group;
         }
 

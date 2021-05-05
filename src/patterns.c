@@ -81,6 +81,7 @@ static void add_property(la_pattern_t *const pattern, la_property_t *const prope
 static void
 convert_regex(const char *const string, la_pattern_t *const pattern)
 {
+        /* TODO: don't remember, why not just assert_pattern() here?! */
         assert(string); assert(pattern); assert_rule(pattern->rule);
         assert_list(&pattern->properties);
         la_vdebug_func(string);
@@ -227,7 +228,6 @@ create_pattern(const char *const string_from_configfile,
 
         la_pattern_t *const result = create_node(sizeof *result, 0, NULL);
 
-        result->node.pri = 0;
         result->num = num;
         result->rule = rule;
         result->host_property = NULL;

@@ -48,10 +48,10 @@ assert_rule_ffl(const la_rule_t *rule, const char *func, const char *file, int l
         if (!rule)
                 die_hard(false, "%s:%u: %s: Assertion 'rule' failed. ", file,
                                 line, func);
-        if (!rule->name)
+        if (!rule->node.nodename)
                 die_hard(false, "%s:%u: %s: Assertion 'rule->name' failed. ",
                                 file, line, func);
-        if (strlen(rule->name) >= RULE_LENGTH)
+        if (strlen(rule->node.nodename) >= RULE_LENGTH)
                 die_hard(false, "%s:%u: %s: Assertion 'strlen(rule->name) < "
                                 "RULE_LENGTH' failed. ", file, line, func);
 
@@ -82,8 +82,8 @@ assert_rule_ffl(const la_rule_t *rule, const char *func, const char *file, int l
                 die_hard(false, "%s:%u: %s: Assertion 'rule->invocation_count "
                                 ">= 0' failed. ", file, line, func);
         if (rule->queue_count < 0)
-                die_hard(false, "%s:%u: %s: Assertion 'rule->queue_count >= 0' "
-                                "failed. ", file, line, func);
+                die_hard(false, "%s:%u: %s: Assertion 'rule(%s)->queue_count >= 0' "
+                                "failed. ", rule->node.nodename, file, line, func);
         assert_list_ffl(&rule->blacklists, func, file, line);
 }
 
@@ -96,13 +96,11 @@ static void
 add_trigger(la_command_t *command, time_t now)
 {
         assert_command(command);
-        la_debug_func( command->name);
+        la_debug_func(command->node.nodename);
 
         command->start_time = now;
 
         add_head(&command->rule->trigger_list, (kw_node_t *) command);
-
-        assert_list(&command->rule->trigger_list);
 }
 
 /*
@@ -150,6 +148,37 @@ find_trigger(const la_command_t *const template, const la_address_t *const addre
         return NULL;
 }
 
+static void
+update_n_triggers(la_command_t *const command)
+{
+        assert_command(command);
+        la_vdebug_func(command->node.nodename);
+
+        const time_t now = xtime(NULL);
+
+        if (now - command->start_time > command->rule->period)
+        {
+                /* not within current period anymore - reset counter and period
+                 */
+                command->start_time = now;
+                command->n_triggers = 0;
+        }
+
+        command->n_triggers++;
+}
+
+static void
+trigger_then_enqueue_or_free(la_command_t *const command, const bool remove_command)
+{
+        if (remove_command)
+                remove_node((kw_node_t *) command);
+        trigger_command(command);
+        if (command->end_string && command->duration > 0)
+                enqueue_end_command(command, 0);
+        else
+                free_command(command);
+}
+
 /*
  * - Add command to trigger list if not in there yet.
  * - Increase counter by one.
@@ -161,27 +190,15 @@ static void
 handle_command_on_trigger_list(la_command_t *const command)
 {
         assert_command(command);
-        la_debug_func(command->name);
-
-        const time_t now = xtime(NULL);
+        la_debug_func(command->node.nodename);
 
         /* new commands not on the trigger_list yet have n_triggers == 0 */
         if (command->n_triggers == 0)
-                add_trigger(command, now);
+                add_trigger(command, xtime(NULL));
 
-        if (now - command->start_time < command->rule->period)
-        {
-                /* still within current period - increase counter,
-                 * trigger if necessary */
-                command->n_triggers++;
-        }
-        else
-        {
-                /* if not, reset counter and period */
-                command->start_time = now;
-                command->n_triggers = 1;
-        }
+        update_n_triggers(command);
 
+        assert_address(command->address);
         la_log(LOG_INFO, "Host: %s, trigger %u for rule \"%s\".",
                         command->address->text,
                         command->n_triggers,
@@ -189,14 +206,7 @@ handle_command_on_trigger_list(la_command_t *const command)
 
         /* Trigger if > threshold */
         if (command->n_triggers >= command->rule->threshold)
-        {
-                remove_node((kw_node_t *) command);
-                trigger_command(command);
-                if (command->end_string && command->duration > 0)
-                        enqueue_end_command(command, 0);
-                else
-                        free_command(command);
-        }
+                trigger_then_enqueue_or_free(command, true);
 }
 
 /*
@@ -209,27 +219,22 @@ trigger_if_on_dnsbl(la_command_t *command, bool from_trigger_list)
 {
         assert_command(command);
 
-        bool triggered = false;
+        /* If threshold == 1 there's no point in doing the lookup... */
+        if (!command->rule->dnsbl_enabled || command->rule->threshold == 1)
+                return false;
 
-        if  (command->rule->dnsbl_enabled && command->rule->threshold > 1)
-        {
-                const char *blname = command_address_on_dnsbl(command);
-                if (blname)
-                {
-                        la_log(LOG_INFO, "Host: %s blacklisted on %s.",
-                                        command->address->text, blname);
-                        if (from_trigger_list)
-                                remove_node((kw_node_t *) command);
-                        trigger_command_from_blacklist(command);
-                        if (command->end_string && command->duration > 0)
-                                enqueue_end_command(command, 0);
-                        else
-                                free_command(command);
-                        triggered = true;
-                }
-        }
+        const char *const blname = command_address_on_dnsbl(command);
+        if (!blname)
+                return false;
 
-        return triggered;
+        assert_address(command->address);
+        la_log(LOG_INFO, "Host: %s blacklisted on %s.",
+                        command->address->text, blname);
+
+        command->previously_on_blacklist = true;
+        trigger_then_enqueue_or_free(command, from_trigger_list);
+
+        return true;
 }
 
 /*
@@ -249,7 +254,7 @@ trigger_single_command(la_pattern_t *const pattern,
                 return;
 
         assert_pattern(pattern); assert_command(template);
-        la_debug_func(template->name);
+        la_debug_func(template->node.nodename);
 
         la_command_t *command = NULL;
 
@@ -263,7 +268,7 @@ trigger_single_command(la_pattern_t *const pattern,
                         LOG_RETURN_VERBOSE(, LOG_INFO, "Host: %s, ignored, "
                                         "action \"%s\" already active "
                                         "(triggered by rule \"%s\").",
-                                        address->text, command->name,
+                                        address->text, command->node.nodename,
                                         command->rule_name);
 
                 /* Check whether the same command has been triggered (but not yet
@@ -277,8 +282,8 @@ trigger_single_command(la_pattern_t *const pattern,
                  * property exists */
                 LOG_RETURN(, LOG_ERR, "Missing required host token, action "
                                 "\"%s\" not fired for rule \"%s\"!",
-                                template->name,
-                                pattern->rule->name);
+                                template->node.nodename,
+                                pattern->rule->node.nodename);
         }
 
         const bool from_trigger_list = command;
@@ -329,7 +334,7 @@ static void
 trigger_all_commands(la_pattern_t *const pattern)
 {
         assert_pattern(pattern);
-        la_debug("trigger_all_commands(%s, %s)", pattern->rule->name, pattern->string);
+        la_debug("trigger_all_commands(%s, %s)", pattern->rule->node.nodename, pattern->string);
 
         const char *host = NULL;
         la_address_t address = { 0 };
@@ -397,7 +402,7 @@ assign_value_to_properties(const kw_list_t *const property_list,
                 const char *const line, regmatch_t pmatch[])
 {
         assert_list(property_list); assert(line);
-        la_debug_func(NULL);
+        la_vdebug_func(NULL);
 
         for (la_property_t *property = ITERATE_PROPERTIES(property_list);
                         (property = NEXT_PROPERTY(property));)
@@ -420,7 +425,7 @@ static void
 clear_property_values(const kw_list_t *const property_list)
 {
         assert_list(property_list);
-        la_debug_func(NULL);
+        la_vdebug_func(NULL);
 
         for (la_property_t *property = ITERATE_PROPERTIES(property_list);
                         (property = NEXT_PROPERTY(property));)
@@ -436,7 +441,7 @@ bool
 handle_log_line_for_rule(const la_rule_t *const rule, const char *const line)
 {
         assert_rule(rule); assert(line);
-        la_vdebug("handle_log_line_for_rule(%s, %s)", rule->name, line);
+        la_vdebug("handle_log_line_for_rule(%s, %s)", rule->node.nodename, line);
 
         for (la_pattern_t *pattern = ITERATE_PATTERNS(&rule->patterns);
                         (pattern = NEXT_PATTERN(pattern));)
@@ -450,9 +455,7 @@ handle_log_line_for_rule(const la_rule_t *const rule, const char *const line)
                          * have to be cleared afterwards */
                         if (assign_value_to_properties(&pattern->properties,
                                                 line, pmatch))
-                        {
                                 trigger_all_commands(pattern);
-                        }
                         else
                                 la_log(LOG_ERR, "Matched property too long, "
                                                 "log line ignored");
@@ -490,23 +493,21 @@ create_rule(const bool enabled, const char *const name,
                 const int dnsbl_enabled, const char *service,
                 const char *systemd_unit)
 {
-        assert(source_group);
+        assert_source_group(source_group);
         la_debug_func(name);
 
         if (!name)
                 die_hard(false, "No rule name specified!");
         if (strchr(name, ','))
                 die_hard(false, "Rule name may not contain a ','!");
-        if (xstrlen(name) >= RULE_LENGTH)
+        if (strlen(name) >= RULE_LENGTH)
                 die_hard(false, "Rulename too long - must be less than %u "
                                 "characters!", RULE_LENGTH);
 
-        la_rule_t *const result = create_node(sizeof *result, 0, NULL);
+        la_rule_t *const result = create_node(sizeof *result, 0, name);
 
-        result->node.pri = 0;
         result->enabled = enabled;
 
-        result->name = xstrdup(name);
         result->id = ++id_counter;
         result->source_group = source_group;
 
@@ -561,7 +562,7 @@ free_rule(la_rule_t *const rule)
         if (!rule)
                 return;
 
-        la_vdebug_func(rule->name);
+        la_vdebug_func(rule->node.nodename);
 
 #if HAVE_LIBSYSTEMD
         free(rule->systemd_unit);
@@ -574,7 +575,7 @@ free_rule(la_rule_t *const rule)
         empty_property_list(&rule->properties);
         empty_list(&rule->blacklists, NULL);
 
-        free(rule->name);
+        free(rule->node.nodename);
 
         free(rule);
 }
@@ -584,13 +585,13 @@ static la_rule_t *
 find_rule_for_source_group(const la_source_group_t *const source_group,
                 const char *const rule_name)
 {
-        assert(source_group); assert(rule_name);
+        assert_source_group(source_group); assert(rule_name);
         la_debug_func(rule_name);
 
         for (la_rule_t *result = ITERATE_RULES(&source_group->rules);
                         (result = NEXT_RULE(result));)
         {
-                if (!strcmp(rule_name, result->name))
+                if (!strcmp(rule_name, result->node.nodename))
                         return result;
         }
 

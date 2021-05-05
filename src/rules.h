@@ -59,7 +59,6 @@ struct la_rule_s
 {
         struct kw_node_s node;
         bool enabled;
-        char *name;
         int id;
         struct la_source_group_s *source_group;
         char *service;

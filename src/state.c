@@ -159,7 +159,7 @@ restore_state(const bool create_backup_file)
                 if (parse_result)
                         la_vdebug("adr: %s, rule: %s, end_time: %lu, factor: %u",
                                         address.text[0] ? address.text : "no address",
-                                        rule ? rule->name : "no rule",
+                                        rule ? rule->node.nodename : "no rule",
                                         end_time, factor);
                 else
                         la_vdebug("parse_add_entry_message()==0");

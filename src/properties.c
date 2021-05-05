@@ -89,11 +89,12 @@ la_property_t *
 get_property_from_property_list(const kw_list_t *const property_list,
                 const char *const name)
 {
-        assert_list(property_list); assert(name);
+        assert(name);
         la_vdebug_func(name);
 
         if (!property_list)
                 return NULL;
+        assert_list(property_list);
 
         for (la_property_t *result = ITERATE_PROPERTIES(property_list);
                         (result = NEXT_PROPERTY(result));)

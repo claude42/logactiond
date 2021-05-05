@@ -58,7 +58,6 @@ struct la_command_s
         struct kw_node_s node;
         kw_tree_node_t adr_node;
         kw_tree_node_t end_time_node;
-        char *name;       /* name of action */
         int id;        /* unique id */
         bool is_template;       /* true for templates, false for derived commands */
         char *begin_string;        /* string with tokens */
@@ -103,8 +102,6 @@ void trigger_manual_command(const la_address_t *address,
                 const la_address_t *from_addr, bool suppress_logging);
 
 void trigger_command(la_command_t *command);
-
-void trigger_command_from_blacklist(la_command_t *command);
 
 void trigger_end_command(const la_command_t *command, bool suppress_logging);
 

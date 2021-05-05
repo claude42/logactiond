@@ -284,7 +284,7 @@ main(int argc, char *argv[])
         if (host && !password)
         {
                 password = xgetpass("Password: ");
-                if (password[0] == '\0')
+                if (!password || password[0] == '\0')
                         die_hard(false, "No password entered!");
         }
 

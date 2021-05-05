@@ -81,9 +81,23 @@ same_salt_as_before(const unsigned char *const buffer, la_address_t *const from_
         assert(buffer); assert_address(from_addr);
         if (!from_addr->salt)
                 return NULL;
-        else
-                return !sodium_memcmp(from_addr->salt, &buffer[SALT_IDX],
-                                crypto_pwhash_SALTBYTES);
+
+        return !sodium_memcmp(from_addr->salt, &buffer[SALT_IDX],
+                        crypto_pwhash_SALTBYTES);
+}
+
+static bool
+copy_salt_and_generate_key_for_address(const unsigned char *const ubuffer,
+                const char *const password, la_address_t *const from_addr)
+{
+        if (!from_addr->salt)
+                from_addr->salt = xmalloc(crypto_pwhash_SALTBYTES);
+        memcpy(from_addr->salt, &ubuffer[SALT_IDX], crypto_pwhash_SALTBYTES);
+
+        if (!from_addr->key)
+                from_addr->key = xmalloc(crypto_secretbox_KEYBYTES);
+        return generate_key(from_addr->key, crypto_secretbox_KEYBYTES,
+                                password, &ubuffer[SALT_IDX]);
 }
 
 /*
@@ -101,17 +115,10 @@ decrypt_message(char *const buffer, const char *const password,
 
         /* check wether salt is the same as last time for host. If not,
          * copy new salt and regenerate key */
-        /* TODO: Refactor */
         if (!same_salt_as_before(ubuffer, from_addr))
         {
-                if (!from_addr->salt)
-                        from_addr->salt = xmalloc(crypto_pwhash_SALTBYTES);
-                memcpy(from_addr->salt, &ubuffer[SALT_IDX], crypto_pwhash_SALTBYTES);
-
-                if (!from_addr->key)
-                        from_addr->key = xmalloc(crypto_secretbox_KEYBYTES);
-                if (!generate_key(from_addr->key, crypto_secretbox_KEYBYTES,
-                                        password, &ubuffer[SALT_IDX]))
+                if (!copy_salt_and_generate_key_for_address(ubuffer, password,
+                                from_addr))
                         LOG_RETURN_ERRNO(false, LOG_ERR,
                                         "Unable to generate receive key for "
                                         "host %s!", from_addr->text);

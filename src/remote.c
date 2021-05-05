@@ -320,6 +320,8 @@ cleanup_sync_all_entries(void *arg)
 {
         free(arg);
         sync_entries_thread_running = false;
+
+        remote_thread = 0;
 }
 
 /* 

@@ -93,6 +93,10 @@ assert_list_ffl(const kw_list_t *list, const char *func, const char *file,
                 assert_node_ffl(node, func, file, line);
 }
 
+/*
+ * Will strdup(nodename)!
+ */
+
 static void
 init_node(kw_node_t *node, const int pri, const char *const nodename)
 {
@@ -402,6 +406,7 @@ empty_list(kw_list_t *const list, void (*free_node)(void *const))
                 kw_node_t *const tmp = node;
                 node = node->succ;
                 free(tmp->nodename);
+                tmp->nodename = NULL;
                 if (free_node)
                         free_node(tmp);
                 else

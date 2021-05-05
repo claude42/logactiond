@@ -201,6 +201,8 @@ shutdown_watching(void)
                 xpthread_mutex_unlock(&config_mutex);
         }
 
+        file_watch_thread = 0;
+
 #endif /* NOWATCH */
 }
 

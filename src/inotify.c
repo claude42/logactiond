@@ -182,7 +182,7 @@ watched_file_created(la_source_t *const source)
         assert_source(source);
 
         la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been re-created.",
-                        source->source_group->name, source->location);
+                        source->source_group->node.nodename, source->location);
 
         /* unwatch not necessary in case of a previous IN_DELETE */
         if (source->file)
@@ -197,7 +197,7 @@ watched_file_created(la_source_t *const source)
         watch_source(source, SEEK_SET);
         if (!handle_new_content(source))
                 la_log(LOG_ERR, "Reading from source \"%s\", file \"%s\" failed.",
-                                source->source_group->name, source->location);
+                                source->source_group->node.nodename, source->location);
 }
 
 /*
@@ -211,7 +211,7 @@ watched_file_moved_from(la_source_t *const source)
         assert_source(source);
 
         la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been moved away.",
-                        source->source_group->name, source->location);
+                        source->source_group->node.nodename, source->location);
 
         /* Keep watching original file in case daemons are still logging
          * there. Switch only when new file is created. */
@@ -227,7 +227,7 @@ watched_file_moved_to(la_source_t *const source)
         assert_source(source);
 
         la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been moved to watched "
-                        "location.", source->source_group->name, source->location);
+                        "location.", source->source_group->node.nodename, source->location);
 
         /* unwatch not necessary in case of a previous IN_DELETE */
         if (source->file)
@@ -247,7 +247,7 @@ watched_file_deleted(la_source_t *const source)
         assert_source(source);
 
         la_log(LOG_INFO, "Source \"%s\" - file \"%s\" has been deleted.",
-                        source->source_group->name, source->location);
+                        source->source_group->node.nodename, source->location);
 
         unwatch_source(source);
 }
@@ -306,7 +306,7 @@ handle_inotify_file_event(const struct inotify_event *const event)
 
         if (!handle_new_content(source))
                 die_hard(true, "Reading from source \"%s\", file \"%s\" failed",
-                                source->source_group->name, source->location);
+                                source->source_group->node.nodename, source->location);
 }
 
 static void

@@ -67,15 +67,24 @@ inject_misc_exit_function(void (*exit_function)(bool log_strerror,
 
 #ifndef CLIENTONLY
 
+/* Returns true if pidfile has been successfuly removed (or didn't exist in the
+ * first place) */
+
 bool
 remove_pidfile(const char *const pidfile_name)
 {
-        return !(remove(pidfile_name) == -1 && errno != ENOENT);
+        assert(pidfile_name);
+
+        return remove(pidfile_name) == 0 || errno == ENOENT;
 }
+
+/* Will exit if pidfile cannot be created */
 
 void
 create_pidfile(const char *const pidfile_name)
 {
+        assert(pidfile_name);
+
         FILE *const stream = fopen(pidfile_name, "w");
         if (!stream)
                 misc_exit_function(true, "Unable to open pidfile");
@@ -93,28 +102,27 @@ check_pidfile(const char *const pidfile_name)
 {
 #define BUF_LEN 20 /* should be enough - I think */
 
-        bool result = true;
+        assert(pidfile_name);
 
         FILE *const stream = fopen(pidfile_name, "r");
 
-        if (stream)
-        {
-                unsigned int pid;
-                if (fscanf(stream, "%u", &pid) == 1)
-                        result = !(kill(pid, 0) == -1 && errno == ESRCH);
-                else
-                        result = false;
-
-                if (fclose(stream) == EOF)
-                        misc_exit_function(true, "Unable to close pidfile");
-        }
-        else
+        if (!stream)
         {
                 if (errno == ENOENT)
-                        result = false;
+                        return false;
                 else
                         misc_exit_function(true, "Unable to open pidfile");
         }
+
+        bool result;
+        unsigned int pid;
+        if (fscanf(stream, "%u", &pid) == 1)
+                result = !(kill(pid, 0) == -1 && errno == ESRCH);
+        else
+                result = false;
+
+        if (fclose(stream) == EOF)
+                misc_exit_function(true, "Unable to close pidfile");
 
         return result;
 }
@@ -363,7 +371,7 @@ concat(const char *s1, const char *s2)
  * Will return number of characters copied - unless available space in dest
  * would not have been enough - then will return -1.
  *
- * n must be >= 1.
+ * dest_size must be >= 1.
  * delim should be '\0' if no special delimiter is required.
  */
 
@@ -376,7 +384,7 @@ string_copy(char *const dest, const size_t dest_size, const char *const src,
         if (dest_size < 1)
                 return -1;
 
-        const size_t copy_bytes = (!n || dest_size-1 < n) ? dest_size-1 : n;
+        const size_t copy_bytes = (n <= 0 || dest_size-1 < n) ? dest_size-1 : n;
         size_t i;
 
         for (i = 0; i < copy_bytes && src[i] && src[i] != delim; i++)
@@ -390,7 +398,7 @@ string_copy(char *const dest, const size_t dest_size, const char *const src,
          *
          * Return -1 otherwise - i.e when dest_size was reached
          */
-        if (src[i] == '\0' || src[i] == delim || (n != 0 && n < dest_size))
+        if (src[i] == '\0' || src[i] == delim || (n > 0 && n < dest_size))
                 return i;
         else
                 return -1;
@@ -443,28 +451,31 @@ void realloc_buffer(char **dst, char **dst_ptr, size_t *dst_len, const size_t on
  */
 
 static ssize_t
-_getpass (char **lineptr, size_t *n, FILE *stream)
+_getpass (char **const lineptr, size_t *const n, FILE *const stream)
 {
         struct termios old, new;
-        ssize_t nread;
 
         /* Turn echoing off and fail if we can't. */
-        if (tcgetattr (fileno (stream), &old) != 0)
+        if (tcgetattr (fileno(stream), &old) != 0)
                 return -1;
         new = old;
         new.c_lflag &= ~ECHO;
-        if (tcsetattr (fileno (stream), TCSAFLUSH, &new) != 0)
+        if (tcsetattr (fileno(stream), TCSAFLUSH, &new) != 0)
                 return -1;
 
         /* Read the password. */
-        nread = getline (lineptr, n, stream);
+        ssize_t nread = getline(lineptr, n, stream);
 
         /* Restore terminal. */
-        (void) tcsetattr (fileno (stream), TCSAFLUSH, &old);
+        if (tcsetattr(fileno(stream), TCSAFLUSH, &old) != 0)
+                return -1;
 
         /* Replace trailing newline - if any */
         if (nread > 0 && (*lineptr)[nread-1] == '\n')
-                (*lineptr)[nread-1] = '\0';
+        {
+                nread--;
+                (*lineptr)[nread] = '\0';
+        }
 
         return nread;
 }
@@ -479,12 +490,13 @@ xgetpass(const char *const prompt)
 
         size_t password_size = 0;
         static char *password_buffer = NULL;
-        (void) _getpass(&password_buffer, &password_size, tty);
+        if (_getpass(&password_buffer, &password_size, tty) == -1)
+                misc_exit_function(true, "Can't get password");
 
         if (fclose(tty) == EOF)
                 misc_exit_function(true, "Can't close /dev/tty");
 
-        puts("");
+        putchar('\n');
 
         return password_buffer;
 }
@@ -519,7 +531,7 @@ determine_uid(const char *const uid_s)
         char *endptr;
         errno = 0;
         const int value = strtol(uid_s,  &endptr, 10);
-        if (!errno && *endptr == '\0')
+        if (!errno && endptr != uid_s && *endptr == '\0')
                 return value;
 
         /* If its not a number, we test for a username. */
@@ -548,7 +560,7 @@ determine_gid(const char *const gid_s)
         char *endptr;
         errno = 0;
         const int value = strtol(gid_s,  &endptr, 10);
-        if (!errno && *endptr == '\0')
+        if (!errno && endptr != gid_s && *endptr == '\0')
                 return value;
 
         /* If its not a number, we test for a username. */

@@ -62,8 +62,6 @@ typedef struct la_source_group_s la_source_group_t;
 struct la_source_group_s
 {
         struct kw_node_s node;
-        /* Name of source in config file - strdup()d */
-        char *name;
         /* Specified path, potentially glob pattern */
         char *glob_pattern;
         /* All source files */

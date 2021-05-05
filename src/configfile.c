@@ -286,7 +286,7 @@ compile_actions(la_rule_t *const rule, const config_setting_t *const action_def)
 {
         assert_rule(rule); assert(action_def);
 
-        la_debug_func(rule->name);
+        la_debug_func(rule->node.nodename);
 
         const char *const name = config_setting_name(action_def);
 #ifndef NOCOMMANDS
@@ -352,7 +352,7 @@ compile_list_of_actions(la_rule_t *const rule,
 {
         assert_rule(rule); assert(action_def);
 
-        la_debug_func(rule->name);
+        la_debug_func(rule->node.nodename);
 
         const int n_items = config_setting_length(action_def);
 
@@ -374,7 +374,7 @@ load_blacklists(la_rule_t *const rule, const config_setting_t *const uc_rule_def
 {
         assert_rule(rule); assert(uc_rule_def);
 
-        la_debug_func(rule->name);
+        la_debug_func(rule->node.nodename);
         /* again unclear why this cast is necessary */
         const config_setting_t *blacklist_reference =
                 config_setting_lookup((config_setting_t *) uc_rule_def,
@@ -425,7 +425,7 @@ load_actions(la_rule_t *const rule, const config_setting_t *const uc_rule_def)
 {
         assert_rule(rule); assert(uc_rule_def);
 
-        la_debug_func(rule->name);
+        la_debug_func(rule->node.nodename);
         /* again unclear why this cast is necessary */
         const config_setting_t *action_reference =
                 config_setting_lookup((config_setting_t *) uc_rule_def,
@@ -436,12 +436,12 @@ load_actions(la_rule_t *const rule, const config_setting_t *const uc_rule_def)
                         config_lookup(&la_config->config_file, LA_DEFAULTS_LABEL);
                 if (!defaults_section)
                         die_hard(false, "No action specified for %s!",
-                                        config_setting_name(rule));
+                                        config_setting_name(uc_rule_def));
                 action_reference = config_setting_lookup(defaults_section,
                                 LA_RULE_ACTION_LABEL);
                 if (!action_reference)
                         die_hard(false, "No action specified for %s!",
-                                        config_setting_name(rule));
+                                        config_setting_name(uc_rule_def));
         }
 
         const int type = config_setting_type(action_reference);
@@ -462,7 +462,7 @@ load_patterns(la_rule_t *const rule, const config_setting_t *const rule_def,
 {
         assert_rule(rule); assert(uc_rule_def);
 
-        la_debug_func(rule->name);
+        la_debug_func(rule->node.nodename);
 
         const config_setting_t *patterns;
 

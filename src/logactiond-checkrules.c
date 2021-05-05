@@ -144,7 +144,7 @@ next_line(la_rule_t *rule, char *line)
                 {
                         if (!show_undetected)
                         {
-                                printf("%s(%i): %s", rule->name, pattern->num, line);
+                                printf("%s(%i): %s", rule->node.nodename, pattern->num, line);
                                 if (line[strlen(line)-1] != '\n')
                                         printf("\n");
                         }

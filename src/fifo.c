@@ -63,6 +63,8 @@ cleanup_fifo(void *const arg)
                 la_log_errno(LOG_ERR, "Cannot remove fifo");
 
         fifo = NULL;
+
+        fifo_thread = 0;
 }
 
 static void

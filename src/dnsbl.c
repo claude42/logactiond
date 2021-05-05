@@ -94,14 +94,10 @@ convert_to_dnsbl_hostname_sa(const struct sockaddr *const sa,
         if (hostname[r-1] != '.')
         {
                 if (r>=NI_MAXHOST-1)
-                {
                         return false;
-                }
-                else
-                {
-                        hostname[r++] = '.';
-                        hostname[r] = '\0';
-                }
+
+                hostname[r] = '.';
+                hostname[r+] = '\0';
         }
 
         return true;

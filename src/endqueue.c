@@ -315,6 +315,8 @@ cleanup_end_queue(void *arg)
 
         free_tree(end_time_tree);
         end_time_tree = NULL;
+
+        end_queue_thread = 0;
 }
 
 static la_command_t *
@@ -391,7 +393,8 @@ remove_or_renew(la_command_t *const command)
                 set_end_time(command, 0);
                 la_log_verbose(LOG_INFO, "Host: %s still on blacklist %s, action "
                                 "\"%s\" renewed (%us).", command->address->text,
-                                blname, command->name, command->end_time - xtime(NULL));
+                                blname, command->node.nodename,
+                                command->end_time - xtime(NULL));
                 command->submission_type = LA_SUBMISSION_RENEW;
                 add_to_tree(end_time_tree, &command->end_time_node, cmp_end_times);
         }
