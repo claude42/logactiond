@@ -326,8 +326,8 @@ compile_actions(la_rule_t *const rule, const config_setting_t *const action_def)
         {
                 la_command_t *const template = create_template(name, rule,
                                 initialize, shutdown, INT_MAX, false, false);
-#ifndef ONLYCLEANUPCOMMANDS
                 convert_both_commands(template);
+#ifndef ONLYCLEANUPCOMMANDS
                 trigger_command(template);
 #endif /* ONLYCLEANUPCOMMANDS */
                 if (template->end_string)
