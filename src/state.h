@@ -25,15 +25,15 @@
 
 #define BAK_SUFFIX ".bak"
 
-extern const char *saved_state;
-
 extern pthread_t save_state_thread;
 
 void save_state(bool verbose);
 
-bool restore_state(const bool create_backup_file);
+void restore_state_and_start_save_state_thread(const bool create_backup_file);
 
 void start_save_state_thread(void);
+
+void set_saved_state(const char *pathname);
 
 #endif /* __state_h */
 

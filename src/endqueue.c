@@ -451,6 +451,13 @@ next_command_in_queue(la_command_t *const command)
                 NULL;
 }
 
+kw_tree_node_t *
+get_root_of_queue(void)
+{
+        assert(adr_tree);
+        return adr_tree->root;
+}
+
 /*
  * Set end time to current time + duration. Set to INT_MAX in case duration ==
  * INT_MAX.
@@ -637,6 +644,12 @@ enqueue_end_command(la_command_t *const end_command, const time_t manual_end_tim
                 }
 
         xpthread_mutex_unlock(&end_queue_mutex);
+}
+
+int
+get_queue_length(void)
+{
+        return queue_length;
 }
 
 

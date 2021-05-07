@@ -374,7 +374,7 @@ dump_queue_status(const bool force)
                         human_readable_time_delta(command->end_time-xtime(NULL),
                                         &timedelta, &unit);
 
-                        const char * const type = get_type_string(command);
+                        const char *const type = get_type_string(command);
 
                         if (status_monitoring >= 2)
                                 fprintf(hosts_file, HOSTS_LINE_V, adr, type,
