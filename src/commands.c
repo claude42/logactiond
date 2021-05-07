@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 
 #include "ndebug.h"
 #include "addresses.h"
@@ -325,11 +326,12 @@ exec_command(const la_command_t *command, const la_commandtype_t type)
                 break;
         case 127:
                 la_log(LOG_ERR, "Could not execute shell for action "
-                                "\"%s\".", command->node.nodename);
+                                "\"%s\". Error code %d.",
+                                command->node.nodename, WEXITSTATUS(result));
                 break;
         default:
                 la_log(LOG_ERR, "Action \"%s\" returned with error "
-                                "code %d.", command->node.nodename, result);
+                                "code %d.", command->node.nodename, WEXITSTATUS(result));
                 la_log(LOG_ERR, "Tried to execute \"%s\"",
                                 type == LA_COMMANDTYPE_BEGIN ?
                                 command->begin_string_converted :
