@@ -39,7 +39,7 @@
 typedef struct kw_node_s {
         struct kw_node_s *succ;
         struct kw_node_s *pred;
-        int pri;
+        long pri;
         char *nodename;
 } kw_node_t;
 

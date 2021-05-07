@@ -24,6 +24,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdbool.h>
+#include <limits.h>
 
 #include "ndebug.h"
 #include "nodelist.h"
@@ -236,7 +237,8 @@ reprioritize_node(kw_node_t *const node, int delta_pri)
         /* When delta_pri > 0 reorder only if new priority is bigger than
          * previous node (and previos node is not the head node). Respectively
          * the other way round... */
-        if (delta_pri > 0 && node->pred->pred && node->pri > node->pred->pri)
+        if (delta_pri > 0 && node->pri < LONG_MAX &&
+                        node->pred->pred && node->pri > node->pred->pri)
         {
                 remove_node(node);
                 kw_node_t *tmp = node->pred;
@@ -246,7 +248,8 @@ reprioritize_node(kw_node_t *const node, int delta_pri)
 
                 insert_node_after(tmp, node);
         }
-        else if (delta_pri < 0 && node->succ->succ && node->pri < node->succ->pri)
+        else if (delta_pri < 0 && node->pri > LONG_MIN &&
+                        node->succ->succ && node->pri < node->succ->pri)
         {
                 remove_node(node);
                 kw_node_t *tmp = node->succ;
@@ -412,6 +415,8 @@ empty_list(kw_list_t *const list, void (*free_node)(void *const))
                 else
                         free(tmp);
         }
+
+        init_list(list);
 }
 
 void
