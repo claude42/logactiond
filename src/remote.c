@@ -335,6 +335,7 @@ sync_all_entries(void *ptr)
 
         /* Allocate in one shot so both can be free()d at once in
          * cleanup_sync_all_entries() */
+        const int queue_length = get_queue_length();
         void *buffer = xmalloc(((queue_length + 1) * sizeof (char*)) +
                         queue_length * TOTAL_MSG_LEN);
         char **message_array = buffer;

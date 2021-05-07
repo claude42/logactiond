@@ -93,9 +93,11 @@ save_state(bool verbose)
 {
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
         la_debug_func(NULL);
-        assert(saved_state);
 
-        if (!queue_length)
+        if (!saved_state)
+                return;
+
+        if (!get_queue_length())
                 return;
 
         if (log_verbose || verbose)
@@ -112,7 +114,7 @@ save_state(bool verbose)
 
         xpthread_mutex_lock(&end_queue_mutex);
 
-                if (!recursively_save_state(stream, adr_tree->root))
+                if (!recursively_save_state(stream, get_root_of_queue()))
                         la_log_errno(LOG_ERR, "Failure to dump queue.");
 
         xpthread_mutex_unlock(&end_queue_mutex);
@@ -124,10 +126,12 @@ save_state(bool verbose)
 
 /* Return false on error. Non-existant state file is not considered an eror */
 
-bool
+static bool
 restore_state(const bool create_backup_file)
 {
-        assert(saved_state);
+        if (!saved_state)
+                return false;
+
         la_log(LOG_INFO, "Restoring state from \"%s\".", saved_state);
 
         FILE *const stream = fopen(saved_state, "r");
@@ -197,6 +201,24 @@ restore_state(const bool create_backup_file)
         return true;
 }
 
+void
+restore_state_and_start_save_state_thread(const bool create_backup_file)
+{
+        if (!saved_state)
+                return;
+
+        if (!restore_state(create_backup_file))
+        {
+                /* In case of an error when restoring make sure that whatever
+                 * has been restored will *not* be written to disk before
+                 * exiting. */
+                saved_state = NULL;
+                die_hard(true, "Error reading state file");
+        }
+
+        start_save_state_thread();
+}
+
 noreturn static void *
 periodically_save_state(void *const ptr)
 {
@@ -224,6 +246,13 @@ start_save_state_thread(void)
 
         xpthread_create(&save_state_thread, NULL, periodically_save_state,
                         NULL, "save state");
+}
+
+void
+set_saved_state(const char *const pathname)
+{
+        assert(pathname);
+        saved_state = pathname;
 }
 
 /* vim: set autowrite expandtab: */

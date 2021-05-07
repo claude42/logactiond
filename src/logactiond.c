@@ -90,8 +90,7 @@ trigger_shutdown(int status, int saved_errno)
         exit_errno = saved_errno;
         shutdown_ongoing = true;
 
-        if (saved_state)
-                save_state(true);
+        save_state(true);
 
         if (file_watch_thread)
                 pthread_cancel(file_watch_thread);
@@ -336,9 +335,10 @@ read_options(int argc, char *argv[])
                                 break;
                         case 'r':
                                 if (optarg)
-                                        saved_state = optarg;
+                                        set_saved_state(optarg);
                                 else
-                                        saved_state = STATE_DIR "/" STATE_FILE;
+                                        set_saved_state(STATE_DIR "/"
+                                                        STATE_FILE);
                                 break;
                         case 'b':
                                 create_backup_file = true;
@@ -357,6 +357,8 @@ read_options(int argc, char *argv[])
                 }
         }
 }
+
+/* TODO: maybe move this to remote.c */
 
 static void
 sync_with_other_instances(void)
@@ -462,15 +464,7 @@ main(int argc, char *argv[])
         start_fifo_thread();
         start_remote_thread();
 
-        if (saved_state)
-        {
-                if (!restore_state(create_backup_file))
-                {
-                        saved_state = NULL;
-                        die_hard(true, "Error reading state file");
-                }
-                start_save_state_thread();
-        }
+        restore_state_and_start_save_state_thread(create_backup_file);
 
         if (sync_on_startup)
         {
