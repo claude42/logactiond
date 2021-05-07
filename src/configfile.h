@@ -129,6 +129,8 @@ typedef struct la_config_s
         int remote_port;
         int total_clocks;
         int invocation_count;
+        int  total_et_invs;
+        int total_et_cmps;
         char *fifo_path;
         uid_t fifo_user;
         gid_t fifo_group;

@@ -173,6 +173,11 @@ restore_state(const bool create_backup_file)
                 line_no++;
         }
 
+        // TODO: probably should be implemented differently instead of calling
+        // empty_queue_pointers() from here (hint: start queue only after
+        // restoring, don't create queue pointers when queue is not running)
+        empty_queue_pointers();
+
         free(linebuffer);
 
         /* Return false to make sure state file is not overwritten in case of

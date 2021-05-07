@@ -47,6 +47,47 @@ int status_monitoring = 0;
 
 pthread_t monitoring_thread = 0;
 
+static FILE *
+open_diag_file(const char *mode)
+{
+        FILE *result = NULL;
+
+        if (status_monitoring >= 2)
+        {
+                result = fopen(DIAGFILE, mode);
+                if (!result)
+                        die_hard(true, "Can't create \"" DIAGFILE "\"");
+        }
+
+        return result;
+}
+
+static void
+dump_queue_pointers(void)
+{
+        la_vdebug_func(NULL);
+        if (status_monitoring < 2 || !queue_pointers)
+                return;
+
+        FILE *const diag_file = open_diag_file("a");
+
+        xpthread_mutex_lock(&end_queue_mutex);
+
+                fprintf(diag_file, "\nqueue pointer list (length=%i)\n", list_length(queue_pointers));
+
+                for (la_queue_pointer_t *qp = (la_queue_pointer_t *) queue_pointers->head.succ;
+                                qp->node.succ;
+                                qp = (la_queue_pointer_t *) qp->node.succ)
+                        fprintf(diag_file, "%i[%i] -> %s (%i)\n", qp->duration, qp->node.pri,
+                                        (qp->command && qp->command->address) ? qp->command->address->text : NULL,
+                                        qp->command ? qp->command->end_time : -1);
+
+        xpthread_mutex_unlock(&end_queue_mutex);
+
+        if (fclose(diag_file))
+                die_hard(true, "Can't close \" DIAGFILE \"");
+}
+
 /*
  * Convert time_t into human readable format. Return values are in *value and
  * *unit...
@@ -128,13 +169,7 @@ dump_rules(void)
         if (!rules_file)
                 die_hard(true, "Can't create \"" RULESFILE "\"");
 
-        FILE *diag_file = NULL;
-        if (status_monitoring >= 2)
-        {
-                diag_file = fopen(DIAGFILE, "w");
-                if (!diag_file)
-                        die_hard(true, "Can't create \"" DIAGFILE "\"");
-        }
+        FILE *const diag_file = open_diag_file("w");
 
         fputs(RULES_HEADER, rules_file);
 
@@ -223,6 +258,8 @@ dump_loop(void *const ptr)
 
                 dump_queue_status(false);
 
+                dump_queue_pointers();
+
                 sleep(5);
         }
 
@@ -245,6 +282,21 @@ start_monitoring_thread(void)
         assert(!monitoring_thread);
 
         xpthread_create(&monitoring_thread, NULL, dump_loop, NULL, "status");
+}
+
+static const char *
+get_type_string(const la_command_t *const command)
+{
+        if (command->submission_type == LA_SUBMISSION_MANUAL)
+                return "Ma";
+        else if (command->submission_type == LA_SUBMISSION_REMOTE)
+                return "Re";
+        else if (command->submission_type == LA_SUBMISSION_RENEW)
+                return "RN";
+        else if (command->previously_on_blacklist)
+                return "BL";
+        else
+                return "  ";
 }
 
 /*
@@ -274,14 +326,16 @@ dump_queue_status(const bool force)
         if (!hosts_file)
                 die_hard(false, "Can't create \"" HOSTSFILE "\"!");
 
+        FILE *const diag_file = open_diag_file("a");
+
         const time_t now = xtime(NULL);
         char date_string[26];
         fprintf(hosts_file, HOSTS_HEADER, ctime_r(&now, date_string));
 
         int num_elems = 0;
         int num_elems_local = 0;
-        int max_depth1 = 0;
-        int max_depth2 = 0;
+        int max_depth = 0;
+        int num_items = 0;
 
         xpthread_mutex_lock(&end_queue_mutex);
 
@@ -310,35 +364,23 @@ dump_queue_status(const bool force)
                         /* Second build host table */
                         const char *const adr = command->address ?
                                 command->address->text : "-";
-                        const int depth1 = node_depth(&command->adr_node);
-                        if (depth1 > max_depth1)
-                                max_depth1 = depth1;
-                        const int depth2 = node_depth(&command->end_time_node);
-                        if (depth2 > max_depth2)
-                                max_depth2 = depth2;
+                        const int depth = node_depth(&command->adr_node);
+                        if (depth > max_depth)
+                                max_depth = depth;
+                        num_items++;
 
                         time_t timedelta;
                         char unit;
                         human_readable_time_delta(command->end_time-xtime(NULL),
                                         &timedelta, &unit);
 
-                        const char *type;
-                        if (command->submission_type == LA_SUBMISSION_MANUAL)
-                                type = "Ma";
-                        else if (command->submission_type == LA_SUBMISSION_REMOTE)
-                                type = "Re";
-                        else if (command->submission_type == LA_SUBMISSION_RENEW)
-                                type = "RN";
-                        else if (command->previously_on_blacklist)
-                                type = "BL";
-                        else
-                                type = "  ";
+                        const char * const type = get_type_string(command);
 
                         if (status_monitoring >= 2)
                                 fprintf(hosts_file, HOSTS_LINE_V, adr, type,
                                                 command->factor, timedelta,
                                                 unit, command->rule_name,
-                                                command->node.nodename, depth1, depth2);
+                                                command->node.nodename, depth, num_items);
                         else
                                 fprintf(hosts_file, HOSTS_LINE, adr, type,
                                                 command->factor, timedelta,
@@ -348,26 +390,38 @@ dump_queue_status(const bool force)
 
                 if (status_monitoring >= 2 || force)
                 {
-                        fprintf(hosts_file, "\nQueue length: %i (%i local), "
+                        fputs("\n", diag_file);
+                        fprintf(diag_file, "\nQueue length: %i (%i local), "
                                         "meta_command: %i\n",
                                         num_elems, num_elems_local,
                                         meta_list_length());
 
+                        fprintf(diag_file, "adr_tree depth=%i, end_time_list length=%i\n",
+                                        max_depth, num_items);
+
                         const float average_time = la_config->invocation_count ?
                                 la_config->total_clocks / la_config->invocation_count :
                                 0;
-                        fprintf(hosts_file, "Average invocation time: %f, "
+                        fprintf(diag_file, "Average invocation time: %f, "
                                         "(invocation count: %i)\n",
                                         average_time,
                                         la_config->invocation_count);
-                        fprintf(hosts_file, "adr_tree depth=%i, end_time_tree depth=%i\n",
-                                        max_depth1, max_depth2);
+
+                        const float average_cmps = la_config->total_et_invs ?
+                                la_config->total_et_cmps /
+                                la_config->total_et_invs : 0;
+                        fprintf(diag_file, "Average end_time_list comparissons: %f, "
+                                        "(invocation count: %i)\n",
+                                        average_cmps,
+                                        la_config->total_et_invs);
                 }
 
         xpthread_mutex_unlock(&end_queue_mutex);
 
         if (fclose(hosts_file))
                 die_hard(false, "Can't close \" HOSTSFILE \"!");
+        if (status_monitoring >= 2 && fclose(diag_file))
+                die_hard(true, "Can't close \" DIAGFILE \"");
 }
 
 #endif /* NOMONITORING */

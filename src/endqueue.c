@@ -24,6 +24,7 @@
 #include <limits.h>
 #include <stdatomic.h>
 #include <stdnoreturn.h>
+#include <stdlib.h>
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -38,7 +39,8 @@
 #include "binarytree.h"
 
 kw_tree_t *adr_tree = NULL;
-kw_tree_t *end_time_tree = NULL;
+kw_list_t *end_time_list = NULL;
+kw_list_t *queue_pointers = NULL;
 
 int queue_length = 0;
 pthread_t end_queue_thread = 0;
@@ -136,27 +138,141 @@ find_end_command(const la_address_t *const address)
 }
 
 static void
-remove_command_from_queues(la_command_t *command)
+fix_queue_pointers(const la_command_t *const command)
 {
-        assert_command(command); assert_tree(adr_tree); assert_tree(end_time_tree);
+        assert_command(command);
+        la_vdebug_func(command->address ? command->address->text : NULL);
+
+        assert_list(queue_pointers);
+        if (is_list_empty(queue_pointers))
+                return;
+
+        for (la_queue_pointer_t *i = (la_queue_pointer_t *) get_head(queue_pointers);
+                        i->node.succ; i = (la_queue_pointer_t *) i->node.succ)
+        {
+                /* If we're about to remove the command the pointer is
+                 * currently referring to, try its predecessor. If command has
+                 * already been the first of the list, assign NULL */
+                if (i->command == command)
+                {
+                        if (command->node.pred->pred)
+                                i->command = (la_command_t *) command->node.pred;
+                        else
+                                i->command = NULL;
+                }
+        }
+}
+
+static void
+remove_command_from_queues(la_command_t *const command)
+{
+        assert_command(command); assert_tree(adr_tree); assert_list(end_time_list);
+        la_debug_func(command->address ? command->address->text : NULL);
 
         (void) remove_tree_node(adr_tree, &(command->adr_node));
-        (void) remove_tree_node(end_time_tree, &command->end_time_node);
+        fix_queue_pointers(command);
+        remove_node((kw_node_t *) command);
 
         assert(queue_length > 0);
         queue_length--;
+}
+
+void empty_queue_pointers(void)
+{
+        if (!queue_pointers)
+                return;
+
+        assert_list(queue_pointers);
+
+        xpthread_mutex_lock(&end_queue_mutex);
+
+                empty_list(queue_pointers, NULL);
+
+        xpthread_mutex_unlock(&end_queue_mutex);
+}
+
+static la_queue_pointer_t *
+find_queue_pointer_for_duration(const int duration)
+{
+        la_vdebug_func(NULL);
+        for (la_queue_pointer_t *result =
+                        (la_queue_pointer_t *) queue_pointers->head.succ;
+                        result->node.succ;
+                        result = (la_queue_pointer_t *) result->node.succ)
+        {
+                if (result->duration == duration)
+                        return result;
+        }
+
+        return NULL;
+}
+
+static la_queue_pointer_t *
+create_queue_pointer(const int duration)
+{
+        la_queue_pointer_t *result = create_node(sizeof *result, 0, NULL);
+        result->duration = duration;
+        result->command = NULL;
+        add_tail(queue_pointers, (kw_node_t *) result);
+
+        return result;
+}
+
+static bool
+add_to_end_time_list(la_command_t *command)
+{
+        assert_command(command);
+        la_vdebug_func(command->address ? command->address->text : NULL);
+
+        /* first let's see if there's an existing queue pointer for this
+         * duration, if not create one that points to the beginning o fthe
+         * queue */
+        const int duration = command->end_time - xtime(NULL);
+        la_queue_pointer_t *qp = find_queue_pointer_for_duration(duration);
+        if (qp)
+                reprioritize_node((kw_node_t *) qp, 1);
+        else
+                qp = create_queue_pointer(duration);
+
+        /* starting with the queue pointer find position where to insert the
+         * new command */
+        la_command_t *tmp = qp->command;
+        if (!tmp)
+                tmp = (la_command_t *) get_head(end_time_list);
+
+        if (tmp)
+        {
+                int i = 0;
+                for (; tmp->node.succ; tmp = (la_command_t *) tmp->node.succ, i++)
+                {
+                        if (tmp->end_time > command->end_time)
+                                break;
+                }
+
+                insert_node_before((kw_node_t *) tmp, (kw_node_t *) command);
+
+                la_config->total_et_cmps += i;
+        }
+        else
+        {
+                add_head(end_time_list, (kw_node_t *) command);
+        }
+
+        /* set queue pointer so that next search will start at inserted command
+         */
+        qp->command = command;
+
+        la_config->total_et_invs++;
+
+        /* return true in case command has been inserted at the start of the
+         * list */
+        return command == (la_command_t *) get_head(end_time_list);
 }
 
 static int
 cmp_addresses(const void *p1, const void *p2)
 {
         return adrcmp(((la_command_t *) p1)->address, ((la_command_t *) p2)->address);
-}
-
-static int
-cmp_end_times(const void *p1, const void *p2)
-{
-        return ((la_command_t *) p1)->end_time - ((la_command_t *) p2)->end_time;
 }
 
 /*
@@ -167,14 +283,14 @@ cmp_end_times(const void *p1, const void *p2)
 static bool
 add_command_to_queues(la_command_t *command)
 {
-        assert_command(command); assert_tree(adr_tree); assert_tree(end_time_tree);
-
-        add_to_tree(adr_tree, &command->adr_node, cmp_addresses);
-        add_to_tree(end_time_tree, &command->end_time_node, cmp_end_times);
+        assert_command(command); assert_tree(adr_tree); assert_list(end_time_list);
+        la_vdebug_func(command->address ? command->address->text : NULL);
 
         queue_length++;
 
-        return &command->end_time_node == end_time_tree->first;
+        add_to_tree(adr_tree, &command->adr_node, cmp_addresses);
+
+        return add_to_end_time_list(command);
 }
 
 /*
@@ -245,9 +361,9 @@ empty_end_queue(void)
                 xpthread_mutex_lock(&end_queue_mutex);
 
         empty_tree(adr_tree, finalize_command, false);
-        /* manually reset end_time_tree, adr_tree has already been reset by
+        /* manually reset end_time_list, adr_tree has already been reset by
          * empty_tree() */
-        end_time_tree->root = NULL;
+        init_list(end_time_list);
         queue_length = 0;
 
         if (!shutdown_ongoing && end_queue_thread)
@@ -313,32 +429,26 @@ cleanup_end_queue(void *arg)
         free_tree(adr_tree);
         adr_tree = NULL;
 
-        free_tree(end_time_tree);
-        end_time_tree = NULL;
+        free(end_time_list);
+        end_time_list = NULL;
+
+        free_list(queue_pointers, NULL);
+        queue_pointers = NULL;
 
         end_queue_thread = 0;
-}
-
-static la_command_t *
-payload_as_command(kw_tree_node_t *node)
-{
-        if (node)
-                return (la_command_t *) node->payload;
-        else
-                return NULL;
 }
 
 la_command_t *
 first_command_in_queue(void)
 {
-        return payload_as_command(end_time_tree->first);
+        return (la_command_t *) get_head(end_time_list);
 }
 
 la_command_t *
 next_command_in_queue(la_command_t *const command)
 {
-        return payload_as_command(next_node_in_tree(
-                                &command->end_time_node));
+        return command->node.succ->succ ? (la_command_t *) command->node.succ :
+                NULL;
 }
 
 /*
@@ -389,14 +499,14 @@ remove_or_renew(la_command_t *const command)
 
         if (blname)
         {
-                (void) remove_tree_node(end_time_tree, &command->end_time_node);
+                remove_node(&(command->node));
                 set_end_time(command, 0);
                 la_log_verbose(LOG_INFO, "Host: %s still on blacklist %s, action "
                                 "\"%s\" renewed (%us).", command->address->text,
                                 blname, command->node.nodename,
                                 command->end_time - xtime(NULL));
                 command->submission_type = LA_SUBMISSION_RENEW;
-                add_to_tree(end_time_tree, &command->end_time_node, cmp_end_times);
+                (void) add_to_end_time_list(command);
         }
         else
         {
@@ -474,10 +584,11 @@ void
 init_end_queue(void)
 {
         la_debug_func(NULL);
-        assert(!adr_tree); assert(!end_time_tree);
+        assert(!adr_tree); assert(!end_time_list);
 
         adr_tree = create_tree();
-        end_time_tree = create_tree();
+        end_time_list = create_list();
+        queue_pointers = create_list();
 }
 
 

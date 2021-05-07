@@ -57,7 +57,6 @@ struct la_command_s
 {
         struct kw_node_s node;
         kw_tree_node_t adr_node;
-        kw_tree_node_t end_time_node;
         int id;        /* unique id */
         bool is_template;       /* true for templates, false for derived commands */
         char *begin_string;        /* string with tokens */

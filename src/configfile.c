@@ -1108,6 +1108,7 @@ load_la_config(void)
                 config_destroy(&la_config->config_file);
 
         la_config->total_clocks = la_config->invocation_count = 0;
+        la_config->total_et_invs = la_config->total_et_cmps = 0;
 
 cleanup:
 #ifndef CLIENTONLY

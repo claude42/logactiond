@@ -617,7 +617,6 @@ dup_command(const la_command_t *const command)
         /* only set payload here, other node links have already been
          * initialized in template */
         result->adr_node.payload = result;
-        result->end_time_node.payload = result;
 
         result->begin_string = xstrdup(command->begin_string);
         init_list(&result->begin_properties);
@@ -765,7 +764,6 @@ create_template(const char *const name, la_rule_t *const rule,
         result->is_template = true;
 
         result->adr_node.payload = result;
-        result->end_time_node.payload = result;
 
         result->begin_string = xstrdup(begin_string);
         result->n_begin_properties =

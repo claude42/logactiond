@@ -228,7 +228,7 @@ del_entry(const char *const buffer)
         if (!init_address(&address, buffer+2))
                 LOG_RETURN(, LOG_ERR, "Cannot convert address in command %s!", buffer+2);
 
-        // locking really necessary here?
+        // TODO: locking really necessary here?
 
         xpthread_mutex_lock(&config_mutex);
 

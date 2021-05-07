@@ -36,8 +36,16 @@ extern pthread_t end_queue_thread;
 extern pthread_mutex_t end_queue_mutex;
 
 extern kw_tree_t *adr_tree;
-extern kw_tree_t *end_time_tree;
 extern int queue_length;
+
+extern kw_list_t *queue_pointers;
+
+typedef struct la_queue_pointer_s
+{
+        struct kw_node_s node;
+        int duration;
+        la_command_t *command;
+} la_queue_pointer_t;
 
 void update_queue_count_numbers(void);
 
@@ -56,6 +64,8 @@ void start_end_queue_thread(void);
 la_command_t *first_command_in_queue(void);
 
 la_command_t *next_command_in_queue(la_command_t *const command);
+
+void empty_queue_pointers(void);
 
 #endif /* __endqueue_h */
 
