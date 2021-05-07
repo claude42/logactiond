@@ -74,7 +74,8 @@ log_message_va_list(int priority, const char *const fmt, va_list gp,
 #endif /* HAVE_PTHREAD_GENTAME_NP */
 
         if (priority >= log_level ||
-                        (run_type == LA_UTIL_FOREGROUND && priority >= LOG_INFO))
+                        (run_type == LA_UTIL_FOREGROUND &&
+                         log_level == LOG_DEBUG && priority == LOG_INFO))
                 return;
 
         if (priority == LOG_VDEBUG)
