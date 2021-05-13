@@ -450,6 +450,15 @@ empty_tree(kw_tree_t *const tree, void (*delete_payload)(const void *),
         }
 }
 
+void
+free_tree(kw_tree_t *const tree, void (*delete_payload)(const void *),
+                bool free_nodes)
+{
+        empty_tree(tree, delete_payload, free_nodes);
+
+        free(tree);
+}
+
 static void
 recursively_walk_tree(kw_tree_node_t *const node,
                 void (*process_payload(const void *)))
@@ -481,12 +490,6 @@ create_tree(void)
         kw_tree_t *const result = calloc(sizeof *result, 1);
 
         return result;
-}
-
-void
-free_tree(kw_tree_t *tree)
-{
-        free(tree);
 }
 
 bool

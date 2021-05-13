@@ -30,7 +30,6 @@
 #include <syslog.h>
 #include <errno.h>
 #include <stdarg.h>
-#include <assert.h>
 #include <stdnoreturn.h>
 #if HAVE_LIBSYSTEMD
 #include <systemd/sd-journal.h>
@@ -113,6 +112,14 @@ log_message_va_list(int priority, const char *const fmt, va_list gp,
                         break;
         }
 #endif /* CLIENTONLY */
+}
+
+void
+assert_failed(const char *const condition, const char *const func,
+                const char *const file, int line)
+{
+        die_hard(false, "%s:%u: %s%sAssertion `%s' failed.\n", file, line,
+                        func ? func : "", func ? ": " : "", condition);
 }
 
 noreturn void

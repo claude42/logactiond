@@ -29,7 +29,6 @@
 #include <netdb.h>
 #include <syslog.h>
 #include <stdbool.h>
-#include <assert.h>
 
 #ifdef WITH_LIBSODIUM
 #ifndef NOCRYPTO

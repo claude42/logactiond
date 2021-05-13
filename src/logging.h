@@ -50,6 +50,12 @@ extern bool log_verbose;
 #define la_debug_func(PARAMS) log_message(LOG_DEBUG, NULL, "%s(%s)", __func__, PARAMS ? PARAMS : "")
 #define la_vdebug_func(PARAMS) log_message(LOG_VDEBUG, NULL, "%s(%s)", __func__, PARAMS ? PARAMS : "")
 
+#ifdef NDEBUG
+#define assert(CONDITION) (void)(0)
+#else /* NDEBUG */
+#define assert(CONDITION) if (!(CONDITION)) assert_failed(#CONDITION, __func__, __FILE__, __LINE__)
+#endif /* NDEBUG */
+
 /* The following needs more work */
 #if 0
 #ifdef CLIENTONLY
@@ -73,6 +79,9 @@ extern bool log_verbose;
 void log_message(int priority, const char *add, const char *fmt, ...);
 
 void log_message_va_list(int priority, const char *fmt, va_list gp, const char *add);
+
+void assert_failed(const char *condition, const char *func, const char *file,
+                int line);
 
 noreturn void die_hard(bool log_strerror, const char *fmt, ...);
 

@@ -21,7 +21,6 @@
 #include <syslog.h>
 #include <pthread.h>
 #include <unistd.h>
-#include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -54,12 +53,13 @@
 #include "misc.h"
 #include "fifo.h"
 
-pthread_t remote_thread = 0;
+pthread_t remote_threads[10] = {0};
+
 static int client_fd4;
 static int client_fd6;
 pthread_t sync_entries_thread = 0;
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
-atomic_bool sync_entries_thread_running = false;
+atomic_bool sync_entries_thread_running = ATOMIC_VAR_INIT(false);
 #else /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
 bool sync_entries_thread_running = false;
 #endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
@@ -84,6 +84,8 @@ send_message_to_single_address(const char *const message,
 
         /* Select correct file descriptor, open new socket if not already done
          * so */
+        /* TODO: would there any scenario where to threads want to send at the
+         * same time, if so: do we need a mutex? */
         int *fd_ptr = remote_address->sa.ss_family == AF_INET ? &client_fd4 : &client_fd6;
         if ((*fd_ptr == 0 || *fd_ptr == -1))
         {
@@ -164,16 +166,11 @@ static void
 cleanup_remote(void *const arg)
 {
         la_debug_func(NULL);
-        /* TODO: re-enable mt save */
-        /*if (server_fd > 0 && close(server_fd) == -1)
-                die_hard(true, "Unable to close socket");*/
-        if (client_fd4 > 0 && close(client_fd4) == -1)
-                die_hard(true, "Unable to close socket");
-        if (client_fd6 > 0 && close(client_fd6) == -1)
-                die_hard(true, "Unable to close socket");
+
+        wait_final_barrier();
+        la_debug("Remote thread (%i) exiting", pthread_self());
+        /* TODO: should set apropriate remote_threads[xx] = 0 */
 }
-
-
 
 /*
  * Main loop
@@ -186,8 +183,6 @@ remote_loop(void *const ptr)
 
         const struct addrinfo *const ai = (struct addrinfo *) ptr;
 
-        /* TODO: handover server_fd and ai (but ai only once) so cleanup can
-         * close it */
         pthread_cleanup_push(cleanup_remote, NULL);
 
         const int server_fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
@@ -274,8 +269,7 @@ remote_loop(void *const ptr)
         }
 
         assert(false);
-        /* Will never be reached, simply here to make potential pthread macros
-         * happy */
+
         pthread_cleanup_pop(1);
 }
 
@@ -284,11 +278,11 @@ remote_loop(void *const ptr)
  */
 
 void
-start_remote_thread(void)
+start_all_remote_threads(void)
 {
         la_debug_func(NULL);
         assert(la_config);
-        if (!la_config->remote_enabled || remote_thread)
+        if (!la_config->remote_enabled || remote_threads[0])
                 return;
 
         struct addrinfo hints;
@@ -311,8 +305,13 @@ start_remote_thread(void)
         if (r)
                 die_hard(true, "Cannot get addrinfo: %s", gai_strerror(r));
 
-        for (; ai; ai = ai->ai_next)
-                xpthread_create(&remote_thread, NULL, remote_loop, ai, "remote");
+        for (int i=0; ai; ai = ai->ai_next, i++)
+        {
+                xpthread_create(&remote_threads[i], NULL, remote_loop, ai, "remote");
+
+                thread_started();
+                la_debug("remote thread %i started (%i)", i, remote_threads[i]);
+        }
 }
 
 static void
@@ -320,8 +319,6 @@ cleanup_sync_all_entries(void *arg)
 {
         free(arg);
         sync_entries_thread_running = false;
-
-        remote_thread = 0;
 }
 
 /* 
@@ -437,6 +434,27 @@ stop_syncing(void)
 {
         if (sync_entries_thread_running)
                 pthread_cancel(sync_entries_thread);
+}
+
+void
+cancel_all_remote_threads(void)
+{
+        la_debug_func(NULL);
+        for (int i = 0; remote_threads[i]; i++)
+        {
+                la_vdebug("Cancelling thread %i", i);
+                xpthread_cancel_if_applicable(remote_threads[i]);
+                remote_threads[i] = 0;
+        }
+        /* TODO: re-enable mt save */
+        /*if (server_fd > 0 && close(server_fd) == -1)
+                die_hard(true, "Unable to close socket");*/
+        /* TODO set to 0 after close() */
+        if (client_fd4 > 0 && close(client_fd4) == -1)
+                die_hard(true, "Unable to close socket");
+        if (client_fd6 > 0 && close(client_fd6) == -1)
+                die_hard(true, "Unable to close socket");
+        la_vdebug("cancel_all_remote_threads done");
 }
 
 

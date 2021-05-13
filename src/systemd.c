@@ -24,7 +24,6 @@
 #include <stdlib.h>
 #include <systemd/sd-journal.h>
 #include <pthread.h>
-#include <assert.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
@@ -84,6 +83,8 @@ cleanup_watching_systemd(void *const arg)
                 sd_journal_close(journal);
 
         systemd_watch_thread = 0;
+        wait_final_barrier();
+        la_debug("systemd thread exiting");
 }
 
 noreturn static void *
@@ -237,6 +238,8 @@ start_watching_systemd_thread(void)
 
         xpthread_create(&systemd_watch_thread, NULL,
                         watch_forever_systemd, NULL, "systemd");
+        thread_started();
+        la_debug("systemd thread started (%i)", systemd_watch_thread);
 }
 
 #endif /* HAVE_LIBSYSTEMD */

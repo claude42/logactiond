@@ -27,7 +27,7 @@ void send_message_to_all_remote_hosts(const char *message);
 
 void send_add_entry_message(const la_command_t *command, const la_address_t *address);
 
-void start_remote_thread(void);
+void start_all_remote_threads(void);
 
 void send_message_to_single_address(const char *message,
                 const la_address_t *remote_address);
@@ -35,6 +35,8 @@ void send_message_to_single_address(const char *message,
 void sync_entries(const char *buffer, la_address_t *from_addr);
 
 void stop_syncing(void);
+
+void cancel_all_remote_threads(void);
 
 #endif /* __remote_h */
 

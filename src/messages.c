@@ -18,7 +18,6 @@
 
 #include <config.h>
 
-#include <assert.h>
 #include <syslog.h>
 #include <stdlib.h>
 #include <stdio.h>

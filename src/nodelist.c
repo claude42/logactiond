@@ -212,16 +212,23 @@ insert_node_before(kw_node_t *ex_node, kw_node_t *const new_node)
         ex_node->pred = new_node;
 }
 
-void
+/* Will return the next node (.e. the node after the removed node) in the list.
+ * Will return NULL in case the removed node was the last in the list */
+
+kw_node_t *
 remove_node(kw_node_t *const node)
 {
         if (!node || !node->pred || !node->succ)
-                return;
+                return NULL;
 
         assert_node(node); assert(is_list_node(node));
 
+        kw_node_t *const result = node->succ->succ ? node->succ : NULL;
+
         node->pred->succ = node->succ;
         node->succ->pred = node->pred;
+
+        return result;
 }
 
 void
@@ -240,7 +247,7 @@ reprioritize_node(kw_node_t *const node, int delta_pri)
         if (delta_pri > 0 && node->pri < LONG_MAX &&
                         node->pred->pred && node->pri > node->pred->pri)
         {
-                remove_node(node);
+                (void) remove_node(node);
                 kw_node_t *tmp = node->pred;
 
                 while (tmp->pred && node->pri > tmp->pri)
@@ -251,7 +258,7 @@ reprioritize_node(kw_node_t *const node, int delta_pri)
         else if (delta_pri < 0 && node->pri > LONG_MIN &&
                         node->succ->succ && node->pri < node->succ->pri)
         {
-                remove_node(node);
+                (void) remove_node(node);
                 kw_node_t *tmp = node->succ;
 
                 while (tmp->succ && node->pri < tmp->pri)
@@ -273,7 +280,7 @@ move_to_head(kw_node_t *const node)
                 return;
 
         kw_node_t *tmp = node->pred;
-        remove_node(node);
+        (void) remove_node(node);
         for (; tmp->pred->pred; (tmp = tmp->pred))
                 ;
 

@@ -20,7 +20,6 @@
 
 #include <string.h>
 #include <syslog.h>
-#include <assert.h>
 #include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -47,6 +46,7 @@
 const char *saved_state = NULL;
 
 pthread_t save_state_thread = 0;
+pthread_mutex_t save_state_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static bool
 move_state_file_to_backup(void)
@@ -104,23 +104,28 @@ save_state(bool verbose)
                 la_log(LOG_INFO, "Dumping current state to \"%s\"",
                                 saved_state);
 
-        FILE *const stream = fopen(saved_state, "w");
-        if (!stream)
-                LOG_RETURN(, LOG_ERR, "Unable to open state file");
+        xpthread_mutex_lock(&save_state_mutex);
 
-        const time_t now = xtime(NULL);
-        char date_string[26];
-        fprintf(stream, "# logactiond state %s\n", ctime_r(&now, date_string));
+                FILE *const stream = fopen(saved_state, "w");
+                if (!stream)
+                        LOG_RETURN(, LOG_ERR, "Unable to open state file");
 
-        xpthread_mutex_lock(&end_queue_mutex);
+                const time_t now = xtime(NULL);
+                char date_string[26];
+                fprintf(stream, "# logactiond state %s\n",
+                                ctime_r(&now, date_string));
 
-                if (!recursively_save_state(stream, get_root_of_queue()))
-                        la_log_errno(LOG_ERR, "Failure to dump queue.");
+                xpthread_mutex_lock(&end_queue_mutex);
 
-        xpthread_mutex_unlock(&end_queue_mutex);
+                        if (!recursively_save_state(stream, get_root_of_queue()))
+                                la_log_errno(LOG_ERR, "Failure to dump queue.");
 
-        if (fclose(stream) == EOF)
-                la_log_errno(LOG_ERR, "Unable to close state file");
+                xpthread_mutex_unlock(&end_queue_mutex);
+
+                if (fclose(stream) == EOF)
+                        la_log_errno(LOG_ERR, "Unable to close state file");
+
+        xpthread_mutex_unlock(&save_state_mutex);
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
 }
 
@@ -224,10 +229,22 @@ restore_state_and_start_save_state_thread(const bool create_backup_file)
         start_save_state_thread();
 }
 
+static void
+cleanup_state(void *const arg)
+{
+        la_debug_func(NULL);
+
+        save_state_thread = 0;
+        wait_final_barrier();
+        la_debug("state save thread exiting");
+}
+
 noreturn static void *
 periodically_save_state(void *const ptr)
 {
         la_debug_func(NULL);
+
+        pthread_cleanup_push(cleanup_state, NULL);
 
         for (;;)
         {
@@ -242,6 +259,9 @@ periodically_save_state(void *const ptr)
                 save_state(false);
         }
         assert(false);
+        /* Will never be reached, simply here to make potential pthread macros
+         * happy */
+        pthread_cleanup_pop(1);
 }
 
 void
@@ -251,6 +271,8 @@ start_save_state_thread(void)
 
         xpthread_create(&save_state_thread, NULL, periodically_save_state,
                         NULL, "save state");
+        thread_started();
+        la_debug("state save thread started (%i)", save_state_thread);
 }
 
 void

@@ -25,7 +25,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <syslog.h>
-#include <assert.h>
 #include <getopt.h>
 #include <pwd.h>
 #include <pthread.h>
@@ -63,13 +62,20 @@
 #include "crypto.h"
 #include "metacommands.h"
 
+pthread_t main_thread = 0;
+pthread_barrier_t final_barrier;
+bool barrier_initialized = false;
+/* num_threads not declared as atomic because only main thread ever modifies it
+ */
+int num_threads = 1;
+
 char *cfg_filename = NULL;
 char *pid_file = NULL;
 la_runtype_t run_type = LA_DAEMON_BACKGROUND;
 char *run_uid_s = NULL;
 bool create_backup_file = false;
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
-        atomic_bool shutdown_ongoing = false;
+        atomic_bool shutdown_ongoing = ATOMIC_VAR_INIT(false);
 #else /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
         bool shutdown_ongoing = false;
 #endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
@@ -91,26 +97,49 @@ trigger_shutdown(int status, int saved_errno)
         exit_errno = saved_errno;
         shutdown_ongoing = true;
 
+        la_log(LOG_INFO, "Shutting down");
+
+#if HAVE_LIBSYSTEMD
+        sd_notifyf(0, "STOPPING=1\n"
+                        "STATUS=Exiting (status=%u, errno%u)\n"
+                        "ERRNO=%u\n", exit_status, exit_errno, exit_errno);
+#endif /* HAVE_LIBSYSTEMD */
+
         save_state(true);
 
-        if (file_watch_thread)
-                pthread_cancel(file_watch_thread);
+        xpthread_cancel_if_applicable(file_watch_thread);
 #if HAVE_LIBSYSTEMD
-        if (systemd_watch_thread)
-                pthread_cancel(systemd_watch_thread);
+        xpthread_cancel_if_applicable(systemd_watch_thread);
 #endif /* HAVE_LIBSYSTEMD */
-        if (end_queue_thread)
-                pthread_cancel(end_queue_thread);
+        xpthread_cancel_if_applicable(end_queue_thread);
 #ifndef NOMONITORING
-        if (monitoring_thread)
-                pthread_cancel(monitoring_thread);
+        xpthread_cancel_if_applicable(monitoring_thread);
 #endif /* NOMONITORING */
-        if (fifo_thread && pthread_self() != fifo_thread)
-                pthread_cancel(fifo_thread);
-        if (remote_thread && pthread_self() != remote_thread)
-                pthread_cancel(remote_thread);
-        if (save_state_thread)
-                pthread_cancel(save_state_thread);
+        xpthread_cancel_if_applicable(fifo_thread);
+        cancel_all_remote_threads();
+        xpthread_cancel_if_applicable(save_state_thread);
+
+        /* Apparently signals are delivered to a random thread, so
+         * - if signal has been catched by main thread simply return and don't
+         *   pthread_exit() as main thread still has some things to do after
+         *   all other threads have exited.
+         *   - special case: if barrier never has been initialized an error has
+         *     happend early on, then simply bail out via exit()
+         * - OTOH if it's any other thread, call pthread_exit() because
+         *   cancelling oneself (in one of the lines above) would have been a
+         *   bad idea */
+
+        if (pthread_equal(pthread_self(), main_thread))
+        {
+                if (barrier_initialized)
+                        return;
+                else
+                        exit(1);
+        }
+        else
+        {
+                pthread_exit(NULL);
+        }
 }
 
 void
@@ -446,9 +475,11 @@ main(int argc, char *argv[])
 
         create_pidfile(PIDFILE);
 
+        main_thread = pthread_self();
+
         la_log(LOG_INFO, "Starting up " PACKAGE_STRING ".");
 
-        start_end_queue_thread();
+        init_end_queue();
         if (!init_la_config(cfg_filename))
                 die_hard(false, "Error loading configuration.");
         load_la_config();
@@ -458,9 +489,11 @@ main(int argc, char *argv[])
         start_monitoring_thread();
 #endif /* NOMONITORING */
         start_fifo_thread();
-        start_remote_thread();
+        start_all_remote_threads();
 
         restore_state_and_start_save_state_thread(create_backup_file);
+
+        start_end_queue_thread();
 
         if (sync_on_startup)
         {
@@ -476,56 +509,13 @@ main(int argc, char *argv[])
                         "STATUS=logactiond started - monitoring log files.\n");
 #endif /* HAVE_LIBSYSTEMD */
 
-        la_debug("Main thread going to sleep.");
-
-        if (file_watch_thread)
+        if (!shutdown_ongoing)
         {
-                xpthread_join(file_watch_thread, NULL);
-                la_debug("joined file_watch_thread");
-        }
-
-#if HAVE_LIBSYSTEMD
-        if (systemd_watch_thread)
-        {
-                xpthread_join(systemd_watch_thread, NULL);
-                la_debug("joined systemd_watch_thread");
-        }
-#endif /* HAVE_LIBSYSTEMD */
-
-        /* Log that we're going down */
-        la_log(LOG_INFO, "Shutting down");
-
-#if HAVE_LIBSYSTEMD
-        sd_notifyf(0, "STOPPING=1\n"
-                        "STATUS=Exiting (status=%u, errno%u)\n"
-                        "ERRNO=%u\n", exit_status, exit_errno, exit_errno);
-#endif /* HAVE_LIBSYSTEMD */
-
-        /* Wait for all threads to end */
-        if (end_queue_thread)
-        {
-                xpthread_join(end_queue_thread, NULL);
-                la_debug("joined end_queue_thread");
-        }
-
-#ifndef NOMONITORING
-        if (monitoring_thread)
-        {
-                xpthread_join(monitoring_thread, NULL);
-                la_debug("joined status_monitoring_thread");
-        }
-#endif /* NOMONITORING */
-
-        if (fifo_thread)
-        {
-                xpthread_join(fifo_thread, NULL);
-                la_debug("joined fifo_thread");
-        }
-
-        if (remote_thread)
-        {
-                xpthread_join(remote_thread, NULL);
-                la_debug("joined remote_thread");
+                pthread_barrier_init(&final_barrier, NULL, num_threads);
+                barrier_initialized = true;
+                la_debug("Main thread going to sleep");
+                pthread_barrier_wait(&final_barrier);
+                pthread_barrier_destroy(&final_barrier);
         }
 
         unload_la_config();
@@ -540,6 +530,21 @@ main(int argc, char *argv[])
         la_log(loglevel, "Exiting (status=%u, errno=%u).", exit_status, exit_errno);
 
         exit(exit_status);
+}
+
+void
+thread_started(void)
+{
+        num_threads++;
+}
+
+void
+wait_final_barrier(void)
+{
+        la_vdebug_func(barrier_initialized ? "true" : "false");
+
+        if (barrier_initialized)
+                pthread_barrier_wait(&final_barrier);
 }
 
 

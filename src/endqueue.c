@@ -19,8 +19,9 @@
 #include <config.h>
 
 #include <time.h>
+#ifndef CLIENTONLY
 #include <pthread.h>
-#include <assert.h>
+#endif /* CLIENTONLY */
 #include <limits.h>
 #include <stdatomic.h>
 #include <stdnoreturn.h>
@@ -43,9 +44,11 @@ kw_list_t *end_time_list = NULL;
 kw_list_t *queue_pointers = NULL;
 
 int queue_length = 0;
+#ifndef CLIENTONLY
 pthread_t end_queue_thread = 0;
 pthread_mutex_t end_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t end_queue_condition = PTHREAD_COND_INITIALIZER;
+#endif /* CLIENTONLY */
 
 /*
  * Only invoked after a config reload. Goes through all commands in the
@@ -56,14 +59,17 @@ pthread_cond_t end_queue_condition = PTHREAD_COND_INITIALIZER;
  * to avoid other code will follow wrong pointers.
  */
 
+#ifndef CLIENTONLY
 void
 update_queue_count_numbers(void)
 {
         la_debug_func(NULL);
         assert_tree(adr_tree);
 
+#ifndef CLIENTONLY
         xpthread_mutex_lock(&config_mutex);
         xpthread_mutex_lock(&end_queue_mutex);
+#endif /* CLIENTONLY */
 
                 for (kw_tree_node_t *node = adr_tree->first; node;
                                 (node = next_node_in_tree(node)))
@@ -86,9 +92,12 @@ update_queue_count_numbers(void)
                         command->pattern = NULL;
                 }
 
+#ifndef CLIENTONLY
         xpthread_mutex_unlock(&end_queue_mutex);
         xpthread_mutex_unlock(&config_mutex);
+#endif /* CLIENTONLY */
 }
+#endif /* CLIENTONLY */
 
 static int
 cmp_command_address(const void *p1, const void *p2)
@@ -128,15 +137,20 @@ find_end_command(const la_address_t *const address)
 {
         la_command_t *result = NULL;
 
+#ifndef CLIENTONLY
         xpthread_mutex_lock(&end_queue_mutex);
+#endif /* CLIENTONLY */
 
                 result = find_end_command_no_mutex(address);
 
+#ifndef CLIENTONLY
         xpthread_mutex_unlock(&end_queue_mutex);
+#endif /* CLIENTONLY */
 
         return result;
 }
 
+#ifndef CLIENTONLY
 static void
 fix_queue_pointers(const la_command_t *const command)
 {
@@ -162,6 +176,7 @@ fix_queue_pointers(const la_command_t *const command)
                 }
         }
 }
+#endif /* CLIENTONLY */
 
 static void
 remove_command_from_queues(la_command_t *const command)
@@ -170,13 +185,16 @@ remove_command_from_queues(la_command_t *const command)
         la_debug_func(command->address ? command->address->text : NULL);
 
         (void) remove_tree_node(adr_tree, &(command->adr_node));
+#ifndef CLIENTONLY
         fix_queue_pointers(command);
-        remove_node((kw_node_t *) command);
+#endif /* CLIENTONLY */
+        (void) remove_node((kw_node_t *) command);
 
         assert(queue_length > 0);
         queue_length--;
 }
 
+#ifndef CLIENTONLY
 void empty_queue_pointers(void)
 {
         if (!queue_pointers)
@@ -192,30 +210,62 @@ void empty_queue_pointers(void)
 }
 
 static la_queue_pointer_t *
-find_queue_pointer_for_duration(const int duration)
-{
-        la_vdebug_func(NULL);
-        for (la_queue_pointer_t *result =
-                        (la_queue_pointer_t *) queue_pointers->head.succ;
-                        result->node.succ;
-                        result = (la_queue_pointer_t *) result->node.succ)
-        {
-                if (result->duration == duration)
-                        return result;
-        }
-
-        return NULL;
-}
-
-static la_queue_pointer_t *
 create_queue_pointer(const int duration)
 {
+        la_vdebug_func(NULL);
         la_queue_pointer_t *result = create_node(sizeof *result, 0, NULL);
         result->duration = duration;
         result->command = NULL;
         add_tail(queue_pointers, (kw_node_t *) result);
 
         return result;
+}
+
+static la_queue_pointer_t *
+find_queue_pointer_for_duration_or_create_new(const int duration)
+{
+        la_vdebug_func(NULL);
+        la_queue_pointer_t *qp = NULL;
+        for (qp = (la_queue_pointer_t *) &queue_pointers->head;
+                        qp = (la_queue_pointer_t *) (qp->node.succ->succ ? qp->node.succ : NULL);)
+        {
+                if (qp->duration == duration)
+                        break;
+        }
+
+        if (qp)
+                reprioritize_node((kw_node_t *) qp, 1);
+        else
+                qp = create_queue_pointer(duration);
+
+        return qp;
+}
+#endif /* CLIENTONLY */
+
+static time_t
+compute_duration(const la_command_t *const command)
+{
+        la_vdebug_func(NULL);
+
+        assert_command(command);
+
+        /* Factor of -1 means we're maxed out already - return maximum duation
+         * we're willing to go */
+        if (command->factor == -1)
+                return command->rule->meta_max;
+
+        time_t duration = 0;
+
+        /* If command was activated due to a blacklist listing, use
+         * rule->dnsbl_duration, thus ignoring the duration parameter used when
+         * creating the command. Should not be a problem for templates, as
+         * these always created in configfile.c and never via a blacklist. */
+        if (command->previously_on_blacklist)
+                duration = command->rule->dnsbl_duration;
+        else
+                duration = command->duration;
+
+        return (time_t) duration * command->factor;
 }
 
 static bool
@@ -227,19 +277,28 @@ add_to_end_time_list(la_command_t *command)
         /* first let's see if there's an existing queue pointer for this
          * duration, if not create one that points to the beginning o fthe
          * queue */
-        const int duration = command->end_time - xtime(NULL);
-        la_queue_pointer_t *qp = find_queue_pointer_for_duration(duration);
-        if (qp)
-                reprioritize_node((kw_node_t *) qp, 1);
-        else
-                qp = create_queue_pointer(duration);
+        la_command_t *tmp = NULL;
+#ifndef CLIENTONLY
+        la_queue_pointer_t *qp = NULL;
+        /* Don't even care about queue pointer as long queue thread is not yet
+         * running. This way we avoid adding lots of queue pointers while
+         * restoring logactiond.state */
+        if (end_queue_thread)
+        {
+                qp = find_queue_pointer_for_duration_or_create_new(
+                                compute_duration(command));
 
-        /* starting with the queue pointer find position where to insert the
-         * new command */
-        la_command_t *tmp = qp->command;
+                /* starting with the queue pointer find position where to
+                 * insert the new command */
+                tmp = qp->command;
+        }
+#endif /* CLIENTONLY */
+        /* If no queue pointer found, search through the whole queue... */
         if (!tmp)
                 tmp = (la_command_t *) get_head(end_time_list);
 
+        /* In case tmp != NULL, search through list, in case tmp == NULL, list
+         * is empty and simply add command */
         if (tmp)
         {
                 int i = 0;
@@ -251,21 +310,32 @@ add_to_end_time_list(la_command_t *command)
 
                 insert_node_before((kw_node_t *) tmp, (kw_node_t *) command);
 
-                la_config->total_et_cmps += i;
+#ifndef CLIENTONLY
+                /* Don't let restoring logactiond.state ruin our statistics...
+                 */
+                if (end_queue_thread)
+                        la_config->total_et_cmps += i;
+#endif /* CLIENTONLY */
         }
         else
         {
                 add_head(end_time_list, (kw_node_t *) command);
         }
 
+#ifndef CLIENTONLY
         /* set queue pointer so that next search will start at inserted command
          */
-        qp->command = command;
+        if (qp)
+                qp->command = command;
 
-        la_config->total_et_invs++;
+        /* Again, don't let restoring logactiond.state ruin our statistics...
+         */
+        if (end_queue_thread)
+                la_config->total_et_invs++;
+#endif /* CLIENTONLY */
 
-        /* return true in case command has been inserted at the start of the
-         * list */
+        /* Only return true in case command has been inserted at the start of
+         * the list */
         return command == (la_command_t *) get_head(end_time_list);
 }
 
@@ -309,14 +379,18 @@ remove_and_trigger(la_address_t *const address)
 
         int result = -1;
 
+#ifndef CLIENTONLY
         xpthread_mutex_lock(&end_queue_mutex);
+#endif /* CLIENTONLY */
 
                 la_command_t *command = find_end_command_no_mutex(address);
 
                 if (command)
                 {
                         remove_command_from_queues(command);
+#ifndef NOCOMMANDS
                         trigger_end_command(command, false);
+#endif /* NOCOMMANDS */
                         free_command(command);
                         result = 0;
                 }
@@ -325,7 +399,9 @@ remove_and_trigger(la_address_t *const address)
                         result = -1;
                 }
 
+#ifndef CLIENTONLY
         xpthread_mutex_unlock(&end_queue_mutex);
+#endif /* CLIENTONLY */
 
         return result;
 }
@@ -357,8 +433,10 @@ empty_end_queue(void)
          * empty_end_queue() has been called from cleanup action.
          *
          * Of course also don't touch mutex if no thread is running. */
+#ifndef CLIENTONLY
         if (!shutdown_ongoing && end_queue_thread)
                 xpthread_mutex_lock(&end_queue_mutex);
+#endif /* CLIENTONLY */
 
         empty_tree(adr_tree, finalize_command, false);
         /* manually reset end_time_list, adr_tree has already been reset by
@@ -366,12 +444,14 @@ empty_end_queue(void)
         init_list(end_time_list);
         queue_length = 0;
 
+#ifndef CLIENTONLY
         if (!shutdown_ongoing && end_queue_thread)
         {
                 /* signal probably not strictly necessary... */
                 (void) xpthread_cond_signal(&end_queue_condition);
                 xpthread_mutex_unlock(&end_queue_mutex);
         }
+#endif /* CLIENTONLY */
 }
 #endif /* NOCOMMANDS */
 
@@ -385,6 +465,7 @@ empty_end_queue(void)
  * Runs in end_queue_thread
  */
 
+#ifndef CLIENTONLY
 static void
 wait_for_next_end_command(const la_command_t *command)
 {
@@ -414,11 +495,13 @@ wait_for_next_end_command(const la_command_t *command)
                                 &end_queue_mutex, &wait_interval);
         }
 }
+#endif /* CLIENTONLY */
 
 /*
  * Will only be called when thread exits.
  */
 
+#ifndef CLIENTONLY
 static void
 cleanup_end_queue(void *arg)
 {
@@ -426,7 +509,7 @@ cleanup_end_queue(void *arg)
 
         empty_end_queue();
 
-        free_tree(adr_tree);
+        free(adr_tree);
         adr_tree = NULL;
 
         free(end_time_list);
@@ -436,7 +519,10 @@ cleanup_end_queue(void *arg)
         queue_pointers = NULL;
 
         end_queue_thread = 0;
+        wait_final_barrier();
+        la_debug("end queue thread exiting");
 }
+#endif /* CLIENTONLY */
 
 la_command_t *
 first_command_in_queue(void)
@@ -471,29 +557,11 @@ set_end_time(la_command_t *const command, const time_t manual_end_time)
         la_vdebug("set_end_time(%s, %u)", command->end_string, command->duration);
 
         if (manual_end_time)
-        {
                 command->end_time = manual_end_time;
-        }
         else if (command->duration == INT_MAX)
-        {
                 command->end_time = INT_MAX;
-        }
         else
-        {
-                /* If command was activated due to a blacklist listing, use
-                 * rule->dnsbl_duration, thus ignoring the duration parameter
-                 * used when creating the command. Should not be a problem for
-                 * templates, as these always created in configfile.c and never
-                 * via a blacklist. */
-                int duration = command->previously_on_blacklist ?
-                        command->rule->dnsbl_duration : command->duration;
-
-                if (command->factor != -1)
-                        command->end_time = xtime(NULL) +
-                                (long) duration * command->factor;
-                else
-                        command->end_time = xtime(NULL) + command->rule->meta_max;
-        }
+                command->end_time = xtime(NULL) + compute_duration(command);
 }
 
 static void
@@ -506,7 +574,7 @@ remove_or_renew(la_command_t *const command)
 
         if (blname)
         {
-                remove_node(&(command->node));
+                (void) remove_node(&(command->node));
                 set_end_time(command, 0);
                 la_log_verbose(LOG_INFO, "Host: %s still on blacklist %s, action "
                                 "\"%s\" renewed (%us).", command->address->text,
@@ -530,6 +598,7 @@ remove_or_renew(la_command_t *const command)
  * Runs in end_queue_thread
  */
 
+#ifndef CLIENTONLY
 noreturn static void *
 consume_end_queue(void *ptr)
 {
@@ -586,11 +655,17 @@ consume_end_queue(void *ptr)
          * happy */
         pthread_cleanup_pop(1);
 }
+#endif /* CLIENTONLY */
 
 void
 init_end_queue(void)
 {
         la_debug_func(NULL);
+        if (adr_tree)
+                return;
+
+        /* Just to make sure that not accidentaly only one has been initialized
+         * previously */
         assert(!adr_tree); assert(!end_time_list);
 
         adr_tree = create_tree();
@@ -599,6 +674,7 @@ init_end_queue(void)
 }
 
 
+#ifndef CLIENTONLY
 void
 start_end_queue_thread(void)
 {
@@ -608,7 +684,10 @@ start_end_queue_thread(void)
 
         xpthread_create(&end_queue_thread, NULL, consume_end_queue, NULL,
                         "end queue");
+        thread_started();
+        la_debug("End queue thread startet (%i)", end_queue_thread);
 }
+#endif /* CLIENTONLY */
 
 
 
@@ -633,17 +712,23 @@ enqueue_end_command(la_command_t *const end_command, const time_t manual_end_tim
 
         set_end_time(end_command, manual_end_time);
 
+#ifndef CLIENTONLY
         xpthread_mutex_lock(&end_queue_mutex);
+#endif /* CLIENTONLY */
 
                 /* wake up end queue thread only if command is the first
                  * command to execute in the list */
                 if (add_command_to_queues(end_command))
                 {
+#ifndef CLIENTONLY
                         la_vdebug("Waking up end queue thread.");
                         xpthread_cond_signal(&end_queue_condition);
+#endif /* CLIENTONLY */
                 }
 
+#ifndef CLIENTONLY
         xpthread_mutex_unlock(&end_queue_mutex);
+#endif /* CLIENTONLY */
 }
 
 int

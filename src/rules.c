@@ -21,13 +21,15 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <syslog.h>
-#include <assert.h>
 #include <limits.h>
 #include <sys/types.h>
 #include <regex.h>
 #include <string.h>
 #include <stdio.h>
 #include <pthread.h>
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
+#include <stdatomic.h>
+#endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -140,7 +142,7 @@ find_trigger(const la_command_t *const template, const la_address_t *const addre
                 {
                         /*la_log(LOG_INFO, "NOTE: Removed IP %s from \"%s\"",
                                         tmp->address->text, tmp->rule_name);*/
-                        remove_node((kw_node_t *) tmp);
+                        (void) remove_node((kw_node_t *) tmp);
                         free_command(tmp);
                 }
         }
@@ -171,7 +173,7 @@ static void
 trigger_then_enqueue_or_free(la_command_t *const command, const bool remove_command)
 {
         if (remove_command)
-                remove_node((kw_node_t *) command);
+                (void) remove_node((kw_node_t *) command);
         trigger_command(command);
         if (command->end_string && command->duration > 0)
                 enqueue_end_command(command, 0);
@@ -545,8 +547,14 @@ create_rule(const bool enabled, const char *const name,
         init_list(&result->properties);
         init_list(&result->blacklists);
 
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
+        result->detection_count = ATOMIC_VAR_INIT(0);
+        result->invocation_count = ATOMIC_VAR_INIT(0);
+        result->queue_count = ATOMIC_VAR_INIT(0);
+#else /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
         result->detection_count = result->invocation_count =
                 result->queue_count = 0;
+#endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
 
         assert_rule(result);
         return result;

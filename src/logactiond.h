@@ -23,6 +23,7 @@
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
 #include <stdatomic.h>
 #endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
+#include <pthread.h>
 
 #include <config.h>
 
@@ -78,6 +79,10 @@ extern la_runtype_t run_type;
 void trigger_shutdown(int status, int saved_errno);
 
 void trigger_reload(void);
+
+void thread_started(void);
+
+void wait_final_barrier(void);
 
 #endif /* __logactiond_h */
 

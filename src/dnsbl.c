@@ -21,7 +21,6 @@
 
 #include <netdb.h>
 #include <stdio.h>
-#include <assert.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>

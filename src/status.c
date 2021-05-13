@@ -22,7 +22,6 @@
 
 #include <pthread.h>
 #include <unistd.h>
-#include <assert.h>
 #include <limits.h>
 #include <stdio.h>
 #include <errno.h>
@@ -75,9 +74,8 @@ dump_queue_pointers(void)
 
                 fprintf(diag_file, "\nqueue pointer list (length=%i)\n", list_length(queue_pointers));
 
-                for (la_queue_pointer_t *qp = (la_queue_pointer_t *) queue_pointers->head.succ;
-                                qp->node.succ;
-                                qp = (la_queue_pointer_t *) qp->node.succ)
+                for (la_queue_pointer_t *qp = (la_queue_pointer_t *) &queue_pointers->head;
+                                qp = (la_queue_pointer_t *) (qp->node.succ->succ ? qp->node.succ : NULL);)
                         fprintf(diag_file, "%i[%i] -> %s (%i)\n", qp->duration, qp->node.pri,
                                         (qp->command && qp->command->address) ? qp->command->address->text : NULL,
                                         qp->command ? qp->command->end_time : -1);
@@ -231,6 +229,8 @@ cleanup_monitoring(void *const arg)
                 la_log_errno(LOG_ERR, "Can't remove diagnostics file");
 
         monitoring_thread = 0;
+        wait_final_barrier();
+        la_debug("status thread exiting");
 }
 
 /*
@@ -282,6 +282,8 @@ start_monitoring_thread(void)
         assert(!monitoring_thread);
 
         xpthread_create(&monitoring_thread, NULL, dump_loop, NULL, "status");
+        thread_started();
+        la_debug("status thread started (%i)", monitoring_thread);
 }
 
 static const char *

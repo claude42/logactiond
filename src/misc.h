@@ -50,6 +50,8 @@ void xpthread_mutex_unlock(pthread_mutex_t *mutex);
 
 void xpthread_join(pthread_t thread, void **retval);
 
+void xpthread_cancel_if_applicable(pthread_t thread);
+
 time_t xtime(time_t *tloc);
 
 void xfree (void *ptr);

@@ -77,9 +77,10 @@ void add_to_tree(kw_tree_t *node_in_tree, kw_tree_node_t *new_node,
 void empty_tree(kw_tree_t *tree, void (*delete_payload)(const void *),
                 bool free_nodes);
 
-kw_tree_t *create_tree(void);
+void free_tree(kw_tree_t *tree, void (*delete_payload)(const void *),
+                bool free_nodes);
 
-void free_tree(kw_tree_t *tree);
+kw_tree_t *create_tree(void);
 
 bool is_empty(kw_tree_t *tree);
 

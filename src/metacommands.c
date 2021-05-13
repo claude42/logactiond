@@ -16,7 +16,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <assert.h>
 #include <time.h>
 
 #include "ndebug.h"
@@ -56,8 +55,7 @@ free_meta_list(void)
                 return;
         assert_tree(meta_list);
 
-        empty_tree(meta_list, (void (*)(const void *)) free_meta_command, false);
-        free_tree(meta_list);
+        free_tree(meta_list, (void (*)(const void *)) free_meta_command, false);
 }
 
 static la_meta_command_t *

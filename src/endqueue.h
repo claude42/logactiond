@@ -45,7 +45,9 @@ typedef struct la_queue_pointer_s
         la_command_t *command;
 } la_queue_pointer_t;
 
+#ifndef CLIENTONLY
 void update_queue_count_numbers(void);
+#endif /* CLIENTONLY */
 
 la_command_t *find_end_command(const la_address_t *address);
 
@@ -63,7 +65,9 @@ la_command_t *first_command_in_queue(void);
 
 la_command_t *next_command_in_queue(la_command_t *const command);
 
+#ifndef CLIENTONLY
 void empty_queue_pointers(void);
+#endif /* CLIENTONLY */
 
 kw_tree_node_t *get_root_of_queue(void);
 

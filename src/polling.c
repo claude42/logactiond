@@ -22,7 +22,6 @@
 #if !HAVE_INOTIFY
 
 #include <syslog.h>
-#include <assert.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -46,6 +45,9 @@ cleanup_watching_polling(void *const arg)
         la_debug_func(NULL);
 
         shutdown_watching();
+        file_watch_thread = 0;
+        wait_final_barrier();
+        la_debug("polling thread exiting");
 }
 
 static void
@@ -180,6 +182,9 @@ start_watching_polling_thread(void)
 
         xpthread_create(&file_watch_thread, NULL,
                         watch_forever_polling, NULL, "polling");
+
+        thread_started();
+        la_debug("polling thread started (%i)", file_watch_thread);
 }
 
 #endif /* !HAVE_INOTIFY */

@@ -92,7 +92,7 @@ kw_node_t *get_tail(const kw_list_t *list);
 
 void insert_node_before(kw_node_t *ex_node, kw_node_t *new_node);
 
-void remove_node(kw_node_t *node);
+kw_node_t *remove_node(kw_node_t *node);
 
 void reprioritize_node(kw_node_t *const node, int delta_pri);
 

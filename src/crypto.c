@@ -19,7 +19,6 @@
 #ifndef NOCRYPTO
 #include <config.h>
 
-#include <assert.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stddef.h>

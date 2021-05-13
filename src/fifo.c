@@ -19,7 +19,6 @@
 #include <config.h>
 
 #include <pthread.h>
-#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -65,6 +64,8 @@ cleanup_fifo(void *const arg)
         fifo = NULL;
 
         fifo_thread = 0;
+        wait_final_barrier();
+        la_debug("Fifo thread exiting");
 }
 
 static void
@@ -147,6 +148,8 @@ start_fifo_thread(void)
         create_fifo();
 
         xpthread_create(&fifo_thread, NULL, fifo_loop, NULL, "fifo");
+        thread_started();
+        la_debug("Fifo thread startet (%i)", fifo_thread);
 }
 
 

@@ -20,11 +20,13 @@
 #include <config.h>
 
 /* define _GNU_SOURCE to get pthread_setname_np() */
+#ifndef CLIENTONLY
 #define _GNU_SOURCE
 #include <pthread.h>
 #if HAVE_PTHREAD_NP_H
 #include <pthread_np.h>
 #endif /* HAVE_PTHREAD_NP_H */
+#endif /* CLIENTONLY */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -127,10 +129,13 @@ check_pidfile(const char *const pidfile_name)
         return result;
 }
 
+#endif /* CLIENTONLY */
+
 /*
  * Create thread, die if it fails
  */
 
+#ifndef CLIENTONLY
 void
 xpthread_create(pthread_t *const thread, const pthread_attr_t *const attr,
                 void *(*start_routine)(void *), void *const arg,
@@ -249,6 +254,12 @@ xpthread_join(pthread_t thread, void **retval)
                 misc_exit_function(true, "Faoiled to join thread");
 }
 
+void
+xpthread_cancel_if_applicable(pthread_t thread)
+{
+        if (thread && !pthread_equal(pthread_self(), thread))
+                pthread_cancel(thread);
+}
 #endif /* CLIENTONLY */
 
 time_t

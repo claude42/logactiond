@@ -18,7 +18,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 #include <limits.h>
 #include <stdbool.h>
 /* keep these 3 in, even if deheader says to remote them. Necessary e.g. for
@@ -702,6 +701,7 @@ create_command_from_template(const la_command_t *const template,
  * TODO: recognize access from other local addresses
  */
 
+#ifndef CLIENTONLY
 static
 bool is_local_address(const la_address_t *const address)
 {
@@ -709,6 +709,7 @@ bool is_local_address(const la_address_t *const address)
                         !strcmp("127.0.0.1", address->text) ||
                         !strcmp("::1", address->text));
 }
+#endif /* CLIENTONLY */
 
 /* TODO: combine both create*command*() methods into one */
 
@@ -731,8 +732,12 @@ create_manual_command_from_template(const la_command_t *const template,
 
         result->address = address ? dup_address(address) : NULL;
         result->end_time = result->n_triggers = result->start_time= 0;
+#ifndef CLIENTONLY
         result->submission_type = is_local_address(from_addr) ?
                 LA_SUBMISSION_MANUAL : LA_SUBMISSION_REMOTE;
+#else /* CLIENTONLY */
+        result->submission_type = LA_SUBMISSION_MANUAL;
+#endif /* CLIENTONLY */
 
         convert_both_commands(result);
 
@@ -820,11 +825,13 @@ free_command(la_command_t *const command)
         free(command);
 }
 
+#ifndef CLIENTONLY
 const char *
 command_address_on_dnsbl(const la_command_t *const command)
 {
         assert_command(command);
         return host_on_any_dnsbl(&command->rule->blacklists, command->address);
 }
+#endif /* CLIENTONLY */
 
 /* vim: set autowrite expandtab: */

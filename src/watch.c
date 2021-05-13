@@ -19,7 +19,6 @@
 
 #include <config.h>
 
-#include <assert.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -165,7 +164,9 @@ start_watching_threads(void)
 
 #if HAVE_LIBSYSTEMD
         if (la_config->systemd_source_group)
+        {
                 start_watching_systemd_thread();
+        }
 #endif /* HAVE_LIBSYSTEMD */
 
 #endif /* NOWATCH */
@@ -200,9 +201,6 @@ shutdown_watching(void)
                 }
                 xpthread_mutex_unlock(&config_mutex);
         }
-
-        file_watch_thread = 0;
-
 #endif /* NOWATCH */
 }
 

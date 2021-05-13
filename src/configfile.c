@@ -22,7 +22,6 @@
 #include <string.h>
 #include <strings.h>
 #include <syslog.h>
-#include <assert.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <sys/types.h>

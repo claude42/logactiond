@@ -22,7 +22,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <syslog.h>
-#include <assert.h>
 #include <getopt.h>
 #include <string.h>
 #include <stdbool.h>
@@ -51,7 +50,7 @@ static char *cfg_filename = NULL;
 static char *log_filename = NULL;
 static char *rule_name = NULL;
 #if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
-        atomic_bool shutdown_ongoing = false;
+        atomic_bool shutdown_ongoing = ATOMIC_VAR_INIT(false);
 #else /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
         bool shutdown_ongoing = false;
 #endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */

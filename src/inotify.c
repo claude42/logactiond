@@ -24,7 +24,6 @@
 #include <stdlib.h>
 #include <sys/inotify.h>
 #include <unistd.h>
-#include <assert.h>
 #include <libgen.h>
 #include <errno.h>
 #include <pthread.h>
@@ -330,10 +329,13 @@ cleanup_watching_inotify(void *const arg)
 {
         la_debug_func(NULL);
 
-        shutdown_watching();
-
         if (close(inotify_fd) == -1)
                 la_log_errno(LOG_ERR, "Can't close inotify fd!");
+
+        shutdown_watching();
+        file_watch_thread = 0;
+        wait_final_barrier();
+        la_debug("inotify thread exiting");
 }
 
 /*
@@ -439,6 +441,8 @@ start_watching_inotify_thread(void)
 
         xpthread_create(&file_watch_thread, NULL,
                         watch_forever_inotify, NULL, "inotify");
+        thread_started();
+        la_debug("inotify thread startet (%i)", file_watch_thread);
 }
 
 #endif /* HAVE_INOTIFY */
