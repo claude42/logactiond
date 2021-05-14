@@ -72,11 +72,14 @@ dump_queue_pointers(void)
 
         xpthread_mutex_lock(&end_queue_mutex);
 
-                fprintf(diag_file, "\nqueue pointer list (length=%i)\n", list_length(queue_pointers));
+                fprintf(diag_file, "\nqueue pointer list (length=%i)\n",
+                                list_length(queue_pointers));
 
                 FOREACH(la_queue_pointer_t, qp, queue_pointers)
-                        fprintf(diag_file, "%i[%li] -> %s (%li)\n", qp->duration, qp->node.pri,
-                                        (qp->command && qp->command->address) ? qp->command->address->text : NULL,
+                        fprintf(diag_file, "%i[%li] -> %s (%li)\n",
+                                        qp->duration, qp->node.pri,
+                                        (qp->command && qp->command->address) ?
+                                        qp->command->address->text : NULL,
                                         qp->command ? qp->command->end_time : -1);
 
         xpthread_mutex_unlock(&end_queue_mutex);
