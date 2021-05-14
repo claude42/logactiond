@@ -140,8 +140,6 @@ typedef struct la_config_s
 
 extern la_config_t *la_config;
 
-extern int id_counter;
-
 extern pthread_mutex_t config_mutex;
 
 bool init_la_config(const char *filename);
@@ -149,6 +147,8 @@ bool init_la_config(const char *filename);
 void load_la_config(void);
 
 void unload_la_config(void);
+
+int get_unique_id(void);
 #endif /* __configfile_h */
 
 /* vim: set autowrite expandtab: */

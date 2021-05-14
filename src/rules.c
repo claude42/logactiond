@@ -504,7 +504,7 @@ create_rule(const bool enabled, const char *const name,
 
         result->enabled = enabled;
 
-        result->id = ++id_counter;
+        result->id = get_unique_id();
         result->source_group = source_group;
 
         if (threshold >= 0)

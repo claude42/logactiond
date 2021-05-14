@@ -1216,5 +1216,11 @@ include_func(config_t *config, const char *const include_dir,
         return ((const char **) result);
 }
 
+int
+get_unique_id(void)
+{
+        return ++id_counter;
+}
+
 
 /* vim: set autowrite expandtab: */

@@ -764,7 +764,7 @@ create_template(const char *const name, la_rule_t *const rule,
 
         la_command_t *const result = create_node0(sizeof *result, 0, name);
 
-        result->id = ++id_counter;
+        result->id = get_unique_id();
         result->is_template = true;
 
         result->adr_node.payload = result;
