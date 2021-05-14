@@ -58,7 +58,7 @@ move_state_file_to_backup(void)
         char *const backup_file_name = alloca(length + 1);
 
         if (snprintf(backup_file_name, length + 1, "%s%s", saved_state, BAK_SUFFIX) !=
-                        length)
+                        (int) length)
                 LOG_RETURN_ERRNO(false, LOG_ERR, "Unable to create backup file name!");
 
         if (rename(saved_state, backup_file_name) == -1 && errno != ENOENT)
