@@ -403,7 +403,7 @@ get_next_node(kw_node_t **const iterator)
 }
 
 void
-empty_list(kw_list_t *const list, void (*free_node)(void *const))
+empty_list(kw_list_t *const list, void (*free_node_func)(void *const))
 {
         if (!list)
                 return;
@@ -416,8 +416,8 @@ empty_list(kw_list_t *const list, void (*free_node)(void *const))
                 node = node->succ;
                 free(tmp->nodename);
                 tmp->nodename = NULL;
-                if (free_node)
-                        free_node(tmp);
+                if (free_node_func)
+                        free_node_func(tmp);
                 else
                         free(tmp);
         }
@@ -426,9 +426,9 @@ empty_list(kw_list_t *const list, void (*free_node)(void *const))
 }
 
 void
-free_list(kw_list_t *const list, void (*free_node)(void *const))
+free_list(kw_list_t *const list, void (*free_node_func)(void *const))
 {
-        empty_list(list, free_node);
+        empty_list(list, free_node_func);
 
         free(list);
 }

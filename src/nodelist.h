@@ -90,9 +90,9 @@ void init_list(kw_list_t *list);
 
 kw_list_t *create_list(void);
 
-void empty_list(kw_list_t *list, void (*free_node)(void *));
+void empty_list(kw_list_t *list, void (*free_node_func)(void *));
 
-void free_list(kw_list_t *list, void (*free_node)(void *));
+void free_list(kw_list_t *list, void (*free_node_func)(void *));
 
 void add_head(kw_list_t *list, kw_node_t *node);
 
