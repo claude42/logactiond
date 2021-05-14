@@ -81,16 +81,16 @@ assert_list_ffl(const kw_list_t *list, const char *func, const char *file,
         if (!list)
                 nodelist_exit_function(false, "%s:%u: %s: Assertion 'list' "
                                 "failed.", file, line, func);
-        if (!(list->head.succ && list->tail.pred))
+        if (!(list->head && list->tail_pred))
                 nodelist_exit_function(false, "%s:%u: %s: Assertion "
-                                "'list->head.succ && list->tail.pred' failed.",
+                                "'list->head && list->tail_pred' failed.",
                                 file, line, func);
-        if (!(!list->head.pred && !list->tail.succ))
+        if (list->tail)
                 nodelist_exit_function(false, "%s:%u: %s: Assertion "
-                                "'!list->head.pred && !list->tail.succ' failed.",
+                                "'!list->tail' failed.",
                                 file, line, func);
 
-        for (kw_node_t *node = list->head.succ; node->succ; node = node->succ)
+        for (kw_node_t *node = list->head; node->succ; node = node->succ)
                 assert_node_ffl(node, func, file, line);
 }
 
@@ -150,10 +150,9 @@ free_node(kw_node_t *const node)
 void
 init_list(kw_list_t *const list)
 {
-        list->head.succ = (kw_node_t *) &list->tail;
-        list->head.pred = NULL;
-        list->tail.succ = NULL;
-        list->tail.pred = (kw_node_t *) &list->head;
+        list->head = (kw_node_t *) &list->tail;
+        list->tail = NULL;
+        list->tail_pred = (kw_node_t *) &list->head;
 }
 
 /*
@@ -173,8 +172,8 @@ create_list(void)
 }
 
 /*
- * When new_node == list->head, new_node is inserted at the beginning of the list.
- * Wenn new_node == list->tail, new_node is inserted at the end of the list
+ * When ex_node == list->head, new_node is inserted at the beginning of the list.
+ * Wenn ex_node == list->tail, new_node is inserted at the end of the list
  */
 
 void
@@ -297,9 +296,9 @@ add_head(kw_list_t *const list, kw_node_t *const node)
 
         assert_list(list);
 
-        node->succ = list->head.succ;
+        node->succ = list->head;
         node->pred = (kw_node_t *) &list->head;
-        list->head.succ = node;
+        list->head = node;
         node->succ->pred = node;
 }
 
@@ -312,8 +311,8 @@ add_tail(kw_list_t *const list, kw_node_t *const node)
         assert_list(list);
 
         node->succ = (kw_node_t *) &list->tail;
-        node->pred = list->tail.pred;
-        list->tail.pred = node;
+        node->pred = list->tail_pred;
+        list->tail_pred = node;
         node->pred->succ = node;
 }
 
@@ -327,7 +326,7 @@ get_head(const kw_list_t *const list)
         if (is_list_empty(list))
                 return NULL;
         else
-                return list->head.succ;
+                return list->head;
 }
 
 kw_node_t *
@@ -340,7 +339,7 @@ get_tail(const kw_list_t *const list)
         if (is_list_empty(list))
                 return NULL;
         else
-                return list->tail.pred;
+                return list->tail_pred;
 }
 
 kw_node_t *
@@ -353,8 +352,8 @@ rem_head(kw_list_t *const list)
         if (is_list_empty(list))
                 return NULL;
 
-        kw_node_t *const result = list->head.succ;
-        list->head.succ = result->succ;
+        kw_node_t *const result = list->head;
+        list->head = result->succ;
         result->succ->pred = (kw_node_t *) &list->head;
 
         return result;
@@ -370,8 +369,8 @@ rem_tail(kw_list_t *const list)
         if (is_list_empty(list))
                 return NULL;
 
-        kw_node_t *const result = list->tail.pred;
-        list->tail.pred = result->pred;
+        kw_node_t *const result = list->tail_pred;
+        list->tail_pred = result->pred;
         result->pred->succ = (kw_node_t *) &list->tail;
 
         return result;
@@ -409,7 +408,7 @@ empty_list(kw_list_t *const list, void (*free_node)(void *const))
         if (!list)
                 return;
 
-        kw_node_t *node = list->head.succ;
+        kw_node_t *node = list->head;
 
         while (node->succ)
         {
@@ -443,7 +442,7 @@ list_length(const kw_list_t *const list)
 
         int result = 0;
 
-        for (kw_node_t *node = list->head.succ; node->succ;
+        for (kw_node_t *node = list->head; node->succ;
                         (node = node->succ))
                 result++;
 

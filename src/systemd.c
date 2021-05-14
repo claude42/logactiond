@@ -186,8 +186,7 @@ add_matches(void)
 
         sd_journal_flush_matches(journal);
 
-        for (kw_node_t *unit = get_head(&la_config->systemd_source_group->systemd_units);
-                        (unit = unit->succ->succ ? unit->succ : NULL);)
+        FOREACH(kw_node_t, unit, &la_config->systemd_source_group->systemd_units)
         {
                 // space for "_SYSTEMD_UNIT=" + unit->name + '\0'
                 const size_t len = UNIT_LEN + 1 + xstrlen(unit->nodename);

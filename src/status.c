@@ -74,9 +74,8 @@ dump_queue_pointers(void)
 
                 fprintf(diag_file, "\nqueue pointer list (length=%i)\n", list_length(queue_pointers));
 
-                for (la_queue_pointer_t *qp = (la_queue_pointer_t *) &queue_pointers->head;
-                                qp = (la_queue_pointer_t *) (qp->node.succ->succ ? qp->node.succ : NULL);)
-                        fprintf(diag_file, "%i[%i] -> %s (%i)\n", qp->duration, qp->node.pri,
+                FOREACH(la_queue_pointer_t, qp, queue_pointers)
+                        fprintf(diag_file, "%i[%li] -> %s (%li)\n", qp->duration, qp->node.pri,
                                         (qp->command && qp->command->address) ? qp->command->address->text : NULL,
                                         qp->command ? qp->command->end_time : -1);
 
@@ -176,11 +175,9 @@ dump_rules(void)
                 /* First print rules of sources watched via inotify / polling */
 
                 assert(la_config); assert_list(&la_config->source_groups);
-                for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(&la_config->source_groups);
-                                (source_group = NEXT_SOURCE_GROUP(source_group));)
+                FOREACH(la_source_group_t, source_group, &la_config->source_groups)
                 {
-                        for (la_rule_t *rule = ITERATE_RULES(&source_group->rules);
-                                        (rule = NEXT_RULE(rule));)
+                        FOREACH(la_rule_t, rule, &source_group->rules)
                         {
                                 dump_single_rule(rules_file, rule);
                                 if (status_monitoring >= 2)
@@ -192,8 +189,7 @@ dump_rules(void)
                 /* Then print systemd rules - if any */
                 if (la_config->systemd_source_group)
                 {
-                        for (la_rule_t *rule = ITERATE_RULES(&la_config->systemd_source_group->rules);
-                                        (rule = NEXT_RULE(rule));)
+                        FOREACH(la_rule_t, rule, &la_config->systemd_source_group->rules)
                         {
                                 dump_single_rule(rules_file, rule);
                                 if (status_monitoring >= 2)
@@ -402,16 +398,16 @@ dump_queue_status(const bool force)
                                         max_depth, num_items);
 
                         const float average_time = la_config->invocation_count ?
-                                la_config->total_clocks / la_config->invocation_count :
-                                0;
+                                (float) la_config->total_clocks /
+                                (float) la_config->invocation_count: 0;
                         fprintf(diag_file, "Average invocation time: %f, "
                                         "(invocation count: %i)\n",
                                         average_time,
                                         la_config->invocation_count);
 
                         const float average_cmps = la_config->total_et_invs ?
-                                la_config->total_et_cmps /
-                                la_config->total_et_invs : 0;
+                                (float) la_config->total_et_cmps /
+                                (float) la_config->total_et_invs : 0;
                         fprintf(diag_file, "Average end_time_list comparissons: %f, "
                                         "(invocation count: %i)\n",
                                         average_cmps,

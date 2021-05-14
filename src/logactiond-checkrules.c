@@ -133,8 +133,7 @@ next_line(la_rule_t *rule, char *line)
 
         la_debug_func(line);
 
-        for (la_pattern_t *pattern = ITERATE_PATTERNS(&rule->patterns);
-                        (pattern = NEXT_PATTERN(pattern));)
+        FOREACH(la_pattern_t, pattern, &rule->patterns)
         {
                 la_debug("pattern %u: %s\n", pattern->num, pattern->string);
                 /* TODO: make this dynamic based on detected tokens */
@@ -167,19 +166,16 @@ iterate_through_all_rules(char *line)
 {
         la_debug_func(NULL);
 
-        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(&la_config->source_groups);
-                        (source_group = NEXT_SOURCE_GROUP(source_group));)
+        FOREACH(la_source_group_t, source_group, &la_config->source_groups)
         {
-                for (la_rule_t *rule = ITERATE_RULES(&source_group->rules);
-                                (rule = NEXT_RULE(rule));)
+                FOREACH(la_rule_t, rule, &source_group->rules)
                         next_line(rule, line);
         }
 
 #if HAVE_LIBSYSTEMD
         if (la_config->systemd_source_group)
         {
-                for (la_rule_t *rule = ITERATE_RULES(&la_config->systemd_source_group->rules);
-                                (rule = NEXT_RULE(rule));)
+                FOREACH(la_rule_t, rule, &la_config->systemd_source_group->rules)
                         next_line(rule, line);
         }
 #endif /* HAVE_LIBSYSTEMD */

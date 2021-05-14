@@ -109,9 +109,7 @@ void
 send_message_to_all_remote_hosts(const char *const message)
 {
         assert(la_config); assert_list(&la_config->remote_send_to);
-        for (const la_address_t *remote_address =
-                        ITERATE_ADDRESSES(&la_config->remote_send_to);
-                        (remote_address = NEXT_ADDRESS(remote_address));)
+        FOREACH(la_address_t, remote_address, &la_config->remote_send_to)
         {
                 send_message_to_single_address(message, remote_address);
         }

@@ -145,8 +145,7 @@ host_on_any_dnsbl(const kw_list_t *const blacklists,
                 const la_address_t *const address)
 {
         assert_list(blacklists);
-        for (const kw_node_t *bl = &blacklists->head;
-                        (bl = bl->succ->succ ? bl->succ : NULL);)
+        FOREACH(kw_node_t, bl, blacklists)
         {
                 if (host_on_dnsbl(address, bl->nodename))
                 {

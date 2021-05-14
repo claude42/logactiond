@@ -675,8 +675,7 @@ add_systemd_unit_to_list(const char *const systemd_unit)
         kw_list_t *const ex_systemd_units = &la_config->systemd_source_group->systemd_units;
         assert_list(ex_systemd_units);
 
-        for (kw_node_t *tmp = &(ex_systemd_units)->head;
-                        (tmp = tmp->succ->succ ? tmp->succ : NULL);)
+        FOREACH(kw_node_t, tmp, ex_systemd_units)
         {
                 if (!strcmp(systemd_unit, tmp->nodename))
                         return;

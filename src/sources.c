@@ -74,8 +74,7 @@ handle_log_line(const la_source_t *const source, const char *const line,
          * logging to syslog */
         /* la_debug("handle_log_line(%s, %s)", systemd_unit, line); */
 
-        for (la_rule_t *rule = ITERATE_RULES(&source->source_group->rules);
-                        (rule = NEXT_RULE(rule));)
+        FOREACH(la_rule_t, rule, &source->source_group->rules)
         {
                 if (rule->enabled)
                 {
@@ -224,11 +223,9 @@ la_source_group_t
         assert(la_config); assert_list(&la_config->source_groups);
         la_debug_func(location);
 
-        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(&la_config->source_groups);
-                        (source_group = NEXT_SOURCE_GROUP(source_group));)
+        FOREACH(la_source_group_t, source_group, &la_config->source_groups)
         {
-                for (la_source_t *source = ITERATE_SOURCES(&source_group->sources);
-                                (source = NEXT_SOURCE(source));)
+                FOREACH(la_source_t, source, &source_group->sources)
                         if (!strcmp(location, source->location))
                                 return source_group;
         }
@@ -247,8 +244,7 @@ la_source_group_t
         assert(la_config); assert_list(&la_config->source_groups);
         la_debug_func(name);
 
-        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(&la_config->source_groups);
-                        (source_group = NEXT_SOURCE_GROUP(source_group));)
+        FOREACH(la_source_group_t, source_group, &la_config->source_groups)
         {
                 if (!strcmp(name, source_group->node.nodename))
                         return source_group;
@@ -262,11 +258,9 @@ reset_counts(void)
 {
         assert_list(&la_config->source_groups);
 
-        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(&la_config->source_groups);
-                        (source_group = NEXT_SOURCE_GROUP(source_group));)
+        FOREACH(la_source_group_t, source_group, &la_config->source_groups)
         {
-                for (la_rule_t *rule = ITERATE_RULES(&source_group->rules);
-                                (rule = NEXT_RULE(rule));)
+                FOREACH(la_rule_t, rule, &source_group->rules)
                         rule->invocation_count = rule->detection_count = 0;
         }
 }

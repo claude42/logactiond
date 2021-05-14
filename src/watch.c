@@ -122,13 +122,11 @@ init_watching(void)
 #endif /* HAVE_INOTIFY */
 
                 xpthread_mutex_lock(&config_mutex);
-                        for (la_source_group_t *source_group = 
-                                        ITERATE_SOURCE_GROUPS(&la_config->source_groups);
-                                        (source_group = NEXT_SOURCE_GROUP(source_group));)
+                        FOREACH(la_source_group_t, source_group,
+                                        &la_config->source_groups)
                         {
-                                for (la_source_t *source = ITERATE_SOURCES(
-                                                        &source_group->sources);
-                                                (source = NEXT_SOURCE(source));)
+                                FOREACH(la_source_t, source,
+                                                &source_group->sources)
                                 {
                                         watch_source(source, SEEK_END);
                                 }
@@ -188,13 +186,10 @@ shutdown_watching(void)
         if (!is_list_empty(&la_config->source_groups))
         {
                 xpthread_mutex_lock(&config_mutex);
-                for (la_source_group_t *source_group = 
-                                ITERATE_SOURCE_GROUPS(&la_config->source_groups);
-                                (source_group = NEXT_SOURCE_GROUP(source_group));)
+                FOREACH(la_source_group_t, source_group,
+                                &la_config->source_groups)
                 {
-                        for (la_source_t *source = ITERATE_SOURCES(
-                                                &source_group->sources);
-                                        (source = NEXT_SOURCE(source));)
+                        FOREACH(la_source_t, source, &source_group->sources)
                         {
                                 unwatch_source(source);
                         }

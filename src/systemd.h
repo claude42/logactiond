@@ -25,7 +25,7 @@
 
 // systemd_source
 #if HAVE_LIBSYSTEMD
-#define SYSTEMD_SOURCE (la_source_t *) la_config->systemd_source_group->sources.head.succ
+#define SYSTEMD_SOURCE (la_source_t *) la_config->systemd_source_group->sources.head
 
 extern pthread_t systemd_watch_thread;
 

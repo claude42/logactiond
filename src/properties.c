@@ -95,8 +95,7 @@ get_property_from_property_list(const kw_list_t *const property_list,
                 return NULL;
         assert_list(property_list);
 
-        for (la_property_t *result = ITERATE_PROPERTIES(property_list);
-                        (result = NEXT_PROPERTY(result));)
+        FOREACH(la_property_t, result, property_list)
         {
                 if (!strcmp(name, result->name))
                         return result;
@@ -296,8 +295,7 @@ duplicate_property(const la_property_t *const property)
 void copy_property_list(kw_list_t *const dest, const kw_list_t *const source)
 {
         assert_list(dest); assert_list(source);
-        for (la_property_t *property = ITERATE_PROPERTIES(source);
-                        (property = NEXT_PROPERTY(property));)
+        FOREACH(la_property_t, property, source)
                 add_tail(dest, (kw_node_t *) duplicate_property(property));
 }
 

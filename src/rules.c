@@ -124,11 +124,11 @@ find_trigger(const la_command_t *const template, const la_address_t *const addre
 
         const time_t now = xtime(NULL);
 
-        /* Don't use standard ITERATE_COMMANDS/NEXT_COMMAND idiom here to avoid
-         * that remove_node() breaks the whole thing */
-        la_command_t *command = ITERATE_COMMANDS(&template->rule->trigger_list);
-        command = NEXT_COMMAND(command);
-        while (command)
+        /* Don't use standard FOREACH idiom here to avoid that remove_node()
+         * breaks the whole thing */
+
+        GET_FIRST(la_command_t, command, &template->rule->trigger_list);
+        while (IS_NODE(command))
         {
                 /* Return command if ids match */
                 if (command->id == template->id &&
@@ -136,7 +136,7 @@ find_trigger(const la_command_t *const template, const la_address_t *const addre
                         return command;
 
                 la_command_t *const tmp = command;
-                command = NEXT_COMMAND(command);
+                GET_NEXT(la_command_t, command);
                 /* Remove expired commands from trigger list */
                 if (now - tmp->start_time > tmp->rule->period)
                 {
@@ -365,9 +365,7 @@ trigger_all_commands(la_pattern_t *const pattern)
         increase_detection_count(pattern);
 #if !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS)
         /* trigger all of rule's commands */
-        for (la_command_t *template =
-                        ITERATE_COMMANDS(&pattern->rule->begin_commands);
-                        (template = NEXT_COMMAND(template));)
+        FOREACH(la_command_t, template, &pattern->rule->begin_commands)
                 trigger_single_command(pattern, host ? &address : NULL, template);
 #endif /* !defined(NOCOMMANDS) && !defined(ONLYCLEANUPCOMMANDS) */
 }
@@ -383,8 +381,7 @@ trigger_manual_commands_for_rule(const la_address_t *const address,
         la_debug_func(NULL);
         assert_address(address); assert_rule(rule);
 
-        for (la_command_t *template = ITERATE_COMMANDS(&rule->begin_commands);
-                        (template = NEXT_COMMAND(template));)
+        FOREACH(la_command_t, template, &rule->begin_commands)
                 trigger_manual_command(address, template, end_time, factor,
                                 from_addr, suppress_logging);
 }
@@ -406,8 +403,7 @@ assign_value_to_properties(const kw_list_t *const property_list,
         assert_list(property_list); assert(line);
         la_vdebug_func(NULL);
 
-        for (la_property_t *property = ITERATE_PROPERTIES(property_list);
-                        (property = NEXT_PROPERTY(property));)
+        FOREACH(la_property_t, property, property_list)
         {
                 if (!string_copy(property->value, MAX_PROP_SIZE,
                                         line + pmatch[property->subexpression].rm_so,
@@ -429,8 +425,7 @@ clear_property_values(const kw_list_t *const property_list)
         assert_list(property_list);
         la_vdebug_func(NULL);
 
-        for (la_property_t *property = ITERATE_PROPERTIES(property_list);
-                        (property = NEXT_PROPERTY(property));)
+        FOREACH(la_property_t, property, property_list)
                 property->value[0] = '\0';
 }
 
@@ -445,8 +440,7 @@ handle_log_line_for_rule(const la_rule_t *const rule, const char *const line)
         assert_rule(rule); assert(line);
         la_vdebug("handle_log_line_for_rule(%s, %s)", rule->node.nodename, line);
 
-        for (la_pattern_t *pattern = ITERATE_PATTERNS(&rule->patterns);
-                        (pattern = NEXT_PATTERN(pattern));)
+        FOREACH(la_pattern_t, pattern, &rule->patterns)
         {
                 /* TODO: make this dynamic based on detected tokens */
                 regmatch_t pmatch[MAX_NMATCH];
@@ -596,8 +590,7 @@ find_rule_for_source_group(const la_source_group_t *const source_group,
         assert_source_group(source_group); assert(rule_name);
         la_debug_func(rule_name);
 
-        for (la_rule_t *result = ITERATE_RULES(&source_group->rules);
-                        (result = NEXT_RULE(result));)
+        FOREACH(la_rule_t, result, &source_group->rules)
         {
                 if (!strcmp(rule_name, result->node.nodename))
                         return result;
@@ -623,8 +616,7 @@ find_rule(const char *const rule_name)
 #endif /* HAVE_LIBSYSTEMD */
 
         assert_list(&la_config->source_groups);
-        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(&la_config->source_groups);
-                        (source_group = NEXT_SOURCE_GROUP(source_group));)
+        FOREACH(la_source_group_t, source_group, &la_config->source_groups)
         {
                 la_rule_t *const result = find_rule_for_source_group(source_group, rule_name);
                 if (result)

@@ -96,7 +96,7 @@ log_message_va_list(int priority, const char *const fmt, va_list gp,
                 case LA_DAEMON_FOREGROUND:
                         /* TODO: use flockfile() around all the separate printf
                          * statements */
-                        fprintf(stderr, "<%i> %u:", priority, time(NULL));
+                        fprintf(stderr, "<%i> %li:", priority, time(NULL));
                         /* intentional fall through! */
                 case LA_UTIL_FOREGROUND:
 #if HAVE_PTHREAD_GETNAME_NP

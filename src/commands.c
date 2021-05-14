@@ -79,7 +79,7 @@ assert_command_ffl(const la_command_t *command, const char *func,
         assert_rule_ffl(command->rule, func, file, line);
         if (command->pattern)
                 assert_pattern_ffl(command->pattern, func, file, line);
-        if (command->pattern_properties.head.succ)
+        if (command->pattern_properties.head)
                 assert_list_ffl(&command->pattern_properties, func, file, line);
         if (command->address)
                 assert_address_ffl(command->address, func, file, line);
@@ -204,12 +204,8 @@ convert_command(la_command_t *const command, const la_commandtype_t type)
         la_debug("convert_command(%s, %s)", command->node.nodename,
                         type == LA_COMMANDTYPE_BEGIN ? "begin" : "end");
 
-        if (!((type == LA_COMMANDTYPE_BEGIN &&
-                                        !is_list_empty(&command->begin_properties) &&
-                                        command->begin_string) ||
-                        (type == LA_COMMANDTYPE_END &&
-                                         !is_list_empty(&command->end_properties) &&
-                                         command->end_string)))
+        if (!((type == LA_COMMANDTYPE_BEGIN && command->begin_string) ||
+                        (type == LA_COMMANDTYPE_END && command->end_string)))
                 return;
 
         const char *const source_string = (type == LA_COMMANDTYPE_BEGIN) ?
@@ -219,10 +215,10 @@ convert_command(la_command_t *const command, const la_commandtype_t type)
         char *result = xmalloc(dst_len);
         char *dst_ptr = result;
 
-        la_property_t *action_property = ITERATE_PROPERTIES(
-                        type == LA_COMMANDTYPE_BEGIN ?
-                        &command->begin_properties :
-                        &command->end_properties);
+        la_property_t *action_property = (la_property_t *)
+                (type == LA_COMMANDTYPE_BEGIN ?
+                &command->begin_properties.head :
+                &command->end_properties.head);
 
         while (*src_ptr)
         {
@@ -233,8 +229,9 @@ convert_command(la_command_t *const command, const la_commandtype_t type)
                         {
                                 /* We've detected a token - not just "%%"
                                  */
-                                action_property = NEXT_PROPERTY(action_property);
-                                if (!action_property)
+                                action_property =
+                                        (la_property_t *) action_property->node.succ;
+                                if (!action_property->node.succ)
                                         die_hard(false, "Ran out of "
                                                         "properties?!?");
                                 const char *const repl =

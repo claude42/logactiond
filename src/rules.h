@@ -37,11 +37,6 @@
 
 #define RULE_LENGTH 100
 
-#define ITERATE_RULES(RULES) (la_rule_t *) &(RULES)->head
-#define NEXT_RULE(RULE) (la_rule_t *) (RULE->node.succ->succ ? RULE->node.succ : NULL)
-#define HAS_NEXT_RULE(RULE) RULE->node.succ
-#define REM_RULES_HEAD(RULES) (la_rule_t *) rem_head(RULES)
-
 #ifdef NDEBUG
 #define assert_rule(RULE) (void)(0)
 #else /* NDEBUG */

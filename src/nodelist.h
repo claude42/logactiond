@@ -44,17 +44,37 @@ typedef struct kw_node_s {
 } kw_node_t;
 
 typedef struct kw_list_s {
-        kw_node_t head;
-        kw_node_t tail;
+        kw_node_t *head;
+        kw_node_t *tail;
+        kw_node_t *tail_pred;
 } kw_list_t;
 
 typedef void * kw_iterator;
 
 #define is_list_empty(x) \
-        ( ((x)->tail.pred) == (kw_node_t *)(x) )
+        ( ((x)->tail_pred) == (kw_node_t *)(x) )
 
 #define is_list_node(x) \
-        ((x)->succ && (x)->pred)
+        (((kw_node_t *) x)->succ && ((kw_node_t *) x)->pred)
+
+#define FOREACH(TYPE, VAR, LIST) \
+        for (TYPE *VAR = (TYPE *) (LIST)->head; \
+                        ((kw_node_t *) VAR)->succ; \
+                        VAR = (TYPE *) ((kw_node_t *) VAR)->succ)
+
+#define FOREACH_REUSE_VAR(TYPE, VAR, LIST) \
+        for (VAR = (TYPE *) (LIST)->head; \
+                        ((kw_node_t *) VAR)->succ; \
+                        VAR = (TYPE *) ((kw_node_t *) VAR)->succ)
+
+#define GET_FIRST(TYPE, VAR, LIST) \
+        TYPE *VAR = (TYPE *) (LIST)->head
+
+#define IS_NODE(VAR) \
+        ((kw_node_t *) VAR)->succ
+
+#define GET_NEXT(TYPE, VAR) \
+        VAR = (TYPE *) ((kw_node_t *) VAR)->succ
 
 
 void inject_nodelist_exit_function(void (*exit_function)(bool log_strerror,

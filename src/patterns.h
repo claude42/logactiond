@@ -26,11 +26,6 @@
 #include "properties.h"
 #include "rules.h"
 
-#define ITERATE_PATTERNS(PATTERNS) (la_pattern_t *) &(PATTERNS)->head
-#define NEXT_PATTERN(PATTERN) (la_pattern_t *) (PATTERN->node.succ->succ ? PATTERN->node.succ : NULL)
-#define HAS_NEXT_PATTERN(PATTERN) PATTERN->node.succ
-#define REM_PATTERNS_HEAD(PATTERNS) (la_pattern_t *) rem_head(PATTERNS)
-
 #ifdef NDEBUG
 #define assert_pattern(PATTERN) (void)(0)
 #else /* NDEBUG */

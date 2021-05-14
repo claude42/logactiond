@@ -36,11 +36,6 @@
 /* Max length of an IPv6 address + 4 bytes for /prefix */
 #define MAX_ADDR_TEXT_SIZE INET6_ADDRSTRLEN + 4
 
-#define ITERATE_ADDRESSES(ADDRESSES) (la_address_t *) &(ADDRESSES)->head
-#define NEXT_ADDRESS(ADDRESS) (la_address_t *) (ADDRESS->node.succ->succ ? ADDRESS->node.succ : NULL)
-#define HAS_NEXT_ADDRESS(ADDRESS) ADDRESS->node.succ
-#define REM_ADDRESSES_HEAD(ADDRESSES) (la_address_t *) rem_head(ADDRESSES)
-
 #ifdef NDEBUG
 #define assert_address(ADDRESS) (void)(0)
 #else /* NDEBUG */

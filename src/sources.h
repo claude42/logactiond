@@ -26,16 +26,6 @@
 #include "ndebug.h"
 #include "nodelist.h"
 
-#define ITERATE_SOURCES(SOURCES) (la_source_t *) &(SOURCES)->head
-#define NEXT_SOURCE(SOURCE) (la_source_t *) (SOURCE->node.succ->succ ? SOURCE->node.succ : NULL)
-#define HAS_NEXT_SOURCE(SOURCE) SOURCE->node.succ
-#define REM_SOURCES_HEAD(SOURCES) (la_source_t *) rem_head(SOURCES)
-
-#define ITERATE_SOURCE_GROUPS(SOURCE_GROUPS) (la_source_group_t *) &(SOURCE_GROUPS)->head
-#define NEXT_SOURCE_GROUP(SOURCE_GROUP) (la_source_group_t *) (SOURCE_GROUP->node.succ->succ ? SOURCE_GROUP->node.succ : NULL)
-#define HAS_NEXT_SOURCE_GROUP(SOURCE_GROUP) SOURCE_GROUP->node.succ
-#define REM_SOURCE_GROUPS_HEAD(SOURCE_GROUPS) (la_source_group_t *) rem_head(SOURCE_GROUPS)
-
 /* assertions */
 
 #ifdef NDEBUG

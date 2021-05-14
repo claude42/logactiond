@@ -128,11 +128,9 @@ find_source_by_parent_wd(const int parent_wd, const char *const file_name)
         la_vdebug("find_source_by_parent_wd(%s)", file_name);
 
         assert_list(&la_config->source_groups);
-        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(&la_config->source_groups);
-                        (source_group = NEXT_SOURCE_GROUP(source_group));)
+        FOREACH(la_source_group_t, source_group, &la_config->source_groups)
         {
-                for (la_source_t *source = ITERATE_SOURCES(&source_group->sources);
-                                (source = NEXT_SOURCE(source));)
+                FOREACH(la_source_t, source, &source_group->sources)
                 {
                         if (source->parent_wd == parent_wd &&
                                         !strendcmp(source->location, file_name))
@@ -156,11 +154,9 @@ find_source_by_file_wd(const int file_wd)
         la_vdebug("find_source_by_file_wd(%u)", file_wd);
 
         assert_list(&la_config->source_groups);
-        for (la_source_group_t *source_group = ITERATE_SOURCE_GROUPS(&la_config->source_groups);
-                        (source_group = NEXT_SOURCE_GROUP(source_group));)
+        FOREACH(la_source_group_t, source_group, &la_config->source_groups)
         {
-                for (la_source_t *source = ITERATE_SOURCES(&source_group->sources);
-                                (source = NEXT_SOURCE(source));)
+                FOREACH(la_source_t, source, &source_group->sources)
                 {
                         if (source->wd == file_wd)
                                 return source;
@@ -368,7 +364,7 @@ watch_forever_inotify(void *const ptr)
                 else
                 {
                         struct inotify_event *event = NULL;
-                        for (size_t i = 0; i <  num_read; i += EVENT_SIZE + event->len)
+                        for (size_t i = 0; i <  (unsigned int) num_read; i += EVENT_SIZE + event->len)
                         {
                                 event = (struct inotify_event *) &buffer[i];
                                 handle_inotify_event(event);

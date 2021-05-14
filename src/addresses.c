@@ -339,8 +339,7 @@ address_on_list_sa(const struct sockaddr *const sa, const kw_list_t *const list)
 {
         assert_list(list);
 
-        for (la_address_t *list_address = ITERATE_ADDRESSES(list);
-                        (list_address = NEXT_ADDRESS(list_address));)
+        FOREACH(la_address_t, list_address, list)
         {
                 if (cidr_match_sa(sa, list_address))
                         return list_address;

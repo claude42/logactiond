@@ -25,11 +25,6 @@
 #include "patterns.h"
 #include "binarytree.h"
 
-#define ITERATE_COMMANDS(COMMANDS) (la_command_t *) &(COMMANDS)->head
-#define NEXT_COMMAND(COMMAND) (la_command_t *) (COMMAND->node.succ->succ ? COMMAND->node.succ : NULL)
-#define HAS_NEXT_COMMAND(COMMAND) COMMAND->node.succ
-#define REM_COMMANDS_HEAD(COMMANDS) (la_command_t *) rem_head(COMMANDS)
-
 /* assertions */
 
 #ifdef NDEBUG

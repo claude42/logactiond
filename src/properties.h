@@ -39,13 +39,6 @@
 
 #define MAX_PROP_SIZE 128
 
-/* List macros */
-
-#define ITERATE_PROPERTIES(PROPERTIES) (la_property_t *) &(PROPERTIES)->head
-#define NEXT_PROPERTY(PROPERTY) (la_property_t *) (PROPERTY->node.succ->succ ? PROPERTY->node.succ : NULL)
-#define HAS_NEXT_PROPERTY(PROPERTY) PROPERTY->node.succ
-#define REM_PROPERTIES_HEAD(PROPERTIES) (la_property_t *) rem_head(PROPERTIES)
-
 #ifdef NDEBUG
 #define assert_property(PROPERTY) (void)(0)
 #else /* NDEBUG */

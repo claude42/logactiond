@@ -161,8 +161,7 @@ fix_queue_pointers(const la_command_t *const command)
         if (is_list_empty(queue_pointers))
                 return;
 
-        for (la_queue_pointer_t *i = (la_queue_pointer_t *) get_head(queue_pointers);
-                        i->node.succ; i = (la_queue_pointer_t *) i->node.succ)
+        FOREACH(la_queue_pointer_t, i, queue_pointers)
         {
                 /* If we're about to remove the command the pointer is
                  * currently referring to, try its predecessor. If command has
@@ -226,14 +225,13 @@ find_queue_pointer_for_duration_or_create_new(const int duration)
 {
         la_vdebug_func(NULL);
         la_queue_pointer_t *qp = NULL;
-        for (qp = (la_queue_pointer_t *) &queue_pointers->head;
-                        qp = (la_queue_pointer_t *) (qp->node.succ->succ ? qp->node.succ : NULL);)
+        FOREACH_REUSE_VAR(la_queue_pointer_t, qp, queue_pointers)
         {
                 if (qp->duration == duration)
                         break;
         }
 
-        if (qp)
+        if (is_list_node(qp))
                 reprioritize_node((kw_node_t *) qp, 1);
         else
                 qp = create_queue_pointer(duration);
@@ -302,7 +300,7 @@ add_to_end_time_list(la_command_t *command)
         if (tmp)
         {
                 int i = 0;
-                for (; tmp->node.succ; tmp = (la_command_t *) tmp->node.succ, i++)
+                for (; IS_NODE(tmp); GET_NEXT(la_command_t, tmp), i++)
                 {
                         if (tmp->end_time > command->end_time)
                                 break;
@@ -564,6 +562,7 @@ set_end_time(la_command_t *const command, const time_t manual_end_time)
                 command->end_time = xtime(NULL) + compute_duration(command);
 }
 
+#ifndef CLIENTONLY
 static void
 remove_or_renew(la_command_t *const command)
 {
@@ -598,7 +597,6 @@ remove_or_renew(la_command_t *const command)
  * Runs in end_queue_thread
  */
 
-#ifndef CLIENTONLY
 noreturn static void *
 consume_end_queue(void *ptr)
 {
@@ -626,14 +624,17 @@ consume_end_queue(void *ptr)
                         {
                                 la_command_t *const command =
                                         first_command_in_queue();
-
+                                if (!command)
+                                {
+                                        continue;
+                                }
                                 /* Subtract 1 from end_time to work around
                                  * obscure bug where pthread_cond_timedwait()
                                  * returns one second early.  See also
                                  * https://stackoverflow.com/questions/11769687/pthread-cond-timedwait-returns-one-second-early
                                  * (although this might a different issue...).
                                  */
-                                if (xtime(NULL) < command->end_time - 1)
+                                else if (xtime(NULL) < command->end_time - 1)
                                 {
                                         /* non-empty list, but end_time of
                                          * first command not reached yet */
