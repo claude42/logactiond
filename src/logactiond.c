@@ -61,6 +61,7 @@
 #include "binarytree.h"
 #include "crypto.h"
 #include "metacommands.h"
+#include "pthread_barrier.h"
 
 pthread_t main_thread = 0;
 pthread_barrier_t final_barrier;

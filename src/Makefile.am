@@ -5,9 +5,10 @@ if !USE_INSTALLED_LIBCONFIG
 endif
 
 
+
 sbin_PROGRAMS = logactiond logactiond-cleanup
 bin_PROGRAMS = logactiond-checkrules ladc
-logactiond_SOURCES = logactiond.c logactiond.h configfile.c configfile.h rules.c rules.h patterns.c patterns.h sources.c sources.h misc.c misc.h inotify.c inotify.h nodelist.c nodelist.h properties.c properties.h commands.c commands.h metacommands.c metacommands.h endqueue.c endqueue.h addresses.c addresses.h polling.c polling.h status.c status.h watch.c watch.h systemd.c systemd.h fifo.c fifo.h remote.c remote.h messages.c messages.h logging.c logging.h dnsbl.c dnsbl.h crypto.c crypto.h state.c state.h ndebug.h binarytree.c binarytree.h
+logactiond_SOURCES = logactiond.c logactiond.h configfile.c configfile.h rules.c rules.h patterns.c patterns.h sources.c sources.h misc.c misc.h inotify.c inotify.h nodelist.c nodelist.h properties.c properties.h commands.c commands.h metacommands.c metacommands.h endqueue.c endqueue.h addresses.c addresses.h polling.c polling.h status.c status.h watch.c watch.h systemd.c systemd.h fifo.c fifo.h remote.c remote.h messages.c messages.h logging.c logging.h dnsbl.c dnsbl.h crypto.c crypto.h state.c state.h ndebug.h binarytree.c binarytree.h pthread_barrier.c pthread_barrier.h
 logactiond_CPPFLAGS = -I$(top_srcdir)/libconfig/lib -DCONF_DIR="\"$(sysconfdir)/logactiond\"" -DSTATE_DIR="\"$(sharedstatedir)/logactiond\"" -DRUN_DIR="\"$(runstatedir)\""
 logactiond_CFLAGS = $(PTHREAD_CFLAGS) $(LIBSODIUM_CFLAGS) $(CFLAGS)
 logactiond_LDFLAGS = $(LIBSODIUM_LIBS) $(LIBS)
