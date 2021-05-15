@@ -65,6 +65,9 @@
 pthread_t main_thread = 0;
 pthread_barrier_t final_barrier;
 bool barrier_initialized = false;
+
+#define MAX_THREADS 20
+pthread_t all_threads[MAX_THREADS] = {0};
 /* num_threads not declared as atomic because only main thread ever modifies it
  */
 int num_threads = 1;
@@ -107,17 +110,10 @@ trigger_shutdown(int status, int saved_errno)
 
         save_state(true);
 
-        xpthread_cancel_if_applicable(file_watch_thread);
-#if HAVE_LIBSYSTEMD
-        xpthread_cancel_if_applicable(systemd_watch_thread);
-#endif /* HAVE_LIBSYSTEMD */
-        xpthread_cancel_if_applicable(end_queue_thread);
-#ifndef NOMONITORING
-        xpthread_cancel_if_applicable(monitoring_thread);
-#endif /* NOMONITORING */
-        xpthread_cancel_if_applicable(fifo_thread);
-        cancel_all_remote_threads();
-        xpthread_cancel_if_applicable(save_state_thread);
+        /* This will cancel all threads except for a.) the current thread and
+         * b.) the main thread */
+        for (int i = 0; i < MAX_THREADS; i++)
+                xpthread_cancel_if_applicable(all_threads[i]);
 
         /* Apparently signals are delivered to a random thread, so
          * - if signal has been catched by main thread simply return and don't
@@ -533,9 +529,11 @@ main(int argc, char *argv[])
 }
 
 void
-thread_started(void)
+thread_started(const pthread_t thread)
 {
-        num_threads++;
+        assert(num_threads < MAX_THREADS);
+
+        all_threads[num_threads++] = thread;
 }
 
 void

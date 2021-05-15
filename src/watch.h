@@ -22,8 +22,6 @@
 #include "ndebug.h"
 #include "sources.h"
 
-extern pthread_t file_watch_thread;
-
 void watch_source(la_source_t *source, int whence);
 
 void unwatch_source(la_source_t *source);

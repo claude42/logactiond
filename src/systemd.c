@@ -47,7 +47,6 @@
 #define UNIT_LEN 14
 
 
-pthread_t systemd_watch_thread = 0;
 static sd_journal *journal = NULL;
 static char *unit_buffer = NULL;
 
@@ -82,7 +81,6 @@ cleanup_watching_systemd(void *const arg)
         if (journal)
                 sd_journal_close(journal);
 
-        systemd_watch_thread = 0;
         wait_final_barrier();
         la_debug("systemd thread exiting");
 }
@@ -233,12 +231,12 @@ void
 start_watching_systemd_thread(void)
 {
         la_debug_func(NULL);
-        assert(!systemd_watch_thread);
 
-        xpthread_create(&systemd_watch_thread, NULL,
+        pthread_t thread;
+        xpthread_create(&thread, NULL,
                         watch_forever_systemd, NULL, "systemd");
-        thread_started();
-        la_debug("systemd thread started (%i)", systemd_watch_thread);
+        thread_started(thread);
+        la_debug("systemd thread started (%i)", thread);
 }
 
 #endif /* HAVE_LIBSYSTEMD */

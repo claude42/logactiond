@@ -42,8 +42,6 @@
 
 extern int status_monitoring;
 
-extern pthread_t monitoring_thread;
-
 void start_monitoring_thread(void);
 
 void dump_rules(void);

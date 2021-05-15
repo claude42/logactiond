@@ -43,9 +43,10 @@ kw_tree_t *adr_tree = NULL;
 kw_list_t *end_time_list = NULL;
 kw_list_t *queue_pointers = NULL;
 
+int end_queue_running = 0;
+
 int queue_length = 0;
 #ifndef CLIENTONLY
-pthread_t end_queue_thread = 0;
 pthread_mutex_t end_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t end_queue_condition = PTHREAD_COND_INITIALIZER;
 #endif /* CLIENTONLY */
@@ -281,7 +282,7 @@ add_to_end_time_list(la_command_t *command)
         /* Don't even care about queue pointer as long queue thread is not yet
          * running. This way we avoid adding lots of queue pointers while
          * restoring logactiond.state */
-        if (end_queue_thread)
+        if (end_queue_running)
         {
                 qp = find_queue_pointer_for_duration_or_create_new(
                                 compute_duration(command));
@@ -311,7 +312,7 @@ add_to_end_time_list(la_command_t *command)
 #ifndef CLIENTONLY
                 /* Don't let restoring logactiond.state ruin our statistics...
                  */
-                if (end_queue_thread)
+                if (end_queue_running)
                         la_config->total_et_cmps += i;
 #endif /* CLIENTONLY */
         }
@@ -328,7 +329,7 @@ add_to_end_time_list(la_command_t *command)
 
         /* Again, don't let restoring logactiond.state ruin our statistics...
          */
-        if (end_queue_thread)
+        if (end_queue_running)
                 la_config->total_et_invs++;
 #endif /* CLIENTONLY */
 
@@ -432,7 +433,7 @@ empty_end_queue(void)
          *
          * Of course also don't touch mutex if no thread is running. */
 #ifndef CLIENTONLY
-        if (!shutdown_ongoing && end_queue_thread)
+        if (!shutdown_ongoing && end_queue_running)
                 xpthread_mutex_lock(&end_queue_mutex);
 #endif /* CLIENTONLY */
 
@@ -443,7 +444,7 @@ empty_end_queue(void)
         queue_length = 0;
 
 #ifndef CLIENTONLY
-        if (!shutdown_ongoing && end_queue_thread)
+        if (!shutdown_ongoing && end_queue_running)
         {
                 /* signal probably not strictly necessary... */
                 (void) xpthread_cond_signal(&end_queue_condition);
@@ -516,7 +517,7 @@ cleanup_end_queue(void *arg)
         free_list(queue_pointers, NULL);
         queue_pointers = NULL;
 
-        end_queue_thread = 0;
+        end_queue_running = 0;
         wait_final_barrier();
         la_debug("end queue thread exiting");
 }
@@ -683,10 +684,11 @@ start_end_queue_thread(void)
 
         init_end_queue();
 
-        xpthread_create(&end_queue_thread, NULL, consume_end_queue, NULL,
-                        "end queue");
-        thread_started();
-        la_debug("End queue thread startet (%i)", end_queue_thread);
+        end_queue_running = 1;
+        pthread_t thread;
+        xpthread_create(&thread, NULL, consume_end_queue, NULL, "end queue");
+        thread_started(thread);
+        la_debug("End queue thread startet (%i)", thread);
 }
 #endif /* CLIENTONLY */
 

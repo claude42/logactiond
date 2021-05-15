@@ -329,7 +329,6 @@ cleanup_watching_inotify(void *const arg)
                 la_log_errno(LOG_ERR, "Can't close inotify fd!");
 
         shutdown_watching();
-        file_watch_thread = 0;
         wait_final_barrier();
         la_debug("inotify thread exiting");
 }
@@ -433,12 +432,11 @@ void
 start_watching_inotify_thread(void)
 {
         la_debug_func(NULL);
-        assert(!file_watch_thread);
 
-        xpthread_create(&file_watch_thread, NULL,
-                        watch_forever_inotify, NULL, "inotify");
-        thread_started();
-        la_debug("inotify thread startet (%i)", file_watch_thread);
+        pthread_t thread;
+        xpthread_create(&thread, NULL, watch_forever_inotify, NULL, "inotify");
+        thread_started(thread);
+        la_debug("inotify thread startet (%i)", thread);
 }
 
 #endif /* HAVE_INOTIFY */

@@ -25,8 +25,6 @@
 
 #define BAK_SUFFIX ".bak"
 
-extern pthread_t save_state_thread;
-
 void save_state(bool verbose);
 
 void restore_state_and_start_save_state_thread(const bool create_backup_file);

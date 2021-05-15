@@ -39,8 +39,6 @@
 #include "configfile.h"
 #include "addresses.h"
 
-pthread_t fifo_thread = 0;
-
 static FILE *fifo = NULL;
 
 la_address_t fifo_address =
@@ -63,7 +61,6 @@ cleanup_fifo(void *const arg)
 
         fifo = NULL;
 
-        fifo_thread = 0;
         wait_final_barrier();
         la_debug("Fifo thread exiting");
 }
@@ -143,13 +140,13 @@ void
 start_fifo_thread(void)
 {
         la_debug_func(NULL);
-        assert(!fifo_thread);
 
         create_fifo();
 
-        xpthread_create(&fifo_thread, NULL, fifo_loop, NULL, "fifo");
-        thread_started();
-        la_debug("Fifo thread startet (%i)", fifo_thread);
+        pthread_t thread;
+        xpthread_create(&thread, NULL, fifo_loop, NULL, "fifo");
+        thread_started(thread);
+        la_debug("Fifo thread startet (%i)", thread);
 }
 
 

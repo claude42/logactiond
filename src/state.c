@@ -45,7 +45,6 @@
 
 const char *saved_state = NULL;
 
-pthread_t save_state_thread = 0;
 pthread_mutex_t save_state_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static bool
@@ -234,7 +233,6 @@ cleanup_state(void *const arg)
 {
         la_debug_func(NULL);
 
-        save_state_thread = 0;
         wait_final_barrier();
         la_debug("state save thread exiting");
 }
@@ -269,10 +267,11 @@ start_save_state_thread(void)
 {
         la_debug_func(NULL);
 
-        xpthread_create(&save_state_thread, NULL, periodically_save_state,
-                        NULL, "save state");
-        thread_started();
-        la_debug("state save thread started (%i)", save_state_thread);
+        pthread_t thread;
+        xpthread_create(&thread, NULL, periodically_save_state, NULL,
+                        "save state");
+        thread_started(thread);
+        la_debug("state save thread started (%i)", thread);
 }
 
 void

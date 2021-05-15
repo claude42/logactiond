@@ -24,8 +24,6 @@
 #include "ndebug.h"
 #include "addresses.h"
 
-extern pthread_t fifo_thread;
-
 extern la_address_t fifo_address;
 
 void start_fifo_thread(void);

@@ -80,7 +80,7 @@ void trigger_shutdown(int status, int saved_errno);
 
 void trigger_reload(void);
 
-void thread_started(void);
+void thread_started(pthread_t thread);
 
 void wait_final_barrier(void);
 

@@ -31,8 +31,6 @@
 #include "binarytree.h"
 
 
-extern pthread_t end_queue_thread;
-
 extern pthread_mutex_t end_queue_mutex;
 
 

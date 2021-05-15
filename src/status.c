@@ -218,8 +218,6 @@ cleanup_monitoring(void *const arg)
 {
         la_debug_func(NULL);
 
-        monitoring_thread = 0;
-
         if (remove(HOSTSFILE) && errno != ENOENT)
                 la_log_errno(LOG_ERR, "Can't remove host status file");
         if (remove(RULESFILE) && errno != ENOENT)
@@ -228,6 +226,8 @@ cleanup_monitoring(void *const arg)
                 la_log_errno(LOG_ERR, "Can't remove diagnostics file");
 
         monitoring_thread = 0;
+        /* Big TODO: this will currently break when status monitoring will be
+         * disabled via ladc. */
         wait_final_barrier();
         la_debug("status thread exiting");
 }
@@ -278,10 +278,11 @@ start_monitoring_thread(void)
         la_debug_func(NULL);
         if (!status_monitoring)
                 return;
-        assert(!monitoring_thread);
+        if (monitoring_thread)
+                return;
 
         xpthread_create(&monitoring_thread, NULL, dump_loop, NULL, "status");
-        thread_started();
+        thread_started(monitoring_thread);
         la_debug("status thread started (%i)", monitoring_thread);
 }
 

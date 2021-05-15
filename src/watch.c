@@ -40,8 +40,6 @@
 #include "systemd.h"
 #endif /* HAVE_LIBSYSTEMD */
 
-pthread_t file_watch_thread = 0;
-
 
 /*
  * Add general watch for given filename. Will not be called for systemd
