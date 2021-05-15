@@ -25,9 +25,9 @@
 
 #define __pthread_barrier_h
 
-#if !defined(HAVE_PTHREAD_BARRIER_T) || !defined(HAVE_PTHREAD_BARRIER_INIT) || \
-	!defined(HAVE_PTHREAD_BARRIER_WAIT) || \
-	!defined(HAVE_PTHREAD_BARRIER_DESTROY)
+#include <config.h>
+
+#ifndef HAVE_PTHREAD_BARRIER
 
 #include <pthread.h>
 
@@ -47,8 +47,6 @@ int pthread_barrier_destroy(pthread_barrier_t *barrier);
 
 int pthread_barrier_wait(pthread_barrier_t *barrier);
 
-#endif /* !defined(HAVE_PTHREAD_BARRIER_T) || !defined(HAVE_PTHREAD_BARRIER_INIT) ||
-	!defined(HAVE_PTHREAD_BARRIER_WAIT) ||
-	!defined(HAVE_PTHREAD_BARRIER_DESTROY) */
+#endif /* HAVE_PTHREAD_BARRIER */
 
 #endif /* __pthread_barrier_h */

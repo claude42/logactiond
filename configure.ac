@@ -58,15 +58,28 @@ AC_CHECK_FUNCS([regcomp strdup strerror strndup strcasecmp strtol memset mkfifo 
 
 AX_PTHREAD
 
-AC_CHECK_FUNCS([pthread_barrier_init pthread_barrier_wait pthread_barrier_destroy])
-AC_CHECK_TYPES([pthread_barrier_t])
-
 AC_CHECK_FUNCS([inotify_init],
   [AC_DEFINE([HAVE_INOTIFY], [1],
     [Define to 1 if you have usable inotify support.])])
 
 HOLD_LIBS="$LIBS"
 LIBS="-pthread"
+
+AC_MSG_CHECKING([for pthread_barrier_t])
+AC_LINK_IFELSE(
+  [AC_LANG_SOURCE[
+    #include <pthread.h>
+    int main(int argc, char** argv) {
+      pthread_barrier_t b;
+      pthread_barrier_init(&b, NULL, 1);
+      pthread_barrier_wait(&b);
+      pthread_barrier_destroy(&b);
+      return 0;
+    }
+  ]],
+  [AC_DEFINE([HAVE_PTHREAD_BARRIER], [1], [Define if you have support for pthread barriers.])
+  AC_MSG_RESULT([yes])],
+  [AC_MSG_RESULT([no])] )
 
 AC_MSG_CHECKING([for pthread_getname_np])
 AC_LINK_IFELSE(
