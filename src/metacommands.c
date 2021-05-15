@@ -17,6 +17,7 @@
  */
 
 #include <time.h>
+#include <stdlib.h>
 
 #include "ndebug.h"
 #include "metacommands.h"
