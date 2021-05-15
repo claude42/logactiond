@@ -66,7 +66,7 @@ open_new_file(la_source_t *const source, const struct stat *const sb)
         {
                 la_log_errno(LOG_ERR, "Can't reopen source "
                                 "\"%s\" - file \"%s\".",
-                                source->source_group->name,
+                                source->source_group->node.nodename,
                                 source->location);
                 source->active = false;
         }
