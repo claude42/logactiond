@@ -23,6 +23,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdbool.h>
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
+#include <stdatomic.h>
+#endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
 
 #include "ndebug.h"
 #include "logactiond.h"
@@ -40,6 +43,11 @@
 #include "systemd.h"
 #endif /* HAVE_LIBSYSTEMD */
 
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
+atomic_bool watching_active = ATOMIC_VAR_INIT(false);
+#else /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
+bool watching_active = false;
+#endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
 
 /*
  * Add general watch for given filename. Will not be called for systemd
@@ -137,6 +145,7 @@ init_watching(void)
                 init_watching_systemd();
 #endif /* HAVE_LIBSYSTEMD */
 
+        watching_active = true;
 #endif /* NOWATCH */
 }
 
@@ -178,8 +187,9 @@ shutdown_watching(void)
         la_debug_func(NULL);
 
 #ifndef NOWATCH
-        assert(la_config);
+        watching_active = false;
 
+        assert(la_config);
         assert_list(&la_config->source_groups);
         if (!is_list_empty(&la_config->source_groups))
         {
@@ -197,5 +207,14 @@ shutdown_watching(void)
 #endif /* NOWATCH */
 }
 
+void update_watching_status(bool activate)
+{
+        if (watching_active && !activate)
+                la_log(LOG_INFO, "Resuming watching.");
+        else if (!watching_active && activate)
+                la_log(LOG_INFO, "Pausing watching.");
+
+        watching_active = activate;
+}
 
 /* vim: set autowrite expandtab: */

@@ -19,8 +19,18 @@
 #ifndef __watch_h
 #define __watch_h
 
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
+#include <stdatomic.h>
+#endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
+
 #include "ndebug.h"
 #include "sources.h"
+
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
+        extern atomic_bool watching_active;
+#else /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
+        extern bool watching_active;
+#endif /* __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__) */
 
 void watch_source(la_source_t *source, int whence);
 
@@ -31,6 +41,8 @@ void init_watching(void);
 void start_watching_threads(void);
 
 void shutdown_watching(void);
+
+void update_watching_status(bool activate);
 
 #endif /* __watch_h */
 

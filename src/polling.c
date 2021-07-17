@@ -151,15 +151,20 @@ watch_forever_polling(void *ptr)
                         pthread_exit(NULL);
                 }
 
-                xpthread_mutex_lock(&config_mutex);
+                if (watching_active)
+                {
+                        xpthread_mutex_lock(&config_mutex);
 
-                        FOREACH(la_source_group_t, source_group, &la_config->source_groups)
-                        {
-                                FOREACH(la_source_t, source, &source_group->sources)
-                                        poll_source(source);
-                        }
+                                FOREACH(la_source_group_t, source_group,
+                                                &la_config->source_groups)
+                                {
+                                        FOREACH(la_source_t, source,
+                                                        &source_group->sources)
+                                                poll_source(source);
+                                }
 
-                xpthread_mutex_unlock(&config_mutex);
+                        xpthread_mutex_unlock(&config_mutex);
+                }
 
                 xnanosleep(2, 500000000);
         }

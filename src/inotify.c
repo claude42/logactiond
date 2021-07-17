@@ -353,6 +353,10 @@ watch_forever_inotify(void *const ptr)
                         la_debug("Shutting down inotify thread.");
                         pthread_exit(NULL);
                 }
+                else if (!watching_active)
+                {
+                        continue;
+                }
                 else if (num_read == -1)
                 {
                         if (errno == EINTR)

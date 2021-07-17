@@ -38,6 +38,7 @@
 #include "misc.h"
 #include "sources.h"
 #include "systemd.h"
+#include "watch.h"
 
 // _LEN includes terminal '\0'
 
@@ -157,13 +158,17 @@ watch_forever_systemd(void *const ptr)
 
                 la_vdebug("Unit: %s, line: %s", unit_buffer, (char *)data+MESSAGE_LEN);
 
-                xpthread_mutex_lock(&config_mutex);
-                        const clock_t c = clock();
-                        handle_log_line(SYSTEMD_SOURCE,
-                                        (char *) data+MESSAGE_LEN, unit_buffer);
-                        la_config->total_clocks += clock() - c;
-                        la_config->invocation_count++;
-                xpthread_mutex_unlock(&config_mutex);
+                if (watching_active)
+                {
+                        xpthread_mutex_lock(&config_mutex);
+                                const clock_t c = clock();
+                                handle_log_line(SYSTEMD_SOURCE,
+                                                (char *) data+MESSAGE_LEN,
+                                                unit_buffer);
+                                la_config->total_clocks += clock() - c;
+                                la_config->invocation_count++;
+                        xpthread_mutex_unlock(&config_mutex);
+                }
         }
 
         assert(false);

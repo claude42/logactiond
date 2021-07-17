@@ -45,6 +45,7 @@
 #define CMD_ENABLE_RULE 'Y'
 #define CMD_DISABLE_RULE 'N'
 #define CMD_UPDATE_STATUS_MONITORING 'M'
+#define CMD_UPDATE_WATCHING 'W'
 
 
 /* Length of unencrypted message*/
@@ -102,6 +103,8 @@ bool init_restore_message(char *buffer);
 bool init_log_level_message(char *buffer, int new_log_level);
 
 bool init_status_monitoring_message(char *buffer, int new_status);
+
+bool init_watching_message(char *buffer, int new_status);
 
 bool init_reset_counts_message(char *buffer);
 

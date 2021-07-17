@@ -63,6 +63,10 @@ print_usage(void)
                         "Usage: ladc [-h host][-p password][-s port] "
                         "shutdown\n"
                         "Usage: ladc [-h host][-p password][-s port] "
+                        "pause\n"
+                        "Usage: ladc [-h host][-p password][-s port] "
+                        "resume\n"
+                        "Usage: ladc [-h host][-p password][-s port] "
                         "(no|v)?debug\n"
                         "Usage: ladc [-h host][-p password][-s port] "
                         "(no|v)?monitoring\n"
@@ -356,6 +360,14 @@ main(int argc, char *argv[])
         else if (!strcmp(command, "nomonitoring"))
         {
                 success = init_status_monitoring_message(message, 0);
+        }
+        else if (!strcmp(command, "pause"))
+        {
+                success = init_watching_message(message, 0);
+        }
+        else if (!strcmp(command, "resume"))
+        {
+                success = init_watching_message(message, 1);
         }
         else if (!strcmp(command, "reset-counts"))
         {

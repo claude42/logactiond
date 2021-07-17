@@ -41,6 +41,7 @@
 #include "status.h"
 #include "configfile.h"
 #include "fifo.h"
+#include "watch.h"
 
 /*
  * Message format:
@@ -80,8 +81,11 @@
  *    enable rule
  *  "0N<rule\0"
  *    disable rule
- *  "0M<0/1/>\0"
+ *  "0M<0/1>\0"
  *    Turn status monitoring on or off
+ *  "0W<0/1>\0"
+ *    Pause / resume watching
+ *
  *
  * Example structure (with maximum lengths):
  *  "0+<ip-address>/<prefix>,<rule-name>,<end-time-in-secs>,<factor>\0"
@@ -293,7 +297,7 @@ update_status_monitoring(const char *const buffer)
 
         const int new_status = strtol(buffer+2, &endptr, 10);
         if (errno || *endptr != '\0' || new_status < 0 || new_status > 2)
-                LOG_RETURN(, LOG_ERR, "Cannot change to status level %s!", buffer+2);
+                LOG_RETURN(, LOG_ERR, "Cannot change to monitoring status level %s!", buffer+2);
 
         if (status_monitoring > 0 && new_status == 0)
         {
@@ -312,6 +316,21 @@ update_status_monitoring(const char *const buffer)
                 status_monitoring = new_status;
         }
 #endif /* NOMONITORING */
+}
+
+static void
+update_watching(const char *const buffer)
+{
+        assert(buffer);
+
+        char *endptr;
+        errno = 0;
+
+        const int new_status = strtol(buffer+2, &endptr, 10);
+        if (errno || *endptr != '\0' || (new_status != 0 && new_status != 1))
+                LOG_RETURN(, LOG_ERR, "Cannot change to watching status %s!", buffer+2);
+
+        update_watching_status(new_status);
 }
 
 static void
@@ -423,6 +442,10 @@ parse_message_trigger_command(const char *const buf, la_address_t *from_addr)
         case CMD_UPDATE_STATUS_MONITORING:
                 la_log(LOG_INFO, "Received change status monitoring command from %s.", from);
                 update_status_monitoring(buf);
+                break;
+        case CMD_UPDATE_WATCHING:
+                la_log(LOG_INFO, "Received change watching command from %s.", from);
+                update_watching(buf);
                 break;
         default:
                 la_log(LOG_ERR, "Received unknown command: '%c' from %s.",
@@ -551,6 +574,18 @@ init_status_monitoring_message(char *const buffer, const int new_status)
         snprintf(new_status_str, 3, "%i", new_status);
 
         return init_simple_message(buffer, CMD_UPDATE_STATUS_MONITORING,
+                        new_status_str);
+}
+
+bool
+init_watching_message(char *const buffer, const int new_status)
+{
+        assert(new_status == 0 || new_status == 1);
+
+        char new_status_str[3];
+        snprintf(new_status_str, 3, "%i", new_status);
+
+        return init_simple_message(buffer, CMD_UPDATE_WATCHING,
                         new_status_str);
 }
 
